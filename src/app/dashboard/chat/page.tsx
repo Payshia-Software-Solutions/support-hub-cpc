@@ -123,10 +123,10 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-full">
-      <div className="w-1/3 max-w-sm min-w-[300px] h-full border-r">
+      <div className="w-1/3 max-w-sm min-w-[400px] h-full border-r">
         <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
       </div>
-      <div className="flex-1 h-full">
+      <div className="flex-1 w-full h-full">
         <ChatWindow chat={selectedChat} onSendMessage={handleSendMessage} />
       </div>
     </div>
