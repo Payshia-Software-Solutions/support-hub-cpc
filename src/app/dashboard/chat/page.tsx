@@ -9,12 +9,14 @@ import type { Chat, Message } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
+import { useSidebar } from "@/components/ui/sidebar"; // Import useSidebar
 
 export default function ChatPage() {
   const [chats, setChats] = useState<Chat[]>(initialChats);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const { setIsMobileDetailActive } = useMobileDetailActive();
+  const { open: isSidebarOpen } = useSidebar(); // Get sidebar state
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768); // md breakpoint
@@ -27,14 +29,8 @@ export default function ChatPage() {
     if (isMobile) {
       setIsMobileDetailActive(!!selectedChatId);
     } else {
-      // If not mobile, this page doesn't assert mobile detail view state.
-      // It might be set by another page (e.g. TicketDetail) if the window is narrow but not "mobile".
-      // However, for clarity, if this page isn't in mobile mode, it shouldn't claim to be a mobile detail.
       setIsMobileDetailActive(false); 
     }
-    // The cleanup will be implicitly handled if selectedChatId changes or isMobile changes,
-    // re-evaluating the condition. If the component unmounts, the context provider remains,
-    // and the next page will set the state accordingly.
   }, [isMobile, selectedChatId, setIsMobileDetailActive]);
 
   const handleSelectChat = (chatId: string) => {
@@ -97,9 +93,17 @@ export default function ChatPage() {
 
   const selectedChat = chats.find((chat) => chat.id === selectedChatId);
 
+  const chatWindowContainerDesktopClasses = `h-full min-w-0 ${
+    isSidebarOpen
+      ? 'w-[calc(100vw-16rem-400px)]'
+      : 'w-[calc(100vw-3rem-400px)]' 
+  }`;
+  // Note: Used 3rem for collapsed sidebar width (standard icon width) instead of 50px for better consistency.
+  // And 400px for ChatList as per your example. If ChatList is 384px, adjust calc accordingly.
+
   if (isMobile) {
     return (
-      <div className="h-full flex flex-col w-full p-0"> {/* Changed w-screen to w-full */}
+      <div className="h-full flex flex-col w-full p-0">
         {!selectedChatId ? (
           <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
         ) : (
@@ -122,11 +126,11 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-full">
-      <div className="w-1/3 max-w-sm min-w-[400px] h-full border-r">
+    <div className="flex h-full w-full">
+      <div className="w-[384px] shrink-0 h-full border-r bg-card">
         <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
       </div>
-      <div className="flex-1 h-full"> {/* Removed w-screen, flex-1 handles width */}
+      <div className={chatWindowContainerDesktopClasses}> 
         <ChatWindow chat={selectedChat} onSendMessage={handleSendMessage} />
       </div>
     </div>
