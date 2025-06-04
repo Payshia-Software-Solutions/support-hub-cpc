@@ -1,8 +1,9 @@
 
 "use client";
 
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { dummyAnnouncements } from "@/lib/dummy-data";
+import { useAnnouncements } from "@/contexts/AnnouncementsContext";
 import type { Announcement } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -15,20 +16,32 @@ const categoryColors: Record<NonNullable<Announcement['category']>, string> = {
 };
 
 export default function AnnouncementsPage() {
-  const announcements = dummyAnnouncements.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const { announcements, markAnnouncementsAsRead } = useAnnouncements();
+
+  useEffect(() => {
+    markAnnouncementsAsRead();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Call only once on mount
+
+  const sortedAnnouncements = [...announcements].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <div className="p-0 md:p-6 space-y-6 h-full overflow-y-auto">
       <div className="p-4 md:p-0">
         <h1 className="text-2xl md:text-3xl font-headline font-semibold">Announcements</h1>
       </div>
-      {announcements.length > 0 ? (
+      {sortedAnnouncements.length > 0 ? (
         <div className="grid gap-6 px-4 md:px-0 pb-4 md:pb-0">
-          {announcements.map((announcement) => (
+          {sortedAnnouncements.map((announcement) => (
             <Card key={announcement.id} className="shadow-md hover:shadow-lg transition-shadow bg-card">
               <CardHeader>
                 <div className="flex justify-between items-start gap-2">
-                  <CardTitle className="text-lg md:text-xl">{announcement.title}</CardTitle>
+                  <div className="flex items-center">
+                    <CardTitle className="text-lg md:text-xl">{announcement.title}</CardTitle>
+                    {announcement.isNew && (
+                      <Badge variant="destructive" className="ml-2 text-xs px-1.5 py-0.5">New</Badge>
+                    )}
+                  </div>
                   {announcement.category && (
                     <Badge 
                       className={cn(
@@ -48,7 +61,6 @@ export default function AnnouncementsPage() {
               <CardContent>
                 <p className="text-sm text-card-foreground whitespace-pre-line">{announcement.content}</p>
               </CardContent>
-              {/* Optional CardFooter for actions or links if needed in the future */}
             </Card>
           ))}
         </div>

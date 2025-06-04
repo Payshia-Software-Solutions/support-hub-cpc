@@ -39,4 +39,5 @@ export interface Announcement {
   date: string; // ISO string or human-readable
   author?: string;
   category?: 'General' | 'Academic' | 'Events' | 'Urgent';
+  isNew?: boolean;
 }

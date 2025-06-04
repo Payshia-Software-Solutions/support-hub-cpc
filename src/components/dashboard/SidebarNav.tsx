@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { useAnnouncements } from "@/contexts/AnnouncementsContext";
 
 const navItems = [
   { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
@@ -26,6 +28,7 @@ const navItems = [
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { unreadCount: unreadAnnouncementsCount } = useAnnouncements();
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -44,19 +47,29 @@ export function SidebarNav() {
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href} passHref>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith(item.href)}
-                  tooltip={{ children: item.label, side: "right" }}
-                  className="justify-start"
-                >
-                  <span> {/* Span needed for asChild with Link */}
-                    <item.icon className="h-5 w-5" />
-                    <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                  </span>
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith(item.href)}
+                tooltip={{ children: item.label, side: "right" }}
+                className="justify-start"
+                onClick={() => {
+                  // This onClick is for the SidebarMenuButton itself if needed,
+                  // Link component handles navigation.
+                }}
+              >
+                <Link href={item.href}> {/* Use Link directly for navigation */}
+                  <item.icon className="h-5 w-5" />
+                  <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                  {item.href === "/dashboard/announcements" && unreadAnnouncementsCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="ml-auto h-5 px-1.5 text-xs group-data-[collapsible=icon]:hidden"
+                    >
+                      {unreadAnnouncementsCount}
+                    </Badge>
+                  )}
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
@@ -64,18 +77,16 @@ export function SidebarNav() {
       <SidebarFooter className="p-2 border-t">
         <SidebarMenu>
            <SidebarMenuItem>
-             <Link href="#" passHref>
-                <SidebarMenuButton
-                  asChild
-                  tooltip={{children: "Settings", side: "right"}}
-                  className="justify-start"
-                >
-                  <span>
-                    <Settings className="h-5 w-5" />
-                    <span className="group-data-[collapsible=icon]:hidden">Settings</span>
-                  </span>
-                </SidebarMenuButton>
-              </Link>
+             <SidebarMenuButton
+                asChild
+                tooltip={{children: "Settings", side: "right"}}
+                className="justify-start"
+              >
+                <Link href="#">
+                  <Settings className="h-5 w-5" />
+                  <span className="group-data-[collapsible=icon]:hidden">Settings</span>
+                </Link>
+              </SidebarMenuButton>
            </SidebarMenuItem>
            <SidebarMenuItem>
             <div className="flex items-center gap-3 p-2 group-data-[collapsible=icon]:justify-center">

@@ -97,6 +97,7 @@ export const dummyAnnouncements: Announcement[] = [
     date: '2024-07-28',
     author: 'IT Department',
     category: 'Urgent',
+    isNew: true,
   },
   {
     id: 'anno2',
@@ -105,6 +106,7 @@ export const dummyAnnouncements: Announcement[] = [
     date: '2024-07-27',
     author: 'Library Services',
     category: 'General',
+    isNew: true,
   },
   {
     id: 'anno3',
@@ -113,6 +115,7 @@ export const dummyAnnouncements: Announcement[] = [
     date: '2024-07-25',
     author: 'Faculty of Science',
     category: 'Events',
+    isNew: false,
   },
   {
     id: 'anno4',
@@ -121,5 +124,6 @@ export const dummyAnnouncements: Announcement[] = [
     date: '2024-07-24',
     author: 'Registrar\'s Office',
     category: 'Academic',
+    isNew: false,
   },
 ];
