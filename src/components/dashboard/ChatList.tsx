@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Chat } from "@/lib/types";
@@ -5,7 +6,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Search, PlusCircle } from "lucide-react";
 
 interface ChatListProps {
   chats: Chat[];
@@ -16,11 +19,19 @@ interface ChatListProps {
 export function ChatList({ chats, selectedChatId, onSelectChat }: ChatListProps) {
   return (
     <div className="flex flex-col h-full border-r bg-card">
-      <div className="p-4 border-b">
-        <div className="relative">
+      <div className="p-4 border-b flex items-center gap-2">
+        <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search chats..." className="pl-10 rounded-full" />
+          <Input placeholder="Search chats..." className="pl-10 rounded-full w-full" />
         </div>
+        <Link href="/dashboard/create-ticket" passHref legacyBehavior>
+          <Button asChild size="sm" variant="default" className="whitespace-nowrap shrink-0">
+            <a>
+              <PlusCircle className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">New Ticket</span>
+            </a>
+          </Button>
+        </Link>
       </div>
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
