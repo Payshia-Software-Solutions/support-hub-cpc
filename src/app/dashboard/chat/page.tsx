@@ -83,7 +83,7 @@ export default function ChatPage() {
 
   if (isMobile) {
     return (
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col w-screen">
         {!selectedChatId ? (
           <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
         ) : (
