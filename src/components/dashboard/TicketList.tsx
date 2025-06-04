@@ -29,8 +29,8 @@ export function TicketList({ tickets: initialTickets }: TicketListProps) {
 
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <div className="flex flex-col md:flex-row gap-2 md:gap-4 justify-between items-center sticky top-0 bg-background py-4 z-10 border-b -mx-4 md:-mx-6 px-4 md:px-6">
+    <div className="space-y-6 p-0 md:p-6">
+      <div className="flex flex-col md:flex-row gap-2 md:gap-4 justify-between items-center sticky top-0 bg-background py-4 z-10 border-b px-4 md:px-6">
         <h1 className="text-2xl font-headline font-semibold">Support Tickets</h1>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
            <div className="relative w-full md:w-auto">
@@ -68,16 +68,17 @@ export function TicketList({ tickets: initialTickets }: TicketListProps) {
       </div>
       
       {filteredTickets.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-0">
           {filteredTickets.map((ticket) => (
             <TicketListItem key={ticket.id} ticket={ticket} />
           ))}
         </div>
       ) : (
-        <div className="text-center py-10">
+        <div className="text-center py-10 px-4 md:px-0">
           <p className="text-muted-foreground text-lg">No tickets match your filters.</p>
         </div>
       )}
     </div>
   );
 }
+

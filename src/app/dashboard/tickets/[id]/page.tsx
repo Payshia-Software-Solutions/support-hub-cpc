@@ -33,7 +33,7 @@ export default function TicketDetailPage() {
 
   if (ticket === undefined) { 
     return (
-      <div className="p-6 space-y-4">
+      <div className="p-4 md:p-6 space-y-4">
         <Skeleton className="h-8 w-3/4" />
         <Skeleton className="h-4 w-1/2" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
@@ -48,7 +48,7 @@ export default function TicketDetailPage() {
 
   if (!ticket) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+      <div className="flex flex-col items-center justify-center h-full p-4 md:p-6 text-center">
         <h1 className="text-2xl font-bold mb-4">Ticket Not Found</h1>
         <p className="text-muted-foreground mb-6">
           The ticket with ID "{ticketId}" could not be found.
@@ -67,7 +67,7 @@ export default function TicketDetailPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {isMobile && (
-        <div className="p-2 border-b bg-card sticky top-0 z-20"> {/* Higher z-index for mobile header */}
+        <div className="px-4 py-2 border-b bg-card sticky top-0 z-20"> {/* Higher z-index for mobile header */}
           <Button
             variant="ghost"
             onClick={() => router.push("/dashboard/tickets")}
@@ -82,3 +82,4 @@ export default function TicketDetailPage() {
     </div>
   );
 }
+

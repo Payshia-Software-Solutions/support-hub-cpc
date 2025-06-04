@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -93,7 +94,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
   return (
     <div className="flex flex-col lg:flex-row h-full max-h-screen overflow-hidden">
       {/* Ticket Info Panel */}
-      <div className="lg:w-1/3 lg:border-r bg-card overflow-y-auto p-4 md:p-6">
+      <div className="lg:w-1/3 lg:border-r bg-card overflow-y-auto p-4">
         <CardHeader className="px-0 pt-0">
           <CardTitle className="text-2xl font-headline">{ticket.subject}</CardTitle>
           <CardDescription>Ticket ID: {ticket.id}</CardDescription>
@@ -145,12 +146,12 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
 
       {/* Chat/Messages Panel */}
       <div className="flex-1 flex flex-col bg-background overflow-hidden">
-        <header className="p-4 border-b bg-card flex items-center gap-3 sticky top-0 z-10">
+        <header className="px-4 py-3 border-b bg-card flex items-center gap-3 sticky top-0 z-10">
           <MessageSquareIcon className="w-6 h-6 text-primary" />
           <h2 className="font-semibold text-lg">Ticket Discussion</h2>
         </header>
         
-        <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+        <ScrollArea className="flex-1 px-4 py-4" ref={scrollAreaRef}>
           <div className="space-y-6">
             {ticket.messages.map((message) => (
               <div
@@ -188,7 +189,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
           </div>
         </ScrollArea>
 
-        <footer className="p-4 border-t bg-card sticky bottom-0 z-10">
+        <footer className="px-4 py-3 border-t bg-card sticky bottom-0 z-10">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="text-muted-foreground">
               <Paperclip className="h-5 w-5" />
@@ -234,3 +235,4 @@ function MessageSquareIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   )
 }
+
