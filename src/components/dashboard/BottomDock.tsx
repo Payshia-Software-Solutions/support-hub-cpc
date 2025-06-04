@@ -7,6 +7,7 @@ import { MessageSquare, Ticket, PlusCircle, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useAnnouncements } from "@/contexts/AnnouncementsContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const navItems = [
   { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
@@ -18,6 +19,15 @@ const navItems = [
 export function BottomDock() {
   const pathname = usePathname();
   const { unreadCount: unreadAnnouncementsCount } = useAnnouncements();
+  const isMobile = useIsMobile();
+
+  // Conditions to hide the BottomDock on specific mobile pages
+  const isChatPageOnMobile = isMobile && pathname === "/dashboard/chat";
+  const isTicketDetailPageOnMobile = isMobile && pathname.startsWith('/dashboard/tickets/') && pathname.split('/').length > 3;
+
+  if (isChatPageOnMobile || isTicketDetailPageOnMobile) {
+    return null; // Do not render the dock on these pages in mobile view
+  }
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-[0_-2px_10px_-3px_rgba(0,0,0,0.1)]">
