@@ -4,7 +4,7 @@ export const dummyChats: Chat[] = [
   {
     id: 'chat1',
     userName: 'Student Alice',
-    userAvatar: 'https://placehold.co/100x100.png',
+    userAvatar: 'https://images.unsplash.com/photo-1740989475605-355ada18c3fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxhdmF0YXIlMjBwZXJzb258ZW58MHx8fHwxNzQ5MDU0Mzg0fDA&ixlib=rb-4.1.0&q=80&w=1080',
     messages: [
       { id: 'm1-1', from: 'student', text: 'Hi there! I need some help with my account.', time: '10:00 AM', avatar: 'https://placehold.co/40x40.png' },
       { id: 'm1-2', from: 'staff', text: 'Hello Alice! I can help with that. What seems to be the problem?', time: '10:01 AM', avatar: 'https://placehold.co/40x40.png' },
@@ -17,7 +17,7 @@ export const dummyChats: Chat[] = [
   {
     id: 'chat2',
     userName: 'Student Bob',
-    userAvatar: 'https://placehold.co/100x100.png',
+    userAvatar: 'https://images.unsplash.com/photo-1621398945253-00498f153e4b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhdmF0YXIlMjBwZXJzb258ZW58MHx8fHwxNzQ5MDU0Mzg0fDA&ixlib=rb-4.1.0&q=80&w=1080',
     messages: [
       { id: 'm2-1', from: 'student', text: 'Good morning, I have a question about the library hours.', time: '11:30 AM', avatar: 'https://placehold.co/40x40.png' },
       { id: 'm2-2', from: 'staff', text: 'Hi Bob, the library is open from 9 AM to 8 PM on weekdays.', time: '11:31 AM', avatar: 'https://placehold.co/40x40.png' },
@@ -28,7 +28,7 @@ export const dummyChats: Chat[] = [
   {
     id: 'chat3',
     userName: 'Student Carol',
-    userAvatar: 'https://placehold.co/100x100.png',
+    userAvatar: 'https://images.unsplash.com/photo-1621398945253-00498f153e4b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhdmF0YXIlMjBwZXJzb258ZW58MHx8fHwxNzQ5MDU0Mzg0fDA&ixlib=rb-4.1.0&q=80&w=1080',
     messages: [
       { id: 'm3-1', from: 'student', text: 'Is the deadline for the MATH101 assignment extended?', time: 'Yesterday', avatar: 'https://placehold.co/40x40.png' },
     ],
