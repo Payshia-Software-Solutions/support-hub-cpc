@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 
 export default function TicketDetailPage() {
   const router = useRouter();
@@ -19,6 +20,20 @@ export default function TicketDetailPage() {
   const [tickets, setTickets] = useState<Ticket[]>(initialDummyTickets);
   const [ticket, setTicket] = useState<Ticket | null | undefined>(undefined); 
   const isMobile = useIsMobile();
+  const { setIsMobileDetailActive } = useMobileDetailActive();
+
+  useEffect(() => {
+    if (isMobile) {
+      setIsMobileDetailActive(true);
+      // Cleanup function for when the component unmounts or `isMobile` changes
+      return () => {
+        setIsMobileDetailActive(false);
+      };
+    } else {
+      // If not mobile, ensure this page doesn't incorrectly flag as mobile detail active
+      setIsMobileDetailActive(false);
+    }
+  }, [isMobile, setIsMobileDetailActive]);
 
   useEffect(() => {
     const foundTicket = tickets.find((t) => t.id === ticketId);
@@ -67,7 +82,7 @@ export default function TicketDetailPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {isMobile && (
-        <div className="px-4 py-2 border-b bg-card sticky top-0 z-20"> {/* Higher z-index for mobile header */}
+        <div className="px-4 py-2 border-b bg-card sticky top-0 z-20">
           <Button
             variant="ghost"
             onClick={() => router.push("/dashboard/tickets")}
@@ -82,4 +97,3 @@ export default function TicketDetailPage() {
     </div>
   );
 }
-

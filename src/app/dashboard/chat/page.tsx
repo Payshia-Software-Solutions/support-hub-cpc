@@ -8,11 +8,13 @@ import { dummyChats as initialChats } from "@/lib/dummy-data";
 import type { Chat, Message } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 
 export default function ChatPage() {
   const [chats, setChats] = useState<Chat[]>(initialChats);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const { setIsMobileDetailActive } = useMobileDetailActive();
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768); // md breakpoint
@@ -20,6 +22,20 @@ export default function ChatPage() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (isMobile) {
+      setIsMobileDetailActive(!!selectedChatId);
+    } else {
+      // If not mobile, this page doesn't assert mobile detail view state.
+      // It might be set by another page (e.g. TicketDetail) if the window is narrow but not "mobile".
+      // However, for clarity, if this page isn't in mobile mode, it shouldn't claim to be a mobile detail.
+      setIsMobileDetailActive(false); 
+    }
+    // The cleanup will be implicitly handled if selectedChatId changes or isMobile changes,
+    // re-evaluating the condition. If the component unmounts, the context provider remains,
+    // and the next page will set the state accordingly.
+  }, [isMobile, selectedChatId, setIsMobileDetailActive]);
 
   const handleSelectChat = (chatId: string) => {
     setSelectedChatId(chatId);
@@ -83,7 +99,7 @@ export default function ChatPage() {
 
   if (isMobile) {
     return (
-      <div className="h-full flex flex-col w-screen">
+      <div className="h-full flex flex-col w-screen p-0">
         {!selectedChatId ? (
           <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
         ) : (

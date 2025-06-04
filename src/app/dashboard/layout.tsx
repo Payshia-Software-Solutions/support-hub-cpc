@@ -4,6 +4,7 @@ import { SidebarNav } from "@/components/dashboard/SidebarNav";
 import { MobileHeader } from "@/components/dashboard/MobileHeader";
 import { BottomDock } from "@/components/dashboard/BottomDock";
 import { AnnouncementsProvider } from "@/contexts/AnnouncementsContext";
+import { MobileDetailActiveProvider } from '@/contexts/MobileDetailActiveContext';
 
 export default function DashboardLayout({
   children,
@@ -11,19 +12,21 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AnnouncementsProvider>
-      <SidebarProvider defaultOpen>
-        <div className="flex flex-col h-screen"> 
-          <MobileHeader />
-          <div className="flex flex-1 overflow-hidden">
-            <SidebarNav />
-            <SidebarInset className="flex-1 overflow-y-auto bg-background pb-16 md:pb-0">           
-              {children}
-            </SidebarInset>
+    <MobileDetailActiveProvider>
+      <AnnouncementsProvider>
+        <SidebarProvider defaultOpen>
+          <div className="flex flex-col h-screen"> 
+            <MobileHeader />
+            <div className="flex flex-1 overflow-hidden">
+              <SidebarNav />
+              <SidebarInset className="flex-1 overflow-y-auto bg-background pb-16 md:pb-0">           
+                {children}
+              </SidebarInset>
+            </div>
+            <BottomDock />
           </div>
-          <BottomDock />
-        </div>
-      </SidebarProvider>
-    </AnnouncementsProvider>
+        </SidebarProvider>
+      </AnnouncementsProvider>
+    </MobileDetailActiveProvider>
   );
 }
