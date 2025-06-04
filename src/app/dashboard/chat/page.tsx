@@ -103,7 +103,7 @@ export default function ChatPage() {
 
   if (isMobile) {
     return (
-      <div className="h-full flex flex-col w-full p-0">
+      <div className="h-full flex flex-col w-screen p-0">
         {!selectedChatId ? (
           <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
         ) : (
@@ -127,7 +127,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-full w-full">
-      <div className="w-[384px] shrink-0 h-full border-r bg-card">
+      <div className="w-[400px] shrink-0 h-full border-r bg-card">
         <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
       </div>
       <div className={chatWindowContainerDesktopClasses}> 
