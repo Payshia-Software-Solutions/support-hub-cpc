@@ -193,7 +193,7 @@ const Sidebar = React.forwardRef<
             data-sidebar="sidebar"
             data-mobile="true"
             className={cn(
-              "w-full bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
+              "w-full bg-sidebar p-0 text-sidebar-foreground", // Removed [&>button]:hidden
               className
             )}
             style={
@@ -529,8 +529,10 @@ const sidebarMenuButtonVariants = cva(
 )
 
 const SidebarMenuButton = React.forwardRef<
-  HTMLButtonElement,
-  React.ComponentProps<"button"> & {
+  HTMLButtonElement, // Changed from HTMLAnchorElement as it might not always be an anchor
+  React.ButtonHTMLAttributes<HTMLButtonElement> & // Using ButtonHTMLAttributes
+  React.AnchorHTMLAttributes<HTMLAnchorElement> & // Including AnchorHTMLAttributes for when asChild results in an anchor
+  {
     asChild?: boolean
     isActive?: boolean
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
@@ -545,7 +547,8 @@ const SidebarMenuButton = React.forwardRef<
       tooltip,
       className,
       children,
-      ...props // Contains Link's onClick and href if passHref is used
+      onClick: propOnClick, // Renamed to avoid conflict in destructuring
+      ...props
     },
     ref
   ) => {
@@ -554,10 +557,10 @@ const SidebarMenuButton = React.forwardRef<
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
       if (isMobile && openMobile) {
-        setOpenMobile(false); // Close sidebar first
+        setOpenMobile(false); 
       }
-      if (props.onClick) { // Then, execute the Link's navigation onClick (or any other onClick)
-        props.onClick(event);
+      if (propOnClick) { 
+        propOnClick(event);
       }
     };
 
@@ -568,8 +571,8 @@ const SidebarMenuButton = React.forwardRef<
         data-size={size}
         data-active={isActive}
         className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
-        onClick={handleClick} // Apply our combined click handler
-        {...props} // Spread rest of props (e.g., href from Link)
+        onClick={handleClick} 
+        {...props} 
       >
         {children}
       </Comp>
@@ -767,3 +770,4 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+
