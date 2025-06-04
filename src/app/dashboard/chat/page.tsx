@@ -15,7 +15,7 @@ export default function ChatPage() {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => setIsMobile(window.innerWidth < 768); // md breakpoint
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -23,7 +23,6 @@ export default function ChatPage() {
 
   const handleSelectChat = (chatId: string) => {
     setSelectedChatId(chatId);
-    // Mark messages as read (visual only for now)
     setChats(prevChats => 
       prevChats.map(c => 
         c.id === chatId ? { ...c, unreadCount: 0 } : c
@@ -34,10 +33,10 @@ export default function ChatPage() {
   const handleSendMessage = (chatId: string, messageText: string) => {
     const newMessage: Message = {
       id: `msg-${Date.now()}`,
-      from: "student", // Assuming the current user is a student
+      from: "student",
       text: messageText,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      avatar: chats.find(c => c.id === chatId)?.userAvatar // Student avatar
+      avatar: chats.find(c => c.id === chatId)?.userAvatar
     };
 
     setChats((prevChats) =>
@@ -55,14 +54,13 @@ export default function ChatPage() {
       })
     );
 
-    // Simulate staff reply after a short delay
     setTimeout(() => {
       const staffReply: Message = {
         id: `msg-${Date.now() + 1}`,
         from: "staff",
         text: "Thanks for your message! We'll get back to you shortly.",
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        avatar: "https://placehold.co/40x40.png" // Generic staff avatar
+        avatar: "https://placehold.co/40x40.png"
       };
       setChats((prevChats) =>
         prevChats.map((chat) => {
@@ -90,7 +88,8 @@ export default function ChatPage() {
           <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
         ) : (
           <>
-            <div className="p-2 border-b bg-card sticky top-0 z-10">
+            {/* This local header is sticky *within* the ChatPage's scroll context, below the global MobileHeader */}
+            <div className="p-2 border-b bg-card sticky top-0 z-20"> 
               <Button 
                 variant="ghost"
                 onClick={() => setSelectedChatId(null)} 
