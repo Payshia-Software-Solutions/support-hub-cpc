@@ -7,9 +7,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import { Paperclip, SendHorizonal, Smile } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
 
 interface ChatWindowProps {
   chat: Chat | null;
@@ -19,7 +20,7 @@ interface ChatWindowProps {
 export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
   const [newMessage, setNewMessage] = useState("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -35,15 +36,13 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
     if (newMessage.trim() && chat) {
       onSendMessage(chat.id, newMessage.trim());
       setNewMessage("");
-      console.log(`Message sent to ${chat.userName}: ${newMessage.trim()}`);
+      inputRef.current?.focus();
     }
   };
 
-  const handleEmojiButtonClick = () => {
-    toast({
-      title: "Emoji Picker",
-      description: "Emoji selection functionality would be integrated here.",
-    });
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    setNewMessage((prevMessage) => prevMessage + emojiData.emoji);
+    inputRef.current?.focus();
   };
 
   if (!chat) {
@@ -56,7 +55,6 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
     );
   }
   
-  // Fallback avatar for staff if not provided in message
   const staffAvatar = "https://placehold.co/40x40.png";
 
   return (
@@ -76,7 +74,7 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
         <div className="space-y-4">
           {chat.messages.map((message, index) => (
             <div
-              key={message.id || index} // Fallback to index if id is missing for some reason
+              key={message.id || index} 
               className={cn(
                 "flex items-end gap-2 max-w-[75%]",
                 message.from === "student" ? "ml-auto flex-row-reverse" : "mr-auto"
@@ -112,13 +110,26 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
 
       <footer className="p-4 border-t bg-card sticky bottom-0 z-10">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={handleEmojiButtonClick}>
-            <Smile className="h-5 w-5" />
-          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-muted-foreground">
+                <Smile className="h-5 w-5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 border-0 bg-transparent shadow-none">
+              <EmojiPicker 
+                onEmojiClick={handleEmojiClick}
+                height={350}
+                width="100%"
+                lazyLoadEmojis={true}
+              />
+            </PopoverContent>
+          </Popover>
           <Button variant="ghost" size="icon" className="text-muted-foreground">
             <Paperclip className="h-5 w-5" />
           </Button>
           <Input
+            ref={inputRef}
             type="text"
             placeholder="Type a message..."
             value={newMessage}
