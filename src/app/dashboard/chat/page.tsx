@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -5,6 +6,8 @@ import { ChatList } from "@/components/dashboard/ChatList";
 import { ChatWindow } from "@/components/dashboard/ChatWindow";
 import { dummyChats as initialChats } from "@/lib/dummy-data";
 import type { Chat, Message } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 export default function ChatPage() {
   const [chats, setChats] = useState<Chat[]>(initialChats);
@@ -87,12 +90,16 @@ export default function ChatPage() {
           <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
         ) : (
           <>
-            <button 
-              onClick={() => setSelectedChatId(null)} 
-              className="p-2 bg-primary text-primary-foreground text-sm"
-            >
-              &larr; Back to Chats
-            </button>
+            <div className="p-2 border-b bg-card sticky top-0 z-10">
+              <Button 
+                variant="ghost"
+                onClick={() => setSelectedChatId(null)} 
+                className="text-sm w-full justify-start"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Chats
+              </Button>
+            </div>
             <ChatWindow chat={selectedChat} onSendMessage={handleSendMessage} />
           </>
         )}

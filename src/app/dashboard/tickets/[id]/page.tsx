@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -6,15 +7,18 @@ import { TicketDetailClient } from "@/components/dashboard/TicketDetailClient";
 import { dummyTickets as initialDummyTickets } from "@/lib/dummy-data";
 import type { Ticket } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 export default function TicketDetailPage() {
   const router = useRouter();
   const params = useParams();
   const ticketId = params.id as string;
 
-  // Use state to manage tickets data, simulating a mutable data store
   const [tickets, setTickets] = useState<Ticket[]>(initialDummyTickets);
-  const [ticket, setTicket] = useState<Ticket | null | undefined>(undefined); // undefined for loading, null for not found
+  const [ticket, setTicket] = useState<Ticket | null | undefined>(undefined); 
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const foundTicket = tickets.find((t) => t.id === ticketId);
@@ -25,11 +29,9 @@ export default function TicketDetailPage() {
     setTickets(prevTickets => 
       prevTickets.map(t => t.id === updatedTicket.id ? updatedTicket : t)
     );
-    // The local 'ticket' state for this page will be updated by the useEffect above
-    // or directly if preferred: setTicket(updatedTicket);
   };
 
-  if (ticket === undefined) { // Loading state
+  if (ticket === undefined) { 
     return (
       <div className="p-6 space-y-4">
         <Skeleton className="h-8 w-3/4" />
@@ -51,18 +53,31 @@ export default function TicketDetailPage() {
         <p className="text-muted-foreground mb-6">
           The ticket with ID "{ticketId}" could not be found.
         </p>
-        <button
+        <Button
           onClick={() => router.push("/dashboard/tickets")}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          variant="default"
         >
+          <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Tickets
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="h-full overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden">
+      {isMobile && (
+        <div className="p-2 border-b bg-card sticky top-0 z-20"> {/* Higher z-index for mobile header */}
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/dashboard/tickets")}
+            className="text-sm w-full justify-start"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Tickets List
+          </Button>
+        </div>
+      )}
       <TicketDetailClient initialTicket={ticket} onUpdateTicket={handleUpdateTicket} />
     </div>
   );
