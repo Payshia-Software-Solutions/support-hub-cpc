@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -8,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Paperclip, SendHorizonal, Smile } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatWindowProps {
   chat: Chat | null;
@@ -17,6 +19,7 @@ interface ChatWindowProps {
 export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
   const [newMessage, setNewMessage] = useState("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -34,6 +37,13 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
       setNewMessage("");
       console.log(`Message sent to ${chat.userName}: ${newMessage.trim()}`);
     }
+  };
+
+  const handleEmojiButtonClick = () => {
+    toast({
+      title: "Emoji Picker",
+      description: "Emoji selection functionality would be integrated here.",
+    });
   };
 
   if (!chat) {
@@ -102,7 +112,7 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
 
       <footer className="p-4 border-t bg-card sticky bottom-0 z-10">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="text-muted-foreground">
+          <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={handleEmojiButtonClick}>
             <Smile className="h-5 w-5" />
           </Button>
           <Button variant="ghost" size="icon" className="text-muted-foreground">
