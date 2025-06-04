@@ -545,19 +545,19 @@ const SidebarMenuButton = React.forwardRef<
       tooltip,
       className,
       children,
-      ...props
+      ...props // Contains Link's onClick and href if passHref is used
     },
     ref
   ) => {
     const Comp = asChild ? Slot : "button"
-    const { isMobile, state, setOpenMobile, openMobile } = useSidebar()
+    const { isMobile, openMobile, setOpenMobile, state: desktopSidebarState } = useSidebar()
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-      if (props.onClick) {
-        props.onClick(event);
-      }
       if (isMobile && openMobile) {
-        setOpenMobile(false); 
+        setOpenMobile(false); // Close sidebar first
+      }
+      if (props.onClick) { // Then, execute the Link's navigation onClick (or any other onClick)
+        props.onClick(event);
       }
     };
 
@@ -568,8 +568,8 @@ const SidebarMenuButton = React.forwardRef<
         data-size={size}
         data-active={isActive}
         className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
-        onClick={handleClick}
-        {...props}
+        onClick={handleClick} // Apply our combined click handler
+        {...props} // Spread rest of props (e.g., href from Link)
       >
         {children}
       </Comp>
@@ -591,7 +591,7 @@ const SidebarMenuButton = React.forwardRef<
         <TooltipContent
           side="right"
           align="center"
-          hidden={state !== "collapsed" || isMobile}
+          hidden={desktopSidebarState !== "collapsed" || isMobile}
           {...tooltip}
         />
       </Tooltip>
