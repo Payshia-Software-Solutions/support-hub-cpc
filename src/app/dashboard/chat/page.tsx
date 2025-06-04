@@ -88,7 +88,6 @@ export default function ChatPage() {
           <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
         ) : (
           <>
-            {/* This local header is sticky *within* the ChatPage's scroll context, below the global MobileHeader */}
             <div className="p-2 border-b bg-card sticky top-0 z-20"> 
               <Button 
                 variant="ghost"
@@ -108,7 +107,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-full">
-      <div className="w-1/3 max-w-sm min-w-[300px] h-full">
+      <div className="w-1/3 max-w-sm min-w-[300px] h-full border-r">
         <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
       </div>
       <div className="flex-1 h-full">

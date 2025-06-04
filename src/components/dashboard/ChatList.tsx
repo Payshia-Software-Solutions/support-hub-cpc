@@ -18,7 +18,7 @@ interface ChatListProps {
 
 export function ChatList({ chats, selectedChatId, onSelectChat }: ChatListProps) {
   return (
-    <div className="flex flex-col h-full border-r bg-card">
+    <div className="flex flex-col h-full bg-card">
       <div className="p-4 border-b flex items-center gap-2">
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
