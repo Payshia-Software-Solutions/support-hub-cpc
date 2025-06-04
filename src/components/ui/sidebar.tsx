@@ -193,7 +193,7 @@ const Sidebar = React.forwardRef<
             data-sidebar="sidebar"
             data-mobile="true"
             className={cn(
-              "w-full bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden", // Ensure the close button from SheetContent is hidden if not desired
+              "w-full bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
               className
             )}
             style={
@@ -544,20 +544,20 @@ const SidebarMenuButton = React.forwardRef<
       size = "default",
       tooltip,
       className,
-      children, // Added children to props destructuring
+      children,
       ...props
     },
     ref
   ) => {
     const Comp = asChild ? Slot : "button"
-    const { isMobile, state, setOpenMobile, openMobile } = useSidebar() // Added setOpenMobile and openMobile
+    const { isMobile, state, setOpenMobile, openMobile } = useSidebar()
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
       if (props.onClick) {
         props.onClick(event);
       }
       if (isMobile && openMobile) {
-        setOpenMobile(false); // Close mobile sidebar on item click
+        setOpenMobile(false); 
       }
     };
 
@@ -568,7 +568,7 @@ const SidebarMenuButton = React.forwardRef<
         data-size={size}
         data-active={isActive}
         className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
-        onClick={handleClick} // Use the new handleClick
+        onClick={handleClick}
         {...props}
       >
         {children}
@@ -767,4 +767,3 @@ export {
   SidebarTrigger,
   useSidebar,
 }
-
