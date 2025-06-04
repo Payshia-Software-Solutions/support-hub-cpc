@@ -3,12 +3,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Ticket, PlusCircle } from "lucide-react";
+import { MessageSquare, Ticket, PlusCircle, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
+  { href: "/dashboard/announcements", label: "Alerts", icon: Megaphone }, // Shortened label for space
   { href: "/dashboard/create-ticket", label: "New Ticket", icon: PlusCircle },
 ];
 
@@ -20,18 +21,21 @@ export function BottomDock() {
       <div className="flex justify-around items-stretch h-16">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/dashboard/chat" && pathname.startsWith(item.href));
+          // Special case for create-ticket to only be active on exact match
+          const isCreateTicketActive = item.href === "/dashboard/create-ticket" ? pathname === item.href : isActive;
+
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
                 "flex flex-col items-center justify-center text-xs w-full p-1 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 focus:ring-offset-card rounded-sm",
-                isActive
+                isCreateTicketActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <item.icon className={cn("h-5 w-5 mb-0.5", isActive ? "stroke-[2.25px]" : "stroke-[1.75px]")} />
+              <item.icon className={cn("h-5 w-5 mb-0.5", isCreateTicketActive ? "stroke-[2.25px]" : "stroke-[1.75px]")} />
               <span>{item.label}</span>
             </Link>
           );

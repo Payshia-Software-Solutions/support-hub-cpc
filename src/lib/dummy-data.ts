@@ -1,4 +1,4 @@
-import type { Chat, Ticket } from './types';
+import type { Chat, Ticket, Announcement } from './types';
 
 export const dummyChats: Chat[] = [
   {
@@ -86,5 +86,40 @@ export const dummyTickets: Ticket[] = [
       { id: 't3-m3', from: 'student', text: 'Yes, it works now! Thank you so much.', time: '11:20 AM', avatar: 'https://placehold.co/40x40.png' },
       { id: 't3-m4', from: 'staff', text: 'You\'re welcome! Glad we could help.', time: '11:21 AM', avatar: 'https://placehold.co/40x40.png' },
     ],
+  },
+];
+
+export const dummyAnnouncements: Announcement[] = [
+  {
+    id: 'anno1',
+    title: 'Upcoming System Maintenance',
+    content: 'Please be advised that there will be a system maintenance on July 30th, from 2 AM to 4 AM. Access to the portal might be intermittent during this period. We apologize for any inconvenience.',
+    date: '2024-07-28',
+    author: 'IT Department',
+    category: 'Urgent',
+  },
+  {
+    id: 'anno2',
+    title: 'New Library Study Rooms Available',
+    content: 'We are pleased to announce the opening of 5 new group study rooms on the 3rd floor of the main library. Rooms can be booked online via the library portal.',
+    date: '2024-07-27',
+    author: 'Library Services',
+    category: 'General',
+  },
+  {
+    id: 'anno3',
+    title: 'Guest Lecture: AI in Modern Science',
+    content: 'Join us for an exciting guest lecture by Dr. Evelyn Reed on "The Impact of Artificial Intelligence in Modern Scientific Research". Event will be held on August 5th at 3 PM in the Grand Auditorium. Seats are limited.',
+    date: '2024-07-25',
+    author: 'Faculty of Science',
+    category: 'Events',
+  },
+  {
+    id: 'anno4',
+    title: 'Reminder: Course Add/Drop Deadline',
+    content: 'This is a friendly reminder that the deadline to add or drop courses for the current semester is July 31st. Please make any necessary changes to your schedule before this date.',
+    date: '2024-07-24',
+    author: 'Registrar\'s Office',
+    category: 'Academic',
   },
 ];

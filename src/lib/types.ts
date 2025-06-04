@@ -22,12 +22,21 @@ export type TicketPriority = 'Low' | 'Medium' | 'High';
 export interface Ticket {
   id: string;
   subject: string;
-  description: string; 
+  description: string;
   priority: TicketPriority;
   status: TicketStatus;
-  createdAt: string; 
+  createdAt: string;
   updatedAt?: string;
-  studentName: string; 
+  studentName: string;
   studentAvatar: string;
   messages: Message[];
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  date: string; // ISO string or human-readable
+  author?: string;
+  category?: 'General' | 'Academic' | 'Events' | 'Urgent';
 }
