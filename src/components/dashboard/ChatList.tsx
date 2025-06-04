@@ -16,6 +16,16 @@ interface ChatListProps {
   onSelectChat: (chatId: string) => void;
 }
 
+const MAX_PREVIEW_LENGTH = 35;
+
+function truncateText(text: string | undefined, maxLength: number): string {
+  if (!text) return "";
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return text.substring(0, maxLength) + "...";
+}
+
 export function ChatList({ chats, selectedChatId, onSelectChat }: ChatListProps) {
   return (
     <div className="flex flex-col h-full bg-card">     
@@ -55,7 +65,7 @@ export function ChatList({ chats, selectedChatId, onSelectChat }: ChatListProps)
                 </div>
                 <div className="flex justify-between items-center mt-1">
                   <p className="text-xs text-muted-foreground truncate">
-                    {chat.lastMessagePreview}
+                    {truncateText(chat.lastMessagePreview, MAX_PREVIEW_LENGTH)}
                   </p>
                   {chat.unreadCount && chat.unreadCount > 0 && (
                     <Badge variant="default" className="h-5 px-2 text-xs">
@@ -71,3 +81,4 @@ export function ChatList({ chats, selectedChatId, onSelectChat }: ChatListProps)
     </div>
   );
 }
+
