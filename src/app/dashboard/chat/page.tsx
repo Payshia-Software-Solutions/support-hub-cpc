@@ -99,7 +99,7 @@ export default function ChatPage() {
 
   if (isMobile) {
     return (
-      <div className="h-full flex flex-col w-screen p-0">
+      <div className="h-full flex flex-col w-full p-0"> {/* Changed w-screen to w-full */}
         {!selectedChatId ? (
           <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
         ) : (
@@ -126,7 +126,7 @@ export default function ChatPage() {
       <div className="w-1/3 max-w-sm min-w-[400px] h-full border-r">
         <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
       </div>
-      <div className="flex-1 w-full h-full">
+      <div className="flex-1 h-full"> {/* Removed w-screen, flex-1 handles width */}
         <ChatWindow chat={selectedChat} onSendMessage={handleSendMessage} />
       </div>
     </div>

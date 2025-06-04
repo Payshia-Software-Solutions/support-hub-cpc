@@ -50,7 +50,7 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
   const staffAvatar = "https://placehold.co/40x40.png";
 
   return (
-    <div className="flex w-full flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-background">
       <header className="p-4 border-b bg-card flex items-center gap-3 sticky top-0 z-10">
         <Avatar className="h-10 w-10">
           <AvatarImage src={chat.userAvatar} alt={chat.userName} data-ai-hint="avatar person" />
