@@ -2,25 +2,30 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { Chat, Message } from "@/lib/types";
+import type { Chat, Message, Attachment } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
-import { Paperclip, SendHorizonal, Smile } from "lucide-react";
+import { Paperclip, SendHorizonal, Smile, FileText, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image"; // For displaying image attachments
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatWindowProps {
   chat: Chat | null;
-  onSendMessage: (chatId: string, messageText: string) => void;
+  onSendMessage: (chatId: string, messageText: string, attachment?: Attachment) => void;
 }
 
 export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
   const [newMessage, setNewMessage] = useState("");
+  const [stagedAttachment, setStagedAttachment] = useState<Attachment | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -32,10 +37,20 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
     }
   }, [chat?.messages]);
 
+  useEffect(() => {
+    // Clear staged attachment when chat changes
+    setStagedAttachment(null);
+    setNewMessage("");
+  }, [chat?.id]);
+
   const handleSendMessage = () => {
-    if (newMessage.trim() && chat) {
-      onSendMessage(chat.id, newMessage.trim());
+    if ((newMessage.trim() || stagedAttachment) && chat) {
+      onSendMessage(chat.id, newMessage.trim(), stagedAttachment || undefined);
       setNewMessage("");
+      setStagedAttachment(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""; // Reset file input
+      }
       inputRef.current?.focus();
     }
   };
@@ -43,6 +58,56 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     setNewMessage((prevMessage) => prevMessage + emojiData.emoji);
     inputRef.current?.focus();
+  };
+
+  const handleAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const fileName = file.name;
+      const fileType = file.type;
+
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit placeholder
+        toast({
+          variant: "destructive",
+          title: "File too large",
+          description: "Please select a file smaller than 5MB.",
+        });
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+
+      if (fileType.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setStagedAttachment({
+            type: "image",
+            url: reader.result as string, // Data URL for preview
+            name: fileName,
+            file: file,
+          });
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // For non-image files, store basic info. URL could be a placeholder or handled on upload.
+        setStagedAttachment({
+          type: "document",
+          url: "", // Placeholder, actual URL would come from upload
+          name: fileName,
+          file: file,
+        });
+      }
+    }
+  };
+
+  const removeStagedAttachment = () => {
+    setStagedAttachment(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; // Reset file input
+    }
   };
 
   if (!chat) {
@@ -98,7 +163,25 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
                     : "bg-card border rounded-bl-none" 
                 )}
               >
-                <p className="text-sm">{message.text}</p>
+                {message.attachment?.type === 'image' && message.attachment.url && (
+                  <div className="mb-2">
+                    <Image 
+                      src={message.attachment.url} 
+                      alt={message.attachment.name} 
+                      width={200} 
+                      height={200} 
+                      className="rounded-md object-cover"
+                      data-ai-hint="attached image"
+                    />
+                  </div>
+                )}
+                {message.attachment?.type === 'document' && (
+                  <div className="mb-2 p-2 bg-secondary rounded-md flex items-center gap-2">
+                    <FileText className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-sm text-secondary-foreground truncate">{message.attachment.name}</span>
+                  </div>
+                )}
+                {message.text && <p className="text-sm">{message.text}</p>}
                 <p className="text-xs mt-1 text-right opacity-70">
                   {message.time}
                 </p>
@@ -109,6 +192,21 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
       </ScrollArea>
 
       <footer className="p-4 border-t bg-card sticky bottom-0 z-10">
+        {stagedAttachment && (
+          <div className="mb-2 p-2 border rounded-md flex items-center justify-between bg-muted/50">
+            <div className="flex items-center gap-2 truncate">
+              {stagedAttachment.type === 'image' ? (
+                <Image src={stagedAttachment.url} alt={stagedAttachment.name} width={32} height={32} className="rounded object-cover" data-ai-hint="image preview"/>
+              ) : (
+                <FileText className="h-6 w-6 text-muted-foreground" />
+              )}
+              <span className="text-sm text-muted-foreground truncate">{stagedAttachment.name}</span>
+            </div>
+            <Button variant="ghost" size="icon" onClick={removeStagedAttachment} className="text-destructive hover:text-destructive">
+              <XCircle className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
@@ -125,17 +223,26 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
               />
             </PopoverContent>
           </Popover>
-          <Button variant="ghost" size="icon" className="text-muted-foreground">
+          <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={handleAttachmentClick}>
             <Paperclip className="h-5 w-5" />
           </Button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileSelect} 
+            className="hidden"
+            // Consider adding 'accept' attribute for specific file types:
+            // accept="image/*,application/pdf,.doc,.docx,.txt" 
+          />
           <Input
             ref={inputRef}
             type="text"
             placeholder="Type a message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+            onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
             className="flex-1 rounded-full px-4 py-2 focus-visible:ring-primary"
+            disabled={!!stagedAttachment && stagedAttachment.type === 'image' && !newMessage} // Optionally disable text input when only image is staged
           />
           <Button size="icon" onClick={handleSendMessage} className="rounded-full bg-primary hover:bg-primary/90">
             <SendHorizonal className="h-5 w-5" />

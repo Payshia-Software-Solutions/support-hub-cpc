@@ -5,21 +5,21 @@ import { useState, useEffect } from "react";
 import { ChatList } from "@/components/dashboard/ChatList";
 import { ChatWindow } from "@/components/dashboard/ChatWindow";
 import { dummyChats as initialChats } from "@/lib/dummy-data";
-import type { Chat, Message } from "@/lib/types";
+import type { Chat, Message, Attachment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
-import { useSidebar } from "@/components/ui/sidebar"; // Import useSidebar
+import { useSidebar } from "@/components/ui/sidebar"; 
 
 export default function ChatPage() {
   const [chats, setChats] = useState<Chat[]>(initialChats);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const { setIsMobileDetailActive } = useMobileDetailActive();
-  const { open: isSidebarOpen } = useSidebar(); // Get sidebar state
+  const { open: isSidebarOpen } = useSidebar(); 
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768); // md breakpoint
+    const checkMobile = () => setIsMobile(window.innerWidth < 768); 
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -42,23 +42,30 @@ export default function ChatPage() {
     );
   };
 
-  const handleSendMessage = (chatId: string, messageText: string) => {
+  const handleSendMessage = (chatId: string, messageText: string, attachment?: Attachment) => {
     const newMessage: Message = {
       id: `msg-${Date.now()}`,
       from: "student",
       text: messageText,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      avatar: chats.find(c => c.id === chatId)?.userAvatar
+      avatar: chats.find(c => c.id === chatId)?.userAvatar,
+      attachment: attachment // Add attachment here
     };
 
     setChats((prevChats) =>
       prevChats.map((chat) => {
         if (chat.id === chatId) {
           const updatedMessages = [...chat.messages, newMessage];
+          let preview = newMessage.text;
+          if (newMessage.attachment) {
+            preview = newMessage.attachment.type === 'image' ? `📷 Photo` : `📄 Document: ${newMessage.attachment.name}`;
+            if (newMessage.text) preview = `${preview} - ${newMessage.text}`;
+          }
+
           return {
             ...chat,
             messages: updatedMessages,
-            lastMessagePreview: newMessage.text,
+            lastMessagePreview: preview,
             lastMessageTime: newMessage.time,
           };
         }
@@ -66,11 +73,16 @@ export default function ChatPage() {
       })
     );
 
+    // Simulate staff reply (can be enhanced to acknowledge attachment)
     setTimeout(() => {
+      let replyText = "Thanks for your message! We'll get back to you shortly.";
+      if (attachment) {
+        replyText = `Received your ${attachment.type === 'image' ? 'image' : 'document'} "${attachment.name}". Thanks! We'll review it and get back to you.`;
+      }
       const staffReply: Message = {
         id: `msg-${Date.now() + 1}`,
         from: "staff",
-        text: "Thanks for your message! We'll get back to you shortly.",
+        text: replyText,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         avatar: "https://placehold.co/40x40.png"
       };
@@ -93,17 +105,15 @@ export default function ChatPage() {
 
   const selectedChat = chats.find((chat) => chat.id === selectedChatId);
 
-  const chatWindowContainerDesktopClasses = `h-full min-w-0 ${
+  const chatWindowContainerDesktopClasses = `flex-1 h-full min-w-0 ${ // Added min-w-0
     isSidebarOpen
-      ? 'w-[calc(100vw-16rem-400px)]'
+      ? 'w-[calc(100vw-16rem-400px)]' 
       : 'w-[calc(100vw-3rem-400px)]' 
   }`;
-  // Note: Used 3rem for collapsed sidebar width (standard icon width) instead of 50px for better consistency.
-  // And 400px for ChatList as per your example. If ChatList is 384px, adjust calc accordingly.
-
+  
   if (isMobile) {
     return (
-      <div className="h-full flex flex-col w-screen p-0">
+      <div className="h-full flex flex-col w-full p-0"> {/* Changed w-screen to w-full */}
         {!selectedChatId ? (
           <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
         ) : (
@@ -126,8 +136,8 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-full w-full">
-      <div className="w-[400px] shrink-0 h-full border-r bg-card">
+    <div className="flex h-full w-full"> {/* Added w-full */}
+      <div className="w-[400px] shrink-0 h-full border-r bg-card"> {/* Explicit width and ensure it doesn't shrink */}
         <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
       </div>
       <div className={chatWindowContainerDesktopClasses}> 

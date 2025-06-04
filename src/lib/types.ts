@@ -1,13 +1,22 @@
+
+export interface Attachment {
+  type: 'image' | 'document';
+  url: string; // For images, this can be a Data URL; for documents, a placeholder or name
+  name: string;
+  file?: File; // Optional: to hold the actual file object client-side if needed later
+}
+
 export interface Message {
   id: string;
   from: 'student' | 'staff';
   text: string;
   time: string;
   avatar?: string;
+  attachment?: Attachment;
 }
 
 export interface Chat {
-  id: string;
+  id:string;
   userName: string;
   userAvatar: string;
   messages: Message[];
