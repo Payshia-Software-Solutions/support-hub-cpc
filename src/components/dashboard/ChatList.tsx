@@ -16,7 +16,7 @@ interface ChatListProps {
   onSelectChat: (chatId: string) => void;
 }
 
-const MAX_PREVIEW_LENGTH = 35;
+const MAX_PREVIEW_LENGTH = 40;
 
 function truncateText(text: string | undefined, maxLength: number): string {
   if (!text) return "";

@@ -12,7 +12,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 
-export default function TicketDetailPage() {
+const STAFF_AVATAR = "https://placehold.co/40x40.png?text=Staff"; // Define staff avatar
+
+export default function AdminTicketDetailPage() {
   const router = useRouter();
   const params = useParams();
   const ticketId = params.id as string;
@@ -42,6 +44,7 @@ export default function TicketDetailPage() {
     setTickets(prevTickets => 
       prevTickets.map(t => t.id === updatedTicket.id ? updatedTicket : t)
     );
+    // In a real app, API call to save changes
   };
 
   if (ticket === undefined) { 
@@ -67,11 +70,11 @@ export default function TicketDetailPage() {
           The ticket with ID "{ticketId}" could not be found.
         </p>
         <Button
-          onClick={() => router.push("/dashboard/tickets")}
+          onClick={() => router.push("/admin/tickets")} // Navigate to admin tickets list
           variant="default"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Tickets
+          Back to Admin Tickets
         </Button>
       </div>
     );
@@ -83,7 +86,7 @@ export default function TicketDetailPage() {
         <div className="px-4 py-2 border-b bg-card sticky top-0 z-20">
           <Button
             variant="ghost"
-            onClick={() => router.push("/dashboard/tickets")}
+            onClick={() => router.push("/admin/tickets")} // Navigate to admin tickets list
             className="text-sm w-full justify-start"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -93,9 +96,9 @@ export default function TicketDetailPage() {
       )}
       <TicketDetailClient 
         initialTicket={ticket} 
-        onUpdateTicket={handleUpdateTicket} 
-        userRole="student" // Specify user role
-        staffAvatar={ticket.studentAvatar} // For student, staffAvatar prop is not strictly needed but pass student's own for consistency if message.avatar logic relies on it
+        onUpdateTicket={handleUpdateTicket}
+        userRole="staff" // Specify user role
+        staffAvatar={STAFF_AVATAR} // Pass staff avatar
       />
     </div>
   );

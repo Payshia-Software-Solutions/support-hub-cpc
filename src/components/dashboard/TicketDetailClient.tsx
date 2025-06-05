@@ -5,20 +5,22 @@ import { useState, useRef, useEffect } from "react";
 import type { Ticket, Message, TicketStatus } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // Keep for potential future use, though Textarea is primary
+import { Input } from "@/components/ui/input"; 
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare } from "lucide-react"; // Added MessageSquare
-import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; // Removed Card, CardContent
+import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare } from "lucide-react"; 
+import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; 
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TicketDetailClientProps {
   initialTicket: Ticket;
-  onUpdateTicket: (updatedTicket: Ticket) => void; // Callback to update parent state
+  onUpdateTicket: (updatedTicket: Ticket) => void;
+  userRole: 'student' | 'staff'; // New prop
+  staffAvatar?: string; // New prop for staff avatar
 }
 
 const priorityColors: Record<Ticket["priority"], string> = {
@@ -27,13 +29,9 @@ const priorityColors: Record<Ticket["priority"], string> = {
   Low: "bg-green-500 hover:bg-green-600 text-white",
 };
 
-// const statusColors: Record<Ticket["status"], string> = { // No longer used for badge colors directly
-//   Open: "bg-blue-500 hover:bg-blue-600 text-white",
-//   "In Progress": "bg-purple-500 hover:bg-purple-600 text-white",
-//   Closed: "bg-gray-500 hover:bg-gray-600 text-white",
-// };
+const defaultStaffAvatar = "https://placehold.co/40x40.png?text=S";
 
-export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDetailClientProps) {
+export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, staffAvatar = defaultStaffAvatar }: TicketDetailClientProps) {
   const [ticket, setTicket] = useState<Ticket>(initialTicket);
   const [newMessage, setNewMessage] = useState("");
   const { toast } = useToast();
@@ -53,7 +51,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
         viewport.scrollTop = viewport.scrollHeight;
       }
     }
-  }, [ticket.messages, activeMobileTab]); // Also re-scroll when tab changes to discussion
+  }, [ticket.messages, activeMobileTab]);
 
   const handleStatusChange = (newStatus: TicketStatus) => {
     const updatedTicket = { ...ticket, status: newStatus, updatedAt: new Date().toISOString() };
@@ -70,10 +68,10 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
 
     const message: Message = {
       id: `msg-${Date.now()}`,
-      from: "student", 
+      from: userRole, // Use userRole prop
       text: newMessage,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      avatar: ticket.studentAvatar,
+      avatar: userRole === "student" ? ticket.studentAvatar : staffAvatar,
     };
     
     const updatedTicket = { 
@@ -85,16 +83,14 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
     onUpdateTicket(updatedTicket); 
     setNewMessage("");
     toast({
-      title: "Message Sent",
+      title: userRole === 'staff' ? "Reply Sent" : "Message Sent",
       description: "Your reply has been added to the ticket.",
     });
   };
   
-  const staffAvatar = "https://placehold.co/40x40.png";
-
   const TicketInfoContent = () => (
     <>
-      <CardHeader className="px-0 pt-0 pb-4"> {/* Adjusted padding */}
+      <CardHeader className="px-0 pt-0 pb-4">
         <CardTitle className="text-xl md:text-2xl font-headline">{ticket.subject}</CardTitle>
         <CardDescription>Ticket ID: {ticket.id}</CardDescription>
       </CardHeader>
@@ -102,7 +98,11 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
       <div className="space-y-4">
         <div>
           <h4 className="text-sm font-medium mb-1">Status</h4>
-          <Select value={ticket.status} onValueChange={(value: TicketStatus) => handleStatusChange(value)}>
+          <Select 
+            value={ticket.status} 
+            onValueChange={(value: TicketStatus) => handleStatusChange(value)}
+            disabled={userRole === 'student' && ticket.status === 'Closed'} // Student cannot reopen closed ticket
+          >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Change status" />
             </SelectTrigger>
@@ -149,7 +149,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
       <header 
           className={cn(
               "px-4 py-3 border-b bg-card flex items-center gap-3",
-              !isMobileContext && "sticky top-0 z-10" // Only sticky if not in mobile tab context
+              !isMobileContext && "sticky top-0 z-10" 
           )}
       >
         <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-primary" />
@@ -162,8 +162,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
             <div
               key={message.id}
               className={cn(
-                "flex items-end gap-2 max-w-[85%] sm:max-w-[75%]", // Slightly more width for messages
-                message.from === "student" ? "ml-auto flex-row-reverse" : "mr-auto"
+                "flex items-end gap-2 max-w-[85%] sm:max-w-[75%]", 
+                message.from === userRole ? "ml-auto flex-row-reverse" : "mr-auto" // Adjusted for current user based on role
               )}
             >
               <Avatar className="h-8 w-8">
@@ -179,7 +179,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
               <div
                 className={cn(
                   "p-3 rounded-xl shadow-sm",
-                  message.from === "student"
+                  message.from === userRole // Adjusted for current user based on role
                     ? "bg-primary/90 text-primary-foreground rounded-br-none"
                     : "bg-card border rounded-bl-none"
                 )}
@@ -194,7 +194,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
         </div>
       </ScrollArea>
 
-      <footer className="px-4 py-3 border-t bg-card sticky bottom-0 z-10"> {/* Remains sticky */}
+      <footer className="px-4 py-3 border-t bg-card sticky bottom-0 z-10">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="text-muted-foreground">
             <Paperclip className="h-5 w-5" />
@@ -222,8 +222,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
 
   if (isMobile) {
     return (
-      <div className="flex flex-col h-full w-full"> {/* Ensure full width */}
-        <div className="p-2 border-b bg-card sticky top-0 z-10"> {/* Matches mobile header from page.tsx */}
+      <div className="flex flex-col h-full w-full">
+        <div className="p-2 border-b bg-card sticky top-0 z-10">
           <div className="flex w-full">
             <Button
               variant={activeMobileTab === 'info' ? 'default' : 'outline'}
@@ -235,7 +235,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
             <Button
               variant={activeMobileTab === 'discussion' ? 'default' : 'outline'}
               onClick={() => setActiveMobileTab('discussion')}
-              className="flex-1 rounded-l-none border-l-0" // Remove double border
+              className="flex-1 rounded-l-none border-l-0"
             >
               Discussion
             </Button>
@@ -243,7 +243,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
         </div>
 
         {activeMobileTab === 'info' && (
-          <ScrollArea className="flex-1 bg-card"> {/* Use ScrollArea for info panel too */}
+          <ScrollArea className="flex-1 bg-card">
             <div className="p-4">
               <TicketInfoContent />
             </div>
@@ -259,7 +259,6 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket }: TicketDeta
     );
   }
 
-  // Desktop Layout
   return (
     <div className="flex flex-col lg:flex-row h-full max-h-screen overflow-hidden">
       <div className="lg:w-1/3 lg:max-w-md xl:max-w-lg lg:border-r bg-card overflow-y-auto p-4 md:p-6">

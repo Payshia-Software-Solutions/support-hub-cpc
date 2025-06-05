@@ -11,15 +11,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import { Paperclip, SendHorizonal, Smile, FileText, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Image from "next/image"; // For displaying image attachments
+import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 
 interface ChatWindowProps {
   chat: Chat | null;
   onSendMessage: (chatId: string, messageText: string, attachment?: Attachment) => void;
+  userRole: 'student' | 'staff'; // New prop
+  staffAvatar?: string; // New prop for staff's own avatar when userRole is 'staff'
 }
 
-export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
+const defaultStaffMessageAvatar = "https://placehold.co/40x40.png"; // Generic staff avatar for incoming messages
+
+export function ChatWindow({ chat, onSendMessage, userRole, staffAvatar }: ChatWindowProps) {
   const [newMessage, setNewMessage] = useState("");
   const [stagedAttachment, setStagedAttachment] = useState<Attachment | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -29,7 +33,7 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-      // @ts-ignore Accessing viewport directly from ScrollArea's structure
+      // @ts-ignore
       const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
       if (viewport) {
         viewport.scrollTop = viewport.scrollHeight;
@@ -38,18 +42,20 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
   }, [chat?.messages]);
 
   useEffect(() => {
-    // Clear staged attachment when chat changes
     setStagedAttachment(null);
     setNewMessage("");
   }, [chat?.id]);
 
-  const handleSendMessage = () => {
+  const handleSendMessageLocal = () => {
     if ((newMessage.trim() || stagedAttachment) && chat) {
+      // The `from` and `avatar` for the new message will be determined by the `onSendMessage`
+      // callback in the parent component (`ChatPage` or `AdminChatPage`)
+      // This component just passes the text and attachment.
       onSendMessage(chat.id, newMessage.trim(), stagedAttachment || undefined);
       setNewMessage("");
       setStagedAttachment(null);
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""; // Reset file input
+        fileInputRef.current.value = "";
       }
       inputRef.current?.focus();
     }
@@ -70,7 +76,7 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
       const fileName = file.name;
       const fileType = file.type;
 
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit placeholder
+      if (file.size > 5 * 1024 * 1024) {
         toast({
           variant: "destructive",
           title: "File too large",
@@ -85,17 +91,16 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
         reader.onloadend = () => {
           setStagedAttachment({
             type: "image",
-            url: reader.result as string, // Data URL for preview
+            url: reader.result as string,
             name: fileName,
             file: file,
           });
         };
         reader.readAsDataURL(file);
       } else {
-        // For non-image files, store basic info. URL could be a placeholder or handled on upload.
         setStagedAttachment({
           type: "document",
-          url: "", // Placeholder, actual URL would come from upload
+          url: "", 
           name: fileName,
           file: file,
         });
@@ -106,7 +111,7 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
   const removeStagedAttachment = () => {
     setStagedAttachment(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; // Reset file input
+      fileInputRef.current.value = "";
     }
   };
 
@@ -120,18 +125,29 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
     );
   }
   
-  const staffAvatar = "https://placehold.co/40x40.png";
+  // Determine avatar for "other" party in chat
+  const otherPartyAvatar = userRole === 'student' ? defaultStaffMessageAvatar : chat.userAvatar;
+  const otherPartyFallback = userRole === 'student' ? 'S' : chat.userName.charAt(0).toUpperCase();
+
+  // Determine avatar for "current user" based on role
+  const currentUserAvatar = userRole === 'student' ? chat.userAvatar : staffAvatar;
+  const currentUserFallback = userRole === 'student' ? chat.userName.charAt(0).toUpperCase() : 'S';
+
 
   return (
     <div className="flex flex-col h-full bg-background">
       <header className="p-4 border-b bg-card flex items-center gap-3 sticky top-0 z-10">
         <Avatar className="h-10 w-10">
+          {/* Header always shows the student's avatar and name */}
           <AvatarImage src={chat.userAvatar} alt={chat.userName} data-ai-hint="avatar person" />
           <AvatarFallback>{chat.userName.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
         <div>
           <h2 className="font-semibold text-lg">{chat.userName}</h2>
-          <p className="text-xs text-muted-foreground">Online</p> {/* Placeholder status */}
+          {/* Status might differ based on context or could be dynamic */}
+          <p className="text-xs text-muted-foreground">
+            {userRole === 'staff' ? `Chatting with ${chat.userName}` : 'Online'}
+          </p>
         </div>
       </header>
 
@@ -142,23 +158,24 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
               key={message.id || index} 
               className={cn(
                 "flex items-end gap-2 max-w-[75%]",
-                message.from === "student" ? "ml-auto flex-row-reverse" : "mr-auto"
+                // Message is from the current user if message.from matches userRole
+                message.from === userRole ? "ml-auto flex-row-reverse" : "mr-auto"
               )}
             >
               <Avatar className="h-8 w-8">
                 <AvatarImage 
-                  src={message.from === 'student' ? chat.userAvatar : (message.avatar || staffAvatar) } 
+                  src={message.from === userRole ? currentUserAvatar : (message.avatar || otherPartyAvatar)}
                   alt={message.from} 
                   data-ai-hint="avatar person" 
                 />
                 <AvatarFallback>
-                  {message.from === 'student' ? chat.userName.charAt(0).toUpperCase() : 'S'}
+                  {message.from === userRole ? currentUserFallback : otherPartyFallback}
                 </AvatarFallback>
               </Avatar>
               <div
                 className={cn(
                   "p-3 rounded-xl shadow-sm",
-                  message.from === "student"
+                  message.from === userRole
                     ? "bg-primary/90 text-primary-foreground rounded-br-none" 
                     : "bg-card border rounded-bl-none" 
                 )}
@@ -214,7 +231,7 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
                 <Smile className="h-5 w-5" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 border-0 bg-transparent shadow-none">
+            <PopoverContent className="w-auto p-0 border-0 bg-transparent shadow-none mb-2">
               <EmojiPicker 
                 onEmojiClick={handleEmojiClick}
                 height={350}
@@ -231,8 +248,6 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
             ref={fileInputRef} 
             onChange={handleFileSelect} 
             className="hidden"
-            // Consider adding 'accept' attribute for specific file types:
-            // accept="image/*,application/pdf,.doc,.docx,.txt" 
           />
           <Input
             ref={inputRef}
@@ -240,11 +255,11 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
             placeholder="Type a message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+            onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessageLocal()}
             className="flex-1 rounded-full px-4 py-2 focus-visible:ring-primary"
-            disabled={!!stagedAttachment && stagedAttachment.type === 'image' && !newMessage} // Optionally disable text input when only image is staged
+            disabled={!!stagedAttachment && stagedAttachment.type === 'image' && !newMessage}
           />
-          <Button size="icon" onClick={handleSendMessage} className="rounded-full bg-primary hover:bg-primary/90">
+          <Button size="icon" onClick={handleSendMessageLocal} className="rounded-full bg-primary hover:bg-primary/90">
             <SendHorizonal className="h-5 w-5" />
           </Button>
         </div>
@@ -253,7 +268,6 @@ export function ChatWindow({ chat, onSendMessage }: ChatWindowProps) {
   );
 }
 
-// Placeholder Icon for empty state
 function MessageSquareDashedIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
