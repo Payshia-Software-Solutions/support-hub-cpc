@@ -5,22 +5,23 @@ import { useState, useRef, useEffect } from "react";
 import type { Ticket, Message, TicketStatus } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; 
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare } from "lucide-react"; 
+import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog } from "lucide-react"; 
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; 
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { dummyStaffMembers } from "@/lib/dummy-data"; // To get staff list
 
 interface TicketDetailClientProps {
   initialTicket: Ticket;
   onUpdateTicket: (updatedTicket: Ticket) => void;
-  userRole: 'student' | 'staff'; // New prop
-  staffAvatar?: string; // New prop for staff avatar
+  userRole: 'student' | 'staff';
+  staffAvatar?: string; 
 }
 
 const priorityColors: Record<Ticket["priority"], string> = {
@@ -44,7 +45,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
   }, [initialTicket]);
   
   useEffect(() => {
-    if (scrollAreaRef.current) {
+    if (scrollAreaRef.current && activeMobileTab === 'discussion') {
       // @ts-ignore
       const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
       if (viewport) {
@@ -63,12 +64,33 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
     });
   };
 
+  const handleAssignmentChange = (staffId: string) => {
+    const selectedStaff = dummyStaffMembers.find(s => s.id === staffId);
+    if (!selectedStaff && staffId !== "unassigned") {
+      toast({ variant: "destructive", title: "Error", description: "Invalid staff member selected." });
+      return;
+    }
+
+    const updatedTicket = { 
+      ...ticket, 
+      assignedTo: staffId === "unassigned" ? undefined : selectedStaff?.name, 
+      assigneeAvatar: staffId === "unassigned" ? undefined : selectedStaff?.avatar,
+      updatedAt: new Date().toISOString() 
+    };
+    setTicket(updatedTicket);
+    onUpdateTicket(updatedTicket);
+    toast({
+      title: "Ticket Assignment Updated",
+      description: staffId === "unassigned" ? `Ticket unassigned.` : `Ticket assigned to ${selectedStaff?.name}.`,
+    });
+  };
+
   const handleSendMessage = () => {
     if (newMessage.trim() === "") return;
 
     const message: Message = {
       id: `msg-${Date.now()}`,
-      from: userRole, // Use userRole prop
+      from: userRole,
       text: newMessage,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       avatar: userRole === "student" ? ticket.studentAvatar : staffAvatar,
@@ -97,13 +119,14 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
       
       <div className="space-y-4">
         <div>
-          <h4 className="text-sm font-medium mb-1">Status</h4>
-          <Select 
+          <Label htmlFor="ticket-status">Status</Label>
+          <Select
             value={ticket.status} 
             onValueChange={(value: TicketStatus) => handleStatusChange(value)}
-            disabled={userRole === 'student' && ticket.status === 'Closed'} // Student cannot reopen closed ticket
+            disabled={(userRole === 'student' && ticket.status === 'Closed')}
+            name="ticket-status"
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full mt-1">
               <SelectValue placeholder="Change status" />
             </SelectTrigger>
             <SelectContent>
@@ -118,6 +141,50 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
           <h4 className="text-sm font-medium mb-1">Priority</h4>
           <Badge className={cn("text-sm", priorityColors[ticket.priority])}>{ticket.priority}</Badge>
         </div>
+
+        {userRole === 'staff' && (
+          <div>
+            <Label htmlFor="ticket-assignment">Assigned To</Label>
+            <Select
+              value={dummyStaffMembers.find(s => s.name === ticket.assignedTo)?.id || "unassigned"}
+              onValueChange={handleAssignmentChange}
+              name="ticket-assignment"
+            >
+              <SelectTrigger className="w-full mt-1">
+                <SelectValue placeholder="Assign to staff member" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {dummyStaffMembers.map(staff => (
+                  <SelectItem key={staff.id} value={staff.id}>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={staff.avatar} alt={staff.name} data-ai-hint="staff avatar"/>
+                        <AvatarFallback>{staff.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      {staff.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {ticket.assignedTo && (
+           <div className="flex items-center gap-2 text-sm">
+            <UserCog className="w-4 h-4 text-muted-foreground" />
+            <span className="font-medium">Assigned:</span>
+            {ticket.assigneeAvatar && (
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={ticket.assigneeAvatar} alt={ticket.assignedTo} data-ai-hint="staff avatar"/>
+                <AvatarFallback>{ticket.assignedTo.charAt(0)}</AvatarFallback>
+              </Avatar>
+            )}
+            <span>{ticket.assignedTo}</span>
+          </div>
+        )}
+
 
         <div className="flex items-center gap-2 text-sm">
           <User className="w-4 h-4 text-muted-foreground" />
@@ -163,7 +230,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
               key={message.id}
               className={cn(
                 "flex items-end gap-2 max-w-[85%] sm:max-w-[75%]", 
-                message.from === userRole ? "ml-auto flex-row-reverse" : "mr-auto" // Adjusted for current user based on role
+                message.from === userRole ? "ml-auto flex-row-reverse" : "mr-auto"
               )}
             >
               <Avatar className="h-8 w-8">
@@ -173,13 +240,13 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
                   data-ai-hint="avatar person"
                 />
                 <AvatarFallback>
-                  {message.from === 'student' ? ticket.studentName.charAt(0).toUpperCase() : 'S'}
+                  {message.from === 'student' ? ticket.studentName.charAt(0).toUpperCase() : (message.from === 'staff' ? 'S' : '?')}
                 </AvatarFallback>
               </Avatar>
               <div
                 className={cn(
                   "p-3 rounded-xl shadow-sm",
-                  message.from === userRole // Adjusted for current user based on role
+                  message.from === userRole
                     ? "bg-primary/90 text-primary-foreground rounded-br-none"
                     : "bg-card border rounded-bl-none"
                 )}

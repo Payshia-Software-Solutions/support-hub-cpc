@@ -1,4 +1,4 @@
-import type { Chat, Ticket, Announcement } from './types';
+import type { Chat, Ticket, Announcement, UserProfile, PaymentRecord } from './types';
 
 export const dummyChats: Chat[] = [
   {
@@ -7,7 +7,7 @@ export const dummyChats: Chat[] = [
     userAvatar: 'https://images.unsplash.com/photo-1740989475605-355ada18c3fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxhdmF0YXIlMjBwZXJzb258ZW58MHx8fHwxNzQ5MDU0Mzg0fDA&ixlib=rb-4.1.0&q=80&w=1080',
     messages: [
       { id: 'm1-1', from: 'student', text: 'Hi there! I need some help with my account.', time: '10:00 AM', avatar: 'https://placehold.co/40x40.png' },
-      { id: 'm1-2', from: 'staff', text: 'Hello Alice! I can help with that. What seems to be the problem?', time: '10:01 AM', avatar: 'https://placehold.co/40x40.png' },
+      { id: 'm1-2', from: 'staff', text: 'Hello Alice! I can help with that. What seems to be the problem?', time: '10:01 AM', avatar: 'https://placehold.co/40x40.png?text=Staff' },
       { id: 'm1-3', from: 'student', text: 'I can\'t seem to update my profile picture.', time: '10:02 AM', avatar: 'https://placehold.co/40x40.png' },
     ],
     lastMessagePreview: 'I can\'t seem to update my profile picture.',
@@ -20,7 +20,7 @@ export const dummyChats: Chat[] = [
     userAvatar: 'https://images.unsplash.com/photo-1621398945253-00498f153e4b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhdmF0YXIlMjBwZXJzb258ZW58MHx8fHwxNzQ5MDU0Mzg0fDA&ixlib=rb-4.1.0&q=80&w=1080',
     messages: [
       { id: 'm2-1', from: 'student', text: 'Good morning, I have a question about the library hours.', time: '11:30 AM', avatar: 'https://placehold.co/40x40.png' },
-      { id: 'm2-2', from: 'staff', text: 'Hi Bob, the library is open from 9 AM to 8 PM on weekdays.', time: '11:31 AM', avatar: 'https://placehold.co/40x40.png' },
+      { id: 'm2-2', from: 'staff', text: 'Hi Bob, the library is open from 9 AM to 8 PM on weekdays.', time: '11:31 AM', avatar: 'https://placehold.co/40x40.png?text=Staff' },
     ],
     lastMessagePreview: 'Hi Bob, the library is open from 9 AM to 8 PM on weekdays.',
     lastMessageTime: '11:31 AM',
@@ -48,12 +48,14 @@ export const dummyTickets: Ticket[] = [
     createdAt: '2024-07-15',
     updatedAt: '2024-07-15',
     studentName: 'Student David',
-    studentAvatar: 'https://placehold.co/100x100.png',
+    studentAvatar: 'https://placehold.co/100x100.png?text=SD',
     messages: [
-      { id: 't1-m1', from: 'student', text: 'I can’t log in to the portal. It says invalid credentials.', time: '09:00 AM', avatar: 'https://placehold.co/40x40.png' },
-      { id: 't1-m2', from: 'staff', text: 'Hi David, sorry to hear that. Could you please try clearing your browser cache and cookies and try again?', time: '09:05 AM', avatar: 'https://placehold.co/40x40.png' },
-      { id: 't1-m3', from: 'student', text: 'I tried that, but it still doesn\'t work.', time: '09:15 AM', avatar: 'https://placehold.co/40x40.png' },
+      { id: 't1-m1', from: 'student', text: 'I can’t log in to the portal. It says invalid credentials.', time: '09:00 AM', avatar: 'https://placehold.co/40x40.png?text=SD' },
+      { id: 't1-m2', from: 'staff', text: 'Hi David, sorry to hear that. Could you please try clearing your browser cache and cookies and try again?', time: '09:05 AM', avatar: 'https://placehold.co/40x40.png?text=Staff' },
+      { id: 't1-m3', from: 'student', text: 'I tried that, but it still doesn\'t work.', time: '09:15 AM', avatar: 'https://placehold.co/40x40.png?text=SD' },
     ],
+    assignedTo: 'Staff Jane',
+    assigneeAvatar: 'https://placehold.co/40x40.png?text=SJ',
   },
   {
     id: 'ticket2',
@@ -64,11 +66,12 @@ export const dummyTickets: Ticket[] = [
     createdAt: '2024-07-14',
     updatedAt: '2024-07-15',
     studentName: 'Student Eve',
-    studentAvatar: 'https://placehold.co/100x100.png',
+    studentAvatar: 'https://placehold.co/100x100.png?text=SE',
     messages: [
-      { id: 't2-m1', from: 'student', text: 'I need to reset my password, but the email isn\'t arriving.', time: '02:30 PM', avatar: 'https://placehold.co/40x40.png' },
-      { id: 't2-m2', from: 'staff', text: 'Thanks for reaching out, Eve. We are looking into this and will manually reset it for you. Please allow some time.', time: '02:35 PM', avatar: 'https://placehold.co/40x40.png' },
+      { id: 't2-m1', from: 'student', text: 'I need to reset my password, but the email isn\'t arriving.', time: '02:30 PM', avatar: 'https://placehold.co/40x40.png?text=SE' },
+      { id: 't2-m2', from: 'staff', text: 'Thanks for reaching out, Eve. We are looking into this and will manually reset it for you. Please allow some time.', time: '02:35 PM', avatar: 'https://placehold.co/40x40.png?text=Staff' },
     ],
+    // No assignee for this one initially
   },
   {
     id: 'ticket3',
@@ -79,13 +82,15 @@ export const dummyTickets: Ticket[] = [
     createdAt: '2024-07-12',
     updatedAt: '2024-07-13',
     studentName: 'Student Frank',
-    studentAvatar: 'https://placehold.co/100x100.png',
+    studentAvatar: 'https://placehold.co/100x100.png?text=SF',
     messages: [
-      { id: 't3-m1', from: 'student', text: 'The CS101 materials are not showing up for me.', time: '10:00 AM', avatar: 'https://placehold.co/40x40.png' },
-      { id: 't3-m2', from: 'staff', text: 'Hi Frank, we\'ve checked your enrollment and it seems there was a sync issue. It should be resolved now. Please check again.', time: '11:15 AM', avatar: 'https://placehold.co/40x40.png' },
-      { id: 't3-m3', from: 'student', text: 'Yes, it works now! Thank you so much.', time: '11:20 AM', avatar: 'https://placehold.co/40x40.png' },
-      { id: 't3-m4', from: 'staff', text: 'You\'re welcome! Glad we could help.', time: '11:21 AM', avatar: 'https://placehold.co/40x40.png' },
+      { id: 't3-m1', from: 'student', text: 'The CS101 materials are not showing up for me.', time: '10:00 AM', avatar: 'https://placehold.co/40x40.png?text=SF' },
+      { id: 't3-m2', from: 'staff', text: 'Hi Frank, we\'ve checked your enrollment and it seems there was a sync issue. It should be resolved now. Please check again.', time: '11:15 AM', avatar: 'https://placehold.co/40x40.png?text=Staff' },
+      { id: 't3-m3', from: 'student', text: 'Yes, it works now! Thank you so much.', time: '11:20 AM', avatar: 'https://placehold.co/40x40.png?text=SF' },
+      { id: 't3-m4', from: 'staff', text: 'You\'re welcome! Glad we could help.', time: '11:21 AM', avatar: 'https://placehold.co/40x40.png?text=Staff' },
     ],
+    assignedTo: 'Staff John',
+    assigneeAvatar: 'https://placehold.co/40x40.png?text=SJn',
   },
 ];
 
@@ -126,4 +131,25 @@ export const dummyAnnouncements: Announcement[] = [
     category: 'Academic',
     isNew: false,
   },
+];
+
+
+export const dummyUsers: UserProfile[] = [
+  { id: 'user1', name: 'Student Alice', email: 'alice@example.com', role: 'student', avatar: 'https://placehold.co/100x100.png?text=SA', joinedDate: '2023-09-01', lastLogin: '2024-07-28T10:00:00Z' },
+  { id: 'user2', name: 'Student Bob', email: 'bob@example.com', role: 'student', avatar: 'https://placehold.co/100x100.png?text=SB', joinedDate: '2023-09-05', lastLogin: '2024-07-27T11:30:00Z' },
+  { id: 'user3', name: 'Staff Jane', email: 'jane.staff@example.com', role: 'staff', avatar: 'https://placehold.co/100x100.png?text=SJ', joinedDate: '2022-01-15', lastLogin: '2024-07-28T14:00:00Z' },
+  { id: 'user4', name: 'Staff John', email: 'john.staff@example.com', role: 'staff', avatar: 'https://placehold.co/100x100.png?text=SJn', joinedDate: '2021-05-20', lastLogin: '2024-07-28T09:15:00Z' },
+];
+
+export const dummyPayments: PaymentRecord[] = [
+  { id: 'payment1', userId: 'user1', userName: 'Student Alice', amount: 500, currency: 'USD', date: '2024-07-01', status: 'Completed', description: 'Fall Semester Tuition Fee' },
+  { id: 'payment2', userId: 'user2', userName: 'Student Bob', amount: 75, currency: 'USD', date: '2024-07-10', status: 'Completed', description: 'Library Fine' },
+  { id: 'payment3', userId: 'user1', userName: 'Student Alice', amount: 30, currency: 'USD', date: '2024-07-15', status: 'Pending', description: 'Parking Permit' },
+  { id: 'payment4', userId: 'user2', userName: 'Student Bob', amount: 500, currency: 'USD', date: '2024-06-20', status: 'Failed', description: 'Spring Semester Resit Fee' },
+];
+
+export const dummyStaffMembers = [
+  { id: 'staff1', name: 'Staff Jane', avatar: 'https://placehold.co/40x40.png?text=SJ' },
+  { id: 'staff2', name: 'Staff John', avatar: 'https://placehold.co/40x40.png?text=SJn' },
+  { id: 'staff3', name: 'Staff Alex', avatar: 'https://placehold.co/40x40.png?text=SAx' },
 ];

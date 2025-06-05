@@ -39,6 +39,8 @@ export interface Ticket {
   studentName: string;
   studentAvatar: string;
   messages: Message[];
+  assignedTo?: string; // Staff member's name or ID
+  assigneeAvatar?: string; // URL for assignee's avatar
 }
 
 export interface Announcement {
@@ -49,4 +51,27 @@ export interface Announcement {
   author?: string;
   category?: 'General' | 'Academic' | 'Events' | 'Urgent';
   isNew?: boolean;
+}
+
+// Basic User type for admin placeholder
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: 'student' | 'staff';
+  avatar: string;
+  joinedDate: string;
+  lastLogin?: string;
+}
+
+// Basic Payment type for admin placeholder
+export interface PaymentRecord {
+  id: string;
+  userId: string;
+  userName: string;
+  amount: number;
+  currency: string;
+  date: string;
+  status: 'Completed' | 'Pending' | 'Failed';
+  description: string;
 }
