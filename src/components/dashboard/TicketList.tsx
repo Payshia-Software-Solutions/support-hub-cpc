@@ -10,22 +10,33 @@ import { useState } from "react";
 
 interface TicketListProps {
   tickets: Ticket[];
+  currentStaffId?: string; // Optional for admin context to check locks
 }
 
-export function TicketList({ tickets: initialTickets }: TicketListProps) {
-  const [tickets, setTickets] = useState<Ticket[]>(initialTickets);
+export function TicketList({ tickets: initialTickets, currentStaffId }: TicketListProps) {
+  // Note: We are using initialTickets directly. If dummyTickets is mutated elsewhere (e.g. for locking),
+  // this component might not re-render immediately unless its parent forces a re-render or
+  // initialTickets itself is a state variable in the parent that gets updated.
+  // For this prototype with direct mutation of dummyData, it might "just work" due to React's reconciliation
+  // but in a real app, this would be state managed from a central store or props.
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
-  const filteredTickets = tickets
+  const filteredTickets = initialTickets // Use initialTickets which might be the mutated dummyTickets
     .filter(ticket => 
       ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.studentName.toLowerCase().includes(searchTerm.toLowerCase())
+      ticket.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (ticket.assignedTo && ticket.assignedTo.toLowerCase().includes(searchTerm.toLowerCase()))
     )
     .filter(ticket => statusFilter === "all" || ticket.status === statusFilter)
-    .filter(ticket => priorityFilter === "all" || ticket.priority === priorityFilter);
+    .filter(ticket => priorityFilter === "all" || ticket.priority === priorityFilter)
+    .sort((a, b) => { // Sort open/in progress tickets first, then by creation date
+      if (a.status !== 'Closed' && b.status === 'Closed') return -1;
+      if (a.status === 'Closed' && b.status !== 'Closed') return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
 
   return (
@@ -68,9 +79,9 @@ export function TicketList({ tickets: initialTickets }: TicketListProps) {
       </div>
       
       {filteredTickets.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-0 pb-4">
           {filteredTickets.map((ticket) => (
-            <TicketListItem key={ticket.id} ticket={ticket} />
+            <TicketListItem key={ticket.id} ticket={ticket} currentStaffId={currentStaffId} />
           ))}
         </div>
       ) : (
@@ -81,4 +92,3 @@ export function TicketList({ tickets: initialTickets }: TicketListProps) {
     </div>
   );
 }
-

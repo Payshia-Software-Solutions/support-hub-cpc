@@ -1,4 +1,4 @@
-import type { Chat, Ticket, Announcement, UserProfile, PaymentRecord } from './types';
+import type { Chat, Ticket, Announcement, UserProfile, PaymentRecord, StaffMember } from './types';
 
 export const dummyChats: Chat[] = [
   {
@@ -56,6 +56,8 @@ export const dummyTickets: Ticket[] = [
     ],
     assignedTo: 'Staff Jane',
     assigneeAvatar: 'https://placehold.co/40x40.png?text=SJ',
+    isLocked: false,
+    lockedByStaffId: undefined,
   },
   {
     id: 'ticket2',
@@ -71,7 +73,8 @@ export const dummyTickets: Ticket[] = [
       { id: 't2-m1', from: 'student', text: 'I need to reset my password, but the email isn\'t arriving.', time: '02:30 PM', avatar: 'https://placehold.co/40x40.png?text=SE' },
       { id: 't2-m2', from: 'staff', text: 'Thanks for reaching out, Eve. We are looking into this and will manually reset it for you. Please allow some time.', time: '02:35 PM', avatar: 'https://placehold.co/40x40.png?text=Staff' },
     ],
-    // No assignee for this one initially
+    isLocked: false,
+    lockedByStaffId: undefined,
   },
   {
     id: 'ticket3',
@@ -91,6 +94,8 @@ export const dummyTickets: Ticket[] = [
     ],
     assignedTo: 'Staff John',
     assigneeAvatar: 'https://placehold.co/40x40.png?text=SJn',
+    isLocked: false,
+    lockedByStaffId: undefined,
   },
 ];
 
@@ -148,7 +153,7 @@ export const dummyPayments: PaymentRecord[] = [
   { id: 'payment4', userId: 'user2', userName: 'Student Bob', amount: 500, currency: 'USD', date: '2024-06-20', status: 'Failed', description: 'Spring Semester Resit Fee' },
 ];
 
-export const dummyStaffMembers = [
+export const dummyStaffMembers: StaffMember[] = [
   { id: 'staff1', name: 'Staff Jane', avatar: 'https://placehold.co/40x40.png?text=SJ' },
   { id: 'staff2', name: 'Staff John', avatar: 'https://placehold.co/40x40.png?text=SJn' },
   { id: 'staff3', name: 'Staff Alex', avatar: 'https://placehold.co/40x40.png?text=SAx' },

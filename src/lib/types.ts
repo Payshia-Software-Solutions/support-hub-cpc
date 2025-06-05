@@ -41,6 +41,8 @@ export interface Ticket {
   messages: Message[];
   assignedTo?: string; // Staff member's name or ID
   assigneeAvatar?: string; // URL for assignee's avatar
+  isLocked?: boolean;
+  lockedByStaffId?: string;
 }
 
 export interface Announcement {
@@ -74,4 +76,10 @@ export interface PaymentRecord {
   date: string;
   status: 'Completed' | 'Pending' | 'Failed';
   description: string;
+}
+
+export interface StaffMember {
+  id: string;
+  name: string;
+  avatar: string;
 }

@@ -2,26 +2,29 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { Ticket, Message, TicketStatus } from "@/lib/types";
+import type { Ticket, Message, TicketStatus, StaffMember } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog } from "lucide-react"; 
+import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock } from "lucide-react"; 
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; 
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { dummyStaffMembers } from "@/lib/dummy-data"; // To get staff list
+import { dummyStaffMembers } from "@/lib/dummy-data"; 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 interface TicketDetailClientProps {
   initialTicket: Ticket;
   onUpdateTicket: (updatedTicket: Ticket) => void;
   userRole: 'student' | 'staff';
   staffAvatar?: string; 
+  currentStaffId?: string; // ID of the currently logged-in staff member
 }
 
 const priorityColors: Record<Ticket["priority"], string> = {
@@ -32,17 +35,32 @@ const priorityColors: Record<Ticket["priority"], string> = {
 
 const defaultStaffAvatar = "https://placehold.co/40x40.png?text=S";
 
-export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, staffAvatar = defaultStaffAvatar }: TicketDetailClientProps) {
+export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffId }: TicketDetailClientProps) {
   const [ticket, setTicket] = useState<Ticket>(initialTicket);
   const [newMessage, setNewMessage] = useState("");
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [activeMobileTab, setActiveMobileTab] = useState<'info' | 'discussion'>('info');
+  
+  const isTicketLockedByOther = ticket.isLocked && ticket.lockedByStaffId !== currentStaffId;
+  const isTicketLockedByCurrentUser = ticket.isLocked && ticket.lockedByStaffId === currentStaffId;
+
 
   useEffect(() => {
-    setTicket(initialTicket); 
-  }, [initialTicket]);
+    setTicket(initialTicket);
+    // Auto-lock ticket if viewed by staff and not already locked
+    if (userRole === 'staff' && currentStaffId && !initialTicket.isLocked) {
+      const updatedTicket = { ...initialTicket, isLocked: true, lockedByStaffId: currentStaffId, updatedAt: new Date().toISOString() };
+      setTicket(updatedTicket);
+      onUpdateTicket(updatedTicket);
+      toast({
+        title: "Ticket Locked",
+        description: "You have locked this ticket for editing.",
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTicket, userRole, currentStaffId]); // Removed onUpdateTicket and toast from deps to avoid loop if they change identity
   
   useEffect(() => {
     if (scrollAreaRef.current && activeMobileTab === 'discussion') {
@@ -55,6 +73,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
   }, [ticket.messages, activeMobileTab]);
 
   const handleStatusChange = (newStatus: TicketStatus) => {
+    if (userRole === 'staff' && isTicketLockedByOther) return;
     const updatedTicket = { ...ticket, status: newStatus, updatedAt: new Date().toISOString() };
     setTicket(updatedTicket);
     onUpdateTicket(updatedTicket); 
@@ -65,6 +84,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
   };
 
   const handleAssignmentChange = (staffId: string) => {
+    if (userRole === 'staff' && isTicketLockedByOther) return;
     const selectedStaff = dummyStaffMembers.find(s => s.id === staffId);
     if (!selectedStaff && staffId !== "unassigned") {
       toast({ variant: "destructive", title: "Error", description: "Invalid staff member selected." });
@@ -87,6 +107,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
 
   const handleSendMessage = () => {
     if (newMessage.trim() === "") return;
+    if (userRole === 'staff' && isTicketLockedByOther) return;
 
     const message: Message = {
       id: `msg-${Date.now()}`,
@@ -109,9 +130,41 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
       description: "Your reply has been added to the ticket.",
     });
   };
+
+  const handleUnlockTicket = () => {
+    if (userRole === 'staff' && isTicketLockedByCurrentUser) {
+      const updatedTicket = { ...ticket, isLocked: false, lockedByStaffId: undefined, updatedAt: new Date().toISOString() };
+      setTicket(updatedTicket);
+      onUpdateTicket(updatedTicket);
+      toast({
+        title: "Ticket Unlocked",
+        description: "This ticket is now available for other staff members.",
+      });
+    }
+  };
   
+  const lockerName = ticket.lockedByStaffId ? dummyStaffMembers.find(s => s.id === ticket.lockedByStaffId)?.name : 'another staff member';
+
   const TicketInfoContent = () => (
     <>
+      {userRole === 'staff' && isTicketLockedByOther && (
+        <Alert variant="destructive" className="mb-4">
+          <Lock className="h-4 w-4" />
+          <AlertTitle>Ticket Locked</AlertTitle>
+          <AlertDescription>
+            This ticket is currently being handled by {lockerName}. 
+            You cannot make changes until it is unlocked.
+          </AlertDescription>
+        </Alert>
+      )}
+       {userRole === 'staff' && isTicketLockedByCurrentUser && (
+         <div className="mb-4">
+            <Button onClick={handleUnlockTicket} variant="outline" className="w-full">
+              <Unlock className="mr-2 h-4 w-4" /> Unlock Ticket
+            </Button>
+         </div>
+      )}
+
       <CardHeader className="px-0 pt-0 pb-4">
         <CardTitle className="text-xl md:text-2xl font-headline">{ticket.subject}</CardTitle>
         <CardDescription>Ticket ID: {ticket.id}</CardDescription>
@@ -123,7 +176,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
           <Select
             value={ticket.status} 
             onValueChange={(value: TicketStatus) => handleStatusChange(value)}
-            disabled={(userRole === 'student' && ticket.status === 'Closed')}
+            disabled={(userRole === 'student' && ticket.status === 'Closed') || (userRole === 'staff' && isTicketLockedByOther)}
             name="ticket-status"
           >
             <SelectTrigger className="w-full mt-1">
@@ -149,6 +202,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
               value={dummyStaffMembers.find(s => s.name === ticket.assignedTo)?.id || "unassigned"}
               onValueChange={handleAssignmentChange}
               name="ticket-assignment"
+              disabled={isTicketLockedByOther}
             >
               <SelectTrigger className="w-full mt-1">
                 <SelectValue placeholder="Assign to staff member" />
@@ -263,7 +317,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
 
       <footer className="px-4 py-3 border-t bg-card sticky bottom-0 z-10">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="text-muted-foreground">
+          <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={userRole === 'staff' && isTicketLockedByOther}>
             <Paperclip className="h-5 w-5" />
           </Button>
           <Textarea
@@ -278,8 +332,9 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
             }}
             className="flex-1 rounded-lg px-4 py-2 focus-visible:ring-primary min-h-[40px] max-h-[120px] resize-none"
             rows={1}
+            disabled={userRole === 'staff' && isTicketLockedByOther}
           />
-          <Button size="icon" onClick={handleSendMessage} className="rounded-full bg-primary hover:bg-primary/90 self-end">
+          <Button size="icon" onClick={handleSendMessage} className="rounded-full bg-primary hover:bg-primary/90 self-end" disabled={userRole === 'staff' && isTicketLockedByOther}>
             <SendHorizonal className="h-5 w-5" />
           </Button>
         </div>

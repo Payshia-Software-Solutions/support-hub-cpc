@@ -2,11 +2,11 @@
 "use client";
 
 import Link from "next/link";
-import type { Ticket } from "@/lib/types";
+import type { Ticket, StaffMember } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CalendarDays, ArrowRight, UserCircle } from "lucide-react"; // Added UserCircle
+import { CalendarDays, ArrowRight, UserCircle, Lock } from "lucide-react"; 
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -14,10 +14,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { dummyStaffMembers } from "@/lib/dummy-data";
 
 
 interface TicketListItemProps {
   ticket: Ticket;
+  currentStaffId?: string; // Optional: for admin context
 }
 
 const priorityColors: Record<Ticket["priority"], string> = {
@@ -32,20 +34,42 @@ const statusColors: Record<Ticket["status"], string> = {
   Closed: "bg-gray-500 hover:bg-gray-600",
 };
 
-export function TicketListItem({ ticket }: TicketListItemProps) {
+export function TicketListItem({ ticket, currentStaffId }: TicketListItemProps) {
   const linkPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
     ? `/admin/tickets/${ticket.id}`
     : `/dashboard/tickets/${ticket.id}`;
+
+  const locker = ticket.isLocked && ticket.lockedByStaffId 
+    ? dummyStaffMembers.find(s => s.id === ticket.lockedByStaffId) 
+    : null;
+  
+  // const isLockedByOther = ticket.isLocked && ticket.lockedByStaffId !== currentStaffId;
 
   return (
     <Link href={linkPath} legacyBehavior>
       <Card className="hover:shadow-lg transition-shadow duration-200 cursor-pointer bg-card flex flex-col h-full">
         <CardHeader>
-          <div className="flex justify-between items-start">
+          <div className="flex justify-between items-start gap-2">
             <CardTitle className="text-lg font-headline mb-1">{ticket.subject}</CardTitle>
-            <Badge className={cn("text-xs text-white whitespace-nowrap", priorityColors[ticket.priority])}>
-              {ticket.priority}
-            </Badge>
+            <div className="flex flex-col items-end gap-1">
+              <Badge className={cn("text-xs text-white whitespace-nowrap", priorityColors[ticket.priority])}>
+                {ticket.priority}
+              </Badge>
+              {ticket.isLocked && locker && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                       <Badge variant="secondary" className="text-xs whitespace-nowrap bg-orange-500 text-white">
+                        <Lock size={12} className="mr-1"/> Locked
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Locked by: {locker.name}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
           </div>
           <CardDescription className="text-xs text-muted-foreground">Ticket ID: {ticket.id}</CardDescription>
         </CardHeader>
