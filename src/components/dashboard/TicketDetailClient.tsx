@@ -235,6 +235,7 @@ const TicketDiscussionContent = ({
             )}
             {isError && <p className="text-destructive text-center">Failed to load messages.</p>}
             {!isLoading && messages?.map((message) => {
+              const isStaffMessage = message.from === 'staff';
               const isCurrentUserMessage = message.from === userRole;
 
               return (
@@ -247,12 +248,12 @@ const TicketDiscussionContent = ({
                 >
                     <Avatar className="h-8 w-8">
                     <AvatarImage 
-                        src={message.from === 'student' ? ticket.studentAvatar : (message.avatar || staffAvatar)} 
+                        src={isStaffMessage ? (message.avatar || staffAvatar) : ticket.studentAvatar} 
                         alt={message.from} 
                         data-ai-hint="avatar person"
                     />
                     <AvatarFallback>
-                        {message.from === 'student' ? (ticket.studentName?.charAt(0).toUpperCase() || 'S') : (message.from === 'staff' ? 'S' : '?')}
+                        {isStaffMessage ? 'S' : (ticket.studentName?.charAt(0).toUpperCase() || 'U')}
                     </AvatarFallback>
                     </Avatar>
                     <div
@@ -312,8 +313,6 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
   const queryClient = useQueryClient();
   
   useEffect(() => {
-    // When initialTicket from props changes (i.e., navigating to a new ticket),
-    // update the local state.
     setTicket(initialTicket);
   }, [initialTicket]);
 
@@ -322,17 +321,36 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
 
   const sendMessageMutation = useMutation({
       mutationFn: createTicketMessage,
-      onSuccess: (data, variables) => {
-          queryClient.invalidateQueries({ queryKey: ['ticketMessages', variables.ticketId] });
-          queryClient.invalidateQueries({ queryKey: ['tickets'] }); // To update last updated etc.
-          queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
+      onMutate: async (newMessagePayload) => {
+          const { ticketId, text, from } = newMessagePayload;
+          await queryClient.cancelQueries({ queryKey: ['ticketMessages', ticketId] });
+          const previousMessages = queryClient.getQueryData<Message[]>(['ticketMessages', ticketId]);
+          const optimisticMessage: Message = {
+              id: `optimistic-${Date.now()}`,
+              from: from,
+              text: text,
+              time: new Date().toISOString(),
+              avatar: from === 'staff' ? staffAvatar : ticket.studentAvatar
+          };
+          queryClient.setQueryData<Message[]>(['ticketMessages', ticketId], (old) => 
+              old ? [...old, optimisticMessage] : [optimisticMessage]
+          );
+          return { previousMessages, ticketId };
       },
-      onError: (error: Error) => {
-           toast({
-              variant: "destructive",
-              title: "Reply Failed",
-              description: error.message,
-          });
+      onError: (error: Error, variables, context) => {
+           if (context?.previousMessages) {
+              queryClient.setQueryData(['ticketMessages', context.ticketId], context.previousMessages);
+          }
+          toast({
+             variant: "destructive",
+             title: "Reply Failed",
+             description: error.message,
+         });
+      },
+      onSettled: (data, error, variables) => {
+          queryClient.invalidateQueries({ queryKey: ['ticketMessages', variables.ticketId] });
+          queryClient.invalidateQueries({ queryKey: ['tickets'] });
+          queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
       }
   });
 

@@ -25,6 +25,8 @@ export default function ChatPage() {
     queryFn: getChats,
   });
 
+  const selectedChat = chats?.find((chat) => chat.id === selectedChatId);
+
   // Fetch messages for the currently selected chat
   const { data: selectedChatMessages } = useQuery<Message[]>({
     queryKey: ['chatMessages', selectedChatId],
@@ -35,18 +37,41 @@ export default function ChatPage() {
 
   const sendMessageMutation = useMutation({
     mutationFn: createChatMessage,
-    onSuccess: (data, variables) => {
-      // Invalidate queries to refetch chat messages and the chat list
-      queryClient.invalidateQueries({ queryKey: ['chatMessages', variables.chatId] });
-      queryClient.invalidateQueries({ queryKey: ['chats'] }); // To update last message preview
+    onMutate: async (newMessagePayload) => {
+        const { chatId, text, from, attachment } = newMessagePayload;
+        await queryClient.cancelQueries({ queryKey: ['chatMessages', chatId] });
+        const previousMessages = queryClient.getQueryData<Message[]>(['chatMessages', chatId]);
+
+        const studentAvatar = selectedChat?.userAvatar;
+        const optimisticMessage: Message = {
+            id: `optimistic-${Date.now()}`,
+            from: from,
+            text: text,
+            time: new Date().toISOString(),
+            avatar: studentAvatar,
+            attachment: attachment,
+        };
+        
+        queryClient.setQueryData<Message[]>(['chatMessages', chatId], (old) => 
+            old ? [...old, optimisticMessage] : [optimisticMessage]
+        );
+
+        return { previousMessages, chatId };
     },
-    onError: (err: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Failed to send message",
-        description: err.message,
-      });
-    }
+    onError: (err: Error, variables, context) => {
+        if (context?.previousMessages) {
+            queryClient.setQueryData(['chatMessages', context.chatId], context.previousMessages);
+        }
+        toast({
+            variant: "destructive",
+            title: "Failed to send message",
+            description: err.message,
+        });
+    },
+    onSettled: (data, error, variables) => {
+        queryClient.invalidateQueries({ queryKey: ['chatMessages', variables.chatId] });
+        queryClient.invalidateQueries({ queryKey: ['chats'] });
+    },
   });
 
   useEffect(() => {
@@ -81,8 +106,6 @@ export default function ChatPage() {
 
     sendMessageMutation.mutate(newMessagePayload);
   };
-
-  const selectedChat = chats?.find((chat) => chat.id === selectedChatId);
 
   const chatWindowContainerDesktopClasses = `flex-1 h-full min-w-0 ${
     isSidebarOpen

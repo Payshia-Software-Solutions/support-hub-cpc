@@ -32,17 +32,37 @@ export default function AdminChatPage() {
 
   const sendMessageMutation = useMutation({
     mutationFn: createChatMessage,
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['chatMessages', variables.chatId] });
-      queryClient.invalidateQueries({ queryKey: ['chats'] }); // To update last message preview
+    onMutate: async (newMessagePayload) => {
+        const { chatId, text, from, attachment } = newMessagePayload;
+        await queryClient.cancelQueries({ queryKey: ['chatMessages', chatId] });
+        const previousMessages = queryClient.getQueryData<Message[]>(['chatMessages', chatId]);
+        const optimisticMessage: Message = {
+            id: `optimistic-${Date.now()}`,
+            from: from,
+            text: text,
+            time: new Date().toISOString(),
+            avatar: STAFF_AVATAR,
+            attachment: attachment,
+        };
+        queryClient.setQueryData<Message[]>(['chatMessages', chatId], (old) => 
+            old ? [...old, optimisticMessage] : [optimisticMessage]
+        );
+        return { previousMessages, chatId };
     },
-    onError: (err: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Failed to send message",
-        description: err.message,
-      });
-    }
+    onError: (err: Error, variables, context) => {
+        if (context?.previousMessages) {
+            queryClient.setQueryData(['chatMessages', context.chatId], context.previousMessages);
+        }
+        toast({
+            variant: "destructive",
+            title: "Failed to send message",
+            description: err.message,
+        });
+    },
+    onSettled: (data, error, variables) => {
+        queryClient.invalidateQueries({ queryKey: ['chatMessages', variables.chatId] });
+        queryClient.invalidateQueries({ queryKey: ['chats'] });
+    },
   });
 
   useEffect(() => {
