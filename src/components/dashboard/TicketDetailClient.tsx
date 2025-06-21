@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction, memo } from "react";
@@ -238,7 +239,7 @@ const TicketDiscussionContent = ({
                 key={message.id}
                 className={cn(
                 "flex items-end gap-2 max-w-[85%] sm:max-w-[75%]", 
-                message.from === userRole ? "ml-auto flex-row-reverse" : "mr-auto"
+                message.from === 'student' ? "ml-auto flex-row-reverse" : "mr-auto"
                 )}
             >
                 <Avatar className="h-8 w-8">
@@ -254,7 +255,7 @@ const TicketDiscussionContent = ({
                 <div
                 className={cn(
                     "p-3 rounded-xl shadow-sm",
-                    message.from === userRole
+                    message.from === 'student'
                     ? "bg-primary/90 text-primary-foreground rounded-br-none"
                     : "bg-card border rounded-bl-none"
                 )}

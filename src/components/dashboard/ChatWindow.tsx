@@ -43,11 +43,10 @@ function ChatMessages({ chat, userRole, staffAvatar }: Pick<ChatWindowProps, 'ch
         }
     }, [messages]);
 
-    const otherPartyAvatar = userRole === 'student' ? defaultStaffMessageAvatar : chat?.userAvatar;
-    const otherPartyFallback = userRole === 'student' ? 'S' : chat?.userName?.charAt(0).toUpperCase() || 'U';
-
-    const currentUserAvatar = userRole === 'student' ? chat?.userAvatar : staffAvatar;
-    const currentUserFallback = userRole === 'student' ? chat?.userName?.charAt(0).toUpperCase() || 'U' : 'S';
+    const studentAvatar = chat?.userAvatar;
+    const studentFallback = chat?.userName?.charAt(0).toUpperCase() || 'U';
+    const staffMessageAvatar = staffAvatar || defaultStaffMessageAvatar;
+    const staffFallback = 'S';
 
     return (
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
@@ -65,23 +64,23 @@ function ChatMessages({ chat, userRole, staffAvatar }: Pick<ChatWindowProps, 'ch
                         key={message.id || index}
                         className={cn(
                             "flex items-end gap-2 max-w-[75%]",
-                            message.from === userRole ? "ml-auto flex-row-reverse" : "mr-auto"
+                            message.from === 'student' ? "ml-auto flex-row-reverse" : "mr-auto"
                         )}
                     >
                         <Avatar className="h-8 w-8">
                             <AvatarImage
-                                src={message.from === userRole ? currentUserAvatar : (message.avatar || otherPartyAvatar)}
+                                src={message.from === 'student' ? studentAvatar : (message.avatar || staffMessageAvatar)}
                                 alt={message.from}
                                 data-ai-hint="avatar person"
                             />
                             <AvatarFallback>
-                                {message.from === userRole ? currentUserFallback : otherPartyFallback}
+                                {message.from === 'student' ? studentFallback : staffFallback}
                             </AvatarFallback>
                         </Avatar>
                         <div
                             className={cn(
                                 "p-3 rounded-xl shadow-sm",
-                                message.from === userRole
+                                message.from === 'student'
                                     ? "bg-primary/90 text-primary-foreground rounded-br-none"
                                     : "bg-card border rounded-bl-none"
                             )}
