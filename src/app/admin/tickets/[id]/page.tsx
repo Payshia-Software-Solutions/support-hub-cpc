@@ -1,58 +1,88 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TicketDetailClient } from "@/components/dashboard/TicketDetailClient";
-import { dummyTickets as initialDummyTickets, dummyStaffMembers } from "@/lib/dummy-data";
+import { dummyStaffMembers } from "@/lib/dummy-data";
 import type { Ticket } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
+import { toast } from "@/hooks/use-toast";
 
 const CURRENT_STAFF_ID = dummyStaffMembers[0]?.id || 'staff1'; 
 const STAFF_AVATAR = dummyStaffMembers.find(s => s.id === CURRENT_STAFF_ID)?.avatar || "https://placehold.co/40x40.png?text=Staff";
+
+async function getTicket(ticketId: string): Promise<Ticket> {
+  const res = await fetch(`/api/tickets/${ticketId}`);
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.error || 'Failed to fetch ticket');
+  }
+  return res.json();
+}
+
+async function updateTicket(updatedTicket: Ticket): Promise<Ticket> {
+    const res = await fetch(`/api/tickets/${updatedTicket.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedTicket),
+    });
+    if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to update ticket');
+    }
+    return res.json();
+}
 
 export default function AdminTicketDetailPage() {
   const router = useRouter();
   const params = useParams();
   const ticketId = params.id as string;
+  const queryClient = useQueryClient();
 
-  // We use a simple state to force re-renders ONLY when the mutable dummy data changes.
-  const [, forceUpdate] = useState(0);
   const { setIsMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
-  const [isLoading, setIsLoading] = useState(true);
+
+  const { data: ticket, isLoading, isError, error } = useQuery<Ticket>({
+    queryKey: ['ticket', ticketId],
+    queryFn: () => getTicket(ticketId),
+    retry: false, // Don't retry on 404s
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: updateTicket,
+    onSuccess: (data) => {
+      // Invalidate and refetch the ticket query to get the fresh data
+      queryClient.invalidateQueries({ queryKey: ['ticket', data.id] });
+      // Optionally invalidate the admin list query as well
+      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
+       // Don't show toast here, it's handled in TicketDetailClient for more context
+    },
+    onError: (err: Error) => {
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: err.message,
+        });
+    }
+  });
 
   useEffect(() => {
     if (isMobile) {
       setIsMobileDetailActive(true);
-      return () => {
-        setIsMobileDetailActive(false);
-      };
+      return () => setIsMobileDetailActive(false);
     } else {
       setIsMobileDetailActive(false);
     }
   }, [isMobile, setIsMobileDetailActive]);
 
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 150); 
-    return () => clearTimeout(timer);
-  }, [ticketId]);
-
   const handleUpdateTicket = (updatedTicket: Ticket) => {
-    // In a real app, this would be an API call. Here we directly mutate the "global" dummy data.
-    const globalTicketIndex = initialDummyTickets.findIndex(t => t.id === updatedTicket.id);
-    if (globalTicketIndex !== -1) {
-      initialDummyTickets[globalTicketIndex] = updatedTicket;
-      // Force a re-render to make sure the UI reflects the change.
-      forceUpdate(c => c + 1);
-    }
+    updateMutation.mutate(updatedTicket);
   };
-
-  const ticket = initialDummyTickets.find((t) => t.id === ticketId);
 
   if (isLoading) { 
     return (
@@ -69,12 +99,12 @@ export default function AdminTicketDetailPage() {
     );
   }
 
-  if (!ticket) {
+  if (isError || !ticket) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-4 md:p-6 text-center">
         <h1 className="text-2xl font-bold mb-4">Ticket Not Found</h1>
         <p className="text-muted-foreground mb-6">
-          The ticket with ID "{ticketId}" could not be found.
+          {error?.message || `The ticket with ID "${ticketId}" could not be found.`}
         </p>
         <Button
           onClick={() => router.push("/admin/tickets")} 
@@ -102,7 +132,7 @@ export default function AdminTicketDetailPage() {
         </div>
       )}
       <TicketDetailClient 
-        key={ticket.id} // Add key to ensure component remounts on new ticket, not just re-renders
+        key={ticket.id}
         initialTicket={ticket} 
         onUpdateTicket={handleUpdateTicket}
         userRole="staff" 
