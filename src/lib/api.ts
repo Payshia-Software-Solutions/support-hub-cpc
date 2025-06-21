@@ -65,6 +65,7 @@ export const createTicketMessage = (messageData: CreateTicketMessageClientPayloa
     ticket_id: messageData.ticketId,
     from_role: messageData.from,
     text: messageData.text,
+    time: new Date().toISOString(),
   };
   return apiFetch('/ticket-messages', { method: 'POST', body: JSON.stringify(apiPayload) });
 };
@@ -89,6 +90,7 @@ export const createChatMessage = (messageData: CreateChatMessageClientPayload): 
     chat_id: messageData.chatId,
     from_role: messageData.from,
     text: messageData.text,
+    time: new Date().toISOString(),
     attachment_type: messageData.attachment?.type || null,
     attachment_name: messageData.attachment?.name || null,
     // The API should handle file uploads and URL generation, so we send null.
