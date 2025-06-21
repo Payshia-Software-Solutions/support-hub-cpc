@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction, memo } from "react";
@@ -249,7 +248,7 @@ const TicketDiscussionContent = ({
                     data-ai-hint="avatar person"
                 />
                 <AvatarFallback>
-                    {message.from === 'student' ? ticket.studentName.charAt(0).toUpperCase() : (message.from === 'staff' ? 'S' : '?')}
+                    {message.from === 'student' ? (ticket.studentName?.charAt(0).toUpperCase() || 'S') : (message.from === 'staff' ? 'S' : '?')}
                 </AvatarFallback>
                 </Avatar>
                 <div

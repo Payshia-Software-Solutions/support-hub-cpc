@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -76,10 +75,10 @@ export function TicketListItem({ ticket, currentStaffId }: TicketListItemProps) 
         <CardContent className="space-y-3 flex-grow">
           <div className="flex items-center text-sm">
             <Avatar className="h-8 w-8 mr-2">
-              <AvatarImage src={ticket.studentAvatar} alt={ticket.studentName} data-ai-hint="avatar person"/>
-              <AvatarFallback>{ticket.studentName.charAt(0)}</AvatarFallback>
+              <AvatarImage src={ticket.studentAvatar} alt={ticket.studentName || 'Student'} data-ai-hint="avatar person"/>
+              <AvatarFallback>{ticket.studentName?.charAt(0).toUpperCase() || 'S'}</AvatarFallback>
             </Avatar>
-            <span>{ticket.studentName}</span>
+            <span>{ticket.studentName || 'Unknown Student'}</span>
           </div>
           <p className="text-sm text-muted-foreground line-clamp-2">{ticket.description}</p>
            {ticket.assignedTo && ticket.assigneeAvatar && (
