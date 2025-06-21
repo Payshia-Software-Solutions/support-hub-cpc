@@ -1,5 +1,5 @@
 
-import type { Ticket, Announcement, Chat, Message } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -45,19 +45,55 @@ export const getAnnouncements = (): Promise<Announcement[]> => apiFetch('/announ
 // Tickets
 type CreateTicketPayload = Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>;
 type UpdateTicketPayload = Partial<Ticket> & { id: string };
-type CreateTicketMessagePayload = { ticketId: string } & Omit<Message, 'id' | 'time'>;
+
+// This is the data the CLIENT will provide
+type CreateTicketMessageClientPayload = { 
+  ticketId: string;
+  from: 'student' | 'staff';
+  text: string;
+};
+
 
 export const getTickets = (): Promise<Ticket[]> => apiFetch('/tickets');
 export const getTicket = (id: string): Promise<Ticket> => apiFetch(`/tickets/${id}`);
 export const getTicketMessages = (ticketId: string): Promise<Message[]> => apiFetch(`/ticket-messages/by-ticket/${ticketId}`);
 export const createTicket = (ticketData: CreateTicketPayload): Promise<Ticket> => apiFetch('/tickets', { method: 'POST', body: JSON.stringify(ticketData) });
-export const updateTicket = (ticketData: UpdateTicketPayload): Promise<Ticket> => apiFetch(`/tickets/${ticketData.id}`, { method: 'POST', body: JSON.stringify(ticketData) }); // Assuming POST for update as per dummy API
-export const createTicketMessage = (messageData: CreateTicketMessagePayload): Promise<Message> => apiFetch('/ticket-messages', { method: 'POST', body: JSON.stringify(messageData) });
+export const updateTicket = (ticketData: UpdateTicketPayload): Promise<Ticket> => apiFetch(`/tickets/${ticketData.id}`, { method: 'POST', body: JSON.stringify(ticketData) });
+
+export const createTicketMessage = (messageData: CreateTicketMessageClientPayload): Promise<Message> => {
+  const apiPayload = {
+    ticket_id: messageData.ticketId,
+    from_role: messageData.from,
+    text: messageData.text,
+  };
+  return apiFetch('/ticket-messages', { method: 'POST', body: JSON.stringify(apiPayload) });
+};
+
 
 // Chats
-type CreateChatMessagePayload = { chatId: string } & Omit<Message, 'id' | 'time'>;
+// This is the data the CLIENT will provide
+type CreateChatMessageClientPayload = {
+  chatId: string;
+  from: 'student' | 'staff';
+  text: string;
+  attachment?: Attachment;
+};
 
 export const getChats = (): Promise<Chat[]> => apiFetch('/chats');
 export const getChat = (id: string): Promise<Chat> => apiFetch(`/chats/${id}`);
 export const getChatMessages = (chatId: string): Promise<Message[]> => apiFetch(`/chat-messages/by-chat/${chatId}`);
-export const createChatMessage = (messageData: CreateChatMessagePayload): Promise<Message> => apiFetch('/chat-messages', { method: 'POST', body: JSON.stringify(messageData) });
+
+export const createChatMessage = (messageData: CreateChatMessageClientPayload): Promise<Message> => {
+  // We transform the client-side payload to match the API's expected format
+  const apiPayload = {
+    chat_id: messageData.chatId,
+    from_role: messageData.from,
+    text: messageData.text,
+    attachment_type: messageData.attachment?.type || null,
+    attachment_name: messageData.attachment?.name || null,
+    // The API should handle file uploads and URL generation, so we send null.
+    // The API should also handle timestamping and associating the user's avatar.
+    attachment_url: null, 
+  };
+  return apiFetch('/chat-messages', { method: 'POST', body: JSON.stringify(apiPayload) });
+};

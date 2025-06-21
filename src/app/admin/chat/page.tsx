@@ -68,14 +68,11 @@ export default function AdminChatPage() {
     const targetChat = chats?.find(c => c.id === chatId);
     if (!targetChat) return;
     
-    // The message object sent to the API.
-    // The API should handle timestamping and ID generation.
     const newMessagePayload = {
-      chatId: chatId,
-      from: "staff",
+      chatId,
+      from: "staff" as const,
       text: messageText,
-      // Attachment handling would need API support.
-      // For now, we are not sending attachments to the backend.
+      attachment, // Pass the attachment object
     };
 
     sendMessageMutation.mutate(newMessagePayload);
@@ -151,4 +148,3 @@ export default function AdminChatPage() {
     </div>
   );
 }
-

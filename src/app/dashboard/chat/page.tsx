@@ -64,14 +64,11 @@ export default function ChatPage() {
     const currentChat = chats?.find(c => c.id === chatId);
     if (!currentChat) return;
 
-    // We send the new message payload to the API
-    // The API is responsible for creating the message with ID, timestamp, etc.
     const newMessagePayload = {
       chatId,
-      from: "student",
+      from: "student" as const,
       text: messageText,
-      // Attachment handling would need API support for file uploads.
-      // We are not sending the file itself here.
+      attachment, // Pass the attachment object
     };
 
     sendMessageMutation.mutate(newMessagePayload, {
@@ -80,8 +77,9 @@ export default function ChatPage() {
         setTimeout(() => {
           const staffReplyPayload = {
             chatId,
-            from: "staff",
+            from: "staff" as const,
             text: "Thanks for your message! We'll get back to you shortly.",
+            // No attachment for the auto-reply
           };
           sendMessageMutation.mutate(staffReplyPayload);
         }, 1500);

@@ -153,7 +153,7 @@ const TicketInfoContent = memo(({
         <div className="flex items-center gap-2 text-sm">
           <User className="w-4 h-4 text-muted-foreground" />
           <span className="font-medium">Student:</span>
-          <span>{ticket.studentName}</span>
+          <span>{ticket.studentName || 'Unknown Student'}</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
           <CalendarDays className="w-4 h-4 text-muted-foreground" />
@@ -379,8 +379,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
     sendMessageMutation.mutate({
       ticketId: ticket.id,
       from: userRole,
-      text: newMessage,
-      avatar: userRole === "student" ? ticket.studentAvatar : staffAvatar,
+      text: newMessage.trim(),
     });
     setNewMessage("");
 
