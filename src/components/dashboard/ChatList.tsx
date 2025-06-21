@@ -64,12 +64,12 @@ export function ChatList({ chats, selectedChatId, onSelectChat, isLoading }: Cha
                 ${selectedChatId === chat.id ? "bg-accent text-accent-foreground" : ""}`}
             >
               <Avatar className="h-10 w-10 mr-3">
-                <AvatarImage src={chat.userAvatar} alt={chat.userName} data-ai-hint="avatar person" />
-                <AvatarFallback>{chat.userName.charAt(0).toUpperCase()}</AvatarFallback>
+                <AvatarImage src={chat.userAvatar} alt={chat.userName || 'Chat User'} data-ai-hint="avatar person" />
+                <AvatarFallback>{chat.userName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center">
-                  <h3 className="font-semibold text-sm truncate">{chat.userName}</h3>
+                  <h3 className="font-semibold text-sm truncate">{chat.userName || 'Unknown User'}</h3>
                   {chat.lastMessageTime && (
                     <p className="text-xs text-muted-foreground">{chat.lastMessageTime}</p>
                   )}

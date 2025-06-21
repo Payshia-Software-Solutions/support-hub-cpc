@@ -44,10 +44,10 @@ function ChatMessages({ chat, userRole, staffAvatar }: Pick<ChatWindowProps, 'ch
     }, [messages]);
 
     const otherPartyAvatar = userRole === 'student' ? defaultStaffMessageAvatar : chat?.userAvatar;
-    const otherPartyFallback = userRole === 'student' ? 'S' : chat?.userName.charAt(0).toUpperCase();
+    const otherPartyFallback = userRole === 'student' ? 'S' : chat?.userName?.charAt(0).toUpperCase() || 'U';
 
     const currentUserAvatar = userRole === 'student' ? chat?.userAvatar : staffAvatar;
-    const currentUserFallback = userRole === 'student' ? chat?.userName.charAt(0).toUpperCase() : 'S';
+    const currentUserFallback = userRole === 'student' ? chat?.userName?.charAt(0).toUpperCase() || 'U' : 'S';
 
     return (
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
@@ -208,13 +208,13 @@ export function ChatWindow({ chat, onSendMessage, userRole, staffAvatar }: ChatW
     <div className="flex flex-col h-full bg-background">
       <header className="p-4 border-b bg-card flex items-center gap-3 sticky top-0 z-10">
         <Avatar className="h-10 w-10">
-          <AvatarImage src={chat.userAvatar} alt={chat.userName} data-ai-hint="avatar person" />
-          <AvatarFallback>{chat.userName.charAt(0).toUpperCase()}</AvatarFallback>
+          <AvatarImage src={chat.userAvatar} alt={chat.userName || 'Chat User'} data-ai-hint="avatar person" />
+          <AvatarFallback>{chat.userName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
         </Avatar>
         <div>
-          <h2 className="font-semibold text-lg">{chat.userName}</h2>
+          <h2 className="font-semibold text-lg">{chat.userName || 'Unknown User'}</h2>
           <p className="text-xs text-muted-foreground">
-            {userRole === 'staff' ? `Chatting with ${chat.userName}` : 'Online'}
+            {userRole === 'staff' ? `Chatting with ${chat.userName || 'user'}` : 'Online'}
           </p>
         </div>
       </header>
