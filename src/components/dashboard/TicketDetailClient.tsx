@@ -37,20 +37,27 @@ const defaultStaffAvatar = "https://placehold.co/40x40.png?text=S";
 
 export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffId }: TicketDetailClientProps) {
   const [newMessage, setNewMessage] = useState("");
+  const [ticket, setTicket] = useState<Ticket>(initialTicket); 
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [activeMobileTab, setActiveMobileTab] = useState<'info' | 'discussion'>('info');
   
-  const isTicketLockedByOther = initialTicket.isLocked && initialTicket.lockedByStaffId !== currentStaffId;
-  const isTicketLockedByCurrentUser = initialTicket.isLocked && initialTicket.lockedByStaffId === currentStaffId;
+  const isTicketLockedByOther = ticket.isLocked && ticket.lockedByStaffId !== currentStaffId;
+  const isTicketLockedByCurrentUser = ticket.isLocked && ticket.lockedByStaffId === currentStaffId;
+
+  // Sync local state if the parent passes a new ticket prop
+  useEffect(() => {
+    setTicket(initialTicket);
+  }, [initialTicket]);
 
 
   useEffect(() => {
     // Auto-lock ticket if viewed by staff and not already locked.
-    // This effect now depends on initialTicket.id to avoid re-locking on every message.
-    if (userRole === 'staff' && currentStaffId && !initialTicket.isLocked) {
-      const updatedTicket = { ...initialTicket, isLocked: true, lockedByStaffId: currentStaffId, updatedAt: new Date().toISOString() };
+    // This effect now depends on ticket.id to avoid re-locking on every message.
+    if (userRole === 'staff' && currentStaffId && !ticket.isLocked) {
+      const updatedTicket = { ...ticket, isLocked: true, lockedByStaffId: currentStaffId, updatedAt: new Date().toISOString() };
+      setTicket(updatedTicket);
       onUpdateTicket(updatedTicket);
       toast({
         title: "Ticket Locked",
@@ -58,7 +65,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialTicket.id, userRole, currentStaffId]);
+  }, [ticket.id, userRole, currentStaffId]);
   
   useEffect(() => {
     if (scrollAreaRef.current && activeMobileTab === 'discussion') {
@@ -68,15 +75,16 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
         viewport.scrollTop = viewport.scrollHeight;
       }
     }
-  }, [initialTicket.messages, activeMobileTab]);
+  }, [ticket.messages, activeMobileTab]);
 
   const handleStatusChange = (newStatus: TicketStatus) => {
     if (userRole === 'staff' && isTicketLockedByOther) return;
-    const updatedTicket = { ...initialTicket, status: newStatus, updatedAt: new Date().toISOString() };
+    const updatedTicket = { ...ticket, status: newStatus, updatedAt: new Date().toISOString() };
+    setTicket(updatedTicket);
     onUpdateTicket(updatedTicket); 
     toast({
       title: "Ticket Status Updated",
-      description: `Ticket "${initialTicket.subject}" is now ${newStatus}.`,
+      description: `Ticket "${ticket.subject}" is now ${newStatus}.`,
     });
   };
 
@@ -89,11 +97,12 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
     }
 
     const updatedTicket = { 
-      ...initialTicket, 
+      ...ticket, 
       assignedTo: staffId === "unassigned" ? undefined : selectedStaff?.name, 
       assigneeAvatar: staffId === "unassigned" ? undefined : selectedStaff?.avatar,
       updatedAt: new Date().toISOString() 
     };
+    setTicket(updatedTicket);
     onUpdateTicket(updatedTicket);
     toast({
       title: "Ticket Assignment Updated",
@@ -110,16 +119,18 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
       from: userRole,
       text: newMessage,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      avatar: userRole === "student" ? initialTicket.studentAvatar : staffAvatar,
+      avatar: userRole === "student" ? ticket.studentAvatar : staffAvatar,
     };
     
     const updatedTicket = { 
-      ...initialTicket, 
-      messages: [...initialTicket.messages, message],
+      ...ticket, 
+      messages: [...ticket.messages, message],
       updatedAt: new Date().toISOString(),
     };
-    onUpdateTicket(updatedTicket); 
-    setNewMessage("");
+    setTicket(updatedTicket); // Update local state first
+    setNewMessage(""); // Clear the input
+    onUpdateTicket(updatedTicket); // Then sync with parent
+
     toast({
       title: userRole === 'staff' ? "Reply Sent" : "Message Sent",
       description: "Your reply has been added to the ticket.",
@@ -128,7 +139,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
 
   const handleUnlockTicket = () => {
     if (userRole === 'staff' && isTicketLockedByCurrentUser) {
-      const updatedTicket = { ...initialTicket, isLocked: false, lockedByStaffId: undefined, updatedAt: new Date().toISOString() };
+      const updatedTicket = { ...ticket, isLocked: false, lockedByStaffId: undefined, updatedAt: new Date().toISOString() };
+      setTicket(updatedTicket);
       onUpdateTicket(updatedTicket);
       toast({
         title: "Ticket Unlocked",
@@ -137,7 +149,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
     }
   };
   
-  const lockerName = initialTicket.lockedByStaffId ? dummyStaffMembers.find(s => s.id === initialTicket.lockedByStaffId)?.name : 'another staff member';
+  const lockerName = ticket.lockedByStaffId ? dummyStaffMembers.find(s => s.id === ticket.lockedByStaffId)?.name : 'another staff member';
 
   const TicketInfoContent = () => (
     <>
@@ -160,17 +172,17 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
       )}
 
       <CardHeader className="px-0 pt-0 pb-4">
-        <CardTitle className="text-xl md:text-2xl font-headline">{initialTicket.subject}</CardTitle>
-        <CardDescription>Ticket ID: {initialTicket.id}</CardDescription>
+        <CardTitle className="text-xl md:text-2xl font-headline">{ticket.subject}</CardTitle>
+        <CardDescription>Ticket ID: {ticket.id}</CardDescription>
       </CardHeader>
       
       <div className="space-y-4">
         <div>
           <Label htmlFor="ticket-status">Status</Label>
           <Select
-            value={initialTicket.status} 
+            value={ticket.status} 
             onValueChange={(value: TicketStatus) => handleStatusChange(value)}
-            disabled={(userRole === 'student' && initialTicket.status === 'Closed') || (userRole === 'staff' && isTicketLockedByOther)}
+            disabled={(userRole === 'student' && ticket.status === 'Closed') || (userRole === 'staff' && isTicketLockedByOther)}
             name="ticket-status"
           >
             <SelectTrigger className="w-full mt-1">
@@ -186,14 +198,14 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
         
         <div>
           <h4 className="text-sm font-medium mb-1">Priority</h4>
-          <Badge className={cn("text-sm", priorityColors[initialTicket.priority])}>{initialTicket.priority}</Badge>
+          <Badge className={cn("text-sm", priorityColors[ticket.priority])}>{ticket.priority}</Badge>
         </div>
 
         {userRole === 'staff' && (
           <div>
             <Label htmlFor="ticket-assignment">Assigned To</Label>
             <Select
-              value={dummyStaffMembers.find(s => s.name === initialTicket.assignedTo)?.id || "unassigned"}
+              value={dummyStaffMembers.find(s => s.name === ticket.assignedTo)?.id || "unassigned"}
               onValueChange={handleAssignmentChange}
               name="ticket-assignment"
               disabled={isTicketLockedByOther}
@@ -219,17 +231,17 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
           </div>
         )}
 
-        {initialTicket.assignedTo && (
+        {ticket.assignedTo && (
            <div className="flex items-center gap-2 text-sm">
             <UserCog className="w-4 h-4 text-muted-foreground" />
             <span className="font-medium">Assigned:</span>
-            {initialTicket.assigneeAvatar && (
+            {ticket.assigneeAvatar && (
               <Avatar className="h-6 w-6">
-                <AvatarImage src={initialTicket.assigneeAvatar} alt={initialTicket.assignedTo} data-ai-hint="staff avatar"/>
-                <AvatarFallback>{initialTicket.assignedTo.charAt(0)}</AvatarFallback>
+                <AvatarImage src={ticket.assigneeAvatar} alt={ticket.assignedTo} data-ai-hint="staff avatar"/>
+                <AvatarFallback>{ticket.assignedTo.charAt(0)}</AvatarFallback>
               </Avatar>
             )}
-            <span>{initialTicket.assignedTo}</span>
+            <span>{ticket.assignedTo}</span>
           </div>
         )}
 
@@ -237,29 +249,29 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
         <div className="flex items-center gap-2 text-sm">
           <User className="w-4 h-4 text-muted-foreground" />
           <span className="font-medium">Student:</span>
-          <span>{initialTicket.studentName}</span>
+          <span>{ticket.studentName}</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
           <CalendarDays className="w-4 h-4 text-muted-foreground" />
           <span className="font-medium">Created:</span>
-          <span>{new Date(initialTicket.createdAt).toLocaleString()}</span>
+          <span>{new Date(ticket.createdAt).toLocaleString()}</span>
         </div>
-        {initialTicket.updatedAt && (
+        {ticket.updatedAt && (
           <div className="flex items-center gap-2 text-sm">
             <ShieldCheck className="w-4 h-4 text-muted-foreground" />
             <span className="font-medium">Last Updated:</span>
-            <span>{new Date(initialTicket.updatedAt).toLocaleString()}</span>
+            <span>{new Date(ticket.updatedAt).toLocaleString()}</span>
           </div>
         )}
         <div>
           <h4 className="text-sm font-medium mb-1">Description</h4>
-          <p className="text-sm text-muted-foreground bg-secondary p-3 rounded-md whitespace-pre-line">{initialTicket.description}</p>
+          <p className="text-sm text-muted-foreground bg-secondary p-3 rounded-md whitespace-pre-line">{ticket.description}</p>
         </div>
       </div>
     </>
   );
 
-  const TicketDiscussionContent = ({ isMobileContext = false }: { isMobileContext?: boolean }) => (
+  const TicketDiscussionContent = ({ isMobileContext = false }: { isMobileContext?: boolean }) => (    
     <>
       <header 
           className={cn(
@@ -273,7 +285,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
       
       <ScrollArea className="flex-1 px-4 py-4" ref={scrollAreaRef}>
         <div className="space-y-6">
-          {initialTicket.messages.map((message) => (
+          {ticket.messages.map((message) => (
             <div
               key={message.id}
               className={cn(
@@ -283,12 +295,12 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
             >
               <Avatar className="h-8 w-8">
                  <AvatarImage 
-                  src={message.from === 'student' ? initialTicket.studentAvatar : (message.avatar || staffAvatar)} 
+                  src={message.from === 'student' ? ticket.studentAvatar : (message.avatar || staffAvatar)} 
                   alt={message.from} 
                   data-ai-hint="avatar person"
                 />
                 <AvatarFallback>
-                  {message.from === 'student' ? initialTicket.studentName.charAt(0).toUpperCase() : (message.from === 'staff' ? 'S' : '?')}
+                  {message.from === 'student' ? ticket.studentName.charAt(0).toUpperCase() : (message.from === 'staff' ? 'S' : '?')}
                 </AvatarFallback>
               </Avatar>
               <div
@@ -386,3 +398,5 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
     </div>
   );
 }
+
+    
