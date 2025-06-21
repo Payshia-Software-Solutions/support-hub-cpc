@@ -3,10 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: var(--font-pt-sans), sans-serif;
-}
-
 @layer base {
   :root {
     --background: 36 33% 90%;            /* WhatsApp Beige chat background #ECE5DD */
