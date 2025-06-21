@@ -113,6 +113,7 @@ export default function ChatPage() {
               </Button>
             </div>
             <ChatWindow 
+              key={selectedChat?.id}
               chat={selectedChat} 
               onSendMessage={handleSendMessage} 
               userRole="student"
@@ -141,6 +142,7 @@ export default function ChatPage() {
         )}
         {!isError && (
           <ChatWindow 
+            key={selectedChat?.id}
             chat={selectedChat} 
             onSendMessage={handleSendMessage} 
             userRole="student"

@@ -109,6 +109,7 @@ export default function AdminChatPage() {
               </Button>
             </div>
             <ChatWindow 
+              key={selectedChat?.id}
               chat={selectedChat} 
               onSendMessage={handleSendMessage} 
               userRole="staff"
@@ -138,6 +139,7 @@ export default function AdminChatPage() {
         )}
         {!isError && (
            <ChatWindow 
+            key={selectedChat?.id}
             chat={selectedChat} 
             onSendMessage={handleSendMessage} 
             userRole="staff"
