@@ -46,10 +46,10 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
   const isTicketLockedByOther = ticket.isLocked && ticket.lockedByStaffId !== currentStaffId;
   const isTicketLockedByCurrentUser = ticket.isLocked && ticket.lockedByStaffId === currentStaffId;
 
-  // Sync local state if the parent passes a new ticket prop
+  // Sync local state ONLY when navigating to a new ticket (ID changes)
   useEffect(() => {
     setTicket(initialTicket);
-  }, [initialTicket]);
+  }, [initialTicket.id]);
 
 
   useEffect(() => {
@@ -398,5 +398,3 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
     </div>
   );
 }
-
-    
