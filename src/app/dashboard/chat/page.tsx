@@ -79,26 +79,7 @@ export default function ChatPage() {
       attachment, // Pass the attachment object
     };
 
-    // Check if a staff member has already replied in this chat *before* sending the new message.
-    const hasStaffReplied = selectedChatMessages?.some(m => m.from === 'staff');
-
-    sendMessageMutation.mutate(newMessagePayload, {
-      onSuccess: () => {
-        // Only send the auto-reply if a staff member hasn't replied yet.
-        if (!hasStaffReplied) {
-          // Simulate a staff reply after a short delay
-          setTimeout(() => {
-            const staffReplyPayload = {
-              chatId,
-              from: "staff" as const,
-              text: "Thanks for your message! We'll get back to you shortly.",
-              // No attachment for the auto-reply
-            };
-            sendMessageMutation.mutate(staffReplyPayload);
-          }, 1500);
-        }
-      }
-    });
+    sendMessageMutation.mutate(newMessagePayload);
   };
 
   const selectedChat = chats?.find((chat) => chat.id === selectedChatId);
