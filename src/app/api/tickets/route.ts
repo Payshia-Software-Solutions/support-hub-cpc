@@ -1,9 +1,35 @@
-import { NextResponse } from 'next/server';
-import { dummyTickets } from '@/lib/dummy-data';
+import type {NextConfig} from 'next';
 
-export async function GET() {
-  // In a real app, you'd fetch this from a database.
-  // We'll add a small delay to simulate network latency.
-  await new Promise(resolve => setTimeout(resolve, 500)); 
-  return NextResponse.json(dummyTickets);
-}
+const nextConfig: NextConfig = {
+  /* config options here */
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'chat-server.pharmacollege.lk',
+        port: '',
+        pathname: '/**',
+      },
+       {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
+};
+
+export default nextConfig;

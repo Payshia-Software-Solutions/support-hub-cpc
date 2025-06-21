@@ -1,34 +1,54 @@
+
 "use client";
 
-import { useState } from "react";
 import { TicketForm } from "@/components/dashboard/TicketForm";
-import { dummyTickets as initialDummyTickets } from "@/lib/dummy-data";
-import type { Ticket } from "@/lib/types";
 import { useRouter } from "next/navigation";
-
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createTicket } from "@/lib/api";
+import { toast } from "@/hooks/use-toast";
+import type { Ticket } from "@/lib/types";
 
 export default function CreateTicketPage() {
-  const [tickets, setTickets] = useState<Ticket[]>(initialDummyTickets);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const handleTicketSubmit = (newTicket: Ticket) => {
-    // In a real app, this would be an API call.
-    // For now, we're just updating local state (which won't persist across page loads without more complex state management)
-    // and logging to console. The form itself handles its own toast.
-    const updatedTickets = [...tickets, newTicket];
-    setTickets(updatedTickets); 
-    // Optionally, you could update a global store or context here.
-    // For this example, the primary effect is logging and the toast from the form.
-    console.log("All tickets after submission:", updatedTickets);
+  const createTicketMutation = useMutation({
+    mutationFn: createTicket,
+    onSuccess: (newTicket: Ticket) => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
+      
+      toast({
+        title: "Ticket Submitted!",
+        description: `Your ticket "${newTicket.subject}" has been created.`,
+      });
+      router.push(`/dashboard/tickets/${newTicket.id}`);
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Submission Failed",
+        description: error.message || "An unknown error occurred.",
+      });
+    },
+  });
 
-    // Redirect to the new ticket's detail page or the ticket list
-    // router.push(`/dashboard/tickets/${newTicket.id}`);
-    router.push("/dashboard/tickets"); // Or redirect to list
+  const handleTicketSubmit = (data: Omit<Ticket, 'id' | 'createdAt' | 'status' | 'studentName' | 'studentAvatar'>) => {
+    // Here you would get the current user's info
+    const studentName = "Current User"; // Placeholder
+    const studentAvatar = "https://placehold.co/100x100.png"; // Placeholder
+    
+    createTicketMutation.mutate({
+      ...data,
+      studentName,
+      studentAvatar,
+      status: 'Open',
+    });
   };
 
   return (
     <div className="p-4 md:p-8 flex justify-center items-start min-h-full bg-muted/30 overflow-y-auto">
-      <TicketForm onSubmitTicket={handleTicketSubmit} />
+      <TicketForm onSubmitTicket={handleTicketSubmit} isSubmitting={createTicketMutation.isPending} />
     </div>
   );
 }

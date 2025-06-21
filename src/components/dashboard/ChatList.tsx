@@ -9,11 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Search, PlusCircle } from "lucide-react";
+import { Skeleton } from "../ui/skeleton";
 
 interface ChatListProps {
   chats: Chat[];
   selectedChatId: string | null;
   onSelectChat: (chatId: string) => void;
+  isLoading: boolean;
 }
 
 const MAX_PREVIEW_LENGTH = 40;
@@ -26,7 +28,7 @@ function truncateText(text: string | undefined, maxLength: number): string {
   return text.substring(0, maxLength) + "...";
 }
 
-export function ChatList({ chats, selectedChatId, onSelectChat }: ChatListProps) {
+export function ChatList({ chats, selectedChatId, onSelectChat, isLoading }: ChatListProps) {
   return (
     <div className="flex flex-col h-full bg-card">     
       <div className="p-4 border-b flex items-center gap-2">
@@ -45,7 +47,16 @@ export function ChatList({ chats, selectedChatId, onSelectChat }: ChatListProps)
       </div>
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
-          {chats.map((chat) => (
+          {isLoading && [...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center p-3 rounded-xl">
+              <Skeleton className="h-10 w-10 rounded-full mr-3" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            </div>
+          ))}
+          {!isLoading && chats.map((chat) => (
             <button
               key={chat.id}
               onClick={() => onSelectChat(chat.id)}
@@ -76,9 +87,11 @@ export function ChatList({ chats, selectedChatId, onSelectChat }: ChatListProps)
               </div>
             </button>
           ))}
+          {!isLoading && chats.length === 0 && (
+             <p className="p-4 text-center text-sm text-muted-foreground">No chats found.</p>
+          )}
         </div>
       </ScrollArea>
     </div>
   );
 }
-

@@ -1,16 +1,17 @@
 
+
 export interface Attachment {
   type: 'image' | 'document';
-  url: string; // For images, this can be a Data URL; for documents, a placeholder or name
+  url: string; 
   name: string;
-  file?: File; // Optional: to hold the actual file object client-side if needed later
+  file?: File;
 }
 
 export interface Message {
   id: string;
   from: 'student' | 'staff';
   text: string;
-  time: string;
+  time: string; // Should be an ISO 8601 date string from the API
   avatar?: string;
   attachment?: Attachment;
 }
@@ -19,9 +20,9 @@ export interface Chat {
   id:string;
   userName: string;
   userAvatar: string;
-  messages: Message[];
-  lastMessagePreview?: string; // For ChatList display
-  lastMessageTime?: string; // For ChatList display
+  // messages are now fetched separately
+  lastMessagePreview?: string;
+  lastMessageTime?: string; 
   unreadCount?: number;
 }
 
@@ -34,13 +35,13 @@ export interface Ticket {
   description: string;
   priority: TicketPriority;
   status: TicketStatus;
-  createdAt: string;
-  updatedAt?: string;
+  createdAt: string; // ISO 8601 date string
+  updatedAt?: string; // ISO 8601 date string
   studentName: string;
   studentAvatar: string;
-  messages: Message[];
-  assignedTo?: string; // Staff member's name or ID
-  assigneeAvatar?: string; // URL for assignee's avatar
+  // messages are now fetched separately
+  assignedTo?: string; 
+  assigneeAvatar?: string;
   isLocked?: boolean;
   lockedByStaffId?: string;
 }
@@ -49,10 +50,10 @@ export interface Announcement {
   id: string;
   title: string;
   content: string;
-  date: string; // ISO string or human-readable
+  date: string; // ISO 8601 date string
   author?: string;
   category?: 'General' | 'Academic' | 'Events' | 'Urgent';
-  isNew?: boolean;
+  isNew?: boolean; // This will be handled client-side
 }
 
 // Basic User type for admin placeholder

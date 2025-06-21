@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,8 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import type { Ticket, TicketPriority, TicketStatus } from "@/lib/types";
+import type { Ticket, TicketPriority } from "@/lib/types";
 
 const ticketFormSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters.").max(100, "Subject must be at most 100 characters."),
@@ -31,11 +31,11 @@ const ticketFormSchema = z.object({
 type TicketFormValues = z.infer<typeof ticketFormSchema>;
 
 interface TicketFormProps {
-  onSubmitTicket: (newTicket: Ticket) => void;
+  onSubmitTicket: (data: TicketFormValues) => void;
+  isSubmitting: boolean;
 }
 
-export function TicketForm({ onSubmitTicket }: TicketFormProps) {
-  const { toast } = useToast();
+export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   const form = useForm<TicketFormValues>({
     resolver: zodResolver(ticketFormSchema),
     defaultValues: {
@@ -46,38 +46,7 @@ export function TicketForm({ onSubmitTicket }: TicketFormProps) {
   });
 
   function onSubmit(data: TicketFormValues) {
-    const newTicket: Ticket = {
-      id: `ticket-${Date.now()}`,
-      subject: data.subject,
-      description: data.description,
-      priority: data.priority as TicketPriority,
-      status: "Open" as TicketStatus,
-      createdAt: new Date().toISOString(),
-      studentName: "Current User", // Placeholder
-      studentAvatar: "https://placehold.co/100x100.png", // Placeholder
-      messages: [
-        {
-          id: `msg-${Date.now()}`,
-          from: "student",
-          text: `Ticket created with subject: ${data.subject}. Description: ${data.description}`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          avatar: "https://placehold.co/40x40.png", // Placeholder
-        },
-      ],
-    };
-    
-    onSubmitTicket(newTicket); // Update parent state (e.g., dummyTickets array)
-    
-    toast({
-      title: "Ticket Submitted!",
-      description: (
-        <div>
-          <p>Subject: {data.subject}</p>
-          <p>Priority: {data.priority}</p>
-        </div>
-      ),
-    });
-    console.log("New ticket submitted:", newTicket);
+    onSubmitTicket(data);
     form.reset();
   }
 
@@ -155,8 +124,8 @@ export function TicketForm({ onSubmitTicket }: TicketFormProps) {
             />
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full sm:w-auto" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Submitting..." : "Submit Ticket"}
+            <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit Ticket"}
             </Button>
           </CardFooter>
         </form>

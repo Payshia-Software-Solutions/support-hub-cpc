@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from "react";
@@ -12,31 +13,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { toast } from "@/hooks/use-toast";
+import { getTicket, updateTicket } from "@/lib/api";
 
 const CURRENT_STAFF_ID = dummyStaffMembers[0]?.id || 'staff1'; 
 const STAFF_AVATAR = dummyStaffMembers.find(s => s.id === CURRENT_STAFF_ID)?.avatar || "https://placehold.co/40x40.png?text=Staff";
-
-async function getTicket(ticketId: string): Promise<Ticket> {
-  const res = await fetch(`/api/tickets/${ticketId}`);
-  if (!res.ok) {
-    const errorData = await res.json();
-    throw new Error(errorData.error || 'Failed to fetch ticket');
-  }
-  return res.json();
-}
-
-async function updateTicket(updatedTicket: Ticket): Promise<Ticket> {
-    const res = await fetch(`/api/tickets/${updatedTicket.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedTicket),
-    });
-    if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to update ticket');
-    }
-    return res.json();
-}
 
 export default function AdminTicketDetailPage() {
   const router = useRouter();
@@ -50,17 +30,14 @@ export default function AdminTicketDetailPage() {
   const { data: ticket, isLoading, isError, error } = useQuery<Ticket>({
     queryKey: ['ticket', ticketId],
     queryFn: () => getTicket(ticketId),
-    retry: false, // Don't retry on 404s
+    retry: false,
   });
 
   const updateMutation = useMutation({
     mutationFn: updateTicket,
     onSuccess: (data) => {
-      // Invalidate and refetch the ticket query to get the fresh data
       queryClient.invalidateQueries({ queryKey: ['ticket', data.id] });
-      // Optionally invalidate the admin list query as well
       queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
-       // Don't show toast here, it's handled in TicketDetailClient for more context
     },
     onError: (err: Error) => {
         toast({
@@ -80,7 +57,7 @@ export default function AdminTicketDetailPage() {
     }
   }, [isMobile, setIsMobileDetailActive]);
 
-  const handleUpdateTicket = (updatedTicket: Ticket) => {
+  const handleUpdateTicket = (updatedTicket: Partial<Ticket> & { id: string }) => {
     updateMutation.mutate(updatedTicket);
   };
 

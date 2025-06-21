@@ -2,21 +2,44 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChatList } from "@/components/dashboard/ChatList";
 import { ChatWindow } from "@/components/dashboard/ChatWindow";
-import { dummyChats as initialChats } from "@/lib/dummy-data";
 import type { Chat, Message, Attachment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useSidebar } from "@/components/ui/sidebar"; 
+import { getChats, createChatMessage } from "@/lib/api";
+import { toast } from "@/hooks/use-toast";
 
 export default function ChatPage() {
-  const [chats, setChats] = useState<Chat[]>(initialChats);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const { setIsMobileDetailActive } = useMobileDetailActive();
   const { open: isSidebarOpen } = useSidebar(); 
+  const queryClient = useQueryClient();
+
+  const { data: chats, isLoading, isError, error } = useQuery<Chat[]>({
+    queryKey: ['chats'],
+    queryFn: getChats,
+  });
+
+  const sendMessageMutation = useMutation({
+    mutationFn: createChatMessage,
+    onSuccess: (data, variables) => {
+      // Invalidate queries to refetch chat messages and the chat list
+      queryClient.invalidateQueries({ queryKey: ['chatMessages', variables.chatId] });
+      queryClient.invalidateQueries({ queryKey: ['chats'] }); // To update last message preview
+    },
+    onError: (err: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to send message",
+        description: err.message,
+      });
+    }
+  });
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768); 
@@ -35,78 +58,38 @@ export default function ChatPage() {
 
   const handleSelectChat = (chatId: string) => {
     setSelectedChatId(chatId);
-    setChats(prevChats => 
-      prevChats.map(c => 
-        c.id === chatId ? { ...c, unreadCount: 0 } : c
-      )
-    );
   };
 
   const handleSendMessage = (chatId: string, messageText: string, attachment?: Attachment) => {
-    const currentChat = chats.find(c => c.id === chatId);
+    const currentChat = chats?.find(c => c.id === chatId);
     if (!currentChat) return;
 
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
-      from: "student", // Message from student
+    // We send the new message payload to the API
+    // The API is responsible for creating the message with ID, timestamp, etc.
+    const newMessagePayload = {
+      chatId,
+      from: "student",
       text: messageText,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      avatar: currentChat.userAvatar, // Student's own avatar
-      attachment: attachment
+      // Attachment handling would need API support for file uploads.
+      // We are not sending the file itself here.
     };
 
-    setChats((prevChats) =>
-      prevChats.map((chat) => {
-        if (chat.id === chatId) {
-          const updatedMessages = [...chat.messages, newMessage];
-          let preview = newMessage.text;
-          if (newMessage.attachment) {
-            preview = newMessage.attachment.type === 'image' ? `📷 Photo` : `📄 Document: ${newMessage.attachment.name}`;
-            if (newMessage.text) preview = `${preview} - ${newMessage.text}`;
-          }
-
-          return {
-            ...chat,
-            messages: updatedMessages,
-            lastMessagePreview: preview,
-            lastMessageTime: newMessage.time,
+    sendMessageMutation.mutate(newMessagePayload, {
+      onSuccess: () => {
+        // Simulate a staff reply after a short delay
+        setTimeout(() => {
+          const staffReplyPayload = {
+            chatId,
+            from: "staff",
+            text: "Thanks for your message! We'll get back to you shortly.",
           };
-        }
-        return chat;
-      })
-    );
-
-    // Simulate staff reply
-    setTimeout(() => {
-      let replyText = "Thanks for your message! We'll get back to you shortly.";
-      if (attachment) {
-        replyText = `Received your ${attachment.type === 'image' ? 'image' : 'document'} "${attachment.name}". Thanks! We'll review it and get back to you.`;
+          sendMessageMutation.mutate(staffReplyPayload);
+        }, 1500);
       }
-      const staffReply: Message = {
-        id: `msg-${Date.now() + 1}`,
-        from: "staff",
-        text: replyText,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        avatar: "https://placehold.co/40x40.png" // Generic staff avatar for reply
-      };
-      setChats((prevChats) =>
-        prevChats.map((chat) => {
-          if (chat.id === chatId) {
-            const updatedMessages = [...chat.messages, staffReply];
-            return {
-              ...chat,
-              messages: updatedMessages,
-              lastMessagePreview: staffReply.text,
-              lastMessageTime: staffReply.time,
-            };
-          }
-          return chat;
-        })
-      );
-    }, 1500);
+    });
   };
 
-  const selectedChat = chats.find((chat) => chat.id === selectedChatId);
+  const selectedChat = chats?.find((chat) => chat.id === selectedChatId);
 
   const chatWindowContainerDesktopClasses = `flex-1 h-full min-w-0 ${
     isSidebarOpen
@@ -118,7 +101,12 @@ export default function ChatPage() {
     return (
       <div className="h-full flex flex-col w-full p-0">
         {!selectedChatId ? (
-          <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
+          <ChatList 
+            chats={chats || []} 
+            selectedChatId={selectedChatId} 
+            onSelectChat={handleSelectChat}
+            isLoading={isLoading} 
+          />
         ) : (
           <>
             <div className="p-2 border-b bg-card sticky top-0 z-20"> 
@@ -134,8 +122,7 @@ export default function ChatPage() {
             <ChatWindow 
               chat={selectedChat} 
               onSendMessage={handleSendMessage} 
-              userRole="student" // Specify role
-              staffAvatar={selectedChat?.userAvatar} // For student context, staffAvatar prop on ChatWindow isn't used for sending, but good to pass something.
+              userRole="student"
             />
           </>
         )}
@@ -146,15 +133,26 @@ export default function ChatPage() {
   return (
     <div className="flex h-full w-full">
       <div className="w-[400px] shrink-0 h-full border-r bg-card">
-        <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} />
+        <ChatList 
+          chats={chats || []} 
+          selectedChatId={selectedChatId} 
+          onSelectChat={handleSelectChat} 
+          isLoading={isLoading}
+        />
       </div>
       <div className={chatWindowContainerDesktopClasses}> 
-        <ChatWindow 
-          chat={selectedChat} 
-          onSendMessage={handleSendMessage} 
-          userRole="student" // Specify role
-          staffAvatar={selectedChat?.userAvatar}
-        />
+         {isError && (
+          <div className="flex flex-col h-full items-center justify-center bg-background text-destructive p-4">
+             <p>Error: {error.message}</p>
+          </div>
+        )}
+        {!isError && (
+          <ChatWindow 
+            chat={selectedChat} 
+            onSendMessage={handleSendMessage} 
+            userRole="student"
+          />
+        )}
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from "react";
@@ -11,28 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { toast } from "@/hooks/use-toast";
-
-async function getTicket(ticketId: string): Promise<Ticket> {
-  const res = await fetch(`/api/tickets/${ticketId}`);
-  if (!res.ok) {
-    const errorData = await res.json();
-    throw new Error(errorData.error || 'Failed to fetch ticket');
-  }
-  return res.json();
-}
-
-async function updateTicket(updatedTicket: Ticket): Promise<Ticket> {
-    const res = await fetch(`/api/tickets/${updatedTicket.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedTicket),
-    });
-    if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to update ticket');
-    }
-    return res.json();
-}
+import { getTicket, updateTicket } from "@/lib/api";
 
 export default function TicketDetailPage() {
   const router = useRouter();
@@ -46,17 +26,14 @@ export default function TicketDetailPage() {
   const { data: ticket, isLoading, isError, error } = useQuery<Ticket>({
     queryKey: ['ticket', ticketId],
     queryFn: () => getTicket(ticketId),
-    retry: false, // Don't retry on 404s
+    retry: false,
   });
 
   const updateMutation = useMutation({
     mutationFn: updateTicket,
     onSuccess: (data) => {
-      // Invalidate and refetch the ticket query to get the fresh data
       queryClient.invalidateQueries({ queryKey: ['ticket', data.id] });
-      // Optionally invalidate the list query as well
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
-      // Don't show toast here, it's handled in TicketDetailClient for more context
     },
     onError: (err: Error) => {
         toast({
@@ -76,7 +53,7 @@ export default function TicketDetailPage() {
     }
   }, [isMobile, setIsMobileDetailActive]);
 
-  const handleUpdateTicket = (updatedTicket: Ticket) => {
+  const handleUpdateTicket = (updatedTicket: Partial<Ticket> & { id: string }) => {
     updateMutation.mutate(updatedTicket);
   };
   
