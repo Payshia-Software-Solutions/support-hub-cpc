@@ -48,7 +48,6 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
 
 
   useEffect(() => {
-    setTicket(initialTicket);
     // Auto-lock ticket if viewed by staff and not already locked
     if (userRole === 'staff' && currentStaffId && !initialTicket.isLocked) {
       const updatedTicket = { ...initialTicket, isLocked: true, lockedByStaffId: currentStaffId, updatedAt: new Date().toISOString() };
@@ -60,7 +59,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialTicket, userRole, currentStaffId]); // Removed onUpdateTicket and toast from deps to avoid loop if they change identity
+  }, [initialTicket.id, userRole, currentStaffId]); // Depend on ticket ID to prevent re-renders from parent
   
   useEffect(() => {
     if (scrollAreaRef.current && activeMobileTab === 'discussion') {
