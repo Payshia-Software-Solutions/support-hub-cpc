@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,23 +11,18 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 
-// Simulate current staff user - In a real app, this would come from auth
 const CURRENT_STAFF_ID = dummyStaffMembers[0]?.id || 'staff1'; 
 const STAFF_AVATAR = dummyStaffMembers.find(s => s.id === CURRENT_STAFF_ID)?.avatar || "https://placehold.co/40x40.png?text=Staff";
-
 
 export default function AdminTicketDetailPage() {
   const router = useRouter();
   const params = useParams();
   const ticketId = params.id as string;
 
-  // Use a single source of truth for the tickets state on this page instance.
-  // Deep copy to prevent mutations from affecting other parts of the app unexpectedly.
-  const [tickets, setTickets] = useState<Ticket[]>(() => JSON.parse(JSON.stringify(initialDummyTickets)));
+  // We use a simple state to force re-renders ONLY when the mutable dummy data changes.
+  const [, forceUpdate] = useState(0);
   const { setIsMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
-  
-  // This state is just to track the initial loading, not for the ticket data itself.
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -44,23 +38,21 @@ export default function AdminTicketDetailPage() {
 
   useEffect(() => {
     // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 150); // Small delay to prevent flash of loading skeleton
+    const timer = setTimeout(() => setIsLoading(false), 150); 
     return () => clearTimeout(timer);
   }, [ticketId]);
 
   const handleUpdateTicket = (updatedTicket: Ticket) => {
-    // Update the local 'tickets' state for this page instance.
-    setTickets(prevTickets => 
-      prevTickets.map(t => t.id === updatedTicket.id ? updatedTicket : t)
-    );
-    // Also update the global dummyTickets for other components to see changes (simulated)
+    // In a real app, this would be an API call. Here we directly mutate the "global" dummy data.
     const globalTicketIndex = initialDummyTickets.findIndex(t => t.id === updatedTicket.id);
     if (globalTicketIndex !== -1) {
       initialDummyTickets[globalTicketIndex] = updatedTicket;
+      // Force a re-render to make sure the UI reflects the change.
+      forceUpdate(c => c + 1);
     }
   };
 
-  const ticket = tickets.find((t) => t.id === ticketId);
+  const ticket = initialDummyTickets.find((t) => t.id === ticketId);
 
   if (isLoading) { 
     return (
@@ -110,6 +102,7 @@ export default function AdminTicketDetailPage() {
         </div>
       )}
       <TicketDetailClient 
+        key={ticket.id} // Add key to ensure component remounts on new ticket, not just re-renders
         initialTicket={ticket} 
         onUpdateTicket={handleUpdateTicket}
         userRole="staff" 

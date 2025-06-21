@@ -17,9 +17,8 @@ export default function TicketDetailPage() {
   const params = useParams();
   const ticketId = params.id as string;
 
-  // Use a single source of truth for the tickets state on this page instance.
-  // Deep copy to prevent mutations from affecting other parts of the app unexpectedly.
-  const [tickets, setTickets] = useState<Ticket[]>(() => JSON.parse(JSON.stringify(initialDummyTickets)));
+  // We use a simple state to force re-renders ONLY when the mutable dummy data changes.
+  const [, forceUpdate] = useState(0);
   const { setIsMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(true);
@@ -37,24 +36,22 @@ export default function TicketDetailPage() {
 
   useEffect(() => {
     // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 150); // Small delay to prevent flash of loading skeleton
+    const timer = setTimeout(() => setIsLoading(false), 150); 
     return () => clearTimeout(timer);
   }, [ticketId]);
 
 
   const handleUpdateTicket = (updatedTicket: Ticket) => {
-    setTickets(prevTickets => 
-      prevTickets.map(t => t.id === updatedTicket.id ? updatedTicket : t)
-    );
-    // Note: in a real app, this would be an API call. Here we also mutate the global
-    // dummy data so that changes can be seen on other pages without a full state management solution.
-     const globalTicketIndex = initialDummyTickets.findIndex(t => t.id === updatedTicket.id);
+    // In a real app, this would be an API call. Here we directly mutate the "global" dummy data.
+    const globalTicketIndex = initialDummyTickets.findIndex(t => t.id === updatedTicket.id);
     if (globalTicketIndex !== -1) {
       initialDummyTickets[globalTicketIndex] = updatedTicket;
+      // Force a re-render to make sure the UI reflects the change.
+      forceUpdate(c => c + 1);
     }
   };
 
-  const ticket = tickets.find((t) => t.id === ticketId);
+  const ticket = initialDummyTickets.find((t) => t.id === ticketId);
 
   if (isLoading) { 
     return (
@@ -104,10 +101,11 @@ export default function TicketDetailPage() {
         </div>
       )}
       <TicketDetailClient 
+        key={ticket.id} // Add key to ensure component remounts on new ticket, not just re-renders
         initialTicket={ticket} 
         onUpdateTicket={handleUpdateTicket} 
-        userRole="student" // Specify user role
-        staffAvatar={ticket.studentAvatar} // For student, staffAvatar prop is not strictly needed but pass student's own for consistency if message.avatar logic relies on it
+        userRole="student"
+        staffAvatar={ticket.studentAvatar}
       />
     </div>
   );
