@@ -70,7 +70,7 @@ export function ChatList({ chats, selectedChatId, onSelectChat, isLoading }: Cha
                             <p className="text-xs font-medium text-muted-foreground truncate">{chat.studentNumber}</p>
                         )}
                         <p className="text-xs text-muted-foreground truncate">
-                            {chat.lastMessagePreview}
+                            {chat.lastMessagePreview || "No messages yet."}
                         </p>
                     </div>
                   {chat.unreadCount && chat.unreadCount > 0 && (
