@@ -47,7 +47,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
 
 
   useEffect(() => {
-    // Auto-lock ticket if viewed by staff and not already locked
+    // Auto-lock ticket if viewed by staff and not already locked.
+    // This effect now depends on initialTicket.id to avoid re-locking on every message.
     if (userRole === 'staff' && currentStaffId && !initialTicket.isLocked) {
       const updatedTicket = { ...initialTicket, isLocked: true, lockedByStaffId: currentStaffId, updatedAt: new Date().toISOString() };
       onUpdateTicket(updatedTicket);

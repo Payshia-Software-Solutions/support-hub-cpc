@@ -17,10 +17,12 @@ export default function TicketDetailPage() {
   const params = useParams();
   const ticketId = params.id as string;
 
-  const [tickets, setTickets] = useState<Ticket[]>(initialDummyTickets);
-  const [ticket, setTicket] = useState<Ticket | null | undefined>(undefined); 
-  const isMobile = useIsMobile();
+  // Use a single source of truth for the tickets state on this page instance.
+  // Deep copy to prevent mutations from affecting other parts of the app unexpectedly.
+  const [tickets, setTickets] = useState<Ticket[]>(() => JSON.parse(JSON.stringify(initialDummyTickets)));
   const { setIsMobileDetailActive } = useMobileDetailActive();
+  const isMobile = useIsMobile();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (isMobile) {
@@ -34,17 +36,27 @@ export default function TicketDetailPage() {
   }, [isMobile, setIsMobileDetailActive]);
 
   useEffect(() => {
-    const foundTicket = tickets.find((t) => t.id === ticketId);
-    setTicket(foundTicket || null);
-  }, [ticketId, tickets]);
+    // Simulate loading
+    const timer = setTimeout(() => setIsLoading(false), 150); // Small delay to prevent flash of loading skeleton
+    return () => clearTimeout(timer);
+  }, [ticketId]);
+
 
   const handleUpdateTicket = (updatedTicket: Ticket) => {
     setTickets(prevTickets => 
       prevTickets.map(t => t.id === updatedTicket.id ? updatedTicket : t)
     );
+    // Note: in a real app, this would be an API call. Here we also mutate the global
+    // dummy data so that changes can be seen on other pages without a full state management solution.
+     const globalTicketIndex = initialDummyTickets.findIndex(t => t.id === updatedTicket.id);
+    if (globalTicketIndex !== -1) {
+      initialDummyTickets[globalTicketIndex] = updatedTicket;
+    }
   };
 
-  if (ticket === undefined) { 
+  const ticket = tickets.find((t) => t.id === ticketId);
+
+  if (isLoading) { 
     return (
       <div className="p-4 md:p-6 space-y-4">
         <Skeleton className="h-8 w-3/4" />
