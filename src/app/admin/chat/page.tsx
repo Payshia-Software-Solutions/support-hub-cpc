@@ -34,8 +34,13 @@ export default function AdminChatPage() {
     mutationFn: createChatMessage,
     onMutate: async (newMessagePayload) => {
         const { chatId, text, from, attachment } = newMessagePayload;
+        
         await queryClient.cancelQueries({ queryKey: ['chatMessages', chatId] });
+        await queryClient.cancelQueries({ queryKey: ['chats'] });
+
         const previousMessages = queryClient.getQueryData<Message[]>(['chatMessages', chatId]);
+        const previousChats = queryClient.getQueryData<Chat[]>(['chats']);
+
         const optimisticMessage: Message = {
             id: `optimistic-${Date.now()}`,
             from: from,
@@ -47,11 +52,33 @@ export default function AdminChatPage() {
         queryClient.setQueryData<Message[]>(['chatMessages', chatId], (old) => 
             old ? [...old, optimisticMessage] : [optimisticMessage]
         );
-        return { previousMessages, chatId };
+
+        queryClient.setQueryData<Chat[]>(['chats'], (oldChats) => {
+          if (!oldChats) return [];
+          const newChats = oldChats.map(chat => {
+              if (chat.id === chatId) {
+                  return {
+                      ...chat,
+                      lastMessagePreview: text,
+                      lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).replace(' ', ''),
+                      unreadCount: 0, 
+                  };
+              }
+              return chat;
+          });
+          const updatedChat = newChats.find(c => c.id === chatId);
+          const otherChats = newChats.filter(c => c.id !== chatId);
+          return updatedChat ? [updatedChat, ...otherChats] : newChats;
+        });
+
+        return { previousMessages, previousChats, chatId };
     },
     onError: (err: Error, variables, context) => {
         if (context?.previousMessages) {
             queryClient.setQueryData(['chatMessages', context.chatId], context.previousMessages);
+        }
+        if (context?.previousChats) {
+            queryClient.setQueryData(['chats'], context.previousChats);
         }
         toast({
             variant: "destructive",
