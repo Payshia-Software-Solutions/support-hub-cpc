@@ -18,16 +18,6 @@ interface ChatListProps {
   isLoading: boolean;
 }
 
-const MAX_PREVIEW_LENGTH = 30;
-
-function truncateText(text: string | undefined, maxLength: number): string {
-  if (!text) return "";
-  if (text.length <= maxLength) {
-    return text;
-  }
-  return text.substring(0, maxLength) + "...";
-}
-
 export function ChatList({ chats, selectedChatId, onSelectChat, isLoading }: ChatListProps) {
   return (
     <div className="flex flex-col h-full bg-card">     
@@ -80,7 +70,7 @@ export function ChatList({ chats, selectedChatId, onSelectChat, isLoading }: Cha
                             <p className="text-xs font-medium text-muted-foreground truncate">{chat.studentNumber}</p>
                         )}
                         <p className="text-xs text-muted-foreground truncate">
-                            {truncateText(chat.lastMessagePreview, MAX_PREVIEW_LENGTH)}
+                            {chat.lastMessagePreview}
                         </p>
                     </div>
                   {chat.unreadCount && chat.unreadCount > 0 && (
