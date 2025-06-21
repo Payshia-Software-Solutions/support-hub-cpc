@@ -39,6 +39,36 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
   }
 }
 
+// Define the shape of the message object from the API
+interface ApiMessage {
+  id: string;
+  from_role: 'student' | 'staff'; // This is the key from the API
+  text: string;
+  time: string;
+  avatar?: string;
+  attachment_type?: 'image' | 'document' | null;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+}
+
+// Mapper function to transform API message to internal message format
+function mapApiMessageToMessage(apiMsg: ApiMessage): Message {
+  return {
+    id: apiMsg.id,
+    from: apiMsg.from_role, // Map from_role to from
+    text: apiMsg.text,
+    time: apiMsg.time,
+    avatar: apiMsg.avatar,
+    attachment: (apiMsg.attachment_type && apiMsg.attachment_url && apiMsg.attachment_name)
+      ? {
+          type: apiMsg.attachment_type,
+          url: apiMsg.attachment_url,
+          name: apiMsg.attachment_name,
+        }
+      : undefined,
+  };
+}
+
 // Announcements
 export const getAnnouncements = (): Promise<Announcement[]> => apiFetch('/announcements');
 
@@ -56,7 +86,11 @@ type CreateTicketMessageClientPayload = {
 
 export const getTickets = (): Promise<Ticket[]> => apiFetch('/tickets');
 export const getTicket = (id: string): Promise<Ticket> => apiFetch(`/tickets/${id}`);
-export const getTicketMessages = (ticketId: string): Promise<Message[]> => apiFetch(`/ticket-messages/by-ticket/${ticketId}`);
+export const getTicketMessages = async (ticketId: string): Promise<Message[]> => {
+    const apiMessages = await apiFetch<ApiMessage[]>(`/ticket-messages/by-ticket/${ticketId}`);
+    if (!apiMessages) return [];
+    return apiMessages.map(mapApiMessageToMessage);
+};
 export const createTicket = (ticketData: CreateTicketPayload): Promise<Ticket> => apiFetch('/tickets', { method: 'POST', body: JSON.stringify(ticketData) });
 export const updateTicket = (ticketData: UpdateTicketPayload): Promise<Ticket> => apiFetch(`/tickets/${ticketData.id}`, { method: 'POST', body: JSON.stringify(ticketData) });
 
@@ -82,7 +116,11 @@ type CreateChatMessageClientPayload = {
 
 export const getChats = (): Promise<Chat[]> => apiFetch('/chats');
 export const getChat = (id: string): Promise<Chat> => apiFetch(`/chats/${id}`);
-export const getChatMessages = (chatId: string): Promise<Message[]> => apiFetch(`/chat-messages/by-chat/${chatId}`);
+export const getChatMessages = async (chatId: string): Promise<Message[]> => {
+    const apiMessages = await apiFetch<ApiMessage[]>(`/chat-messages/by-chat/${chatId}`);
+    if (!apiMessages) return [];
+    return apiMessages.map(mapApiMessageToMessage);
+};
 
 export const createChatMessage = (messageData: CreateChatMessageClientPayload): Promise<Message> => {
   // We transform the client-side payload to match the API's expected format
