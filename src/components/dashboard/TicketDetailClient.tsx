@@ -234,39 +234,43 @@ const TicketDiscussionContent = ({
                 </div>
             )}
             {isError && <p className="text-destructive text-center">Failed to load messages.</p>}
-            {!isLoading && messages?.map((message) => (
-            <div
-                key={message.id}
-                className={cn(
-                "flex items-end gap-2 max-w-[85%] sm:max-w-[75%]", 
-                message.from === 'student' ? "ml-auto flex-row-reverse" : "mr-auto"
-                )}
-            >
-                <Avatar className="h-8 w-8">
-                <AvatarImage 
-                    src={message.from === 'student' ? ticket.studentAvatar : (message.avatar || staffAvatar)} 
-                    alt={message.from} 
-                    data-ai-hint="avatar person"
-                />
-                <AvatarFallback>
-                    {message.from === 'student' ? (ticket.studentName?.charAt(0).toUpperCase() || 'S') : (message.from === 'staff' ? 'S' : '?')}
-                </AvatarFallback>
-                </Avatar>
+            {!isLoading && messages?.map((message) => {
+              const isCurrentUserMessage = message.from === userRole;
+
+              return (
                 <div
-                className={cn(
-                    "p-3 rounded-xl shadow-sm",
-                    message.from === 'student'
-                    ? "bg-primary/90 text-primary-foreground rounded-br-none"
-                    : "bg-card border rounded-bl-none"
-                )}
+                    key={message.id}
+                    className={cn(
+                    "flex items-end gap-2 max-w-[85%] sm:max-w-[75%]", 
+                    isCurrentUserMessage ? "ml-auto flex-row-reverse" : "mr-auto"
+                    )}
                 >
-                <p className="text-sm">{message.text}</p>
-                <p className="text-xs mt-1 opacity-70">
-                    {new Date(message.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </p>
+                    <Avatar className="h-8 w-8">
+                    <AvatarImage 
+                        src={message.from === 'student' ? ticket.studentAvatar : (message.avatar || staffAvatar)} 
+                        alt={message.from} 
+                        data-ai-hint="avatar person"
+                    />
+                    <AvatarFallback>
+                        {message.from === 'student' ? (ticket.studentName?.charAt(0).toUpperCase() || 'S') : (message.from === 'staff' ? 'S' : '?')}
+                    </AvatarFallback>
+                    </Avatar>
+                    <div
+                    className={cn(
+                        "p-3 rounded-xl shadow-sm",
+                        isCurrentUserMessage
+                        ? "bg-primary/90 text-primary-foreground rounded-br-none"
+                        : "bg-card border rounded-bl-none"
+                    )}
+                    >
+                    <p className="text-sm">{message.text}</p>
+                    <p className="text-xs mt-1 opacity-70">
+                        {new Date(message.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                    </div>
                 </div>
-            </div>
-            ))}
+              );
+            })}
         </div>
         </ScrollArea>
 

@@ -59,57 +59,61 @@ function ChatMessages({ chat, userRole, staffAvatar }: Pick<ChatWindowProps, 'ch
                     </div>
                 )}
                 {isError && <p className="text-center text-destructive">Failed to load messages.</p>}
-                {!isLoading && messages?.map((message, index) => (
-                    <div
-                        key={message.id || index}
-                        className={cn(
-                            "flex items-end gap-2 max-w-[75%]",
-                            message.from === 'student' ? "ml-auto flex-row-reverse" : "mr-auto"
-                        )}
-                    >
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage
-                                src={message.from === 'student' ? studentAvatar : (message.avatar || staffMessageAvatar)}
-                                alt={message.from}
-                                data-ai-hint="avatar person"
-                            />
-                            <AvatarFallback>
-                                {message.from === 'student' ? studentFallback : staffFallback}
-                            </AvatarFallback>
-                        </Avatar>
+                {!isLoading && messages?.map((message, index) => {
+                    const isCurrentUserMessage = message.from === userRole;
+                    
+                    return (
                         <div
+                            key={message.id || index}
                             className={cn(
-                                "p-3 rounded-xl shadow-sm",
-                                message.from === 'student'
-                                    ? "bg-primary/90 text-primary-foreground rounded-br-none"
-                                    : "bg-card border rounded-bl-none"
+                                "flex items-end gap-2 max-w-[75%]",
+                                isCurrentUserMessage ? "ml-auto flex-row-reverse" : "mr-auto"
                             )}
                         >
-                            {message.attachment?.type === 'image' && message.attachment.url && (
-                                <div className="mb-2">
-                                    <Image
-                                        src={message.attachment.url}
-                                        alt={message.attachment.name}
-                                        width={200}
-                                        height={200}
-                                        className="rounded-md object-cover"
-                                        data-ai-hint="attached image"
-                                    />
-                                </div>
-                            )}
-                            {message.attachment?.type === 'document' && (
-                                <div className="mb-2 p-2 bg-secondary rounded-md flex items-center gap-2">
-                                    <FileText className="h-6 w-6 text-muted-foreground" />
-                                    <span className="text-sm text-secondary-foreground truncate">{message.attachment.name}</span>
-                                </div>
-                            )}
-                            {message.text && <p className="text-sm">{message.text}</p>}
-                            <p className="text-xs mt-1 text-right opacity-70">
-                                {new Date(message.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
+                            <Avatar className="h-8 w-8">
+                                <AvatarImage
+                                    src={message.from === 'student' ? studentAvatar : (message.avatar || staffMessageAvatar)}
+                                    alt={message.from}
+                                    data-ai-hint="avatar person"
+                                />
+                                <AvatarFallback>
+                                    {message.from === 'student' ? studentFallback : staffFallback}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div
+                                className={cn(
+                                    "p-3 rounded-xl shadow-sm",
+                                    isCurrentUserMessage
+                                        ? "bg-primary/90 text-primary-foreground rounded-br-none"
+                                        : "bg-card border rounded-bl-none"
+                                )}
+                            >
+                                {message.attachment?.type === 'image' && message.attachment.url && (
+                                    <div className="mb-2">
+                                        <Image
+                                            src={message.attachment.url}
+                                            alt={message.attachment.name}
+                                            width={200}
+                                            height={200}
+                                            className="rounded-md object-cover"
+                                            data-ai-hint="attached image"
+                                        />
+                                    </div>
+                                )}
+                                {message.attachment?.type === 'document' && (
+                                    <div className="mb-2 p-2 bg-secondary rounded-md flex items-center gap-2">
+                                        <FileText className="h-6 w-6 text-muted-foreground" />
+                                        <span className="text-sm text-secondary-foreground truncate">{message.attachment.name}</span>
+                                    </div>
+                                )}
+                                {message.text && <p className="text-sm">{message.text}</p>}
+                                <p className="text-xs mt-1 text-right opacity-70">
+                                    {new Date(message.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </ScrollArea>
     );
