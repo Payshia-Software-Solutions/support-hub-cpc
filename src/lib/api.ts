@@ -2,7 +2,7 @@
 import type { Ticket, Announcement, Chat, Message } from './types';
 
 // In a real app, you would move this to a .env file
-const API_BASE_URL = 'https://chat-server.pharmacollege.lk/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
 
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   try {

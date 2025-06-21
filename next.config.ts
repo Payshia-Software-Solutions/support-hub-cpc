@@ -1,6 +1,9 @@
 
 import type {NextConfig} from 'next';
 
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
+const apiHostname = new URL(apiBaseUrl).hostname;
+
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
@@ -19,7 +22,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'chat-server.pharmacollege.lk',
+        hostname: apiHostname,
         port: '',
         pathname: '/**',
       },
