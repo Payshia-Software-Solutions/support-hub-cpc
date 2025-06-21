@@ -20,6 +20,7 @@ export interface Chat {
   id:string;
   userName: string;
   userAvatar: string;
+  studentNumber?: string;
   // messages are now fetched separately
   lastMessagePreview?: string;
   lastMessageTime?: string; 
