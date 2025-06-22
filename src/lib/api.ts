@@ -162,8 +162,9 @@ export const updateTicket = async (ticketData: UpdateTicketPayload): Promise<Tic
 };
 
 export const updateTicketStatus = async (ticketId: string, newStatus: TicketStatus): Promise<Ticket> => {
-    const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketId}/status/${newStatus}`, {
-        method: 'POST'
+    const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketId}/status/`, {
+        method: 'POST',
+        body: JSON.stringify({ newStatus: newStatus }),
     });
     return mapApiTicketToTicket(updatedApiTicket);
 }
