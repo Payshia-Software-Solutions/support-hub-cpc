@@ -95,6 +95,42 @@ function mapApiChatToChat(apiChat: ApiChat): Chat {
     };
 }
 
+// Mapper for Ticket response (API -> App)
+function mapApiTicketToTicket(apiTicket: any): Ticket {
+    return {
+        id: apiTicket.id,
+        subject: apiTicket.subject,
+        description: apiTicket.description,
+        priority: apiTicket.priority,
+        status: apiTicket.status,
+        createdAt: apiTicket.created_at,
+        updatedAt: apiTicket.updated_at,
+        studentName: apiTicket.student_name,
+        studentAvatar: apiTicket.student_avatar,
+        assignedTo: apiTicket.assigned_to,
+        assigneeAvatar: apiTicket.assignee_avatar,
+        isLocked: apiTicket.is_locked,
+        lockedByStaffId: apiTicket.locked_by_staff_id,
+    };
+}
+
+// Mapper for Ticket request (App -> API)
+// This handles both creation and updates.
+function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
+    const apiPayload: { [key: string]: any } = {};
+    if (ticketData.subject !== undefined) apiPayload.subject = ticketData.subject;
+    if (ticketData.description !== undefined) apiPayload.description = ticketData.description;
+    if (ticketData.priority !== undefined) apiPayload.priority = ticketData.priority;
+    if (ticketData.status !== undefined) apiPayload.status = ticketData.status;
+    if (ticketData.studentName !== undefined) apiPayload.student_name = ticketData.studentName;
+    if (ticketData.studentAvatar !== undefined) apiPayload.student_avatar = ticketData.studentAvatar;
+    if (ticketData.assignedTo !== undefined) apiPayload.assigned_to = ticketData.assignedTo;
+    if (ticketData.assigneeAvatar !== undefined) apiPayload.assignee_avatar = ticketData.assigneeAvatar;
+    if (ticketData.isLocked !== undefined) apiPayload.is_locked = ticketData.isLocked;
+    if (ticketData.lockedByStaffId !== undefined) apiPayload.locked_by_staff_id = ticketData.lockedByStaffId;
+    return apiPayload;
+}
+
 
 // Announcements
 export const getAnnouncements = (): Promise<Announcement[]> => apiFetch('/announcements');
@@ -110,16 +146,30 @@ type CreateTicketMessageClientPayload = {
   text: string;
 };
 
-
-export const getTickets = (): Promise<Ticket[]> => apiFetch('/tickets');
-export const getTicket = (id: string): Promise<Ticket> => apiFetch(`/tickets/${id}`);
+export const getTickets = async (): Promise<Ticket[]> => {
+    const apiTickets = await apiFetch<any[]>('/tickets');
+    if (!apiTickets) return [];
+    return apiTickets.map(mapApiTicketToTicket);
+};
+export const getTicket = async (id: string): Promise<Ticket> => {
+    const apiTicket = await apiFetch<any>(`/tickets/${id}`);
+    return mapApiTicketToTicket(apiTicket);
+};
 export const getTicketMessages = async (ticketId: string): Promise<Message[]> => {
     const apiMessages = await apiFetch<ApiMessage[]>(`/ticket-messages/by-ticket/${ticketId}`);
     if (!apiMessages) return [];
     return apiMessages.map(mapApiMessageToMessage);
 };
-export const createTicket = (ticketData: CreateTicketPayload): Promise<Ticket> => apiFetch('/tickets', { method: 'POST', body: JSON.stringify(ticketData) });
-export const updateTicket = (ticketData: UpdateTicketPayload): Promise<Ticket> => apiFetch(`/tickets/${ticketData.id}`, { method: 'POST', body: JSON.stringify(ticketData) });
+export const createTicket = async (ticketData: CreateTicketPayload): Promise<Ticket> => {
+    const apiPayload = mapTicketToApiPayload(ticketData);
+    const newApiTicket = await apiFetch<any>('/tickets', { method: 'POST', body: JSON.stringify(apiPayload) });
+    return mapApiTicketToTicket(newApiTicket);
+};
+export const updateTicket = async (ticketData: UpdateTicketPayload): Promise<Ticket> => {
+    const apiPayload = mapTicketToApiPayload(ticketData);
+    const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketData.id}`, { method: 'POST', body: JSON.stringify(apiPayload) });
+    return mapApiTicketToTicket(updatedApiTicket);
+};
 
 export const createTicketMessage = (messageData: CreateTicketMessageClientPayload): Promise<Message> => {
   const apiPayload = {
