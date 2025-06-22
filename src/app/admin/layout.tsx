@@ -7,11 +7,31 @@ import { MobileHeader } from "@/components/dashboard/MobileHeader"; // Can be re
 import { MobileDetailActiveProvider, useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { ProtectedRoute } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 // We need a sub-component to access the context values for conditional styling
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const { isMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && user?.role !== 'staff') {
+      router.replace('/dashboard/chat'); // Redirect non-staff users away
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading || !user || user.role !== 'staff') {
+    return (
+        <div className="flex h-screen w-screen items-center justify-center">
+            <p>Access Denied. Redirecting...</p>
+        </div>
+    );
+  }
 
   // For admin, we might not need a bottom dock, so padding adjustment might differ
   // For simplicity, using similar logic as dashboard for now.
@@ -42,13 +62,15 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <MobileDetailActiveProvider>
-      {/* AnnouncementsProvider might not be relevant for admin */}
-      {/* <AnnouncementsProvider> */}
-        <SidebarProvider defaultOpen>
-          <LayoutContent>{children}</LayoutContent>
-        </SidebarProvider>
-      {/* </AnnouncementsProvider> */}
-    </MobileDetailActiveProvider>
+    <ProtectedRoute>
+      <MobileDetailActiveProvider>
+        {/* AnnouncementsProvider might not be relevant for admin */}
+        {/* <AnnouncementsProvider> */}
+          <SidebarProvider defaultOpen>
+            <LayoutContent>{children}</LayoutContent>
+          </SidebarProvider>
+        {/* </AnnouncementsProvider> */}
+      </MobileDetailActiveProvider>
+    </ProtectedRoute>
   );
 }

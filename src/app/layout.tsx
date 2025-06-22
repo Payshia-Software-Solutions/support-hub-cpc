@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { PWAProvider } from '@/components/providers/PWAProvider';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
   title: 'Student Support Hub',
@@ -34,10 +35,12 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <QueryProvider>
-          <PWAProvider>
-            {children}
-            <Toaster />
-          </PWAProvider>
+          <AuthProvider>
+            <PWAProvider>
+              {children}
+              <Toaster />
+            </PWAProvider>
+          </AuthProvider>
         </QueryProvider>
       </body>
     </html>

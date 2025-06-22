@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Ticket, PlusCircle, Settings, Users, Megaphone } from "lucide-react";
+import { MessageSquare, Ticket, PlusCircle, Settings, Users, Megaphone, LogOut, Shield } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAnnouncements } from "@/contexts/AnnouncementsContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
@@ -26,9 +27,14 @@ const navItems = [
   { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
 ];
 
+const adminNavItem = { href: "/admin/dashboard", label: "Admin Panel", icon: Shield };
+
 export function SidebarNav() {
   const pathname = usePathname();
   const { unreadCount: unreadAnnouncementsCount } = useAnnouncements();
+  const { user, logout } = useAuth();
+  
+  const currentNavItems = user?.role === 'staff' ? [...navItems, adminNavItem] : navItems;
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -45,19 +51,15 @@ export function SidebarNav() {
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
-          {navItems.map((item) => (
+          {currentNavItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
                 isActive={pathname.startsWith(item.href)}
                 tooltip={{ children: item.label, side: "right" }}
                 className="justify-start"
-                onClick={() => {
-                  // This onClick is for the SidebarMenuButton itself if needed,
-                  // Link component handles navigation.
-                }}
               >
-                <Link href={item.href}> {/* Use Link directly for navigation */}
+                <Link href={item.href}>
                   <item.icon className="h-5 w-5" />
                   <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                   {item.href === "/dashboard/announcements" && unreadAnnouncementsCount > 0 && (
@@ -78,28 +80,28 @@ export function SidebarNav() {
         <SidebarMenu>
            <SidebarMenuItem>
              <SidebarMenuButton
-                asChild
-                tooltip={{children: "Settings", side: "right"}}
+                onClick={logout}
+                tooltip={{children: "Logout", side: "right"}}
                 className="justify-start"
               >
-                <Link href="#">
-                  <Settings className="h-5 w-5" />
-                  <span className="group-data-[collapsible=icon]:hidden">Settings</span>
-                </Link>
+                  <LogOut className="h-5 w-5" />
+                  <span className="group-data-[collapsible=icon]:hidden">Logout</span>
               </SidebarMenuButton>
            </SidebarMenuItem>
-           <SidebarMenuItem>
-            <div className="flex items-center gap-3 p-2 group-data-[collapsible=icon]:justify-center">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="https://placehold.co/40x40.png" alt="User" data-ai-hint="person avatar" />
-                <AvatarFallback>U</AvatarFallback>
-              </Avatar>
-              <div className="group-data-[collapsible=icon]:hidden">
-                <p className="text-sm font-medium">User Name</p>
-                <p className="text-xs text-muted-foreground">user@example.com</p>
-              </div>
-            </div>
-           </SidebarMenuItem>
+           {user && (
+            <SidebarMenuItem>
+                <div className="flex items-center gap-3 p-2 group-data-[collapsible=icon]:justify-center">
+                <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="person avatar" />
+                    <AvatarFallback>{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="group-data-[collapsible=icon]:hidden">
+                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                </div>
+                </div>
+            </SidebarMenuItem>
+           )}
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

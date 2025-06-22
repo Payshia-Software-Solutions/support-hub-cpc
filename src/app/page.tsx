@@ -2,17 +2,25 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomePage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    router.replace('/dashboard/chat');
-  }, [router]);
+    if (!isLoading) {
+      if (isAuthenticated) {
+        router.replace('/dashboard/chat');
+      } else {
+        router.replace('/login');
+      }
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   return (
     <div className="flex h-screen items-center justify-center">
-      <p>Redirecting to dashboard...</p>
+      <p>Loading...</p>
     </div>
   );
 }

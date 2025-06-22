@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Ticket, Settings, Users, CreditCard, LayoutDashboard } from "lucide-react"; // Added CreditCard, Users
+import { MessageSquare, Ticket, Settings, Users, CreditCard, LayoutDashboard, LogOut } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -27,6 +28,7 @@ const navItems = [
 
 export function AdminSidebarNav() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -75,18 +77,30 @@ export function AdminSidebarNav() {
                 </Link>
               </SidebarMenuButton>
            </SidebarMenuItem>
-           <SidebarMenuItem>
-            <div className="flex items-center gap-3 p-2 group-data-[collapsible=icon]:justify-center">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="https://placehold.co/40x40.png?text=Adm" alt="Admin User" data-ai-hint="person avatar" />
-                <AvatarFallback>A</AvatarFallback>
-              </Avatar>
-              <div className="group-data-[collapsible=icon]:hidden">
-                <p className="text-sm font-medium">Admin User</p>
-                <p className="text-xs text-muted-foreground">admin@example.com</p>
-              </div>
-            </div>
-           </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton
+                    onClick={logout}
+                    tooltip={{children: "Logout", side: "right"}}
+                    className="justify-start"
+                >
+                    <LogOut className="h-5 w-5" />
+                    <span className="group-data-[collapsible=icon]:hidden">Logout</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+           {user && (
+            <SidebarMenuItem>
+                <div className="flex items-center gap-3 p-2 group-data-[collapsible=icon]:justify-center">
+                <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="person avatar" />
+                    <AvatarFallback>{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="group-data-[collapsible=icon]:hidden">
+                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                </div>
+                </div>
+            </SidebarMenuItem>
+           )}
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

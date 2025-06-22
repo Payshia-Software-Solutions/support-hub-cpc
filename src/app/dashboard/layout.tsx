@@ -9,6 +9,7 @@ import { AnnouncementsProvider } from "@/contexts/AnnouncementsContext";
 import { MobileDetailActiveProvider, useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { ProtectedRoute } from "@/contexts/AuthContext";
 
 // We need a sub-component to access the context values for conditional styling
 function LayoutContent({ children }: { children: React.ReactNode }) {
@@ -43,12 +44,14 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <MobileDetailActiveProvider>
-      <AnnouncementsProvider>
-        <SidebarProvider defaultOpen>
-          <LayoutContent>{children}</LayoutContent>
-        </SidebarProvider>
-      </AnnouncementsProvider>
-    </MobileDetailActiveProvider>
+    <ProtectedRoute>
+      <MobileDetailActiveProvider>
+        <AnnouncementsProvider>
+          <SidebarProvider defaultOpen>
+            <LayoutContent>{children}</LayoutContent>
+          </SidebarProvider>
+        </AnnouncementsProvider>
+      </MobileDetailActiveProvider>
+    </ProtectedRoute>
   );
 }
