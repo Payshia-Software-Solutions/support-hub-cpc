@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Chat } from "@/lib/types";
@@ -70,8 +71,8 @@ export function ChatList({ chats, selectedChatId, onSelectChat, isLoading }: Cha
                         )}
                         <p className="text-xs text-muted-foreground truncate">
                           {chat.lastMessagePreview
-                            ? chat.lastMessagePreview.length > 100
-                              ? `${chat.lastMessagePreview.substring(0, 100)}...`
+                            ? chat.lastMessagePreview.length > 20
+                              ? `${chat.lastMessagePreview.substring(0, 20)}...`
                               : chat.lastMessagePreview
                             : "No messages yet."}
                         </p>
