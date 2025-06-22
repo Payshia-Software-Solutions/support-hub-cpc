@@ -18,7 +18,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { dummyStaffMembers } from "@/lib/dummy-data"; 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTicketMessages, createTicketMessage } from "@/lib/api";
+import { getTicketMessages, createTicketMessage, updateTicketStatus } from "@/lib/api";
 import { Skeleton } from "../ui/skeleton";
 
 
@@ -29,12 +29,6 @@ interface TicketDetailClientProps {
   staffAvatar?: string; 
   currentStaffId?: string;
 }
-
-// Extend the payload for the mutation hook to optionally carry status info
-interface CreateTicketMessageMutationPayload extends CreateTicketMessageClientPayload {
-  newStatus?: TicketStatus;
-}
-
 
 const priorityColors: Record<Ticket["priority"], string> = {
   High: "bg-red-500 hover:bg-red-600 text-white",
@@ -319,9 +313,9 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
   const isTicketLockedByCurrentUser = ticket.isLocked && ticket.lockedByStaffId === currentStaffId;
 
   const sendMessageMutation = useMutation({
-      mutationFn: (payload: CreateTicketMessageClientPayload) => createTicketMessage(payload),
-      onMutate: async (newMessagePayload: CreateTicketMessageMutationPayload) => {
-          const { ticketId, text, from, newStatus } = newMessagePayload;
+      mutationFn: createTicketMessage,
+      onMutate: async (newMessagePayload: CreateTicketMessageClientPayload) => {
+          const { ticketId, text, from } = newMessagePayload;
           
           await queryClient.cancelQueries({ queryKey: ['ticketMessages', ticketId] });
           const previousMessages = queryClient.getQueryData<Message[]>(['ticketMessages', ticketId]);
@@ -335,40 +329,57 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
           queryClient.setQueryData<Message[]>(['ticketMessages', ticketId], (old) => 
               old ? [...old, optimisticMessage] : [optimisticMessage]
           );
-
-          let previousTicket: Ticket | undefined;
-          if (newStatus) {
-              await queryClient.cancelQueries({ queryKey: ['ticket', ticketId] });
-              previousTicket = queryClient.getQueryData<Ticket>(['ticket', ticketId]);
-              if (previousTicket) {
-                  const updatedTicket = { ...previousTicket, status: newStatus };
-                  queryClient.setQueryData(['ticket', ticketId], updatedTicket);
-                  setTicket(updatedTicket); // Optimistically update local state
-              }
-          }
-
-          return { previousMessages, previousTicket, ticketId };
+          return { previousMessages, ticketId };
       },
       onError: (error: Error, variables, context) => {
            if (context?.previousMessages) {
               queryClient.setQueryData(['ticketMessages', context.ticketId], context.previousMessages);
            }
-           if (context?.previousTicket) {
-              queryClient.setQueryData(['ticket', context.ticketId], context.previousTicket);
-              setTicket(context.previousTicket); // Revert local state on error
-           }
            toast({
              variant: "destructive",
-             title: "Action Failed",
+             title: "Message Send Failed",
              description: error.message,
            });
       },
       onSettled: (data, error, variables) => {
           queryClient.invalidateQueries({ queryKey: ['ticketMessages', variables.ticketId] });
-          queryClient.invalidateQueries({ queryKey: ['ticket', variables.ticketId] });
-          queryClient.invalidateQueries({ queryKey: ['tickets'] });
-          queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
       }
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ ticketId, newStatus }: { ticketId: string, newStatus: TicketStatus }) => 
+      updateTicketStatus(ticketId, newStatus),
+    onSuccess: (updatedTicket) => {
+      queryClient.setQueryData(['ticket', updatedTicket.id], updatedTicket);
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
+      setTicket(updatedTicket);
+      toast({
+        title: "Ticket Status Updated",
+        description: `Ticket is now ${updatedTicket.status}.`,
+      });
+    },
+    onError: (err: Error, variables, context: any) => {
+      if (context?.previousTicket) {
+        queryClient.setQueryData(['ticket', variables.ticketId], context.previousTicket);
+        setTicket(context.previousTicket);
+      }
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: err.message,
+      });
+    },
+    onMutate: async ({ ticketId, newStatus }) => {
+      await queryClient.cancelQueries({ queryKey: ['ticket', ticketId] });
+      const previousTicket = queryClient.getQueryData<Ticket>(['ticket', ticketId]);
+      if (previousTicket) {
+        const optimisticTicket = { ...previousTicket, status: newStatus };
+        queryClient.setQueryData(['ticket', ticketId], optimisticTicket);
+        setTicket(optimisticTicket);
+      }
+      return { previousTicket };
+    },
   });
 
   useEffect(() => {
@@ -380,26 +391,15 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
   
   const handleUpdate = (updates: Partial<Ticket>) => {
       const updatedData = { ...ticket, ...updates, updatedAt: new Date().toISOString() };
-      setTicket(updatedData); // Update local state immediately
-      onUpdateTicket({ id: ticket.id, ...updates }); // Send only the changes to the parent/API
+      setTicket(updatedData);
+      onUpdateTicket({ id: ticket.id, ...updates });
   }
 
   const handleStatusChange = (newStatus: TicketStatus) => {
     if (userRole === 'staff' && isTicketLockedByOther) return;
-    
-    // Post a system message that will trigger the status update on the backend
-    // and optimistically update the UI via the mutation's onMutate callback.
-    sendMessageMutation.mutate({
-      ticketId: ticket.id,
-      from: userRole,
-      text: `Ticket status updated to "${newStatus}".`,
-      newStatus: newStatus,
-    });
+    if (newStatus === ticket.status) return;
 
-    toast({
-      title: "Ticket Status Updated",
-      description: `Ticket is now ${newStatus}.`,
-    });
+    updateStatusMutation.mutate({ ticketId: ticket.id, newStatus });
   };
 
   const handleAssignmentChange = (staffId: string) => {

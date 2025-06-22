@@ -1,5 +1,5 @@
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -160,6 +160,13 @@ export const updateTicket = async (ticketData: UpdateTicketPayload): Promise<Tic
     const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketData.id}`, { method: 'POST', body: JSON.stringify(apiPayload) });
     return mapApiTicketToTicket(updatedApiTicket);
 };
+
+export const updateTicketStatus = async (ticketId: string, newStatus: TicketStatus): Promise<Ticket> => {
+    const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketId}/status/${newStatus}`, {
+        method: 'POST'
+    });
+    return mapApiTicketToTicket(updatedApiTicket);
+}
 
 export const createTicketMessage = (messageData: CreateTicketMessageClientPayload): Promise<Message> => {
   const apiPayload = {
