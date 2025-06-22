@@ -349,6 +349,27 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
   const updateStatusMutation = useMutation({
     mutationFn: ({ ticketId, newStatus }: { ticketId: string, newStatus: TicketStatus }) => 
       updateTicketStatus(ticketId, newStatus),
+    onMutate: async ({ ticketId, newStatus }) => {
+      await queryClient.cancelQueries({ queryKey: ['ticket', ticketId] });
+      const previousTicket = queryClient.getQueryData<Ticket>(['ticket', ticketId]);
+      if (previousTicket) {
+        const optimisticTicket = { ...previousTicket, status: newStatus };
+        queryClient.setQueryData(['ticket', ticketId], optimisticTicket);
+        setTicket(optimisticTicket);
+      }
+      return { previousTicket };
+    },
+    onError: (err: Error, variables, context: any) => {
+      if (context?.previousTicket) {
+        queryClient.setQueryData(['ticket', variables.ticketId], context.previousTicket);
+        setTicket(context.previousTicket);
+      }
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: err.message,
+      });
+    },
     onSuccess: (updatedTicket, variables) => {
       // The API returns the full updated ticket. We can use it to update the query data directly.
       queryClient.setQueryData(['ticket', variables.ticketId], updatedTicket);
@@ -364,27 +385,6 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
         title: "Ticket Status Updated",
         description: `Ticket is now '${variables.newStatus}'.`,
       });
-    },
-    onError: (err: Error, variables, context: any) => {
-      if (context?.previousTicket) {
-        queryClient.setQueryData(['ticket', variables.ticketId], context.previousTicket);
-        setTicket(context.previousTicket);
-      }
-      toast({
-        variant: "destructive",
-        title: "Update Failed",
-        description: err.message,
-      });
-    },
-    onMutate: async ({ ticketId, newStatus }) => {
-      await queryClient.cancelQueries({ queryKey: ['ticket', ticketId] });
-      const previousTicket = queryClient.getQueryData<Ticket>(['ticket', ticketId]);
-      if (previousTicket) {
-        const optimisticTicket = { ...previousTicket, status: newStatus };
-        queryClient.setQueryData(['ticket', ticketId], optimisticTicket);
-        setTicket(optimisticTicket);
-      }
-      return { previousTicket };
     },
   });
 
