@@ -1,5 +1,5 @@
 
-import type { Ticket, Announcement, Chat, Message, Attachment } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -136,16 +136,6 @@ function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
 export const getAnnouncements = (): Promise<Announcement[]> => apiFetch('/announcements');
 
 // Tickets
-type CreateTicketPayload = Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>;
-type UpdateTicketPayload = Partial<Ticket> & { id: string };
-
-// This is the data the CLIENT will provide
-type CreateTicketMessageClientPayload = { 
-  ticketId: string;
-  from: 'student' | 'staff';
-  text: string;
-};
-
 export const getTickets = async (): Promise<Ticket[]> => {
     const apiTickets = await apiFetch<any[]>('/tickets');
     if (!apiTickets) return [];
@@ -183,14 +173,6 @@ export const createTicketMessage = (messageData: CreateTicketMessageClientPayloa
 
 
 // Chats
-// This is the data the CLIENT will provide
-type CreateChatMessageClientPayload = {
-  chatId: string;
-  from: 'student' | 'staff';
-  text: string;
-  attachment?: Attachment;
-};
-
 export const getChats = async (): Promise<Chat[]> => {
     const apiChats = await apiFetch<ApiChat[]>('/chats');
     if (!apiChats) return [];

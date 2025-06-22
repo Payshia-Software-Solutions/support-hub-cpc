@@ -85,3 +85,20 @@ export interface StaffMember {
   name: string;
   avatar: string;
 }
+
+// Client-side payloads for API calls
+export type CreateTicketPayload = Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>;
+export type UpdateTicketPayload = Partial<Ticket> & { id: string };
+
+export type CreateTicketMessageClientPayload = { 
+  ticketId: string;
+  from: 'student' | 'staff';
+  text: string;
+};
+
+export type CreateChatMessageClientPayload = {
+  chatId: string;
+  from: 'student' | 'staff';
+  text: string;
+  attachment?: Attachment;
+};
