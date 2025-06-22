@@ -349,14 +349,20 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
   const updateStatusMutation = useMutation({
     mutationFn: ({ ticketId, newStatus }: { ticketId: string, newStatus: TicketStatus }) => 
       updateTicketStatus(ticketId, newStatus),
-    onSuccess: (updatedTicket) => {
-      queryClient.setQueryData(['ticket', updatedTicket.id], updatedTicket);
+    onSuccess: (updatedTicket, variables) => {
+      // The API returns the full updated ticket. We can use it to update the query data directly.
+      queryClient.setQueryData(['ticket', variables.ticketId], updatedTicket);
+      
+      // Invalidate queries to refetch fresh data for lists and the discussion.
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
       queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
-      setTicket(updatedTicket);
+      queryClient.invalidateQueries({ queryKey: ['ticketMessages', variables.ticketId] });
+
+      setTicket(updatedTicket); // Update local state with the definitive server response
+      
       toast({
         title: "Ticket Status Updated",
-        description: `Ticket is now ${updatedTicket.status}.`,
+        description: `Ticket is now '${variables.newStatus}'.`,
       });
     },
     onError: (err: Error, variables, context: any) => {
