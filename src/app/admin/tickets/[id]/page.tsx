@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TicketDetailClient } from "@/components/dashboard/TicketDetailClient";
-import { dummyStaffMembers } from "@/lib/dummy-data";
 import type { Ticket } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -14,15 +13,14 @@ import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { toast } from "@/hooks/use-toast";
 import { getTicket, updateTicket } from "@/lib/api";
-
-const CURRENT_STAFF_ID = dummyStaffMembers[0]?.id || 'staff1'; 
-const STAFF_AVATAR = dummyStaffMembers.find(s => s.id === CURRENT_STAFF_ID)?.avatar || "https://placehold.co/40x40.png?text=Staff";
+import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
 
 export default function AdminTicketDetailPage() {
   const router = useRouter();
   const params = useParams();
   const ticketId = params.id as string;
   const queryClient = useQueryClient();
+  const { user } = useAuth(); // Get the currently authenticated user
 
   const { setIsMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
@@ -65,7 +63,8 @@ export default function AdminTicketDetailPage() {
     updateMutation.mutate(updatedTicket);
   };
 
-  if (isLoading) { 
+  // The loading skeleton should also show if the user object isn't ready yet
+  if (isLoading || !user) { 
     return (
       <div className="p-4 md:p-6 space-y-4">
         <Skeleton className="h-8 w-3/4" />
@@ -118,8 +117,8 @@ export default function AdminTicketDetailPage() {
           initialTicket={ticket} 
           onUpdateTicket={handleUpdateTicket}
           userRole="staff" 
-          staffAvatar={STAFF_AVATAR} 
-          currentStaffId={CURRENT_STAFF_ID}
+          staffAvatar={user.avatar} // Use logged-in user's avatar
+          currentStaffId={user.id}   // Use logged-in user's ID
         />
       </div>
     </div>
