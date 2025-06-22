@@ -95,9 +95,9 @@ export default function AdminTicketDetailPage() {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden w-full">
+    <div className="h-full flex flex-col w-full">
       {isMobile && (
-        <div className="px-4 py-2 border-b bg-card sticky top-0 z-20">
+        <div className="px-4 py-2 border-b bg-card shrink-0">
           <Button
             variant="ghost"
             onClick={() => router.push("/admin/tickets")} 
@@ -108,14 +108,16 @@ export default function AdminTicketDetailPage() {
           </Button>
         </div>
       )}
-      <TicketDetailClient 
-        key={ticket.id}
-        initialTicket={ticket} 
-        onUpdateTicket={handleUpdateTicket}
-        userRole="staff" 
-        staffAvatar={STAFF_AVATAR} 
-        currentStaffId={CURRENT_STAFF_ID}
-      />
+      <div className="flex-1 overflow-hidden">
+        <TicketDetailClient 
+          key={ticket.id}
+          initialTicket={ticket} 
+          onUpdateTicket={handleUpdateTicket}
+          userRole="staff" 
+          staffAvatar={STAFF_AVATAR} 
+          currentStaffId={CURRENT_STAFF_ID}
+        />
+      </div>
     </div>
   );
 }

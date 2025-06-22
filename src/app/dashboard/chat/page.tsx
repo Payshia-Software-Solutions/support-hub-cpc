@@ -155,7 +155,7 @@ export default function ChatPage() {
           />
         ) : (
           <>
-            <div className="p-2 border-b bg-card sticky top-0 z-20"> 
+            <div className="p-2 border-b bg-card shrink-0"> 
               <Button 
                 variant="ghost"
                 onClick={() => setSelectedChatId(null)} 
@@ -165,12 +165,14 @@ export default function ChatPage() {
                 Back to Chats
               </Button>
             </div>
-            <ChatWindow 
-              key={selectedChat?.id}
-              chat={selectedChat} 
-              onSendMessage={handleSendMessage} 
-              userRole="student"
-            />
+            <div className="flex-1 overflow-hidden">
+              <ChatWindow 
+                key={selectedChat?.id}
+                chat={selectedChat} 
+                onSendMessage={handleSendMessage} 
+                userRole="student"
+              />
+            </div>
           </>
         )}
       </div>

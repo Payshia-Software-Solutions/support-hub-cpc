@@ -145,7 +145,7 @@ export default function AdminChatPage() {
           />
         ) : (
           <>
-            <div className="p-2 border-b bg-card sticky top-0 z-20"> 
+            <div className="p-2 border-b bg-card shrink-0"> 
               <Button 
                 variant="ghost"
                 onClick={() => setSelectedChatId(null)} 
@@ -155,13 +155,15 @@ export default function AdminChatPage() {
                 Back to Chats
               </Button>
             </div>
-            <ChatWindow 
-              key={selectedChat?.id}
-              chat={selectedChat} 
-              onSendMessage={handleSendMessage} 
-              userRole="staff"
-              staffAvatar={STAFF_AVATAR}
-            />
+            <div className="flex-1 overflow-hidden">
+              <ChatWindow 
+                key={selectedChat?.id}
+                chat={selectedChat} 
+                onSendMessage={handleSendMessage} 
+                userRole="staff"
+                staffAvatar={STAFF_AVATAR}
+              />
+            </div>
           </>
         )}
       </div>

@@ -60,7 +60,7 @@ function ChatMessages({ chat, userRole, staffAvatar }: Pick<ChatWindowProps, 'ch
                 )}
                 {isError && <p className="text-center text-destructive">Failed to load messages.</p>}
                 {!isLoading && messages?.map((message, index) => {
-                    const isCurrentUserMessage = message.from === userRole;
+                    const isCurrentUserMessage = (message.from === 'student' && userRole === 'student') || (message.from === 'staff' && userRole === 'staff');
                     
                     return (
                         <div
@@ -209,7 +209,7 @@ export function ChatWindow({ chat, onSendMessage, userRole, staffAvatar }: ChatW
   
   return (
     <div className="flex flex-col h-full bg-background">
-      <header className="p-4 border-b bg-card flex items-center gap-3 sticky top-0 z-10">
+      <header className="p-4 border-b bg-card flex items-center gap-3 shrink-0">
         <Avatar className="h-10 w-10">
           <AvatarImage src={chat.userAvatar} alt={chat.userName || 'Chat User'} data-ai-hint="avatar person" />
           <AvatarFallback>{chat.userName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
@@ -224,7 +224,7 @@ export function ChatWindow({ chat, onSendMessage, userRole, staffAvatar }: ChatW
 
       <ChatMessages chat={chat} userRole={userRole} staffAvatar={staffAvatar} />
 
-      <footer className="p-4 border-t bg-card sticky bottom-0 z-10">
+      <footer className="p-4 border-t bg-card shrink-0">
         {stagedAttachment && (
           <div className="mb-2 p-2 border rounded-md flex items-center justify-between bg-muted/50">
             <div className="flex items-center gap-2 truncate">

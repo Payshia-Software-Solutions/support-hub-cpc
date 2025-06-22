@@ -178,7 +178,6 @@ const TicketInfoContent = memo(({
 TicketInfoContent.displayName = "TicketInfoContent";
 
 const TicketDiscussionContent = ({ 
-  isMobileContext = false,
   ticket,
   userRole,
   staffAvatar,
@@ -187,7 +186,6 @@ const TicketDiscussionContent = ({
   handleSendMessage,
   isTicketLockedByOther,
  }: {
-    isMobileContext?: boolean,
     ticket: Ticket,
     userRole: 'student' | 'staff',
     staffAvatar: string,
@@ -214,15 +212,10 @@ const TicketDiscussionContent = ({
     }, [messages]);
 
     return (
-    <>
-        <header 
-            className={cn(
-                "px-4 py-3 border-b bg-card flex items-center gap-3",
-                !isMobileContext && "sticky top-0 z-10" 
-            )}
-        >
-        <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-        <h2 className="font-semibold text-md md:text-lg">Ticket Discussion</h2>
+    <div className="flex flex-col h-full bg-background">
+        <header className="px-4 py-3 border-b bg-card flex items-center gap-3 shrink-0">
+          <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+          <h2 className="font-semibold text-md md:text-lg">Ticket Discussion</h2>
         </header>
         
         <ScrollArea className="flex-1 px-4 py-4" ref={scrollAreaRef}>
@@ -236,7 +229,7 @@ const TicketDiscussionContent = ({
             {isError && <p className="text-destructive text-center">Failed to load messages.</p>}
             {!isLoading && messages?.map((message) => {
               const isStaffMessage = message.from === 'staff';
-              const isCurrentUserMessage = message.from === userRole;
+              const isCurrentUserMessage = (message.from === 'student' && userRole === 'student') || (isStaffMessage && userRole === 'staff');
 
               return (
                 <div
@@ -275,31 +268,31 @@ const TicketDiscussionContent = ({
         </div>
         </ScrollArea>
 
-        <footer className="px-4 py-3 border-t bg-card sticky bottom-0 z-10">
-        <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={(userRole === 'staff' && isTicketLockedByOther)}>
-            <Paperclip className="h-5 w-5" />
-            </Button>
-            <Textarea
-            placeholder="Type your reply..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-                }
-            }}
-            className="flex-1 rounded-lg px-4 py-2 focus-visible:ring-primary min-h-[40px] max-h-[120px] resize-none"
-            rows={1}
-            disabled={userRole === 'staff' && isTicketLockedByOther}
-            />
-            <Button size="icon" onClick={handleSendMessage} className="rounded-full bg-primary hover:bg-primary/90 self-end" disabled={userRole === 'staff' && isTicketLockedByOther}>
-            <SendHorizonal className="h-5 w-5" />
-            </Button>
-        </div>
+        <footer className="px-4 py-3 border-t bg-card shrink-0">
+          <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={(userRole === 'staff' && isTicketLockedByOther)}>
+              <Paperclip className="h-5 w-5" />
+              </Button>
+              <Textarea
+              placeholder="Type your reply..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                  }
+              }}
+              className="flex-1 rounded-lg px-4 py-2 focus-visible:ring-primary min-h-[40px] max-h-[120px] resize-none"
+              rows={1}
+              disabled={userRole === 'staff' && isTicketLockedByOther}
+              />
+              <Button size="icon" onClick={handleSendMessage} className="rounded-full bg-primary hover:bg-primary/90 self-end" disabled={userRole === 'staff' && isTicketLockedByOther}>
+              <SendHorizonal className="h-5 w-5" />
+              </Button>
+          </div>
         </footer>
-    </>
+    </div>
     )
 };
 
@@ -427,7 +420,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
   if (isMobile) {
     return (
       <div className="flex flex-col h-full w-full">
-        <div className="p-2 border-b bg-card sticky top-0 z-10">
+        <div className="p-2 border-b bg-card shrink-0">
           <div className="flex w-full">
             <Button
               variant={activeMobileTab === 'info' ? 'default' : 'outline'}
@@ -466,7 +459,6 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
         {activeMobileTab === 'discussion' && (
           <div className="flex-1 flex flex-col bg-background overflow-hidden">
             <TicketDiscussionContent 
-                isMobileContext={true}
                 ticket={ticket}
                 userRole={userRole}
                 staffAvatar={staffAvatar}
