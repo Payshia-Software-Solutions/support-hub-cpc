@@ -362,7 +362,17 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
 
   const handleStatusChange = (newStatus: TicketStatus) => {
     if (userRole === 'staff' && isTicketLockedByOther) return;
+    
+    // First, update the ticket status itself via the parent page's mutation
     handleUpdate({ status: newStatus });
+
+    // Also, post a system message to the discussion log to record the change
+    sendMessageMutation.mutate({
+      ticketId: ticket.id,
+      from: userRole,
+      text: `Ticket status updated to "${newStatus}".`,
+    });
+
     toast({
       title: "Ticket Status Updated",
       description: `Ticket is now ${newStatus}.`,

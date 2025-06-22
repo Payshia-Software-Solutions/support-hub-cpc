@@ -178,7 +178,7 @@ export const createTicketMessage = (messageData: CreateTicketMessageClientPayloa
     text: messageData.text,
     time: new Date().toISOString(),
   };
-  return apiFetch('/ticket-messages', { method: 'POST', body: JSON.stringify(apiPayload) });
+  return apiFetch(`/ticket-messages/by-ticket/${messageData.ticketId}`, { method: 'POST', body: JSON.stringify(apiPayload) });
 };
 
 
