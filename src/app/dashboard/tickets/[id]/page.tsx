@@ -32,8 +32,12 @@ export default function TicketDetailPage() {
   const updateMutation = useMutation({
     mutationFn: updateTicket,
     onSuccess: (data) => {
+      // Invalidate the ticket itself to get the latest status
       queryClient.invalidateQueries({ queryKey: ['ticket', data.id] });
+      // Invalidate the list of tickets to update the card in the list view.
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      // Invalidate the messages for this ticket, in case the status change added a system message.
+      queryClient.invalidateQueries({ queryKey: ['ticketMessages', data.id] });
     },
     onError: (err: Error) => {
         toast({
@@ -91,15 +95,15 @@ export default function TicketDetailPage() {
   }
 
   return (
-    <div className="h-full flex flex-col w-full">
+    <div className="flex flex-col h-full w-full">
       {isMobile && (
-        <div className="px-4 py-2 border-b bg-card shrink-0">
+        <div className="shrink-0 border-b bg-card px-4 py-2">
           <Button
             variant="ghost"
             onClick={() => router.push("/dashboard/tickets")}
-            className="text-sm w-full justify-start"
+            className="w-full justify-start text-sm"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Tickets List
           </Button>
         </div>
