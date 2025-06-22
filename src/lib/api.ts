@@ -69,6 +69,33 @@ function mapApiMessageToMessage(apiMsg: ApiMessage): Message {
   };
 }
 
+// Define the shape of the chat object from the API
+interface ApiChat {
+    id: string;
+    user_name: string;
+    user_avatar: string;
+    student_number?: string;
+    last_message_preview?: string;
+    last_message_time?: string;
+    unread_count?: number | string;
+}
+
+// Mapper function to transform API chat to internal chat format
+function mapApiChatToChat(apiChat: ApiChat): Chat {
+    return {
+        id: apiChat.id,
+        userName: apiChat.user_name,
+        userAvatar: apiChat.user_avatar,
+        studentNumber: apiChat.student_number,
+        lastMessagePreview: apiChat.last_message_preview,
+        lastMessageTime: apiChat.last_message_time,
+        unreadCount: typeof apiChat.unread_count === 'string' 
+            ? parseInt(apiChat.unread_count, 10) 
+            : apiChat.unread_count,
+    };
+}
+
+
 // Announcements
 export const getAnnouncements = (): Promise<Announcement[]> => apiFetch('/announcements');
 
@@ -114,8 +141,15 @@ type CreateChatMessageClientPayload = {
   attachment?: Attachment;
 };
 
-export const getChats = (): Promise<Chat[]> => apiFetch('/chats');
-export const getChat = (id: string): Promise<Chat> => apiFetch(`/chats/${id}`);
+export const getChats = async (): Promise<Chat[]> => {
+    const apiChats = await apiFetch<ApiChat[]>('/chats');
+    if (!apiChats) return [];
+    return apiChats.map(mapApiChatToChat);
+};
+export const getChat = async (id: string): Promise<Chat> => {
+    const apiChat = await apiFetch<ApiChat>(`/chats/${id}`);
+    return mapApiChatToChat(apiChat);
+};
 export const getChatMessages = async (chatId: string): Promise<Message[]> => {
     const apiMessages = await apiFetch<ApiMessage[]>(`/chat-messages/by-chat/${chatId}`);
     if (!apiMessages) return [];
