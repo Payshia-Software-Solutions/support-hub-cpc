@@ -18,7 +18,7 @@
   ],
   "theme_color": "#25D366",
   "background_color": "#ECE5DD",
-  "start_url": "/",
+  "start_url": "/dashboard/chat",
   "display": "standalone",
   "scope": "/"
 }
