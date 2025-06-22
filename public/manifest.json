@@ -1,9 +1,4 @@
 {
-  "theme_color": "#25D366",
-  "background_color": "#ECE5DD",
-  "display": "standalone",
-  "scope": "/",
-  "start_url": "/",
   "name": "Student Support Hub",
   "short_name": "Support Hub",
   "description": "Student Support Chat & Ticket Management System",
@@ -15,19 +10,15 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-256x256.png",
-      "sizes": "256x256",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png"
-    },
-    {
       "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "theme_color": "#25D366",
+  "background_color": "#ECE5DD",
+  "start_url": "/",
+  "display": "standalone",
+  "scope": "/"
 }

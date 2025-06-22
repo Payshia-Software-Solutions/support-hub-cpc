@@ -21,8 +21,7 @@ export function PWAProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Service worker is registered only in production and on HTTPS.
-    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production' && window.location.protocol === 'https:') {
+    if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').then(
           (registration) => {
