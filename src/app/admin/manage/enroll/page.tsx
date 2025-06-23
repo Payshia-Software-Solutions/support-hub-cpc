@@ -5,9 +5,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, AlertTriangle, User, Mail, Phone, PlusCircle, Trash2 } from 'lucide-react';
+import { Search, Loader2, AlertTriangle, User, Mail, Phone, PlusCircle, Trash2, BookOpen, Tag } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
@@ -136,10 +135,10 @@ export default function EnrollStudentPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-8 pb-20">
+        <div className="p-4 md:p-8 space-y-6 pb-20 max-w-4xl mx-auto">
             <header>
-                <h1 className="text-3xl font-headline font-semibold">Student Enrollment Management</h1>
-                <p className="text-muted-foreground">Search for a student to add or remove course enrollments.</p>
+                <h1 className="text-3xl font-headline font-semibold">Student Enrollment</h1>
+                <p className="text-muted-foreground">Search for a student to manage their course enrollments.</p>
             </header>
 
             <Card className="shadow-lg">
@@ -176,38 +175,32 @@ export default function EnrollStudentPage() {
             )}
 
             {studentData && (
-                <div className="space-y-6">
+                <>
                     {/* Student Info Card */}
                     <Card className="shadow-lg">
-                        <CardHeader>
-                             <CardTitle className="flex items-center gap-4">
-                                <Avatar className="w-16 h-16 text-2xl border">
-                                    <AvatarImage src={`https://placehold.co/150x150.png`} alt={studentData.studentInfo.full_name} data-ai-hint="student avatar" />
-                                    <AvatarFallback>{studentData.studentInfo.full_name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    {studentData.studentInfo.full_name}
-                                    <CardDescription>{studentData.studentInfo.student_id}</CardDescription>
+                         <CardHeader className="flex flex-col sm:flex-row items-center gap-4">
+                            <Avatar className="w-20 h-20 text-3xl border-2 border-primary">
+                                <AvatarImage src={`https://placehold.co/150x150.png`} alt={studentData.studentInfo.full_name} data-ai-hint="student avatar" />
+                                <AvatarFallback>{studentData.studentInfo.full_name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="text-center sm:text-left flex-1">
+                                <h2 className="text-2xl font-bold font-headline">{studentData.studentInfo.full_name}</h2>
+                                <p className="text-muted-foreground">{studentData.studentInfo.student_id}</p>
+                                <div className="mt-2 text-sm text-muted-foreground space-y-1 break-words">
+                                    <p className="flex items-center justify-center sm:justify-start gap-2"><Mail className="h-4 w-4 shrink-0" /> {studentData.studentInfo.e_mail}</p>
+                                    <p className="flex items-center justify-center sm:justify-start gap-2"><Phone className="h-4 w-4 shrink-0" /> {studentData.studentInfo.telephone_1}</p>
                                 </div>
-                             </CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                            <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /> {studentData.studentInfo.e_mail}</p>
-                            <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {studentData.studentInfo.telephone_1}</p>
-                            <p className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /> {studentData.studentInfo.nic}</p>
-                        </CardContent>
+                            </div>
+                         </CardHeader>
                     </Card>
 
                     {/* Enrollments Card */}
                     <Card className="shadow-lg">
                         <CardHeader className="flex flex-row justify-between items-center">
-                            <div>
-                                <CardTitle>Course Enrollments</CardTitle>
-                                <CardDescription>Manage student's active course enrollments.</CardDescription>
-                            </div>
+                             <CardTitle>Course Enrollments</CardTitle>
                              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                                 <DialogTrigger asChild>
-                                    <Button><PlusCircle className="mr-2 h-4 w-4" /> Add New Enrollment</Button>
+                                    <Button><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
                                 </DialogTrigger>
                                 <DialogContent>
                                     <DialogHeader>
@@ -239,50 +232,33 @@ export default function EnrollStudentPage() {
                             </Dialog>
                         </CardHeader>
                         <CardContent>
-                            <div className="border rounded-lg overflow-hidden">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Course Name</TableHead>
-                                            <TableHead className="hidden md:table-cell">Course Code</TableHead>
-                                            <TableHead className="hidden md:table-cell">Batch</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {Object.values(studentData.studentEnrollments).length > 0 ? (
-                                            Object.values(studentData.studentEnrollments).map(enrollment => (
-                                                <TableRow key={enrollment.id}>
-                                                    <TableCell>
-                                                        <p className="font-medium">{enrollment.parent_course_name}</p>
-                                                        <div className="md:hidden text-muted-foreground text-xs space-y-1 mt-1">
-                                                            <p>Code: {enrollment.course_code}</p>
-                                                            <p>Batch: {enrollment.batch_name}</p>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="hidden md:table-cell">{enrollment.course_code}</TableCell>
-                                                    <TableCell className="hidden md:table-cell">{enrollment.batch_name}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleRemoveEnrollment(enrollment.course_code)}>
-                                                            <Trash2 className="h-4 w-4" />
-                                                            <span className="sr-only">Remove Enrollment</span>
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={4} className="text-center h-24">No enrollments found.</TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
+                           <div className="space-y-4">
+                                {Object.values(studentData.studentEnrollments).length > 0 ? (
+                                    Object.values(studentData.studentEnrollments).map(enrollment => (
+                                        <div key={enrollment.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                                           <div className="space-y-1 overflow-hidden">
+                                                <p className="font-semibold text-card-foreground truncate">{enrollment.parent_course_name}</p>
+                                                <div className="text-sm text-muted-foreground flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                                                    <span className="flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5" />{enrollment.course_code}</span>
+                                                    <span className="flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" />{enrollment.batch_name}</span>
+                                                </div>
+                                           </div>
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive shrink-0 ml-4" onClick={() => handleRemoveEnrollment(enrollment.course_code)}>
+                                                <Trash2 className="h-4 w-4" />
+                                                <span className="sr-only">Remove Enrollment</span>
+                                            </Button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center text-muted-foreground py-10">
+                                        <p>No enrollments found for this student.</p>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
-                </div>
+                </>
             )}
         </div>
     );
-
-    
+}
