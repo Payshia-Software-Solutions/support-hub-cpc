@@ -238,7 +238,7 @@ export default function EnrollStudentPage() {
                             </Dialog>
                         </CardHeader>
                         <CardContent>
-                           <div className="space-y-4">
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {Object.values(studentData.studentEnrollments).length > 0 ? (
                                     Object.values(studentData.studentEnrollments).map(enrollment => (
                                         <div key={enrollment.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
@@ -256,7 +256,7 @@ export default function EnrollStudentPage() {
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="text-center text-muted-foreground py-10">
+                                    <div className="text-center text-muted-foreground py-10 md:col-span-2">
                                         <p>No enrollments found for this student.</p>
                                     </div>
                                 )}
