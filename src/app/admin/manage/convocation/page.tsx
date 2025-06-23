@@ -219,7 +219,7 @@ export default function ConvocationPage() {
                                     {convocationData.image_path ? (
                                         <div className="relative aspect-[3/4] w-full bg-muted rounded-lg overflow-hidden border">
                                             <Image 
-                                                src={`https://qa-api.pharmacollege.lk${convocationData.image_path}`}
+                                                src={`https://content-provider.pharmacollege.lk${convocationData.image_path}`}
                                                 alt="Payment Slip"
                                                 layout="fill"
                                                 objectFit="contain"
