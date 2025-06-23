@@ -146,7 +146,7 @@ export default function PaymentUpdatePage() {
     const paymentRecordsArray = studentData ? Object.values(studentData.studentBalance.paymentRecords).sort((a, b) => new Date(b.paid_date).getTime() - new Date(a.paid_date).getTime()) : [];
 
     return (
-        <div className="p-4 md:p-8 space-y-6 pb-20 max-w-4xl mx-auto">
+        <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
                 <h1 className="text-3xl font-headline font-semibold">Payment Updates</h1>
                 <p className="text-muted-foreground">Find a student to view their balance and add new payments.</p>

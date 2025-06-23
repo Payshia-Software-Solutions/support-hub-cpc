@@ -135,7 +135,7 @@ export default function EnrollStudentPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-6 pb-20 max-w-4xl mx-auto">
+        <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
                 <h1 className="text-3xl font-headline font-semibold">Student Enrollment</h1>
                 <p className="text-muted-foreground">Search for a student to manage their course enrollments.</p>
