@@ -288,9 +288,15 @@ export default function AdminQuickLinksPage() {
     const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
     const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
     const searchContainerRef = useRef<HTMLDivElement>(null);
+    const [selectionMade, setSelectionMade] = useState(false);
 
 
     useEffect(() => {
+        if (selectionMade) {
+            setSelectionMade(false);
+            return;
+        }
+
         const handler = setTimeout(async () => {
             if (studentId.trim().length > 1) {
                 setIsFetchingSuggestions(true);
@@ -312,7 +318,7 @@ export default function AdminQuickLinksPage() {
         }, 300); // 300ms debounce delay
 
         return () => clearTimeout(handler);
-    }, [studentId]);
+    }, [studentId, selectionMade]);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -324,21 +330,13 @@ export default function AdminQuickLinksPage() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
     
-
-    const handleSearch = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsSuggestionsOpen(false);
-        if (!studentId.trim()) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please enter a student ID.' });
-            return;
-        }
-
+    const performSearch = async (searchId: string) => {
         setIsLoading(true);
         setError(null);
         setStudentData(null);
 
         try {
-            const response = await fetch(`https://qa-api.pharmacollege.lk/get-student-full-info?loggedUser=${studentId.trim().toUpperCase()}`);
+            const response = await fetch(`https://qa-api.pharmacollege.lk/get-student-full-info?loggedUser=${searchId.trim().toUpperCase()}`);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: `Student not found or server error. Status: ${response.status}` }));
                 throw new Error(errorData.message || 'Student not found or API response is invalid.');
@@ -356,10 +354,22 @@ export default function AdminQuickLinksPage() {
             setIsLoading(false);
         }
     };
+
+    const handleSearchFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSuggestionsOpen(false);
+        if (!studentId.trim()) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please enter a student ID.' });
+            return;
+        }
+        performSearch(studentId);
+    };
     
     const handleSuggestionClick = (suggestion: StudentSearchResult) => {
-        setStudentId(suggestion.student_id);
         setIsSuggestionsOpen(false);
+        setSelectionMade(true);
+        setStudentId(suggestion.student_id);
+        performSearch(suggestion.student_id);
     };
 
     return (
@@ -371,14 +381,13 @@ export default function AdminQuickLinksPage() {
 
             <Card className="shadow-lg">
                 <CardContent className="p-6">
-                    <form onSubmit={handleSearch}>
+                    <form onSubmit={handleSearchFormSubmit}>
                       <div className="relative" ref={searchContainerRef}>
                         <div className="flex flex-col sm:flex-row gap-4">
                             <Input 
                                 placeholder="Enter Student ID or Name..." 
                                 value={studentId}
                                 onChange={(e) => setStudentId(e.target.value)}
-                                onFocus={() => setIsSuggestionsOpen(suggestions.length > 0)}
                                 className="flex-grow"
                                 autoComplete="off"
                             />
@@ -502,3 +511,4 @@ export default function AdminQuickLinksPage() {
     );
 }
 
+    
