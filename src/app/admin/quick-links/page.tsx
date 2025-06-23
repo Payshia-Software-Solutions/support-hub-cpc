@@ -157,28 +157,47 @@ const StudentBalanceCard = ({ balance }: { balance: StudentBalance }) => (
                 </div>
             </div>
             <h4 className="font-semibold mb-2">Payment History</h4>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Receipt #</TableHead>
-                        <TableHead>Course</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Status</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {Object.values(balance.paymentRecords).map(rec => (
-                        <TableRow key={rec.id}>
-                            <TableCell className="font-medium whitespace-nowrap">{rec.receipt_number}</TableCell>
-                            <TableCell>{rec.course_code}</TableCell>
-                            <TableCell className="text-right whitespace-nowrap">LKR {parseFloat(rec.paid_amount).toLocaleString()}</TableCell>
-                            <TableCell className="whitespace-nowrap">{rec.paid_date}</TableCell>
-                            <TableCell><Badge variant={rec.payment_status === 'Paid' ? 'default' : 'secondary'}>{rec.payment_status}</Badge></TableCell>
+             {/* Mobile View: List of Cards */}
+            <div className="md:hidden space-y-4">
+                {Object.values(balance.paymentRecords).map(rec => (
+                    <div key={rec.id} className="p-4 border rounded-lg space-y-2 text-sm">
+                        <div className="flex justify-between items-center font-medium">
+                            <span>{rec.receipt_number}</span>
+                            <Badge variant={rec.payment_status === 'Paid' ? 'default' : 'secondary'}>{rec.payment_status}</Badge>
+                        </div>
+                        <div className="text-muted-foreground">
+                            <p><strong className="text-foreground">Course:</strong> {rec.course_code}</p>
+                            <p><strong className="text-foreground">Amount:</strong> LKR {parseFloat(rec.paid_amount).toLocaleString()}</p>
+                            <p><strong className="text-foreground">Date:</strong> {rec.paid_date}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            {/* Desktop View: Table */}
+            <div className="hidden md:block">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Receipt #</TableHead>
+                            <TableHead>Course</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Status</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {Object.values(balance.paymentRecords).map(rec => (
+                            <TableRow key={rec.id}>
+                                <TableCell className="font-medium whitespace-nowrap">{rec.receipt_number}</TableCell>
+                                <TableCell>{rec.course_code}</TableCell>
+                                <TableCell className="text-right whitespace-nowrap">LKR {parseFloat(rec.paid_amount).toLocaleString()}</TableCell>
+                                <TableCell className="whitespace-nowrap">{rec.paid_date}</TableCell>
+                                <TableCell><Badge variant={rec.payment_status === 'Paid' ? 'default' : 'secondary'}>{rec.payment_status}</Badge></TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
         </CardContent>
     </Card>
 );
@@ -207,35 +226,61 @@ const EnrollmentCard = ({ enrollment }: { enrollment: StudentEnrollment }) => (
                 <AccordionItem value="deliveries">
                     <AccordionTrigger>Delivery Orders ({enrollment.deliveryOrders.length})</AccordionTrigger>
                      <AccordionContent>
-                        <Table>
-                           <TableHeader><TableRow><TableHead>Order</TableHead><TableHead>Tracking #</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
-                           <TableBody>
-                                {enrollment.deliveryOrders.map(d => (
-                                    <TableRow key={d.id}>
-                                        <TableCell>{d.delivery_title}</TableCell>
-                                        <TableCell className="whitespace-nowrap">{d.tracking_number}</TableCell>
-                                        <TableCell>{d.active_status}</TableCell>
-                                    </TableRow>
-                                ))}
-                           </TableBody>
-                        </Table>
+                        {/* Mobile view */}
+                        <div className="md:hidden space-y-3">
+                            {enrollment.deliveryOrders.map(d => (
+                                <div key={d.id} className="p-3 border rounded-md text-sm space-y-1">
+                                    <p className="font-medium">{d.delivery_title}</p>
+                                    <p className="text-muted-foreground"><strong className="text-foreground">Tracking #:</strong> <span className="whitespace-nowrap">{d.tracking_number}</span></p>
+                                    <p className="text-muted-foreground"><strong className="text-foreground">Status:</strong> {d.active_status}</p>
+                                </div>
+                            ))}
+                        </div>
+                        {/* Desktop view */}
+                        <div className="hidden md:block">
+                            <Table>
+                               <TableHeader><TableRow><TableHead>Order</TableHead><TableHead>Tracking #</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                               <TableBody>
+                                    {enrollment.deliveryOrders.map(d => (
+                                        <TableRow key={d.id}>
+                                            <TableCell>{d.delivery_title}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{d.tracking_number}</TableCell>
+                                            <TableCell>{d.active_status}</TableCell>
+                                        </TableRow>
+                                    ))}
+                               </TableBody>
+                            </Table>
+                        </div>
                     </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="certificates">
                     <AccordionTrigger>Certificate Records ({enrollment.certificateRecords.length})</AccordionTrigger>
                      <AccordionContent>
-                        <Table>
-                           <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>ID</TableHead><TableHead>Printed On</TableHead></TableRow></TableHeader>
-                           <TableBody>
-                                {enrollment.certificateRecords.map(c => (
-                                    <TableRow key={c.id}>
-                                        <TableCell>{c.type}</TableCell>
-                                        <TableCell>{c.certificate_id}</TableCell>
-                                        <TableCell className="whitespace-nowrap">{new Date(c.print_date).toLocaleDateString()}</TableCell>
-                                    </TableRow>
-                                ))}
-                           </TableBody>
-                        </Table>
+                        {/* Mobile view */}
+                        <div className="md:hidden space-y-3">
+                            {enrollment.certificateRecords.map(c => (
+                                <div key={c.id} className="p-3 border rounded-md text-sm space-y-1">
+                                    <p className="font-medium">{c.type}</p>
+                                    <p className="text-muted-foreground"><strong className="text-foreground">ID:</strong> {c.certificate_id}</p>
+                                    <p className="text-muted-foreground"><strong className="text-foreground">Printed On:</strong> <span className="whitespace-nowrap">{new Date(c.print_date).toLocaleDateString()}</span></p>
+                                </div>
+                            ))}
+                        </div>
+                        {/* Desktop view */}
+                        <div className="hidden md:block">
+                            <Table>
+                               <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>ID</TableHead><TableHead>Printed On</TableHead></TableRow></TableHeader>
+                               <TableBody>
+                                    {enrollment.certificateRecords.map(c => (
+                                        <TableRow key={c.id}>
+                                            <TableCell>{c.type}</TableCell>
+                                            <TableCell>{c.certificate_id}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{new Date(c.print_date).toLocaleDateString()}</TableCell>
+                                        </TableRow>
+                                    ))}
+                               </TableBody>
+                            </Table>
+                        </div>
                     </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="eligibility">
