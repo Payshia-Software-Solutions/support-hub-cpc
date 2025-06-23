@@ -1,9 +1,8 @@
-
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, FileAward, Settings } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings } from "lucide-react";
 import Link from "next/link";
 
 const managementTasks = [
@@ -40,7 +39,7 @@ const managementTasks = [
   {
     title: "Certificate Orders",
     description: "Process and manage requests for certificates.",
-    icon: <FileAward className="w-8 h-8 text-primary" />,
+    icon: <Award className="w-8 h-8 text-primary" />,
     href: "#",
   },
   {
