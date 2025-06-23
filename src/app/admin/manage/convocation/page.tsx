@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -248,17 +247,25 @@ export default function ConvocationPage() {
                                 <div className="lg:col-span-1 space-y-2">
                                     <h3 className="text-lg font-semibold text-primary border-b pb-2">Payment Slip</h3>
                                     {convocationData.image_path ? (
-                                        <div className="relative aspect-[3/4] w-full bg-muted rounded-lg overflow-hidden border">
-                                            <Image 
-                                                src={`https://content-provider.pharmacollege.lk${convocationData.image_path}`}
-                                                alt="Payment Slip"
-                                                layout="fill"
-                                                objectFit="contain"
-                                                data-ai-hint="payment slip"
-                                            />
-                                        </div>
+                                        /\.(jpg|jpeg|png|gif)$/.test(convocationData.image_path.toLowerCase()) ? (
+                                            <div className="relative aspect-[3/4] w-full bg-muted rounded-lg overflow-hidden border">
+                                                <Image 
+                                                    src={`https://content-provider.pharmacollege.lk${convocationData.image_path}`}
+                                                    alt="Payment Slip"
+                                                    layout="fill"
+                                                    objectFit="contain"
+                                                    data-ai-hint="payment slip"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <a href={`https://content-provider.pharmacollege.lk${convocationData.image_path}`} target="_blank" rel="noopener noreferrer">
+                                                <Button variant="outline" className="w-full">
+                                                    <FileText className="mr-2 h-4 w-4" /> View Slip
+                                                </Button>
+                                            </a>
+                                        )
                                     ) : (
-                                        <p className="text-muted-foreground text-sm">No payment slip image available.</p>
+                                        <p className="text-muted-foreground text-sm">No payment slip available.</p>
                                     )}
                                 </div>
                             </div>
