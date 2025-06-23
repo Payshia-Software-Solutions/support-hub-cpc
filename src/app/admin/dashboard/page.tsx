@@ -1,18 +1,55 @@
 
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BarChart, LineChart, PieChart } from "lucide-react"; // Example icons
-
-// Dummy data for dashboard widgets
-const dashboardStats = [
-  { title: "Open Tickets", value: "12", icon: <TicketIcon className="w-6 h-6 text-primary" />, trend: "+2 this week" },
-  { title: "Active Chats", value: "5", icon: <MessageSquareIcon className="w-6 h-6 text-primary" />, trend: "-1 from yesterday" },
-  { title: "Resolved Tickets (Month)", value: "152", icon: <CheckCircleIcon className="w-6 h-6 text-green-500" />, trend: "+15% MoM" },
-  { title: "New Users (Week)", value: "23", icon: <UsersIcon className="w-6 h-6 text-primary" />, trend: "Steady" },
-];
+import { LineChart, PieChart, Ticket, MessageSquare, CheckCircle, Users } from "lucide-react";
+import { getTickets, getChats } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { Ticket as TicketType, Chat as ChatType } from "@/lib/types";
+import { subDays } from "date-fns";
 
 export default function AdminDashboardPage() {
+  const { data: tickets, isLoading: isLoadingTickets, isError: isErrorTickets, error: errorTickets } = useQuery<TicketType[]>({
+    queryKey: ['admin-tickets-dashboard'], 
+    queryFn: getTickets,
+  });
+
+  const { data: chats, isLoading: isLoadingChats, isError: isErrorChats, error: errorChats } = useQuery<ChatType[]>({
+    queryKey: ['chats-dashboard'],
+    queryFn: getChats,
+  });
+
+  const isLoading = isLoadingTickets || isLoadingChats;
+  const isError = isErrorTickets || isErrorChats;
+  const error = errorTickets || errorChats;
+
+  const openTicketsCount = tickets?.filter(t => t.status === 'Open' || t.status === 'In Progress').length ?? 0;
+  const activeChatsCount = chats?.length ?? 0;
+  
+  const oneMonthAgo = subDays(new Date(), 30);
+  const resolvedThisMonthCount = tickets?.filter(t => t.status === 'Closed' && t.updatedAt && new Date(t.updatedAt) > oneMonthAgo).length ?? 0;
+  
+  const newUsersCount = "23"; // Static placeholder as user data API is not available
+
+  const dashboardStats = [
+    { title: "Open Tickets", value: openTicketsCount.toString(), icon: <Ticket className="w-6 h-6 text-primary" />, trend: "All open & in-progress" },
+    { title: "Active Chats", value: activeChatsCount.toString(), icon: <MessageSquare className="w-6 h-6 text-primary" />, trend: "Total active conversations" },
+    { title: "Resolved Tickets (Month)", value: resolvedThisMonthCount.toString(), icon: <CheckCircle className="w-6 h-6 text-green-500" />, trend: "In the last 30 days" },
+    { title: "New Users (Week)", value: newUsersCount, icon: <Users className="w-6 h-6 text-primary" />, trend: "Static placeholder" },
+  ];
+  
+  if (isError) {
+    return (
+        <div className="p-4 md:p-8">
+            <h1 className="text-3xl font-headline font-semibold">Admin Dashboard</h1>
+            <div className="mt-4 text-destructive">
+                Error loading dashboard data: {error?.message}
+            </div>
+        </div>
+    )
+  }
+
   return (
     <div className="p-4 md:p-8 space-y-8">
       <header>
@@ -28,7 +65,11 @@ export default function AdminDashboardPage() {
               {stat.icon}
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+               {isLoading ? (
+                <Skeleton className="h-8 w-1/2" />
+              ) : (
+                <div className="text-2xl font-bold">{stat.value}</div>
+              )}
               <p className="text-xs text-muted-foreground">{stat.trend}</p>
             </CardContent>
           </Card>
@@ -83,44 +124,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
-// Placeholder Icons (replace with actual lucide-react imports if needed for styling)
-function TicketIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-      <path d="M4 22V2c0-.5.2-1 .6-1.4S5.5 0 6 0h8l6 6v10a6 6 0 0 1-6 6H6a2 2 0 0 1-2-2Z" />
-      <path d="M8 14h3" />
-      <path d="M8 18h3" />
-    </svg>
-  );
-}
-
-function MessageSquareIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  );
-}
-
-function CheckCircleIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-}
-
-function UsersIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
