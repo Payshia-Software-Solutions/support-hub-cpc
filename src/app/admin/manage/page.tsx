@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
@@ -28,19 +27,19 @@ const managementTasks = [
     title: "Delivery Orders",
     description: "Track and manage study material deliveries.",
     icon: <Truck className="w-6 h-6 text-primary" />,
-    href: "#",
+    href: "/admin/manage/delivery-orders",
   },
   {
     title: "Convocation",
     description: "Handle registrations for convocation ceremonies.",
     icon: <GraduationCap className="w-6 h-6 text-primary" />,
-    href: "#",
+    href: "/admin/manage/convocation",
   },
   {
     title: "Certificate Orders",
     description: "Process and manage requests for certificates.",
     icon: <Award className="w-6 h-6 text-primary" />,
-    href: "#",
+    href: "/admin/manage/certificate-orders",
   },
   {
     title: "General Settings",
