@@ -162,6 +162,20 @@ export const updateTicket = async (ticketData: UpdateTicketPayload): Promise<Tic
     const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketData.id}`, { method: 'POST', body: JSON.stringify(apiPayload) });
     return mapApiTicketToTicket(updatedApiTicket);
 };
+export const assignTicket = async (ticketId: string, assignedTo: string, assigneeAvatar: string, lockedByStaffId: string): Promise<Ticket> => {
+  const apiPayload = {
+    assignedTo,
+    assigneeAvatar,
+    isLocked: 1, // Assignment always locks
+    lockedByStaffId,
+  };
+  const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketId}/assign`, {
+    method: 'POST',
+    body: JSON.stringify(apiPayload),
+  });
+  return mapApiTicketToTicket(updatedApiTicket);
+};
+
 
 export const updateTicketStatus = async (ticketId: string, newStatus: TicketStatus): Promise<Ticket> => {
     const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketId}/status/`, {

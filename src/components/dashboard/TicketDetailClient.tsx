@@ -25,6 +25,7 @@ import { Skeleton } from "../ui/skeleton";
 interface TicketDetailClientProps {
   initialTicket: Ticket;
   onUpdateTicket: (updatedTicket: Partial<Ticket> & { id: string }) => void;
+  onAssignTicket?: (payload: { ticketId: string; assignedTo: string; assigneeAvatar: string; lockedByStaffId: string; }) => void;
   userRole: 'student' | 'staff';
   staffAvatar?: string; 
   currentStaffId?: string;
@@ -297,7 +298,7 @@ const TicketDiscussionContent = ({
 };
 
 
-export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffId }: TicketDetailClientProps) {
+export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffId }: TicketDetailClientProps) {
   const [ticket, setTicket] = useState(initialTicket);
   const [newMessage, setNewMessage] = useState("");
   const { toast } = useToast();
@@ -412,33 +413,34 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
 
   const handleAssignmentChange = (staffId: string) => {
     if (userRole === 'staff' && isTicketLockedByOther) return;
-    const selectedStaff = dummyStaffMembers.find(s => s.id === staffId);
-    if (!selectedStaff && staffId !== "unassigned") {
-      toast({ variant: "destructive", title: "Error", description: "Invalid staff member selected." });
-      return;
-    }
 
-    const updates: Partial<Ticket> = { 
-      assignedTo: staffId === "unassigned" ? undefined : selectedStaff?.name, 
-      assigneeAvatar: staffId === "unassigned" ? undefined : selectedStaff?.avatar,
-    };
+    if (staffId === "unassigned") {
+      const updates: Partial<Ticket> = { 
+        assignedTo: undefined, 
+        assigneeAvatar: undefined,
+        isLocked: false,
+        lockedByStaffId: undefined,
+      };
+      handleUpdate(updates);
+    } else {
+        const selectedStaff = dummyStaffMembers.find(s => s.id === staffId);
+        if (!selectedStaff || !currentStaffId) {
+          toast({ variant: "destructive", title: "Error", description: "Invalid staff member or user context." });
+          return;
+        }
 
-    // When a staff member assigns a ticket, lock it to them. When un-assigning, unlock it.
-    if (userRole === 'staff' && currentStaffId) {
-        if (staffId === "unassigned") {
-            updates.isLocked = false;
-            updates.lockedByStaffId = undefined;
+        if (onAssignTicket) {
+            onAssignTicket({
+                ticketId: ticket.id,
+                assignedTo: selectedStaff.name,
+                assigneeAvatar: selectedStaff.avatar,
+                lockedByStaffId: currentStaffId,
+            });
         } else {
-            updates.isLocked = true;
-            updates.lockedByStaffId = currentStaffId;
+            console.error("onAssignTicket prop not provided");
+            toast({ variant: "destructive", title: "Configuration Error", description: "Assignment functionality is not configured." });
         }
     }
-
-    handleUpdate(updates);
-    toast({
-      title: "Ticket Assignment Updated",
-      description: staffId === "unassigned" ? `Ticket unassigned.` : `Ticket assigned to ${selectedStaff?.name}.`,
-    });
   };
 
   const handleSendMessage = () => {

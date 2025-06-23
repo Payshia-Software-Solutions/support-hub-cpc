@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TicketDetailClient } from "@/components/dashboard/TicketDetailClient";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { toast } from "@/hooks/use-toast";
-import { getTicket, updateTicket } from "@/lib/api";
+import { getTicket, updateTicket, assignTicket } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
 
 export default function AdminTicketDetailPage() {
@@ -50,6 +50,27 @@ export default function AdminTicketDetailPage() {
     }
   });
 
+  const assignMutation = useMutation({
+    mutationFn: ({ ticketId, assignedTo, assigneeAvatar, lockedByStaffId }: { ticketId: string, assignedTo: string, assigneeAvatar: string, lockedByStaffId: string }) => 
+        assignTicket(ticketId, assignedTo, assigneeAvatar, lockedByStaffId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', data.id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['ticketMessages', data.id] });
+      toast({
+        title: "Ticket Assigned",
+        description: `Ticket has been assigned to ${data.assignedTo}.`,
+      });
+    },
+    onError: (err: Error) => {
+        toast({
+            variant: "destructive",
+            title: "Assignment Failed",
+            description: err.message,
+        });
+    }
+  });
+
   useEffect(() => {
     if (isMobile) {
       setIsMobileDetailActive(true);
@@ -59,9 +80,13 @@ export default function AdminTicketDetailPage() {
     }
   }, [isMobile, setIsMobileDetailActive]);
 
-  const handleUpdateTicket = (updatedTicket: Partial<Ticket> & { id: string }) => {
+  const handleUpdateTicket = useCallback((updatedTicket: Partial<Ticket> & { id: string }) => {
     updateMutation.mutate(updatedTicket);
-  };
+  }, [updateMutation]);
+
+  const handleAssignTicket = useCallback((payload: { ticketId: string, assignedTo: string, assigneeAvatar: string, lockedByStaffId: string }) => {
+    assignMutation.mutate(payload);
+  }, [assignMutation]);
 
   // The loading skeleton should also show if the user object isn't ready yet
   if (isLoading || !user) { 
@@ -116,6 +141,7 @@ export default function AdminTicketDetailPage() {
           key={ticket.id}
           initialTicket={ticket} 
           onUpdateTicket={handleUpdateTicket}
+          onAssignTicket={handleAssignTicket}
           userRole="staff" 
           staffAvatar={user.avatar} // Use logged-in user's avatar
           currentStaffId={user.id}   // Use logged-in user's ID
