@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, AlertTriangle, User, Mail, Phone, GraduationCap, ClipboardList, Banknote, Calendar, Users, Ticket, Award, CheckCircle, XCircle } from 'lucide-react';
+import { Search, Loader2, AlertTriangle, User, Mail, Phone, GraduationCap, ClipboardList, Banknote, Calendar, Users, Ticket, Award, CheckCircle, XCircle, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -42,6 +42,14 @@ interface ConvocationData {
     certificate_id: string;
     advanced_id: string;
 }
+interface SecondPaymentRecord {
+    id: string;
+    paid_amount: string;
+    slip_path: string;
+    paid_date: string;
+    payment_status: string;
+}
+
 
 const DetailItem = ({ icon, label, children, className }: { icon: React.ReactNode, label: string, children: React.ReactNode, className?: string }) => (
     <div className={cn("flex items-start gap-3", className)}>
@@ -58,9 +66,11 @@ export default function ConvocationPage() {
     const [studentId, setStudentId] = useState('');
     const [studentData, setStudentData] = useState<FullStudentData | null>(null);
     const [convocationData, setConvocationData] = useState<ConvocationData | null>(null);
+    const [secondPaymentData, setSecondPaymentData] = useState<SecondPaymentRecord[] | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [convocationError, setConvocationError] = useState<string | null>(null);
+    const [secondPaymentError, setSecondPaymentError] = useState<string | null>(null);
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -74,15 +84,19 @@ export default function ConvocationPage() {
         setStudentData(null);
         setConvocationData(null);
         setConvocationError(null);
+        setSecondPaymentData(null);
+        setSecondPaymentError(null);
 
         try {
             const studentIdTrimmed = studentId.trim().toUpperCase();
             
             const studentInfoPromise = fetch(`https://qa-api.pharmacollege.lk/get-student-full-info?loggedUser=${studentIdTrimmed}`);
             const convocationInfoPromise = fetch(`https://qa-api.pharmacollege.lk/convocation-registrations/get-records-student-number/${studentIdTrimmed}`);
+            const secondPaymentPromise = fetch(`https://qa-api.pharmacollege.lk/payment-portal-requests/by-reference/${studentIdTrimmed}`);
 
-            const [studentInfoRes, convocationInfoRes] = await Promise.all([studentInfoPromise, convocationInfoPromise]);
+            const [studentInfoRes, convocationInfoRes, secondPaymentRes] = await Promise.all([studentInfoPromise, convocationInfoPromise, secondPaymentPromise]);
 
+            // Handle Student Info
             if (!studentInfoRes.ok) {
                 const errorData = await studentInfoRes.json().catch(() => ({ message: `Student not found. Status: ${studentInfoRes.status}` }));
                 throw new Error(errorData.message || 'Student data is invalid or not found.');
@@ -94,6 +108,7 @@ export default function ConvocationPage() {
                  throw new Error('Student data is incomplete in the API response.');
             }
 
+            // Handle Convocation Info
             if (convocationInfoRes.ok) {
                 const convocationJson = await convocationInfoRes.json();
                 if (convocationJson && convocationJson.registration_id) {
@@ -104,6 +119,21 @@ export default function ConvocationPage() {
             } else {
                  const convocationErrorData = await convocationInfoRes.json().catch(() => ({}));
                  setConvocationError(convocationErrorData.message || `Could not fetch convocation data. Status: ${convocationInfoRes.status}`);
+            }
+
+            // Handle Second Payment Info
+            if (secondPaymentRes.ok) {
+                const secondPaymentJson = await secondPaymentRes.json();
+                if (Array.isArray(secondPaymentJson)) {
+                    const convocationPayments = secondPaymentJson.filter(p => p.payment_reson === 'convocation');
+                    setSecondPaymentData(convocationPayments);
+                } else {
+                    setSecondPaymentError(secondPaymentJson.error || "No additional payment records found.");
+                    setSecondPaymentData([]);
+                }
+            } else {
+                setSecondPaymentError(`Could not fetch second payment data. Status: ${secondPaymentRes.status}`);
+                setSecondPaymentData([]);
             }
 
         } catch (err: any) {
@@ -142,6 +172,7 @@ export default function ConvocationPage() {
                 <div className="space-y-6">
                     <Skeleton className="h-[170px] w-full" />
                     <Skeleton className="h-[400px] w-full" />
+                    <Skeleton className="h-[200px] w-full" />
                 </div>
             )}
 
@@ -238,9 +269,44 @@ export default function ConvocationPage() {
                             )}
                         </CardContent>
                     </Card>
+
+                    <Card className="shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Banknote /> Second Payment Slips (Convocation)</CardTitle>
+                            <CardDescription>Additional payments made for the convocation event.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {(secondPaymentData && secondPaymentData.length > 0) ? (
+                                <div className="space-y-4">
+                                    {secondPaymentData.map(payment => (
+                                        <div key={payment.id} className="border p-4 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                                            <div className="space-y-1">
+                                                <h3 className="font-semibold text-lg">LKR {parseFloat(payment.paid_amount).toLocaleString()}</h3>
+                                                <p className="text-sm text-muted-foreground"><strong className="font-medium text-foreground">Paid on:</strong> {new Date(payment.paid_date).toLocaleDateString()}</p>
+                                            </div>
+                                            <div className="flex flex-col items-start sm:items-end gap-2 text-sm">
+                                                 <Badge variant={payment.payment_status.toLowerCase() === 'pending' ? 'secondary' : 'default'}>
+                                                    {payment.payment_status}
+                                                </Badge>
+                                                <a href={`https://content-provider.pharmacollege.lk${payment.slip_path}`} target="_blank" rel="noopener noreferrer">
+                                                    <Button variant="outline">
+                                                        <FileText className="mr-2 h-4 w-4" /> View Slip (PDF)
+                                                    </Button>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center text-muted-foreground py-10">
+                                    <p>{secondPaymentError || 'No additional convocation payments found.'}</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
                 </div>
             )}
         </div>
     );
 }
-
