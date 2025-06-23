@@ -159,9 +159,9 @@ export default function EnrollStudentPage() {
             </Card>
 
             {isLoading && (
-                <div className="space-y-4">
-                    <Skeleton className="h-24 w-full" />
+                <div className="space-y-6">
                     <Skeleton className="h-40 w-full" />
+                    <Skeleton className="h-64 w-full" />
                 </div>
             )}
 
@@ -175,29 +175,35 @@ export default function EnrollStudentPage() {
             )}
 
             {studentData && (
-                <>
-                    {/* Student Info Card */}
+                <div className="space-y-6">
+                    {/* Profile Header Card */}
                     <Card className="shadow-lg">
-                         <CardHeader className="flex flex-col sm:flex-row items-center gap-4">
-                            <Avatar className="w-20 h-20 text-3xl border-2 border-primary">
-                                <AvatarImage src={`https://placehold.co/150x150.png`} alt={studentData.studentInfo.full_name} data-ai-hint="student avatar" />
-                                <AvatarFallback>{studentData.studentInfo.full_name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="text-center sm:text-left flex-1">
-                                <h2 className="text-2xl font-bold font-headline">{studentData.studentInfo.full_name}</h2>
-                                <p className="text-muted-foreground">{studentData.studentInfo.student_id}</p>
-                                <div className="mt-2 text-sm text-muted-foreground space-y-1 break-words">
-                                    <p className="flex items-center justify-center sm:justify-start gap-2"><Mail className="h-4 w-4 shrink-0" /> {studentData.studentInfo.e_mail}</p>
-                                    <p className="flex items-center justify-center sm:justify-start gap-2"><Phone className="h-4 w-4 shrink-0" /> {studentData.studentInfo.telephone_1}</p>
+                        <CardContent className="p-4 md:p-6">
+                            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-6">
+                                <Avatar className="w-24 h-24 text-4xl border-2 border-primary" data-ai-hint="student avatar">
+                                    <AvatarImage src={`https://placehold.co/150x150.png`} alt={studentData.studentInfo.full_name} />
+                                    <AvatarFallback>{studentData.studentInfo.full_name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 text-center sm:text-left">
+                                    <h2 className="text-2xl font-bold font-headline">{studentData.studentInfo.full_name}</h2>
+                                    <p className="text-muted-foreground">{studentData.studentInfo.student_id}</p>
+                                    <div className="mt-2 text-sm text-muted-foreground space-y-1 break-all">
+                                        <p className="flex items-center justify-center sm:justify-start gap-2"><User className="h-4 w-4 shrink-0" /> {studentData.studentInfo.nic}</p>
+                                        <p className="flex items-center justify-center sm:justify-start gap-2"><Mail className="h-4 w-4 shrink-0" /> {studentData.studentInfo.e_mail}</p>
+                                        <p className="flex items-center justify-center sm:justify-start gap-2"><Phone className="h-4 w-4 shrink-0" /> {studentData.studentInfo.telephone_1}</p>
+                                    </div>
                                 </div>
                             </div>
-                         </CardHeader>
+                        </CardContent>
                     </Card>
 
                     {/* Enrollments Card */}
                     <Card className="shadow-lg">
                         <CardHeader className="flex flex-row justify-between items-center">
-                             <CardTitle>Course Enrollments</CardTitle>
+                             <div className="space-y-1">
+                                <CardTitle>Course Enrollments</CardTitle>
+                                <CardDescription>Add or remove courses for this student.</CardDescription>
+                            </div>
                              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                                 <DialogTrigger asChild>
                                     <Button><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
@@ -257,7 +263,7 @@ export default function EnrollStudentPage() {
                             </div>
                         </CardContent>
                     </Card>
-                </>
+                </div>
             )}
         </div>
     );
