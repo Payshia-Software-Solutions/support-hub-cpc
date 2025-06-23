@@ -115,7 +115,7 @@ export default function AdminDashboardPage() {
   
   if (isError) {
     return (
-        <div className="p-4 md:p-8">
+        <div className="p-4 md:p-8 space-y-8 pb-20">
             <h1 className="text-3xl font-headline font-semibold">Admin Dashboard</h1>
             <div className="mt-4 text-destructive">
                 Error loading dashboard data: {error?.message}
