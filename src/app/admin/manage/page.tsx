@@ -1,6 +1,7 @@
+
 "use client";
 
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings } from "lucide-react";
 import Link from "next/link";
 
@@ -51,29 +52,26 @@ const managementTasks = [
 
 export default function AdminManagePage() {
   return (
-    <div className="p-4 md:p-8 space-y-8 pb-20">
+    <div className="p-4 md:p-8 space-y-8 pb-20 max-w-4xl mx-auto">
       <header>
         <h1 className="text-3xl font-headline font-semibold">Management Tasks</h1>
         <p className="text-muted-foreground">Access various administrative tools and actions.</p>
       </header>
       <section>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
           {managementTasks.map((task) => (
-            <Link key={task.title} href={task.href} className="group">
-              <Card className="h-full hover:shadow-xl transition-shadow flex flex-col">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-base font-medium">{task.title}</CardTitle>
-                  {task.icon}
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <p className="text-sm text-muted-foreground">{task.description}</p>
-                </CardContent>
-                <CardFooter className="pt-4">
-                  <div className="text-sm font-medium text-primary flex items-center group-hover:underline">
-                    Go to {task.title}
-                    <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            <Link key={task.title} href={task.href} className="group block">
+              <Card className="hover:shadow-lg hover:border-primary/50 transition-all duration-200">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="bg-primary/10 p-3 rounded-lg">
+                    {task.icon}
                   </div>
-                </CardFooter>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{task.title}</h3>
+                    <p className="text-sm text-muted-foreground">{task.description}</p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
+                </CardContent>
               </Card>
             </Link>
           ))}
