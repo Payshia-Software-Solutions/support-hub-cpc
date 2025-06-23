@@ -122,12 +122,12 @@ const StudentInfoCard = ({ info }: { info: StudentInfo }) => (
             <CardDescription>{info.full_name} ({info.student_id})</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div><strong>Email:</strong> {info.e_mail}</div>
-            <div><strong>NIC:</strong> {info.nic}</div>
-            <div><strong>Phone 1:</strong> {info.telephone_1}</div>
-            <div><strong>Phone 2:</strong> {info.telephone_2}</div>
-            <div className="md:col-span-2">
-                <strong>Address:</strong> {`${info.address_line_1} ${info.address_line_2}, ${info.city}, ${info.postal_code}`}
+            <div className="break-words"><strong>Email:</strong> {info.e_mail}</div>
+            <div className="break-words"><strong>NIC:</strong> {info.nic}</div>
+            <div className="break-words"><strong>Phone 1:</strong> {info.telephone_1}</div>
+            <div className="break-words"><strong>Phone 2:</strong> {info.telephone_2}</div>
+            <div className="md:col-span-2 break-words">
+                <strong>Address:</strong> {`${info.address_line_1 || ''} ${info.address_line_2 || ''}, ${info.city || ''}, ${info.postal_code || ''}`}
             </div>
         </CardContent>
     </Card>
@@ -162,7 +162,7 @@ const StudentBalanceCard = ({ balance }: { balance: StudentBalance }) => (
                     <TableRow>
                         <TableHead>Receipt #</TableHead>
                         <TableHead>Course</TableHead>
-                        <TableHead>Amount</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Status</TableHead>
                     </TableRow>
@@ -170,10 +170,10 @@ const StudentBalanceCard = ({ balance }: { balance: StudentBalance }) => (
                 <TableBody>
                     {Object.values(balance.paymentRecords).map(rec => (
                         <TableRow key={rec.id}>
-                            <TableCell>{rec.receipt_number}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap">{rec.receipt_number}</TableCell>
                             <TableCell>{rec.course_code}</TableCell>
-                            <TableCell>LKR {parseFloat(rec.paid_amount).toLocaleString()}</TableCell>
-                            <TableCell>{rec.paid_date}</TableCell>
+                            <TableCell className="text-right whitespace-nowrap">LKR {parseFloat(rec.paid_amount).toLocaleString()}</TableCell>
+                            <TableCell className="whitespace-nowrap">{rec.paid_date}</TableCell>
                             <TableCell><Badge variant={rec.payment_status === 'Paid' ? 'default' : 'secondary'}>{rec.payment_status}</Badge></TableCell>
                         </TableRow>
                     ))}
@@ -195,10 +195,10 @@ const EnrollmentCard = ({ enrollment }: { enrollment: StudentEnrollment }) => (
                     <AccordionTrigger>Assignment Grades (Avg: {enrollment.assignment_grades.average_grade}%)</AccordionTrigger>
                     <AccordionContent>
                         <Table>
-                           <TableHeader><TableRow><TableHead>Assignment</TableHead><TableHead>Grade</TableHead></TableRow></TableHeader>
+                           <TableHeader><TableRow><TableHead>Assignment</TableHead><TableHead className="text-right">Grade</TableHead></TableRow></TableHeader>
                            <TableBody>
                                 {enrollment.assignment_grades.assignments.map(a => (
-                                    <TableRow key={a.assignment_id}><TableCell>{a.assignment_name}</TableCell><TableCell>{parseFloat(a.grade).toFixed(2)}%</TableCell></TableRow>
+                                    <TableRow key={a.assignment_id}><TableCell>{a.assignment_name}</TableCell><TableCell className="text-right">{parseFloat(a.grade).toFixed(2)}%</TableCell></TableRow>
                                 ))}
                            </TableBody>
                         </Table>
@@ -211,7 +211,11 @@ const EnrollmentCard = ({ enrollment }: { enrollment: StudentEnrollment }) => (
                            <TableHeader><TableRow><TableHead>Order</TableHead><TableHead>Tracking #</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
                            <TableBody>
                                 {enrollment.deliveryOrders.map(d => (
-                                    <TableRow key={d.id}><TableCell>{d.delivery_title}</TableCell><TableCell>{d.tracking_number}</TableCell><TableCell>{d.active_status}</TableCell></TableRow>
+                                    <TableRow key={d.id}>
+                                        <TableCell>{d.delivery_title}</TableCell>
+                                        <TableCell className="whitespace-nowrap">{d.tracking_number}</TableCell>
+                                        <TableCell>{d.active_status}</TableCell>
+                                    </TableRow>
                                 ))}
                            </TableBody>
                         </Table>
@@ -224,7 +228,11 @@ const EnrollmentCard = ({ enrollment }: { enrollment: StudentEnrollment }) => (
                            <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>ID</TableHead><TableHead>Printed On</TableHead></TableRow></TableHeader>
                            <TableBody>
                                 {enrollment.certificateRecords.map(c => (
-                                    <TableRow key={c.id}><TableCell>{c.type}</TableCell><TableCell>{c.certificate_id}</TableCell><TableCell>{new Date(c.print_date).toLocaleDateString()}</TableCell></TableRow>
+                                    <TableRow key={c.id}>
+                                        <TableCell>{c.type}</TableCell>
+                                        <TableCell>{c.certificate_id}</TableCell>
+                                        <TableCell className="whitespace-nowrap">{new Date(c.print_date).toLocaleDateString()}</TableCell>
+                                    </TableRow>
                                 ))}
                            </TableBody>
                         </Table>
