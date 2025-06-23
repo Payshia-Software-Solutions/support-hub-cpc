@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Ticket, Settings, Users, CreditCard, LayoutDashboard, LogOut } from "lucide-react";
+import { MessageSquare, Ticket, Settings, LayoutDashboard, LogOut } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
@@ -22,8 +22,6 @@ const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/tickets", label: "Manage Tickets", icon: Ticket },
   { href: "/admin/chat", label: "Manage Chats", icon: MessageSquare },
-  { href: "/admin/users", label: "Manage Users", icon: Users },
-  { href: "/admin/payments", label: "Payment Info", icon: CreditCard },
 ];
 
 export function AdminSidebarNav() {

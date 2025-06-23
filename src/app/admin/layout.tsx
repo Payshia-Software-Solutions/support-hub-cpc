@@ -11,6 +11,7 @@ import { ProtectedRoute } from "@/contexts/AuthContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { AdminBottomDock } from "@/components/admin/AdminBottomDock";
 
 // We need a sub-component to access the context values for conditional styling
 function LayoutContent({ children }: { children: React.ReactNode }) {
@@ -33,8 +34,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // For admin, we might not need a bottom dock, so padding adjustment might differ
-  // For simplicity, using similar logic as dashboard for now.
   return (
     <div className="flex flex-col h-screen">
       <MobileHeader /> 
@@ -43,15 +42,15 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <SidebarInset 
           className={cn(
             "flex-1 overflow-y-auto bg-background",
-            // Admin might not have a bottom dock, adjust padding if needed
-            isMobile ? (isMobileDetailActive ? "pb-0" : "pb-0") : "pb-0", // Default to pb-0 for admin
+            // Apply pb-16 for bottom dock space only if mobile and not in detail view
+            isMobile ? (isMobileDetailActive ? "pb-0" : "pb-16") : "pb-0",
             "md:pb-0"
           )}
         >
           {children}
         </SidebarInset>
       </div>
-      {/* No BottomDock for admin in this version */}
+      <AdminBottomDock />
     </div>
   );
 }
