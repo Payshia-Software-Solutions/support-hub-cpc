@@ -5,12 +5,15 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, AlertTriangle, User, Wallet, BookOpen, CheckCircle, XCircle } from 'lucide-react';
+import { Search, Loader2, AlertTriangle, User, Wallet, BookOpen, CheckCircle, XCircle, Mail, Phone } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 
 // --- Type Definitions for the API response ---
 interface StudentInfo {
@@ -112,57 +115,19 @@ interface FullStudentData {
 
 // --- Sub-components for displaying data ---
 
-const StudentInfoCard = ({ info }: { info: StudentInfo }) => (
+const PaymentHistory = ({ balance }: { balance: StudentBalance }) => (
     <Card>
         <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <User className="h-6 w-6 text-primary" />
-                Student Information
-            </CardTitle>
-            <CardDescription>{info.full_name} ({info.student_id})</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="break-words"><strong>Email:</strong> {info.e_mail}</div>
-            <div className="break-words"><strong>NIC:</strong> {info.nic}</div>
-            <div className="break-words"><strong>Phone 1:</strong> {info.telephone_1}</div>
-            <div className="break-words"><strong>Phone 2:</strong> {info.telephone_2}</div>
-            <div className="md:col-span-2 break-words">
-                <strong>Address:</strong> {`${info.address_line_1 || ''} ${info.address_line_2 || ''}, ${info.city || ''}, ${info.postal_code || ''}`}
-            </div>
-        </CardContent>
-    </Card>
-);
-
-const StudentBalanceCard = ({ balance }: { balance: StudentBalance }) => (
-    <Card>
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <Wallet className="h-6 w-6 text-primary" />
-                Financial Overview
-            </CardTitle>
+            <CardTitle>Full Payment History</CardTitle>
+            <CardDescription>A complete record of all payments made by the student.</CardDescription>
         </CardHeader>
         <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 text-center">
-                <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">Total Paid</p>
-                    <p className="text-2xl font-bold">LKR {balance.totalPaymentAmount.toLocaleString()}</p>
-                </div>
-                 <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">Outstanding</p>
-                    <p className="text-2xl font-bold">LKR {balance.studentBalance.toLocaleString()}</p>
-                </div>
-                 <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">Total Records</p>
-                    <p className="text-2xl font-bold">{Object.keys(balance.paymentRecords).length}</p>
-                </div>
-            </div>
-            <h4 className="font-semibold mb-2">Payment History</h4>
              {/* Mobile View: List of Cards */}
             <div className="md:hidden space-y-4">
                 {Object.values(balance.paymentRecords).map(rec => (
                     <div key={rec.id} className="p-4 border rounded-lg space-y-2 text-sm">
                         <div className="flex justify-between items-center font-medium">
-                            <span>{rec.receipt_number}</span>
+                            <span className="break-all">{rec.receipt_number}</span>
                             <Badge variant={rec.payment_status === 'Paid' ? 'default' : 'secondary'}>{rec.payment_status}</Badge>
                         </div>
                         <div className="text-muted-foreground">
@@ -206,7 +171,7 @@ const EnrollmentCard = ({ enrollment }: { enrollment: StudentEnrollment }) => (
     <Card className="bg-muted/40">
         <CardHeader>
             <CardTitle>{enrollment.parent_course_name}</CardTitle>
-            <CardDescription>Course Code: {enrollment.course_code}</CardDescription>
+            <CardDescription>Course Code: {enrollment.course_code} | Batch: {enrollment.batch_name}</CardDescription>
         </CardHeader>
         <CardContent>
             <Accordion type="multiple" className="w-full">
@@ -231,7 +196,7 @@ const EnrollmentCard = ({ enrollment }: { enrollment: StudentEnrollment }) => (
                             {enrollment.deliveryOrders.map(d => (
                                 <div key={d.id} className="p-3 border rounded-md text-sm space-y-1">
                                     <p className="font-medium">{d.delivery_title}</p>
-                                    <p className="text-muted-foreground"><strong className="text-foreground">Tracking #:</strong> <span className="whitespace-nowrap">{d.tracking_number}</span></p>
+                                    <p className="text-muted-foreground"><strong className="text-foreground">Tracking #:</strong> <span className="whitespace-nowrap break-all">{d.tracking_number}</span></p>
                                     <p className="text-muted-foreground"><strong className="text-foreground">Status:</strong> {d.active_status}</p>
                                 </div>
                             ))}
@@ -374,9 +339,9 @@ export default function AdminQuickLinksPage() {
 
             {isLoading && (
                 <div className="space-y-4">
-                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-40 w-full" />
+                    <Skeleton className="h-10 w-1/2" />
                     <Skeleton className="h-64 w-full" />
-                    <Skeleton className="h-48 w-full" />
                 </div>
             )}
 
@@ -396,24 +361,65 @@ export default function AdminQuickLinksPage() {
 
             {studentData && (
                 <div className="space-y-6">
-                    <StudentInfoCard info={studentData.studentInfo} />
-                    <StudentBalanceCard balance={studentData.studentBalance} />
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <BookOpen className="h-6 w-6 text-primary" />
-                                Course Enrollments
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {Object.values(studentData.studentEnrollments).map(enrollment => (
-                                <EnrollmentCard key={enrollment.id} enrollment={enrollment} />
-                            ))}
+                    {/* Profile Header Card */}
+                    <Card className="shadow-lg">
+                        <CardContent className="p-4 md:p-6">
+                            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-6">
+                                <Avatar className="w-24 h-24 text-4xl border-2 border-primary" data-ai-hint="student avatar">
+                                    <AvatarImage src={`https://placehold.co/150x150.png`} alt={studentData.studentInfo.full_name} />
+                                    <AvatarFallback>{studentData.studentInfo.full_name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 text-center sm:text-left">
+                                    <h2 className="text-2xl font-bold font-headline">{studentData.studentInfo.full_name}</h2>
+                                    <p className="text-muted-foreground">{studentData.studentInfo.student_id}</p>
+                                    <div className="mt-2 text-sm text-muted-foreground space-y-1 break-all">
+                                        <p className="flex items-center justify-center sm:justify-start gap-2"><User className="h-4 w-4 shrink-0" /> {studentData.studentInfo.nic}</p>
+                                        <p className="flex items-center justify-center sm:justify-start gap-2"><Mail className="h-4 w-4 shrink-0" /> {studentData.studentInfo.e_mail}</p>
+                                        <p className="flex items-center justify-center sm:justify-start gap-2"><Phone className="h-4 w-4 shrink-0" /> {studentData.studentInfo.telephone_1}</p>
+                                    </div>
+                                </div>
+                                <div className="w-full sm:w-auto grid grid-cols-2 gap-2 text-center pt-4 sm:pt-0 border-t sm:border-t-0 sm:border-l sm:pl-6 mt-4 sm:mt-0">
+                                    <div className="p-2">
+                                        <p className="text-sm text-muted-foreground">Total Paid</p>
+                                        <p className="text-xl font-bold">LKR {studentData.studentBalance.totalPaymentAmount.toLocaleString()}</p>
+                                    </div>
+                                    <div className="p-2">
+                                        <p className="text-sm text-muted-foreground">Outstanding</p>
+                                        <p className="text-xl font-bold text-destructive">LKR {studentData.studentBalance.studentBalance.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
+
+                    {/* Tabs for details */}
+                    <Tabs defaultValue="enrollments" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-flex">
+                            <TabsTrigger value="enrollments">Course Enrollments</TabsTrigger>
+                            <TabsTrigger value="payments">Payment History</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="enrollments" className="mt-4">
+                           <div className="space-y-4">
+                                {Object.values(studentData.studentEnrollments).length > 0 ? (
+                                    Object.values(studentData.studentEnrollments).map(enrollment => (
+                                        <EnrollmentCard key={enrollment.id} enrollment={enrollment} />
+                                    ))
+                                ) : (
+                                    <p className="text-muted-foreground text-center p-4">No enrollments found.</p>
+                                )}
+                            </div>
+                        </TabsContent>
+                        <TabsContent value="payments" className="mt-4">
+                            {Object.values(studentData.studentBalance.paymentRecords).length > 0 ? (
+                                <PaymentHistory balance={studentData.studentBalance} />
+                             ) : (
+                                <p className="text-muted-foreground text-center p-4">No payment records found.</p>
+                             )}
+                        </TabsContent>
+                    </Tabs>
                 </div>
             )}
         </div>
     );
 }
+
