@@ -32,6 +32,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'qa-api.pharmacollege.lk',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
