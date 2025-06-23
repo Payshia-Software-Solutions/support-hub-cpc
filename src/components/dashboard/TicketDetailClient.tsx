@@ -26,6 +26,7 @@ interface TicketDetailClientProps {
   initialTicket: Ticket;
   onUpdateTicket: (updatedTicket: Partial<Ticket> & { id: string }) => void;
   onAssignTicket?: (payload: { ticketId: string; assignedTo: string; assigneeAvatar: string; lockedByStaffId: string; }) => void;
+  onUnlockTicket?: (ticketId: string) => void;
   userRole: 'student' | 'staff';
   staffAvatar?: string; 
   currentStaffId?: string;
@@ -298,7 +299,7 @@ const TicketDiscussionContent = ({
 };
 
 
-export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffId }: TicketDetailClientProps) {
+export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTicket, onUnlockTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffId }: TicketDetailClientProps) {
   const [ticket, setTicket] = useState(initialTicket);
   const [newMessage, setNewMessage] = useState("");
   const { toast } = useToast();
@@ -452,12 +453,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   };
 
   const handleUnlockTicket = () => {
-    if (userRole === 'staff' && isTicketLockedByCurrentUser) {
-      handleUpdate({ isLocked: false, lockedByStaffId: undefined });
-      toast({
-        title: "Ticket Unlocked",
-        description: "This ticket is now available for other staff members.",
-      });
+    if (userRole === 'staff' && isTicketLockedByCurrentUser && onUnlockTicket) {
+      onUnlockTicket(ticket.id);
     }
   };
   

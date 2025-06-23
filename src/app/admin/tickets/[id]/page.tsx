@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { toast } from "@/hooks/use-toast";
-import { getTicket, updateTicket, assignTicket } from "@/lib/api";
+import { getTicket, updateTicket, assignTicket, unlockTicket } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
 
 export default function AdminTicketDetailPage() {
@@ -72,6 +72,26 @@ export default function AdminTicketDetailPage() {
     }
   });
 
+  const unlockMutation = useMutation({
+    mutationFn: unlockTicket,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', data.id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['ticketMessages', data.id] });
+      toast({
+        title: "Ticket Unlocked",
+        description: "This ticket is now available for other staff members.",
+      });
+    },
+    onError: (err: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Unlock Failed",
+        description: err.message,
+      });
+    },
+  });
+
   useEffect(() => {
     if (isMobile) {
       setIsMobileDetailActive(true);
@@ -88,6 +108,10 @@ export default function AdminTicketDetailPage() {
   const handleAssignTicket = useCallback((payload: { ticketId: string, assignedTo: string, assigneeAvatar: string, lockedByStaffId: string }) => {
     assignMutation.mutate(payload);
   }, [assignMutation]);
+  
+  const handleUnlockTicket = useCallback((ticketIdToUnlock: string) => {
+    unlockMutation.mutate(ticketIdToUnlock);
+  }, [unlockMutation]);
 
   // Automatically assign unassigned tickets to the viewing staff member
   useEffect(() => {
@@ -156,6 +180,7 @@ export default function AdminTicketDetailPage() {
           initialTicket={ticket} 
           onUpdateTicket={handleUpdateTicket}
           onAssignTicket={handleAssignTicket}
+          onUnlockTicket={handleUnlockTicket}
           userRole="staff" 
           staffAvatar={user.avatar} // Use logged-in user's avatar
           currentStaffId={user.id}   // Use logged-in user's ID

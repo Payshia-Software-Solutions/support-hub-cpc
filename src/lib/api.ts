@@ -228,3 +228,10 @@ export const createChatMessage = (messageData: CreateChatMessageClientPayload): 
   };
   return apiFetch('/chat-messages', { method: 'POST', body: JSON.stringify(apiPayload) });
 };
+
+export const unlockTicket = async (ticketId: string): Promise<Ticket> => {
+    const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketId}/unlock`, {
+        method: 'POST',
+    });
+    return mapApiTicketToTicket(updatedApiTicket);
+}
