@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, AlertTriangle, User, Mail, Phone, KeyRound } from 'lucide-react';
+import { Search, Loader2, AlertTriangle, User, Mail, Phone, KeyRound, Send } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -85,6 +85,17 @@ export default function PasswordResetPage() {
         });
         setNewPassword('');
     };
+
+    const handleSendResetLink = () => {
+        if (!studentData) return;
+        // Mock API call to send link
+        console.log(`Sending password reset link to ${studentData.studentInfo.e_mail}`);
+        
+        toast({
+            title: 'Reset Link Sent',
+            description: `A password reset link has been sent to ${studentData.studentInfo.full_name}.`,
+        });
+    };
     
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -148,7 +159,7 @@ export default function PasswordResetPage() {
                     <Card className="shadow-lg">
                         <CardHeader>
                             <CardTitle>Reset Password</CardTitle>
-                            <CardDescription>Enter a new password for the student account. They will be notified of the change.</CardDescription>
+                            <CardDescription>Manually set a new password or send the student a reset link via email.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className='max-w-sm'>
@@ -163,7 +174,7 @@ export default function PasswordResetPage() {
                                 />
                             </div>
                         </CardContent>
-                        <CardFooter>
+                        <CardFooter className="flex items-center gap-4">
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                      <Button disabled={!newPassword}>
@@ -181,6 +192,26 @@ export default function PasswordResetPage() {
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction onClick={handleResetPassword}>Continue</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                     <Button variant="outline">
+                                        <Send className="mr-2 h-4 w-4" /> Send Reset Link
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Send Password Reset Link?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will send a password reset link to {studentData.studentInfo.full_name} at their registered email address ({studentData.studentInfo.e_mail}). Are you sure?
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleSendResetLink}>Send Link</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
