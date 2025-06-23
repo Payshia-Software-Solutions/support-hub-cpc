@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings } from "lucide-react";
 import Link from "next/link";
 
@@ -22,7 +22,7 @@ const managementTasks = [
     title: "Assignment Info",
     description: "View and manage assignment submissions and grades.",
     icon: <ClipboardList className="w-6 h-6 text-primary" />,
-    href: "#",
+    href: "/admin/manage/assignment-info",
   },
   {
     title: "Delivery Orders",
