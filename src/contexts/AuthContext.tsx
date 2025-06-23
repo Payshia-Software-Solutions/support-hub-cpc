@@ -45,7 +45,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (foundUser) {
       setUser(foundUser);
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(foundUser));
-      router.push('/dashboard/chat');
+      if (foundUser.role === 'staff') {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/dashboard/chat');
+      }
     } else {
       throw new Error("Invalid email or password");
     }

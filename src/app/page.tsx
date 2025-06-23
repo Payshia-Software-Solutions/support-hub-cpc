@@ -6,17 +6,21 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomePage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
     if (!isLoading) {
-      if (isAuthenticated) {
-        router.replace('/dashboard/chat');
+      if (isAuthenticated && user) {
+        if (user.role === 'staff') {
+          router.replace('/admin/dashboard');
+        } else {
+          router.replace('/dashboard/chat');
+        }
       } else {
         router.replace('/login');
       }
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [user, isAuthenticated, isLoading, router]);
 
   return (
     <div className="flex h-screen items-center justify-center">
