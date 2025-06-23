@@ -16,7 +16,7 @@ const managementTasks = [
     title: "Payment Updates",
     description: "Record and verify student payments.",
     icon: <CreditCard className="w-6 h-6 text-primary" />,
-    href: "#",
+    href: "/admin/manage/payment-update",
   },
   {
     title: "Assignment Info",
@@ -58,32 +58,28 @@ export default function AdminManagePage() {
         <p className="text-muted-foreground">Access various administrative tools and actions.</p>
       </header>
       <section>
-        <Card className="shadow-lg overflow-hidden">
-            <ul className="divide-y divide-border">
-                {managementTasks.map((task) => (
-                    <li key={task.title}>
-                        <Link 
-                            href={task.href}
-                            className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors group"
-                        >
-                            <div className="flex items-start sm:items-center gap-4">
-                                <div className="mt-1 sm:mt-0 shrink-0">
-                                    {task.icon}
-                                </div>
-                                <div>
-                                    <p className="font-semibold text-card-foreground">{task.title}</p>
-                                    <p className="text-sm text-muted-foreground">{task.description}</p>
-                                </div>
-                            </div>
-                            <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform shrink-0 ml-4" />
-                        </Link>
-                    </li>
-                ))}
-            </ul>
-        </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {managementTasks.map((task) => (
+            <Link key={task.title} href={task.href} className="group">
+              <Card className="h-full hover:shadow-xl transition-shadow flex flex-col">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-base font-medium">{task.title}</CardTitle>
+                  {task.icon}
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <p className="text-sm text-muted-foreground">{task.description}</p>
+                </CardContent>
+                <CardFooter className="pt-4">
+                  <div className="text-sm font-medium text-primary flex items-center group-hover:underline">
+                    Go to {task.title}
+                    <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </CardFooter>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </section>
     </div>
   );
 }
-
-    
