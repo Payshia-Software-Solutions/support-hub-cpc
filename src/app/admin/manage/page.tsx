@@ -1,8 +1,8 @@
 
 "use client";
 
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound } from "lucide-react";
 import Link from "next/link";
 
 const managementTasks = [
@@ -41,6 +41,12 @@ const managementTasks = [
     description: "Process and manage requests for certificates.",
     icon: <Award className="w-6 h-6 text-primary" />,
     href: "/admin/manage/certificate-orders",
+  },
+  {
+    title: "Password Reset",
+    description: "Reset a student's account password.",
+    icon: <KeyRound className="w-6 h-6 text-primary" />,
+    href: "/admin/manage/password-reset",
   },
   {
     title: "General Settings",

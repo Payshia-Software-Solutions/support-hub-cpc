@@ -37,11 +37,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col h-screen">
       <MobileHeader /> 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden w-screen">
         <AdminSidebarNav />
         <SidebarInset 
           className={cn(
-            "flex-1 overflow-y-auto bg-background",
+            "flex-1 overflow-y-auto bg-background ",
             // Apply pb-16 for bottom dock space only if mobile and not in detail view
             isMobile ? (isMobileDetailActive ? "pb-0" : "pb-16") : "pb-0",
             "md:pb-0"
