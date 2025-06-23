@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
@@ -51,7 +52,7 @@ const managementTasks = [
 
 export default function AdminManagePage() {
   return (
-    <div className="p-4 md:p-8 space-y-8 pb-20 max-w-4xl mx-auto">
+    <div className="p-4 md:p-8 space-y-8 pb-20">
       <header>
         <h1 className="text-3xl font-headline font-semibold">Management Tasks</h1>
         <p className="text-muted-foreground">Access various administrative tools and actions.</p>
