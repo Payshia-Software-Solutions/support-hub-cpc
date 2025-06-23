@@ -88,6 +88,18 @@ export default function AdminTicketDetailPage() {
     assignMutation.mutate(payload);
   }, [assignMutation]);
 
+  // Automatically assign unassigned tickets to the viewing staff member
+  useEffect(() => {
+    if (ticket && user && !ticket.assignedTo) {
+      assignMutation.mutate({
+        ticketId: ticket.id,
+        assignedTo: user.name,
+        assigneeAvatar: user.avatar,
+        lockedByStaffId: user.id,
+      });
+    }
+  }, [ticket, user, assignMutation]);
+
   // The loading skeleton should also show if the user object isn't ready yet
   if (isLoading || !user) { 
     return (
