@@ -19,6 +19,7 @@ import {
   Cell,
   Legend,
   CartesianGrid,
+  Label,
 } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 
@@ -39,6 +40,7 @@ export default function AdminDashboardPage() {
 
   const openTicketsCount = tickets?.filter(t => t.status === 'Open' || t.status === 'In Progress').length ?? 0;
   const activeChatsCount = chats?.length ?? 0;
+  const totalTickets = tickets?.length ?? 0;
   
   const oneMonthAgo = subDays(new Date(), 30);
   const resolvedThisMonthCount = tickets?.filter(t => t.status === 'Closed' && t.updatedAt && new Date(t.updatedAt) > oneMonthAgo).length ?? 0;
@@ -185,37 +187,40 @@ export default function AdminDashboardPage() {
                     nameKey="status"
                     innerRadius={60}
                     strokeWidth={5}
-                    labelLine={false}
-                    label={({
-                      cx,
-                      cy,
-                      midAngle,
-                      innerRadius,
-                      outerRadius,
-                      percent,
-                    }) => {
-                      const RADIAN = Math.PI / 180
-                      const radius = innerRadius + (outerRadius - innerRadius) * 0.5
-                      const x = cx + radius * Math.cos(-midAngle * RADIAN)
-                      const y = cy + radius * Math.sin(-midAngle * RADIAN)
-
-                      return (
-                        <text
-                          x={x}
-                          y={y}
-                          fill="#fff"
-                          textAnchor={x > cx ? 'start' : 'end'}
-                          dominantBaseline="central"
-                          className="text-xs font-bold"
-                        >
-                          {`${(percent * 100).toFixed(0)}%`}
-                        </text>
-                      )
-                    }}
                   >
                      {ticketStatusData.map((entry) => (
                       <Cell key={`cell-${entry.status}`} fill={entry.fill} />
                     ))}
+                    <Label
+                      content={({ viewBox }) => {
+                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                          return (
+                            <text
+                              x={viewBox.cx}
+                              y={viewBox.cy}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                            >
+                              <tspan
+                                x={viewBox.cx}
+                                y={viewBox.cy}
+                                className="fill-foreground text-3xl font-bold"
+                              >
+                                {totalTickets.toLocaleString()}
+                              </tspan>
+                              <tspan
+                                x={viewBox.cx}
+                                y={(viewBox.cy || 0) + 20}
+                                className="fill-muted-foreground text-sm"
+                              >
+                                Total Tickets
+                              </tspan>
+                            </text>
+                          )
+                        }
+                        return null
+                      }}
+                    />
                   </Pie>
                    <Legend
                       content={({ payload }) => {
@@ -259,3 +264,4 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
