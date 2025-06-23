@@ -170,7 +170,7 @@ const PaymentHistory = ({ balance }: { balance: StudentBalance }) => (
 );
 
 const EnrollmentCard = ({ enrollment }: { enrollment: StudentEnrollment }) => (
-    <Card className="bg-muted/40">
+    <Card>
         <CardHeader>
             <CardTitle>{enrollment.parent_course_name}</CardTitle>
             <CardDescription>Course Code: {enrollment.course_code} | Batch: {enrollment.batch_name}</CardDescription>
