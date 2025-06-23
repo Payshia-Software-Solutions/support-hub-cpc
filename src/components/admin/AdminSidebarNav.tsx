@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Ticket, Settings, LayoutDashboard, LogOut, Search } from "lucide-react";
+import { MessageSquare, Ticket, LayoutDashboard, LogOut, Search, Wrench } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
@@ -23,6 +23,7 @@ const navItems = [
   { href: "/admin/tickets", label: "Manage Tickets", icon: Ticket },
   { href: "/admin/chat", label: "Manage Chats", icon: MessageSquare },
   { href: "/admin/quick-links", label: "Find", icon: Search },
+  { href: "/admin/manage", label: "Manage", icon: Wrench },
 ];
 
 export function AdminSidebarNav() {
@@ -63,19 +64,6 @@ export function AdminSidebarNav() {
       </SidebarContent>
       <SidebarFooter className="p-2 border-t">
         <SidebarMenu>
-           <SidebarMenuItem>
-             <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith("/admin/settings")}
-                tooltip={{children: "Settings", side: "right"}}
-                className="justify-start"
-              >
-                <Link href="/admin/settings">
-                  <Settings className="h-5 w-5" />
-                  <span className="group-data-[collapsible=icon]:hidden">Settings</span>
-                </Link>
-              </SidebarMenuButton>
-           </SidebarMenuItem>
             <SidebarMenuItem>
                 <SidebarMenuButton
                     onClick={logout}
