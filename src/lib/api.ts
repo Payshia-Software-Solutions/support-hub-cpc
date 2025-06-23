@@ -42,6 +42,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 // Define the shape of the message object from the API
 interface ApiMessage {
   id: string;
+  ticket_id?: string; // Add ticket_id for ticket messages
   from_role: 'student' | 'staff'; // This is the key from the API
   text: string;
   time: string;
@@ -109,7 +110,7 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
         studentAvatar: apiTicket.student_avatar,
         assignedTo: apiTicket.assigned_to,
         assigneeAvatar: apiTicket.assignee_avatar,
-        isLocked: apiTicket.is_locked,
+        isLocked: apiTicket.is_locked == 1, // Fix: Convert "0" or "1" from API to a boolean
         lockedByStaffId: apiTicket.locked_by_staff_id,
     };
 }
@@ -126,7 +127,8 @@ function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
     if (ticketData.studentAvatar !== undefined) apiPayload.student_avatar = ticketData.studentAvatar;
     if (ticketData.assignedTo !== undefined) apiPayload.assigned_to = ticketData.assignedTo;
     if (ticketData.assigneeAvatar !== undefined) apiPayload.assignee_avatar = ticketData.assigneeAvatar;
-    if (ticketData.isLocked !== undefined) apiPayload.is_locked = ticketData.isLocked;
+    // Fix: Send 1 or 0 to the API instead of true/false
+    if (ticketData.isLocked !== undefined) apiPayload.is_locked = ticketData.isLocked ? 1 : 0;
     if (ticketData.lockedByStaffId !== undefined) apiPayload.locked_by_staff_id = ticketData.lockedByStaffId;
     return apiPayload;
 }
@@ -169,14 +171,15 @@ export const updateTicketStatus = async (ticketId: string, newStatus: TicketStat
     return mapApiTicketToTicket(updatedApiTicket);
 }
 
-export const createTicketMessage = (messageData: CreateTicketMessageClientPayload): Promise<Message> => {
+export const createTicketMessage = async (messageData: CreateTicketMessageClientPayload): Promise<Message> => {
   const apiPayload = {
     ticket_id: messageData.ticketId,
     from_role: messageData.from,
     text: messageData.text,
     time: new Date().toISOString(),
   };
-  return apiFetch(`/ticket-messages`, { method: 'POST', body: JSON.stringify(apiPayload) });
+  const newApiMessage = await apiFetch<ApiMessage>(`/ticket-messages`, { method: 'POST', body: JSON.stringify(apiPayload) });
+  return mapApiMessageToMessage(newApiMessage);
 };
 
 
