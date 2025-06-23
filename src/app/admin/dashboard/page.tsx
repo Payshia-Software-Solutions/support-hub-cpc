@@ -3,11 +3,24 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { LineChart, PieChart, Ticket, MessageSquare, CheckCircle, Users } from "lucide-react";
+import { Ticket, MessageSquare, CheckCircle, Users } from "lucide-react";
 import { getTickets, getChats } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Ticket as TicketType, Chat as ChatType } from "@/lib/types";
-import { subDays } from "date-fns";
+import { subDays, format, isSameDay } from "date-fns";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  CartesianGrid,
+} from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 
 export default function AdminDashboardPage() {
   const { data: tickets, isLoading: isLoadingTickets, isError: isErrorTickets, error: errorTickets } = useQuery<TicketType[]>({
@@ -38,6 +51,37 @@ export default function AdminDashboardPage() {
     { title: "Resolved Tickets (Month)", value: resolvedThisMonthCount.toString(), icon: <CheckCircle className="w-6 h-6 text-green-500" />, trend: "In the last 30 days" },
     { title: "New Users (Week)", value: newUsersCount, icon: <Users className="w-6 h-6 text-primary" />, trend: "Static placeholder" },
   ];
+
+  // Chart Data Processing
+  const ticketVolumeData = [...Array(7)].map((_, i) => {
+    const date = subDays(new Date(), 6 - i);
+    return {
+      date: format(date, "MMM d"),
+      shortDate: format(date, "EEE"),
+      total: tickets?.filter(t => isSameDay(new Date(t.createdAt), date)).length ?? 0,
+    };
+  });
+  
+  const statusChartConfig: ChartConfig = {
+    Open: { label: "Open", color: "hsl(var(--chart-1))" },
+    "In Progress": { label: "In Progress", color: "hsl(var(--chart-2))" },
+    Closed: { label: "Closed", color: "hsl(var(--chart-3))" },
+  };
+
+  const ticketStatusData = (Object.keys(statusChartConfig) as Array<keyof typeof statusChartConfig>).map(status => ({
+      status: status,
+      total: tickets?.filter(t => t.status === status).length ?? 0,
+      fill: statusChartConfig[status].color,
+    })
+  ).filter(d => d.total > 0);
+
+
+  const volumeChartConfig: ChartConfig = {
+    total: {
+      label: "Tickets",
+      color: "hsl(var(--primary))",
+    },
+  };
   
   if (isError) {
     return (
@@ -82,12 +126,37 @@ export default function AdminDashboardPage() {
             <CardTitle>Ticket Volume</CardTitle>
             <CardDescription>Last 7 days</CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px] flex items-center justify-center">
-            {/* Placeholder for a chart */}
-            <div className="text-center text-muted-foreground">
-              <LineChart className="w-16 h-16 mx-auto mb-2" />
-              <p>Ticket Volume Chart Placeholder</p>
-            </div>
+          <CardContent className="h-[300px]">
+            {isLoading ? (
+              <div className="flex h-full items-center justify-center">
+                 <Skeleton className="h-full w-full" />
+              </div>
+            ) : (
+              <ChartContainer config={volumeChartConfig} className="w-full h-full">
+                <BarChart data={ticketVolumeData} accessibilityLayer>
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="shortDate"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    fontSize={12}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    allowDecimals={false}
+                    fontSize={12}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent />}
+                  />
+                  <Bar dataKey="total" fill="var(--color-total)" radius={4} />
+                </BarChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
         <Card className="shadow-lg">
@@ -96,11 +165,77 @@ export default function AdminDashboardPage() {
             <CardDescription>Current snapshot</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px] flex items-center justify-center">
-            {/* Placeholder for a chart */}
-            <div className="text-center text-muted-foreground">
-              <PieChart className="w-16 h-16 mx-auto mb-2" />
-              <p>Status Distribution Chart Placeholder</p>
-            </div>
+            {isLoading ? (
+               <div className="flex h-full items-center justify-center">
+                 <Skeleton className="h-48 w-48 rounded-full" />
+               </div>
+            ) : ticketStatusData.length > 0 ? (
+              <ChartContainer
+                config={statusChartConfig}
+                className="mx-auto aspect-square h-full"
+              >
+                <PieChart>
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Pie
+                    data={ticketStatusData}
+                    dataKey="total"
+                    nameKey="status"
+                    innerRadius={60}
+                    strokeWidth={5}
+                    labelLine={false}
+                    label={({
+                      cx,
+                      cy,
+                      midAngle,
+                      innerRadius,
+                      outerRadius,
+                      percent,
+                    }) => {
+                      const RADIAN = Math.PI / 180
+                      const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+                      const x = cx + radius * Math.cos(-midAngle * RADIAN)
+                      const y = cy + radius * Math.sin(-midAngle * RADIAN)
+
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          fill="#fff"
+                          textAnchor={x > cx ? 'start' : 'end'}
+                          dominantBaseline="central"
+                          className="text-xs font-bold"
+                        >
+                          {`${(percent * 100).toFixed(0)}%`}
+                        </text>
+                      )
+                    }}
+                  >
+                     {ticketStatusData.map((entry) => (
+                      <Cell key={`cell-${entry.status}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                   <Legend
+                      content={({ payload }) => {
+                        return (
+                          <ul className="flex flex-wrap gap-x-4 gap-y-2 justify-center mt-4">
+                            {payload?.map((entry) => (
+                              <li key={`item-${entry.value}`} className="flex items-center gap-2 text-sm">
+                                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                                <span>{entry.value} ({entry.payload.payload.total})</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )
+                      }}
+                    />
+                </PieChart>
+              </ChartContainer>
+            ) : (
+              <p className="text-muted-foreground">No ticket data to display.</p>
+            )}
           </CardContent>
         </Card>
       </section>
