@@ -22,6 +22,7 @@ import {
   Label,
 } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
+import { dummyStaffMembers } from "@/lib/dummy-data";
 
 export default function AdminDashboardPage() {
   const { data: tickets, isLoading: isLoadingTickets, isError: isErrorTickets, error: errorTickets } = useQuery<TicketType[]>({
@@ -83,6 +84,33 @@ export default function AdminDashboardPage() {
       label: "Tickets",
       color: "hsl(var(--primary))",
     },
+  };
+
+  // Staff workload charts
+  const staffHandlingData = dummyStaffMembers.map(staff => {
+    const assignedTickets = tickets?.filter(t => t.assignedTo === staff.name) ?? [];
+    return {
+      name: staff.name,
+      Open: assignedTickets.filter(t => t.status === 'Open').length,
+      InProgress: assignedTickets.filter(t => t.status === 'In Progress').length,
+    };
+  }).filter(d => d.Open > 0 || d.InProgress > 0);
+
+  const handlingChartConfig: ChartConfig = {
+    Open: { label: "Open", color: "hsl(var(--chart-1))" },
+    InProgress: { label: "In Progress", color: "hsl(var(--chart-2))" },
+  };
+
+  const staffClosedData = dummyStaffMembers.map(staff => {
+    const closedTickets = tickets?.filter(t => t.assignedTo === staff.name && t.status === 'Closed').length ?? 0;
+    return {
+      name: staff.name,
+      Closed: closedTickets,
+    };
+  }).filter(d => d.Closed > 0);
+
+  const closedChartConfig: ChartConfig = {
+    Closed: { label: "Closed", color: "hsl(var(--chart-3))" },
   };
   
   if (isError) {
@@ -244,6 +272,93 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
       </section>
+
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Active Tickets by Staff</CardTitle>
+            <CardDescription>Open and In-Progress tickets per staff member</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            {isLoading ? (
+              <div className="flex h-full items-center justify-center">
+                 <Skeleton className="h-full w-full" />
+              </div>
+            ) : staffHandlingData.length > 0 ? (
+              <ChartContainer config={handlingChartConfig} className="w-full h-full">
+                <BarChart data={staffHandlingData} layout="vertical" accessibilityLayer margin={{ left: 10, right: 10 }}>
+                  <CartesianGrid horizontal={false} />
+                  <XAxis type="number" hide />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    fontSize={12}
+                    width={80}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent />}
+                  />
+                  <Legend />
+                  <Bar dataKey="Open" stackId="a" fill="var(--color-Open)" />
+                  <Bar dataKey="InProgress" stackId="a" fill="var(--color-InProgress)" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ChartContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <p className="text-muted-foreground">No active tickets assigned to staff.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Resolved Tickets by Staff</CardTitle>
+            <CardDescription>Total tickets closed by each staff member</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            {isLoading ? (
+              <div className="flex h-full items-center justify-center">
+                 <Skeleton className="h-full w-full" />
+              </div>
+            ) : staffClosedData.length > 0 ? (
+              <ChartContainer config={closedChartConfig} className="w-full h-full">
+                <BarChart data={staffClosedData} accessibilityLayer>
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    fontSize={12}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    allowDecimals={false}
+                    fontSize={12}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent />}
+                  />
+                  <Legend />
+                  <Bar dataKey="Closed" fill="var(--color-Closed)" radius={4} />
+                </BarChart>
+              </ChartContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <p className="text-muted-foreground">No closed tickets assigned to staff.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
       
       <section>
         <Card className="shadow-lg">
@@ -264,4 +379,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
