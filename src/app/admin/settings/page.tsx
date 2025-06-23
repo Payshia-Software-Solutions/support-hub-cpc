@@ -63,7 +63,7 @@ export default function AdminSettingsPage() {
 
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
+    <div className="p-4 md:p-8 space-y-8 pb-20">
       <header>
         <h1 className="text-3xl font-headline font-semibold">Admin Settings</h1>
         <p className="text-muted-foreground">Configure system-wide settings for the admin panel.</p>

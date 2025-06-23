@@ -47,7 +47,7 @@ export default function CreateTicketPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 flex justify-center items-start min-h-full bg-muted/30 overflow-y-auto">
+    <div className="p-4 md:p-8 flex justify-center items-start min-h-full bg-muted/30 overflow-y-auto pb-20">
       <TicketForm onSubmitTicket={handleTicketSubmit} isSubmitting={createTicketMutation.isPending} />
     </div>
   );

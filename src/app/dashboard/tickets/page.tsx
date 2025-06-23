@@ -34,7 +34,7 @@ export default function TicketsPage() {
   }
   
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto pb-20">
       <TicketList tickets={tickets || []} />
     </div>
   );

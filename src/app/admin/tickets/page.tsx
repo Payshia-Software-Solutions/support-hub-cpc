@@ -37,7 +37,7 @@ export default function AdminTicketsPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto w-full">
+    <div className="h-full overflow-y-auto w-full pb-20">
       <TicketList tickets={tickets || []} currentStaffId={CURRENT_STAFF_ID} />
     </div>
   );

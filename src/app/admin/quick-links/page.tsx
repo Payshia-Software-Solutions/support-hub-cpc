@@ -349,7 +349,7 @@ export default function AdminQuickLinksPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-8">
+        <div className="p-4 md:p-8 space-y-8 pb-20">
             <header>
                 <h1 className="text-3xl font-headline font-semibold">Find Student</h1>
                 <p className="text-muted-foreground">Search for a student by their ID to get a full overview.</p>

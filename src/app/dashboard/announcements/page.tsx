@@ -27,7 +27,7 @@ export default function AnnouncementsPage() {
   const sortedAnnouncements = announcements ? [...announcements].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) : [];
 
   return (
-    <div className="p-0 md:p-6 space-y-6 h-full overflow-y-auto">
+    <div className="p-0 md:p-6 space-y-6 h-full overflow-y-auto pb-20">
       <div className="p-4 md:p-0">
         <h1 className="text-2xl md:text-3xl font-headline font-semibold">Announcements</h1>
       </div>
