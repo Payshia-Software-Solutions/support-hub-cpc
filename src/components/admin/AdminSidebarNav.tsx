@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Ticket, Settings, LayoutDashboard, LogOut, Link2 } from "lucide-react";
+import { MessageSquare, Ticket, Settings, LayoutDashboard, LogOut, Search } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
@@ -22,7 +22,7 @@ const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/tickets", label: "Manage Tickets", icon: Ticket },
   { href: "/admin/chat", label: "Manage Chats", icon: MessageSquare },
-  { href: "/admin/quick-links", label: "Quick Links", icon: Link2 },
+  { href: "/admin/quick-links", label: "Find", icon: Search },
 ];
 
 export function AdminSidebarNav() {
