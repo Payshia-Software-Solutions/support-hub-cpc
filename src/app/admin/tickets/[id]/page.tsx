@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TicketDetailClient } from "@/components/dashboard/TicketDetailClient";
@@ -21,6 +21,7 @@ export default function AdminTicketDetailPage() {
   const ticketId = params.id as string;
   const queryClient = useQueryClient();
   const { user } = useAuth(); // Get the currently authenticated user
+  const assignmentAttempted = useRef(false);
 
   const { setIsMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
@@ -90,7 +91,8 @@ export default function AdminTicketDetailPage() {
 
   // Automatically assign unassigned tickets to the viewing staff member
   useEffect(() => {
-    if (ticket && user && !ticket.assignedTo) {
+    if (ticket && user && !ticket.assignedTo && !assignmentAttempted.current) {
+      assignmentAttempted.current = true;
       assignMutation.mutate({
         ticketId: ticket.id,
         assignedTo: user.name,
