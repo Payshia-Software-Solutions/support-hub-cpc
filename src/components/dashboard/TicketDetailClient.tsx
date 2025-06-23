@@ -389,11 +389,13 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
   });
 
   useEffect(() => {
-    if (userRole === 'staff' && currentStaffId && !ticket.isLocked) {
+    // Only auto-lock if the ticket is already assigned to someone.
+    // This prevents locking unassigned tickets just by viewing them.
+    if (userRole === 'staff' && currentStaffId && !ticket.isLocked && ticket.assignedTo) {
       const updatedTicket = { id: ticket.id, isLocked: true, lockedByStaffId: currentStaffId };
       onUpdateTicket(updatedTicket);
     }
-  }, [ticket.id, userRole, currentStaffId, ticket.isLocked, onUpdateTicket]);
+  }, [ticket.id, userRole, currentStaffId, ticket.isLocked, onUpdateTicket, ticket.assignedTo]);
   
   const handleUpdate = (updates: Partial<Ticket>) => {
       const updatedData = { ...ticket, ...updates, updatedAt: new Date().toISOString() };
@@ -416,10 +418,22 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, userRole, st
       return;
     }
 
-    const updates = { 
+    const updates: Partial<Ticket> = { 
       assignedTo: staffId === "unassigned" ? undefined : selectedStaff?.name, 
       assigneeAvatar: staffId === "unassigned" ? undefined : selectedStaff?.avatar,
     };
+
+    // When a staff member assigns a ticket, lock it to them. When un-assigning, unlock it.
+    if (userRole === 'staff' && currentStaffId) {
+        if (staffId === "unassigned") {
+            updates.isLocked = false;
+            updates.lockedByStaffId = undefined;
+        } else {
+            updates.isLocked = true;
+            updates.lockedByStaffId = currentStaffId;
+        }
+    }
+
     handleUpdate(updates);
     toast({
       title: "Ticket Assignment Updated",
