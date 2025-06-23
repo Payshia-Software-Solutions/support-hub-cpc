@@ -1,5 +1,5 @@
 
-import type { UserProfile, PaymentRecord, StaffMember } from './types';
+import type { UserProfile, PaymentRecord, StaffMember, Course } from './types';
 
 // Note: Most dummy data is now obsolete and replaced by API calls.
 // This file is kept for data that might not come from the API in the prototype,
@@ -23,4 +23,11 @@ export const dummyPayments: PaymentRecord[] = [
   { id: 'payment2', userId: 'user2', userName: 'Student Bob', amount: 75, currency: 'USD', date: '2024-07-10', status: 'Completed', description: 'Library Fine' },
   { id: 'payment3', userId: 'user1', userName: 'Student Alice', amount: 30, currency: 'USD', date: '2024-07-15', status: 'Pending', description: 'Parking Permit' },
   { id: 'payment4', userId: 'user2', userName: 'Student Bob', amount: 500, currency: 'USD', date: '2024-06-20', status: 'Failed', description: 'Spring Semester Resit Fee' },
+];
+
+export const dummyCourses: Course[] = [
+  { id: 'course1', courseCode: 'CPCC15', name: 'Certificate Course in Pharmacy Practice' },
+  { id: 'course2', courseCode: 'CPCC16', name: 'Advanced Course in Pharmacy Practice' },
+  { id: 'course3', courseCode: 'NUTR01', name: 'Diploma in Nutrition' },
+  { id: 'course4', courseCode: 'COUNS01', name: 'Advanced Certificate in Counseling' },
 ];

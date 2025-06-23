@@ -86,6 +86,12 @@ export interface StaffMember {
   avatar: string;
 }
 
+export interface Course {
+  id: string;
+  courseCode: string;
+  name: string;
+}
+
 // Client-side payloads for API calls
 export type CreateTicketPayload = Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>;
 export type UpdateTicketPayload = Partial<Ticket> & { id: string };

@@ -10,7 +10,7 @@ const managementTasks = [
     title: "Enroll Students",
     description: "Manage student course enrollments and batches.",
     icon: <UserPlus className="w-6 h-6 text-primary" />,
-    href: "#", // Placeholder
+    href: "/admin/manage/enroll",
   },
   {
     title: "Payment Updates",
