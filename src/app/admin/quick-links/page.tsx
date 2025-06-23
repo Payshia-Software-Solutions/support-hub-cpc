@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { searchStudents } from '@/lib/api';
+import type { StudentSearchResult } from '@/lib/types';
 
 
 // --- Type Definitions for the API response ---
@@ -282,8 +284,50 @@ export default function AdminQuickLinksPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const [suggestions, setSuggestions] = useState<StudentSearchResult[]>([]);
+    const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
+    const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+    const searchContainerRef = useRef<HTMLDivElement>(null);
+
+
+    useEffect(() => {
+        const handler = setTimeout(async () => {
+            if (studentId.trim().length > 1) {
+                setIsFetchingSuggestions(true);
+                try {
+                    const results = await searchStudents(studentId.trim());
+                    setSuggestions(results);
+                    setIsSuggestionsOpen(results.length > 0);
+                } catch (err) {
+                    console.error("Failed to fetch suggestions:", err);
+                    setSuggestions([]);
+                    setIsSuggestionsOpen(false);
+                } finally {
+                    setIsFetchingSuggestions(false);
+                }
+            } else {
+                setSuggestions([]);
+                setIsSuggestionsOpen(false);
+            }
+        }, 300); // 300ms debounce delay
+
+        return () => clearTimeout(handler);
+    }, [studentId]);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+                setIsSuggestionsOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+    
+
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSuggestionsOpen(false);
         if (!studentId.trim()) {
             toast({ variant: 'destructive', title: 'Error', description: 'Please enter a student ID.' });
             return;
@@ -312,6 +356,11 @@ export default function AdminQuickLinksPage() {
             setIsLoading(false);
         }
     };
+    
+    const handleSuggestionClick = (suggestion: StudentSearchResult) => {
+        setStudentId(suggestion.student_id);
+        setIsSuggestionsOpen(false);
+    };
 
     return (
         <div className="p-4 md:p-8 space-y-8 pb-20">
@@ -322,17 +371,47 @@ export default function AdminQuickLinksPage() {
 
             <Card className="shadow-lg">
                 <CardContent className="p-6">
-                    <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
-                        <Input 
-                            placeholder="Enter Student ID (e.g., PA16642)" 
-                            value={studentId}
-                            onChange={(e) => setStudentId(e.target.value)}
-                            className="flex-grow"
-                        />
-                        <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                            Search
-                        </Button>
+                    <form onSubmit={handleSearch}>
+                      <div className="relative" ref={searchContainerRef}>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <Input 
+                                placeholder="Enter Student ID or Name..." 
+                                value={studentId}
+                                onChange={(e) => setStudentId(e.target.value)}
+                                onFocus={() => setIsSuggestionsOpen(suggestions.length > 0)}
+                                className="flex-grow"
+                                autoComplete="off"
+                            />
+                            <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                                Search
+                            </Button>
+                        </div>
+                        {isSuggestionsOpen && (
+                             <div className="absolute top-full mt-2 w-full sm:max-w-md rounded-md border bg-popover text-popover-foreground shadow-lg z-50">
+                                <ul className="max-h-60 overflow-y-auto">
+                                    {isFetchingSuggestions ? (
+                                        <li className="p-3 text-center text-sm text-muted-foreground">Loading...</li>
+                                    ) : suggestions.length > 0 ? (
+                                        suggestions.map((s) => (
+                                            <li key={s.student_id}>
+                                                <button
+                                                    type="button"
+                                                    onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}
+                                                    className="w-full text-left p-3 hover:bg-accent transition-colors"
+                                                >
+                                                    <p className="font-medium">{s.full_name}</p>
+                                                    <p className="text-sm text-muted-foreground">{s.student_id}</p>
+                                                </button>
+                                            </li>
+                                        ))
+                                    ) : (
+                                        <li className="p-3 text-center text-sm text-muted-foreground">No suggestions found.</li>
+                                    )}
+                                </ul>
+                            </div>
+                        )}
+                       </div>
                     </form>
                 </CardContent>
             </Card>

@@ -1,5 +1,5 @@
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -235,3 +235,9 @@ export const unlockTicket = async (ticketId: string): Promise<Ticket> => {
     });
     return mapApiTicketToTicket(updatedApiTicket);
 }
+
+// Student Search
+export const searchStudents = (query: string): Promise<StudentSearchResult[]> => {
+    if (!query) return Promise.resolve([]);
+    return apiFetch(`/students/search?query=${encodeURIComponent(query)}`);
+};

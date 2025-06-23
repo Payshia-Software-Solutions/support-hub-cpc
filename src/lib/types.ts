@@ -108,3 +108,8 @@ export type CreateChatMessageClientPayload = {
   text: string;
   attachment?: Attachment;
 };
+
+export interface StudentSearchResult {
+  student_id: string;
+  full_name: string;
+}
