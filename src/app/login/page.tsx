@@ -14,14 +14,14 @@ export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState(''); // Password field is for UI purposes only in this mock.
+  const [password, setPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoggingIn(true);
     try {
-      await login(username);
+      await login(username, password);
       // On success, the auth context handles redirection.
     } catch (error) {
       toast({
@@ -70,7 +70,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder='(any password works for demo)'
+                placeholder='Enter your password'
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoggingIn}>
