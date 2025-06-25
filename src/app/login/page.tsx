@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState(''); // Password field is for UI purposes only in this mock.
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -21,8 +21,7 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoggingIn(true);
     try {
-      // In this demo, we only need email for mock login
-      await login(email);
+      await login(username);
       // On success, the auth context handles redirection.
     } catch (error) {
       toast({
@@ -35,7 +34,7 @@ export default function LoginPage() {
   };
   
   // Example users to guide the user
-  const studentExample = "alice@example.com";
+  const studentExample = "PA0107";
   const adminExample = "jane.staff@example.com";
 
   return (
@@ -53,13 +52,13 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="e.g., PA0107 or staff@example.com"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>
@@ -80,8 +79,8 @@ export default function LoginPage() {
           </form>
             <div className="mt-6 text-center text-sm text-muted-foreground">
                 <p className="font-semibold">Demo Users:</p>
-                <p>Student: <button onClick={() => setEmail(studentExample)} className="text-primary hover:underline">{studentExample}</button></p>
-                <p>Admin: <button onClick={() => setEmail(adminExample)} className="text-primary hover:underline">{adminExample}</button></p>
+                <p>Student: <button onClick={() => setUsername(studentExample)} className="text-primary hover:underline">{studentExample}</button></p>
+                <p>Admin: <button onClick={() => setUsername(adminExample)} className="text-primary hover:underline">{adminExample}</button></p>
             </div>
         </CardContent>
       </Card>

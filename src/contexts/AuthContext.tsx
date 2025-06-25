@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface AuthContextType {
   user: UserProfile | null;
-  login: (email: string) => Promise<void>; // Simplified login for demo
+  login: (usernameOrEmail: string) => Promise<void>; // Updated to handle username or email
   logout: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -38,21 +38,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const login = useCallback(async (email: string) => {
-    // In a real app, this would be an API call with email and password
-    const foundUser = dummyUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-    
-    if (foundUser) {
-      setUser(foundUser);
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(foundUser));
-      if (foundUser.role === 'staff') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/dashboard/chat');
-      }
-    } else {
-      throw new Error("Invalid email or password");
+  const login = useCallback(async (usernameOrEmail: string) => {
+    // First, try to log in as a student via API.
+    try {
+        const response = await fetch(`https://qa-api.pharmacollege.lk/users/username/${usernameOrEmail.toUpperCase()}`);
+        if (response.ok) {
+            const apiUser = await response.json();
+            if (apiUser && apiUser.id) {
+                const userProfile: UserProfile = {
+                    id: apiUser.id,
+                    name: `${apiUser.fname} ${apiUser.lname}`,
+                    email: apiUser.email,
+                    role: apiUser.userlevel === 'Student' ? 'student' : 'staff', // Assuming 'Student' or other
+                    avatar: `https://placehold.co/100x100.png?text=${apiUser.fname.charAt(0)}${apiUser.lname.charAt(0)}`,
+                    joinedDate: apiUser.created_at,
+                };
+
+                setUser(userProfile);
+                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userProfile));
+                router.push('/dashboard/chat');
+                return;
+            }
+        }
+    } catch (error) {
+        // Network error or other issues, fall through to check mock staff.
+        console.error("Student API login failed, falling back to mock users:", error);
     }
+
+    // If API login fails, fall back to mock staff login by email
+    const foundStaff = dummyUsers.find(u => u.role === 'staff' && u.email.toLowerCase() === usernameOrEmail.toLowerCase());
+    if (foundStaff) {
+      setUser(foundStaff);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(foundStaff));
+      router.push('/admin/dashboard');
+      return;
+    }
+
+    // If everything fails
+    throw new Error("Invalid username or password");
   }, [router]);
 
   const logout = useCallback(() => {
