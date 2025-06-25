@@ -12,16 +12,19 @@ import { MessageSquarePlus } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 export default function ChatPage() {
   const queryClient = useQueryClient();
   const { setIsMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
 
   const { data: chats, isLoading, isError, error } = useQuery<Chat[]>({
-    queryKey: ['chats'],
-    queryFn: getChats,
+    queryKey: ['chats', user?.username],
+    queryFn: () => getChats(user!.username!),
+    enabled: !!user?.username,
   });
 
   const studentChat = chats?.[0];
@@ -36,9 +39,9 @@ export default function ChatPage() {
   }, [isMobile, setIsMobileDetailActive]);
 
   const createChatMutation = useMutation({
-    mutationFn: createChat,
+    mutationFn: (studentInfo: { studentNumber: string, studentName: string, studentAvatar: string }) => createChat(studentInfo),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.invalidateQueries({ queryKey: ['chats', user?.username] });
       toast({
         title: "Chat Created!",
         description: "You can now start messaging with support staff.",
@@ -59,10 +62,10 @@ export default function ChatPage() {
         const { chatId, text, from, attachment } = newMessagePayload;
         
         await queryClient.cancelQueries({ queryKey: ['chatMessages', chatId] });
-        await queryClient.cancelQueries({ queryKey: ['chats'] });
+        await queryClient.cancelQueries({ queryKey: ['chats', user?.username] });
 
         const previousMessages = queryClient.getQueryData<Message[]>(['chatMessages', chatId]);
-        const previousChats = queryClient.getQueryData<Chat[]>(['chats']);
+        const previousChats = queryClient.getQueryData<Chat[]>(['chats', user?.username]);
 
         const studentAvatar = studentChat?.userAvatar;
         const optimisticMessage: Message = {
@@ -77,7 +80,7 @@ export default function ChatPage() {
             old ? [...old, optimisticMessage] : [optimisticMessage]
         );
 
-        queryClient.setQueryData<Chat[]>(['chats'], (oldChats) => {
+        queryClient.setQueryData<Chat[]>(['chats', user?.username], (oldChats) => {
           if (!oldChats) return [];
           const updatedChat = oldChats.find(c => c.id === chatId);
           if (!updatedChat) return oldChats;
@@ -98,7 +101,7 @@ export default function ChatPage() {
             queryClient.setQueryData(['chatMessages', context.chatId], context.previousMessages);
         }
         if (context?.previousChats) {
-            queryClient.setQueryData(['chats'], context.previousChats);
+            queryClient.setQueryData(['chats', user?.username], context.previousChats);
         }
         toast({
             variant: "destructive",
@@ -108,7 +111,7 @@ export default function ChatPage() {
     },
     onSettled: (data, error, variables) => {
         queryClient.invalidateQueries({ queryKey: ['chatMessages', variables.chatId] });
-        queryClient.invalidateQueries({ queryKey: ['chats'] });
+        queryClient.invalidateQueries({ queryKey: ['chats', user?.username] });
     },
   });
 
@@ -165,8 +168,16 @@ export default function ChatPage() {
           Have a question or need help? Click the button below to start a new chat with our support staff.
         </p>
         <Button 
-          onClick={() => createChatMutation.mutate()}
-          disabled={createChatMutation.isPending}
+          onClick={() => {
+            if (user && user.username) {
+              createChatMutation.mutate({
+                studentNumber: user.username,
+                studentName: user.name,
+                studentAvatar: user.avatar,
+              })
+            }
+          }}
+          disabled={createChatMutation.isPending || !user}
           size="lg"
         >
           {createChatMutation.isPending ? 'Starting...' : 'Start New Chat'}

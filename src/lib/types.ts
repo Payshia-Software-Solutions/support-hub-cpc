@@ -62,6 +62,7 @@ export interface Announcement {
 // Basic User type for admin placeholder
 export interface UserProfile {
   id: string;
+  username?: string;
   name: string;
   email: string;
   role: 'student' | 'staff';

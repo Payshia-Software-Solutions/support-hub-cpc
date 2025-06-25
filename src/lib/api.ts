@@ -200,20 +200,27 @@ export const createTicketMessage = async (messageData: CreateTicketMessageClient
 
 
 // Chats
-export const getChats = async (): Promise<Chat[]> => {
-    const apiChats = await apiFetch<ApiChat[]>('/chats');
+export const getChats = async (studentNumber?: string): Promise<Chat[]> => {
+    const endpoint = studentNumber ? `/chats/by-student/${studentNumber}` : '/chats';
+    const apiChats = await apiFetch<ApiChat[]>(endpoint);
     if (!apiChats) return [];
     return apiChats.map(mapApiChatToChat);
 };
+
 export const getChat = async (id: string): Promise<Chat> => {
     const apiChat = await apiFetch<ApiChat>(`/chats/${id}`);
     return mapApiChatToChat(apiChat);
 };
 
-export const createChat = async (): Promise<Chat> => {
-    // Assuming the backend uses the authenticated user's session to create the chat
+export const createChat = async (studentInfo: { studentNumber: string, studentName: string, studentAvatar: string }): Promise<Chat> => {
+    const apiPayload = {
+        student_number: studentInfo.studentNumber,
+        user_name: studentInfo.studentName,
+        user_avatar: studentInfo.studentAvatar
+    };
     const apiChat = await apiFetch<ApiChat>('/chats', { 
         method: 'POST',
+        body: JSON.stringify(apiPayload),
     });
     return mapApiChatToChat(apiChat);
 };

@@ -69,6 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 
                 const userProfile: UserProfile = {
                     id: apiUser.id,
+                    username: apiUser.username,
                     name: `${apiUser.fname} ${apiUser.lname}`,
                     email: apiUser.email,
                     role: apiUser.userlevel === 'Student' ? 'student' : 'staff',
