@@ -18,14 +18,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Ticket, TicketPriority } from "@/lib/types";
+import type { Ticket, TicketPriority, TicketCategory } from "@/lib/types";
 
 const ticketFormSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters.").max(100, "Subject must be at most 100 characters."),
-  description: z.string().min(20, "Description must be at least 20 characters.").max(1000, "Description must be at most 1000 characters."),
+  category: z.enum(["Course", "Payment", "Games", "Delivery Packs", "Other"], {
+    required_error: "You need to select a ticket category.",
+  }),
   priority: z.enum(["Low", "Medium", "High"], {
     required_error: "You need to select a ticket priority.",
   }),
+  description: z.string().min(20, "Description must be at least 20 characters.").max(1000, "Description must be at most 1000 characters."),
 });
 
 type TicketFormValues = z.infer<typeof ticketFormSchema>;
@@ -40,8 +43,8 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
     resolver: zodResolver(ticketFormSchema),
     defaultValues: {
       subject: "",
-      description: "",
       priority: "Medium",
+      description: "",
     },
   });
 
@@ -77,6 +80,60 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Course">Course</SelectItem>
+                        <SelectItem value="Payment">Payment</SelectItem>
+                        <SelectItem value="Games">Games</SelectItem>
+                        <SelectItem value="Delivery Packs">Delivery Packs</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      This helps us route your ticket.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priority</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select ticket priority" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Low">Low</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      How urgent is this issue?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="description"
@@ -92,31 +149,6 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                   </FormControl>
                   <FormDescription>
                     Provide as much detail as possible to help us understand and resolve your issue quickly.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Priority</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select ticket priority" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Low">Low</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    How urgent is this issue?
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

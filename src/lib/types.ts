@@ -29,12 +29,14 @@ export interface Chat {
 
 export type TicketStatus = 'Open' | 'In Progress' | 'Closed';
 export type TicketPriority = 'Low' | 'Medium' | 'High';
+export type TicketCategory = 'Course' | 'Payment' | 'Games' | 'Delivery Packs' | 'Other';
 
 export interface Ticket {
   id: string;
   subject: string;
   description: string;
   priority: TicketPriority;
+  category: TicketCategory;
   status: TicketStatus;
   createdAt: string; // ISO 8601 date string
   updatedAt?: string; // ISO 8601 date string

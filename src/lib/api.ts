@@ -103,6 +103,7 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
         subject: apiTicket.subject,
         description: apiTicket.description,
         priority: apiTicket.priority,
+        category: apiTicket.category || 'Other',
         status: apiTicket.status,
         createdAt: apiTicket.created_at,
         updatedAt: apiTicket.updated_at,
@@ -122,6 +123,7 @@ function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
     if (ticketData.subject !== undefined) apiPayload.subject = ticketData.subject;
     if (ticketData.description !== undefined) apiPayload.description = ticketData.description;
     if (ticketData.priority !== undefined) apiPayload.priority = ticketData.priority;
+    if (ticketData.category !== undefined) apiPayload.category = ticketData.category;
     if (ticketData.status !== undefined) apiPayload.status = ticketData.status;
     if (ticketData.studentName !== undefined) apiPayload.student_name = ticketData.studentName;
     if (ticketData.studentAvatar !== undefined) apiPayload.student_avatar = ticketData.studentAvatar;

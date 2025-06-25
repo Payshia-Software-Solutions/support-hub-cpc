@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -101,10 +102,11 @@ export function TicketListItem({ ticket, currentStaffId }: TicketListItemProps) 
           )}
         </CardContent>
         <CardFooter className="flex justify-between items-center text-xs text-muted-foreground border-t pt-4 mt-auto">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="outline" className={cn("border text-xs", statusColors[ticket.status], "text-white")}>
               {ticket.status}
             </Badge>
+            <Badge variant="secondary">{ticket.category}</Badge>
             <div className="flex items-center gap-1">
               <CalendarDays className="h-3 w-3" />
               <span>Created: {new Date(ticket.createdAt).toLocaleDateString()}</span>

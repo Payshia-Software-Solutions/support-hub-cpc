@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock } from "lucide-react"; 
+import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag } from "lucide-react"; 
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; 
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -106,6 +106,14 @@ const TicketInfoContent = memo(({
         <div>
           <h4 className="text-sm font-medium mb-1">Priority</h4>
           <Badge className={cn("text-sm", priorityColors[ticket.priority])}>{ticket.priority}</Badge>
+        </div>
+
+        <div>
+          <h4 className="text-sm font-medium mb-1">Category</h4>
+          <Badge variant="secondary" className="text-sm">
+            <Tag className="w-3 h-3 mr-1.5" />
+            {ticket.category}
+          </Badge>
         </div>
 
         {userRole === 'staff' && (
