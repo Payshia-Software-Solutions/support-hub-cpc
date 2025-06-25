@@ -201,7 +201,7 @@ export const createTicketMessage = async (messageData: CreateTicketMessageClient
 
 // Chats
 export const getChats = async (studentNumber?: string): Promise<Chat[]> => {
-    const endpoint = studentNumber ? `/chats/by-student/${studentNumber}` : '/chats';
+    const endpoint = studentNumber ? `/chats/username/${studentNumber}` : '/chats';
     try {
         const apiChats = await apiFetch<ApiChat[]>(endpoint);
         if (!apiChats) return [];
@@ -270,5 +270,3 @@ export const searchStudents = (query: string): Promise<StudentSearchResult[]> =>
     if (!query) return Promise.resolve([]);
     return apiFetch(`/students/search?query=${encodeURIComponent(query)}`);
 };
-
-    
