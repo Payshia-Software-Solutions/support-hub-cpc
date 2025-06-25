@@ -202,9 +202,20 @@ export const createTicketMessage = async (messageData: CreateTicketMessageClient
 // Chats
 export const getChats = async (studentNumber?: string): Promise<Chat[]> => {
     const endpoint = studentNumber ? `/chats/by-student/${studentNumber}` : '/chats';
-    const apiChats = await apiFetch<ApiChat[]>(endpoint);
-    if (!apiChats) return [];
-    return apiChats.map(mapApiChatToChat);
+    try {
+        const apiChats = await apiFetch<ApiChat[]>(endpoint);
+        if (!apiChats) return [];
+        return apiChats.map(mapApiChatToChat);
+    } catch (error) {
+        // If a 404 error occurs when fetching a specific student's chat,
+        // it means they don't have a chat history yet. We return an empty array
+        // so the UI can show the "Start New Chat" button.
+        if (error instanceof Error && error.message.includes('404') && studentNumber) {
+            return [];
+        }
+        // Re-throw other errors to be handled by the UI.
+        throw error;
+    }
 };
 
 export const getChat = async (id: string): Promise<Chat> => {
@@ -259,3 +270,5 @@ export const searchStudents = (query: string): Promise<StudentSearchResult[]> =>
     if (!query) return Promise.resolve([]);
     return apiFetch(`/students/search?query=${encodeURIComponent(query)}`);
 };
+
+    
