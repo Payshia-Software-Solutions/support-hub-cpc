@@ -5,12 +5,13 @@ import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChatWindow } from "@/components/dashboard/ChatWindow";
 import type { Chat, Message, Attachment } from "@/lib/types";
-import { getChats, createChatMessage } from "@/lib/api";
+import { getChats, createChatMessage, createChat } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageSquareDashed } from "lucide-react";
+import { MessageSquarePlus } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Button } from "@/components/ui/button";
 
 
 export default function ChatPage() {
@@ -34,6 +35,23 @@ export default function ChatPage() {
     };
   }, [isMobile, setIsMobileDetailActive]);
 
+  const createChatMutation = useMutation({
+    mutationFn: createChat,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      toast({
+        title: "Chat Created!",
+        description: "You can now start messaging with support staff.",
+      });
+    },
+    onError: (err: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to create chat",
+        description: err.message,
+      });
+    },
+  });
 
   const sendMessageMutation = useMutation({
     mutationFn: createChatMessage,
@@ -134,6 +152,25 @@ export default function ChatPage() {
       <div className="flex flex-col h-full items-center justify-center bg-background text-destructive p-4">
          <p className="text-lg font-semibold">Could not load chat</p>
          <p className="text-sm">{error?.message || "An unknown error occurred."}</p>
+      </div>
+    );
+  }
+
+  if (!studentChat) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center bg-background text-center p-8">
+        <MessageSquarePlus className="w-24 h-24 mb-6 text-muted-foreground" />
+        <h2 className="text-2xl font-bold font-headline mb-2">Start a Conversation</h2>
+        <p className="text-muted-foreground mb-8 max-w-sm">
+          Have a question or need help? Click the button below to start a new chat with our support staff.
+        </p>
+        <Button 
+          onClick={() => createChatMutation.mutate()}
+          disabled={createChatMutation.isPending}
+          size="lg"
+        >
+          {createChatMutation.isPending ? 'Starting...' : 'Start New Chat'}
+        </Button>
       </div>
     );
   }

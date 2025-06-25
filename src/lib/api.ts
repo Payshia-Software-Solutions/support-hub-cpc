@@ -209,6 +209,15 @@ export const getChat = async (id: string): Promise<Chat> => {
     const apiChat = await apiFetch<ApiChat>(`/chats/${id}`);
     return mapApiChatToChat(apiChat);
 };
+
+export const createChat = async (): Promise<Chat> => {
+    // Assuming the backend uses the authenticated user's session to create the chat
+    const apiChat = await apiFetch<ApiChat>('/chats', { 
+        method: 'POST',
+    });
+    return mapApiChatToChat(apiChat);
+};
+
 export const getChatMessages = async (chatId: string): Promise<Message[]> => {
     const apiMessages = await apiFetch<ApiMessage[]>(`/chat-messages/by-chat/${chatId}`);
     if (!apiMessages) return [];
