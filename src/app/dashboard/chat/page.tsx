@@ -8,11 +8,12 @@ import type { Chat, Message, Attachment } from "@/lib/types";
 import { getChats, createChatMessage, createChat } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageSquarePlus } from "lucide-react";
+import { MessageSquarePlus, ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 
 export default function ChatPage() {
@@ -20,6 +21,7 @@ export default function ChatPage() {
   const { setIsMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const router = useRouter();
 
   const { data: chats, isLoading, isError, error } = useQuery<Chat[]>({
     queryKey: ['chats', user?.username],
@@ -193,14 +195,38 @@ export default function ChatPage() {
     );
   }
 
+  const chatWindowComponent = (
+     <ChatWindow 
+        key={studentChat?.id}
+        chat={studentChat} 
+        onSendMessage={handleSendMessage} 
+        userRole="student"
+      />
+  );
+  
+  if (isMobile) {
+    return (
+      <div className="h-full flex flex-col w-full p-0">
+        <div className="p-2 border-b bg-card shrink-0"> 
+          <Button 
+            variant="ghost"
+            onClick={() => router.push('/dashboard/tickets')} 
+            className="text-sm w-full justify-start"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Tickets
+          </Button>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          {chatWindowComponent}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full">
-        <ChatWindow 
-            key={studentChat?.id}
-            chat={studentChat} 
-            onSendMessage={handleSendMessage} 
-            userRole="student"
-          />
+        {chatWindowComponent}
     </div>
   );
 }
