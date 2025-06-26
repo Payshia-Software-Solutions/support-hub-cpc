@@ -108,8 +108,8 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
         status: apiTicket.status,
         createdAt: apiTicket.created_at,
         updatedAt: apiTicket.updated_at,
-        studentNumber: apiTicket.student_number,
-        studentName: apiTicket.student_name,
+        studentNumber: apiTicket.student_name, // Use student_name from API as the identifier
+        studentName: apiTicket.student_name, // Also use for display name as per API
         studentAvatar: apiTicket.student_avatar,
         assignedTo: apiTicket.assigned_to,
         assigneeAvatar: apiTicket.assignee_avatar,
@@ -143,8 +143,12 @@ export const getAnnouncements = (): Promise<Announcement[]> => apiFetch('/announ
 // Tickets
 export const getTickets = async (studentNumber?: string): Promise<Ticket[]> => {
     const endpoint = studentNumber ? `/tickets/username/${studentNumber}` : '/tickets';
-    const apiTickets = await apiFetch<any[]>(endpoint);
-    if (!apiTickets) return [];
+    const apiResult = await apiFetch<any>(endpoint);
+    if (!apiResult) return [];
+
+    // Handle both single object and array responses from the API
+    const apiTickets = Array.isArray(apiResult) ? apiResult : [apiResult];
+    
     return apiTickets.map(mapApiTicketToTicket);
 };
 export const getTicket = async (id: string): Promise<Ticket> => {
