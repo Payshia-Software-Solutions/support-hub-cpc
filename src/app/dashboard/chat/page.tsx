@@ -180,7 +180,7 @@ export default function ChatPage() {
             if (user && user.username) {
               createChatMutation.mutate({
                 studentNumber: user.username,
-                studentName: user.name,
+                studentName: user.username,
                 studentAvatar: user.avatar,
               })
             }
