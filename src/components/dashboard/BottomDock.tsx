@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Ticket, PlusCircle, Megaphone, Shield } from "lucide-react";
+import { MessageSquare, Ticket, PlusCircle, Megaphone, Shield, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useAnnouncements } from "@/contexts/AnnouncementsContext";
@@ -12,10 +12,11 @@ import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useAuth } from "@/contexts/AuthContext";
 
 const baseNavItems = [
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
   { href: "/dashboard/announcements", label: "Alerts", icon: Megaphone },
-  { href: "/dashboard/create-ticket", label: "New Ticket", icon: PlusCircle },
+  { href: "/dashboard/create-ticket", label: "New", icon: PlusCircle },
 ];
 
 const adminNavItem = { href: "/admin/dashboard", label: "Admin", icon: Shield };
@@ -40,10 +41,11 @@ export function BottomDock() {
       <div className="flex justify-around items-stretch h-16">
         {navItems.map((item) => {
           let currentItemIsActive = false;
-          if (item.href === "/dashboard/create-ticket" || item.href === "/admin/dashboard") {
-            currentItemIsActive = pathname.startsWith(item.href);
+          if (item.href === "/dashboard") {
+            currentItemIsActive = pathname === item.href;
           } else if (item.href === "/dashboard/chat") {
-            currentItemIsActive = pathname === item.href; // Active only for chat list
+            // Make chat active only on its page, not on the main dashboard
+            currentItemIsActive = pathname === item.href;
           } else {
              // For tickets and announcements, active if path starts with their href
             currentItemIsActive = pathname.startsWith(item.href);

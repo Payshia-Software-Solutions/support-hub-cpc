@@ -14,7 +14,7 @@ export default function HomePage() {
         if (user.role === 'staff') {
           router.replace('/admin/dashboard');
         } else {
-          router.replace('/dashboard/chat');
+          router.replace('/dashboard');
         }
       } else {
         router.replace('/login');

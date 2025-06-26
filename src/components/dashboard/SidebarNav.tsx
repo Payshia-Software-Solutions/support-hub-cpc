@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Ticket, PlusCircle, Settings, Users, Megaphone, LogOut, Shield } from "lucide-react";
+import { MessageSquare, Ticket, PlusCircle, Megaphone, LogOut, Shield, LayoutDashboard } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
@@ -21,6 +21,7 @@ import { useAnnouncements } from "@/contexts/AnnouncementsContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
   { href: "/dashboard/create-ticket", label: "Create Ticket", icon: PlusCircle },
@@ -55,7 +56,7 @@ export function SidebarNav() {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname.startsWith(item.href)}
+                isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href)}
                 tooltip={{ children: item.label, side: "right" }}
                 className="justify-start"
               >
