@@ -8,6 +8,7 @@ import type { Announcement } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 const categoryColors: Record<NonNullable<Announcement['category']>, string> = {
   General: "bg-blue-500 hover:bg-blue-600",
@@ -59,35 +60,37 @@ export default function AnnouncementsPage() {
       {!isLoading && !isError && sortedAnnouncements.length > 0 ? (
         <div className="grid gap-6 px-4 md:px-0 pb-4 md:pb-0">
           {sortedAnnouncements.map((announcement) => (
-            <Card key={announcement.id} className="shadow-md hover:shadow-lg transition-shadow bg-card">
-              <CardHeader>
-                <div className="flex justify-between items-start gap-2">
-                  <div className="flex items-center">
-                    <CardTitle className="text-lg md:text-xl">{announcement.title}</CardTitle>
-                    {announcement.isNew && (
-                      <Badge variant="destructive" className="ml-2 text-xs px-1.5 py-0.5">New</Badge>
+            <Link key={announcement.id} href={`/dashboard/announcements/${announcement.id}`} className="block group">
+              <Card className="shadow-md hover:shadow-lg transition-shadow bg-card">
+                <CardHeader>
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex items-center">
+                      <CardTitle className="text-lg md:text-xl group-hover:text-primary transition-colors">{announcement.title}</CardTitle>
+                      {announcement.isNew && (
+                        <Badge variant="destructive" className="ml-2 text-xs px-1.5 py-0.5">New</Badge>
+                      )}
+                    </div>
+                    {announcement.category && (
+                      <Badge 
+                        className={cn(
+                          "text-xs text-white whitespace-nowrap shrink-0",
+                          categoryColors[announcement.category]
+                        )}
+                      >
+                        {announcement.category}
+                      </Badge>
                     )}
                   </div>
-                  {announcement.category && (
-                    <Badge 
-                      className={cn(
-                        "text-xs text-white whitespace-nowrap shrink-0",
-                        categoryColors[announcement.category]
-                      )}
-                    >
-                      {announcement.category}
-                    </Badge>
-                  )}
-                </div>
-                <CardDescription className="text-xs">
-                  Posted on: {new Date(announcement.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                  {announcement.author && ` by ${announcement.author}`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-card-foreground whitespace-pre-line">{announcement.content}</p>
-              </CardContent>
-            </Card>
+                  <CardDescription className="text-xs">
+                    Posted on: {new Date(announcement.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    {announcement.author && ` by ${announcement.author}`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-card-foreground whitespace-pre-line line-clamp-3">{announcement.content}</p>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       ) : (

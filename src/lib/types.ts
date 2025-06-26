@@ -58,6 +58,7 @@ export interface Announcement {
   author?: string;
   category?: 'General' | 'Academic' | 'Events' | 'Urgent';
   isNew?: boolean; // This will be handled client-side
+  seenCount?: number;
 }
 
 // Basic User type for admin placeholder
@@ -119,3 +120,5 @@ export interface StudentSearchResult {
   student_id: string;
   full_name: string;
 }
+
+export type CreateAnnouncementPayload = Omit<Announcement, 'id' | 'date' | 'isNew' | 'seenCount' | 'author'>;

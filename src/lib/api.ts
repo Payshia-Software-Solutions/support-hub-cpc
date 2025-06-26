@@ -1,5 +1,6 @@
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult } from './types';
+
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -139,6 +140,24 @@ function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
 
 // Announcements
 export const getAnnouncements = (): Promise<Announcement[]> => apiFetch('/announcements');
+export const getAnnouncement = (id: string): Promise<Announcement> => apiFetch(`/announcements/${id}`);
+export const createAnnouncement = (announcementData: CreateAnnouncementPayload): Promise<Announcement> => {
+    const payload = {
+        ...announcementData,
+        author: 'Admin'
+    };
+    return apiFetch('/announcements', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    });
+};
+export const markAnnouncementAsRead = (announcementId: string, studentId: string): Promise<void> => {
+    // This is a mock of what would be a POST request to an endpoint
+    // that tracks which user has seen which announcement.
+    console.log(`Student ${studentId} has read announcement ${announcementId}`);
+    return Promise.resolve(); // Simulate successful API call
+};
+
 
 // Tickets
 export const getTickets = async (studentNumber: string): Promise<Ticket[]> => {
