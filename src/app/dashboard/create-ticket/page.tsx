@@ -49,7 +49,7 @@ export default function CreateTicketPage() {
     createTicketMutation.mutate({
       ...data,
       studentNumber: user.username,
-      studentName: user.name,
+      studentName: user.username,
       studentAvatar: user.avatar,
       status: 'Open',
     });
