@@ -26,7 +26,7 @@ export default function AdminChatPage() {
   const queryClient = useQueryClient();
 
   const { data: chats, isLoading, isError, error } = useQuery<Chat[]>({
-    queryKey: ['chats'],
+    queryKey: ['admin-chats'],
     queryFn: getChats,
   });
 
@@ -36,10 +36,10 @@ export default function AdminChatPage() {
         const { chatId, text, from, attachment } = newMessagePayload;
         
         await queryClient.cancelQueries({ queryKey: ['chatMessages', chatId] });
-        await queryClient.cancelQueries({ queryKey: ['chats'] });
+        await queryClient.cancelQueries({ queryKey: ['admin-chats'] });
 
         const previousMessages = queryClient.getQueryData<Message[]>(['chatMessages', chatId]);
-        const previousChats = queryClient.getQueryData<Chat[]>(['chats']);
+        const previousChats = queryClient.getQueryData<Chat[]>(['admin-chats']);
 
         const optimisticMessage: Message = {
             id: `optimistic-${Date.now()}`,
@@ -53,7 +53,7 @@ export default function AdminChatPage() {
             old ? [...old, optimisticMessage] : [optimisticMessage]
         );
 
-        queryClient.setQueryData<Chat[]>(['chats'], (oldChats) => {
+        queryClient.setQueryData<Chat[]>(['admin-chats'], (oldChats) => {
           if (!oldChats) return [];
           const newChats = oldChats.map(chat => {
               if (chat.id === chatId) {
@@ -78,7 +78,7 @@ export default function AdminChatPage() {
             queryClient.setQueryData(['chatMessages', context.chatId], context.previousMessages);
         }
         if (context?.previousChats) {
-            queryClient.setQueryData(['chats'], context.previousChats);
+            queryClient.setQueryData(['admin-chats'], context.previousChats);
         }
         toast({
             variant: "destructive",
@@ -88,7 +88,7 @@ export default function AdminChatPage() {
     },
     onSettled: (data, error, variables) => {
         queryClient.invalidateQueries({ queryKey: ['chatMessages', variables.chatId] });
-        queryClient.invalidateQueries({ queryKey: ['chats'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-chats'] });
     },
   });
 
