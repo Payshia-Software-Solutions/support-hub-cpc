@@ -4,7 +4,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Ticket, MessageSquare, CheckCircle, Users } from "lucide-react";
-import { getTickets, getAdminChats } from "@/lib/api";
+import { getAdminTickets, getAdminChats } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Ticket as TicketType, Chat as ChatType } from "@/lib/types";
 import { subDays, format, isSameDay } from "date-fns";
@@ -27,7 +27,7 @@ import { dummyStaffMembers } from "@/lib/dummy-data";
 export default function AdminDashboardPage() {
   const { data: tickets, isLoading: isLoadingTickets, isError: isErrorTickets, error: errorTickets } = useQuery<TicketType[]>({
     queryKey: ['admin-tickets-dashboard'], 
-    queryFn: getTickets,
+    queryFn: getAdminTickets,
   });
 
   const { data: chats, isLoading: isLoadingChats, isError: isErrorChats, error: errorChats } = useQuery<ChatType[]>({

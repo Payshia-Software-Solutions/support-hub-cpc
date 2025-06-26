@@ -141,8 +141,8 @@ function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
 export const getAnnouncements = (): Promise<Announcement[]> => apiFetch('/announcements');
 
 // Tickets
-export const getTickets = async (studentNumber?: string): Promise<Ticket[]> => {
-    const endpoint = studentNumber ? `/tickets/username/${studentNumber}` : '/tickets';
+export const getTickets = async (studentNumber: string): Promise<Ticket[]> => {
+    const endpoint = `/tickets/username/${studentNumber}`;
     const apiResult = await apiFetch<any>(endpoint);
     if (!apiResult) return [];
 
@@ -151,6 +151,12 @@ export const getTickets = async (studentNumber?: string): Promise<Ticket[]> => {
     
     return apiTickets.map(mapApiTicketToTicket);
 };
+export const getAdminTickets = async (): Promise<Ticket[]> => {
+    const endpoint = `/tickets`;
+    const apiTickets = await apiFetch<any[]>(endpoint);
+    if (!apiTickets) return [];
+    return apiTickets.map(mapApiTicketToTicket);
+}
 export const getTicket = async (id: string): Promise<Ticket> => {
     const apiTicket = await apiFetch<any>(`/tickets/${id}`);
     return mapApiTicketToTicket(apiTicket);

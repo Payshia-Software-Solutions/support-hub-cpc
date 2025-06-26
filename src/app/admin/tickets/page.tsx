@@ -6,14 +6,14 @@ import { TicketList } from "@/components/dashboard/TicketList";
 import { dummyStaffMembers } from "@/lib/dummy-data";
 import type { Ticket } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getTickets } from '@/lib/api';
+import { getAdminTickets } from '@/lib/api';
 
 const CURRENT_STAFF_ID = dummyStaffMembers[0]?.id || 'staff1'; 
 
 export default function AdminTicketsPage() {
   const { data: tickets, isLoading, isError, error } = useQuery<Ticket[]>({
     queryKey: ['admin-tickets'],
-    queryFn: getTickets,
+    queryFn: getAdminTickets,
   });
 
   if (isLoading) {
