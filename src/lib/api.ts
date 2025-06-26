@@ -202,7 +202,7 @@ export const createTicketMessage = async (messageData: CreateTicketMessageClient
 
 // Chats
 export const getChats = async (studentNumber?: string): Promise<Chat[]> => {
-    const endpoint = studentNumber ? `/chats/username/${studentNumber}` : '/chats';
+    const endpoint = studentNumber ? `/chats/username/${studentNumber}` : '/chats/';
     try {
         const apiResult = await apiFetch<ApiChat[] | ApiChat>(endpoint);
         if (!apiResult) {
