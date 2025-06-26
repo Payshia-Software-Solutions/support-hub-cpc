@@ -79,7 +79,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
                 setUser(userProfile);
                 localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userProfile));
-                router.push('/dashboard/chat');
+                
+                if (userProfile.role === 'staff') {
+                    router.push('/admin/dashboard');
+                } else {
+                    router.push('/dashboard');
+                }
                 return;
             }
         } else {
