@@ -28,7 +28,7 @@ const ticketFormSchema = z.object({
   priority: z.enum(["Low", "Medium", "High"], {
     required_error: "You need to select a ticket priority.",
   }),
-  description: z.string().min(20, "Description must be at least 20 characters.").max(1000, "Description must be at most 1000 characters."),
+  description: z.string().min(1, "Description cannot be empty.").max(1000, "Description must be at most 1000 characters."),
 });
 
 type TicketFormValues = z.infer<typeof ticketFormSchema>;
