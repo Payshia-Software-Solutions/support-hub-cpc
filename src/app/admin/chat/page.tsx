@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, MessageSquareDashedIcon } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useSidebar } from "@/components/ui/sidebar"; 
-import { getChats, createChatMessage } from "@/lib/api";
+import { getAdminChats, createChatMessage } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
@@ -27,7 +27,7 @@ export default function AdminChatPage() {
 
   const { data: chats, isLoading, isError, error } = useQuery<Chat[]>({
     queryKey: ['admin-chats'],
-    queryFn: getChats,
+    queryFn: getAdminChats,
   });
 
   const sendMessageMutation = useMutation({

@@ -200,39 +200,37 @@ export const createTicketMessage = async (messageData: CreateTicketMessageClient
 };
 
 
-// Chats
-export const getChats = async (studentNumber?: string): Promise<Chat[]> => {
-    const endpoint = studentNumber ? `/chats/username/${studentNumber}` : '/chats/';
+// Chats (for student)
+export const getChats = async (studentNumber: string): Promise<Chat[]> => {
+    const endpoint = `/chats/username/${studentNumber}`;
     try {
         const apiResult = await apiFetch<ApiChat[] | ApiChat>(endpoint);
         if (!apiResult) {
             return [];
         }
-
-        // If the API returns a single object for a student, wrap it in an array
         const apiChats = Array.isArray(apiResult) ? apiResult : [apiResult];
         const mappedChats = apiChats.map(mapApiChatToChat);
 
-        // If a studentNumber is provided, we must only return the chat for that student.
-        // This is a defensive check in case the API endpoint for a single user
-        // incorrectly returns all chats.
-        if (studentNumber) {
-            // The API is inconsistent. Sometimes the student ID is in `studentNumber`, sometimes in `userName`.
-            const studentChat = mappedChats.find(chat => chat.studentNumber === studentNumber || chat.userName === studentNumber);
-            return studentChat ? [studentChat] : [];
-        }
-        
-        return mappedChats;
+        // Defensive check: ensure only the correct student's chat is returned
+        const studentChat = mappedChats.find(chat => chat.studentNumber === studentNumber || chat.userName === studentNumber);
+        return studentChat ? [studentChat] : [];
+
     } catch (error) {
-        // If a 404 error occurs when fetching a specific student's chat,
-        // it means they don't have a chat history yet. We return an empty array
-        // so the UI can show the "Start New Chat" button.
-        if (error instanceof Error && error.message.includes('404') && studentNumber) {
+        // If a 404 error occurs, it means no chat exists for this student yet.
+        if (error instanceof Error && error.message.includes('404')) {
             return [];
         }
         // Re-throw other errors to be handled by the UI.
         throw error;
     }
+};
+
+// Admin Chats
+export const getAdminChats = async (): Promise<Chat[]> => {
+    const endpoint = '/chats/';
+    const apiChats = await apiFetch<ApiChat[]>(endpoint);
+    if (!apiChats) return [];
+    return apiChats.map(mapApiChatToChat);
 };
 
 export const getChat = async (id: string): Promise<Chat> => {
@@ -243,7 +241,7 @@ export const getChat = async (id: string): Promise<Chat> => {
 export const createChat = async (studentInfo: { studentNumber: string, studentAvatar: string }): Promise<Chat> => {
     const apiPayload = {
         student_number: studentInfo.studentNumber,
-        user_name: studentInfo.studentNumber, // Use the student number as the user_name
+        user_name: studentInfo.studentNumber,
         user_avatar: studentInfo.studentAvatar
     };
     const apiChat = await apiFetch<ApiChat>('/chats', { 
