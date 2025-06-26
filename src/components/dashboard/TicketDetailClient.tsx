@@ -60,7 +60,7 @@ const TicketInfoContent = memo(({
   handleAssignmentChange: (staffId: string) => void,
 }) => {
   
-  const assignedStaffMember = dummyStaffMembers.find(s => s.email === ticket.assignedTo);
+  const assignedStaffMember = dummyStaffMembers.find(s => s.username === ticket.assignedTo);
   const assignedStaffName = assignedStaffMember?.name || ticket.assignedTo;
   
   return (
@@ -125,7 +125,7 @@ const TicketInfoContent = memo(({
             <div>
               <Label htmlFor="ticket-assignment">Assigned To</Label>
               <Select
-                value={dummyStaffMembers.find(s => s.email === ticket.assignedTo)?.id || "unassigned"}
+                value={dummyStaffMembers.find(s => s.username === ticket.assignedTo)?.id || "unassigned"}
                 onValueChange={handleAssignmentChange}
                 name="ticket-assignment"
                 disabled={isTicketLockedByOther}
@@ -438,7 +438,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
         if (onAssignTicket) {
             onAssignTicket({
                 ticketId: ticket.id,
-                assignedTo: selectedStaff.email,
+                assignedTo: selectedStaff.username,
                 assigneeAvatar: selectedStaff.avatar,
                 lockedByStaffId: currentStaffId,
             });

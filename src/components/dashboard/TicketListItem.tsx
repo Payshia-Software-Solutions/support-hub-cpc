@@ -43,7 +43,7 @@ export function TicketListItem({ ticket, currentStaffId }: TicketListItemProps) 
     ? dummyStaffMembers.find(s => s.id === ticket.lockedByStaffId) 
     : null;
 
-  const assignedStaffMember = dummyStaffMembers.find(s => s.email === ticket.assignedTo);
+  const assignedStaffMember = dummyStaffMembers.find(s => s.username === ticket.assignedTo);
   const assignedStaffName = assignedStaffMember?.name || ticket.assignedTo;
   const fallback = (assignedStaffName || '').split(' ').filter(n => n).map(n => n[0]).join('').substring(0, 2) || 'S';
   

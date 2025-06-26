@@ -6,16 +6,16 @@ import type { UserProfile, PaymentRecord, StaffMember, Course } from './types';
 // such as the list of staff members for the assignment dropdown.
 
 export const dummyStaffMembers: StaffMember[] = [
-  { id: 'staff1', name: 'Staff Jane', avatar: 'https://placehold.co/40x40.png?text=SJ', email: 'jane.staff@example.com' },
-  { id: 'staff2', name: 'Staff John', avatar: 'https://placehold.co/40x40.png?text=SJn', email: 'john.staff@example.com' },
-  { id: 'staff3', name: 'Staff Alex', avatar: 'https://placehold.co/40x40.png?text=SAx', email: 'alex.staff@example.com' },
+  { id: 'staff1', name: 'Staff Jane', username: 'jane.staff@example.com', avatar: 'https://placehold.co/40x40.png?text=SJ', email: 'jane.staff@example.com' },
+  { id: 'staff2', name: 'Staff John', username: 'john.staff@example.com', avatar: 'https://placehold.co/40x40.png?text=SJn', email: 'john.staff@example.com' },
+  { id: 'staff3', name: 'Staff Alex', username: 'alex.staff@example.com', avatar: 'https://placehold.co/40x40.png?text=SAx', email: 'alex.staff@example.com' },
 ];
 
 export const dummyUsers: UserProfile[] = [
   { id: 'user1', name: 'Student Alice', email: 'alice@example.com', role: 'student', avatar: 'https://placehold.co/100x100.png?text=SA', joinedDate: '2023-09-01', lastLogin: '2024-07-28T10:00:00Z' },
   { id: 'user2', name: 'Student Bob', email: 'bob@example.com', role: 'student', avatar: 'https://placehold.co/100x100.png?text=SB', joinedDate: '2023-09-05', lastLogin: '2024-07-27T11:30:00Z' },
-  { id: 'user3', name: 'Staff Jane', email: 'jane.staff@example.com', role: 'staff', avatar: 'https://placehold.co/100x100.png?text=SJ', joinedDate: '2022-01-15', lastLogin: '2024-07-28T14:00:00Z' },
-  { id: 'user4', name: 'Staff John', email: 'john.staff@example.com', role: 'staff', avatar: 'https://placehold.co/100x100.png?text=SJn', joinedDate: '2021-05-20', lastLogin: '2024-07-28T09:15:00Z' },
+  { id: 'user3', name: 'Staff Jane', email: 'jane.staff@example.com', role: 'staff', avatar: 'https://placehold.co/100x100.png?text=SJ', joinedDate: '2022-01-15', lastLogin: '2024-07-28T14:00:00Z', username: 'jane.staff@example.com' },
+  { id: 'user4', name: 'Staff John', email: 'john.staff@example.com', role: 'staff', avatar: 'https://placehold.co/100x100.png?text=SJn', joinedDate: '2021-05-20', lastLogin: '2024-07-28T09:15:00Z', username: 'john.staff@example.com' },
 ];
 
 export const dummyPayments: PaymentRecord[] = [

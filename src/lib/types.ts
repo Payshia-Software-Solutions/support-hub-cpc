@@ -87,6 +87,7 @@ export interface PaymentRecord {
 export interface StaffMember {
   id: string;
   name: string;
+  username: string;
   avatar: string;
   email: string;
 }
