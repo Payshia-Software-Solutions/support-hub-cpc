@@ -14,16 +14,11 @@ interface TicketListProps {
 }
 
 export function TicketList({ tickets: initialTickets, currentStaffId }: TicketListProps) {
-  // Note: We are using initialTickets directly. If dummyTickets is mutated elsewhere (e.g. for locking),
-  // this component might not re-render immediately unless its parent forces a re-render or
-  // initialTickets itself is a state variable in the parent that gets updated.
-  // For this prototype with direct mutation of dummyData, it might "just work" due to React's reconciliation
-  // but in a real app, this would be state managed from a central store or props.
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
-  const filteredTickets = initialTickets // Use initialTickets which might be the mutated dummyTickets
+  const filteredTickets = initialTickets
     .filter(ticket => 
       ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -41,10 +36,10 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
 
   return (
     <div className="space-y-6 p-0 md:p-6">
-      <div className="flex flex-col md:flex-row gap-2 md:gap-4 justify-between items-center sticky top-0 bg-background py-4 z-10 border-b px-4 md:px-6">
+      <div className="flex flex-col md:flex-row gap-4 justify-between md:items-center sticky top-0 bg-background py-4 z-10 border-b px-4 md:px-6">
         <h1 className="text-2xl font-headline font-semibold">Support Tickets</h1>
-        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-           <div className="relative w-full md:w-auto">
+        <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
+          <div className="relative w-full md:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
               placeholder="Search tickets..." 
@@ -53,28 +48,30 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="Open">Open</SelectItem>
-              <SelectItem value="In Progress">In Progress</SelectItem>
-              <SelectItem value="Closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Filter by priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="Low">Low</SelectItem>
-              <SelectItem value="Medium">Medium</SelectItem>
-              <SelectItem value="High">High</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="grid w-full grid-cols-2 gap-2 md:flex md:w-auto">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="Open">Open</SelectItem>
+                <SelectItem value="In Progress">In Progress</SelectItem>
+                <SelectItem value="Closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Filter by priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="Low">Low</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="High">High</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
       
