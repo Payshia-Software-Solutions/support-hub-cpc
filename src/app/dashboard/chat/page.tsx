@@ -25,17 +25,25 @@ export default function ChatPage() {
     queryKey: ['chats', user?.username],
     queryFn: () => getChats(user!.username!),
     enabled: !!user?.username,
+    retry: (failureCount, err: any) => {
+      // Do not retry on 404s, as it means no chat exists
+      if (err.message.includes('404')) {
+        return false;
+      }
+      // Retry for other errors
+      return failureCount < 3;
+    },
   });
 
   const studentChat = chats?.[0];
 
   useEffect(() => {
     // On mobile, this page acts as a detail view, so we hide the main bottom dock.
-    setIsMobileDetailActive(isMobile);
-    // Cleanup on unmount to reset the state for other pages
-    return () => {
-      setIsMobileDetailActive(false);
-    };
+    if (isMobile) {
+        setIsMobileDetailActive(true);
+        // Cleanup on unmount to reset the state for other pages
+        return () => setIsMobileDetailActive(false);
+    }
   }, [isMobile, setIsMobileDetailActive]);
 
   const createChatMutation = useMutation({

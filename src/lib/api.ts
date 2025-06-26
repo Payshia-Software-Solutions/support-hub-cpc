@@ -22,7 +22,8 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
       } catch (e) {
         errorData = { message: response.statusText };
       }
-      throw new Error(errorData.message || `Request failed with status ${response.status}`);
+       // Include status in the error message for easier debugging
+      throw new Error(errorData.message ? `${errorData.message} (Status: ${response.status})` : `Request failed with status ${response.status}`);
     }
 
     // Handle cases with no content in response
@@ -216,7 +217,7 @@ export const getChats = async (studentNumber?: string): Promise<Chat[]> => {
         // If a 404 error occurs when fetching a specific student's chat,
         // it means they don't have a chat history yet. We return an empty array
         // so the UI can show the "Start New Chat" button.
-        if (error instanceof Error && error.message.includes('Not Found') && studentNumber) {
+        if (error instanceof Error && error.message.includes('404') && studentNumber) {
             return [];
         }
         // Re-throw other errors to be handled by the UI.
