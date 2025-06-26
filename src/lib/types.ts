@@ -88,6 +88,7 @@ export interface StaffMember {
   id: string;
   name: string;
   avatar: string;
+  email: string;
 }
 
 export interface Course {

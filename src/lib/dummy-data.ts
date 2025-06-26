@@ -6,9 +6,9 @@ import type { UserProfile, PaymentRecord, StaffMember, Course } from './types';
 // such as the list of staff members for the assignment dropdown.
 
 export const dummyStaffMembers: StaffMember[] = [
-  { id: 'staff1', name: 'Staff Jane', avatar: 'https://placehold.co/40x40.png?text=SJ' },
-  { id: 'staff2', name: 'Staff John', avatar: 'https://placehold.co/40x40.png?text=SJn' },
-  { id: 'staff3', name: 'Staff Alex', avatar: 'https://placehold.co/40x40.png?text=SAx' },
+  { id: 'staff1', name: 'Staff Jane', avatar: 'https://placehold.co/40x40.png?text=SJ', email: 'jane.staff@example.com' },
+  { id: 'staff2', name: 'Staff John', avatar: 'https://placehold.co/40x40.png?text=SJn', email: 'john.staff@example.com' },
+  { id: 'staff3', name: 'Staff Alex', avatar: 'https://placehold.co/40x40.png?text=SAx', email: 'alex.staff@example.com' },
 ];
 
 export const dummyUsers: UserProfile[] = [

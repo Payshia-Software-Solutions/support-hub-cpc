@@ -14,6 +14,7 @@ import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { toast } from "@/hooks/use-toast";
 import { getTicket, updateTicket, assignTicket, unlockTicket } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
+import { dummyStaffMembers } from "@/lib/dummy-data";
 
 export default function AdminTicketDetailPage() {
   const router = useRouter();
@@ -58,9 +59,13 @@ export default function AdminTicketDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['ticket', data.id] });
       queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
       queryClient.invalidateQueries({ queryKey: ['ticketMessages', data.id] });
+      
+      const assignedStaff = dummyStaffMembers.find(s => s.email === data.assignedTo);
+      const displayName = assignedStaff ? assignedStaff.name : data.assignedTo;
+
       toast({
         title: "Ticket Assigned",
-        description: `Ticket has been assigned to ${data.assignedTo}.`,
+        description: `Ticket has been assigned to ${displayName}.`,
       });
     },
     onError: (err: Error) => {
@@ -119,7 +124,7 @@ export default function AdminTicketDetailPage() {
       assignmentAttempted.current = true;
       assignMutation.mutate({
         ticketId: ticket.id,
-        assignedTo: user.name,
+        assignedTo: user.email, // Use email for assignment
         assigneeAvatar: user.avatar,
         lockedByStaffId: user.id,
       });

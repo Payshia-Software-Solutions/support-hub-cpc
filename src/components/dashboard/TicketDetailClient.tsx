@@ -58,133 +58,139 @@ const TicketInfoContent = memo(({
   handleUnlockTicket: () => void,
   handleStatusChange: (newStatus: TicketStatus) => void,
   handleAssignmentChange: (staffId: string) => void,
-}) => (
-  <>
-      {userRole === 'staff' && isTicketLockedByOther && (
-        <Alert variant="destructive" className="mb-4">
-          <Lock className="h-4 w-4" />
-          <AlertTitle>Ticket Locked</AlertTitle>
-          <AlertDescription>
-            This ticket is currently being handled by {lockerName}. 
-            You cannot make changes until it is unlocked.
-          </AlertDescription>
-        </Alert>
-      )}
-       {userRole === 'staff' && isTicketLockedByCurrentUser && (
-         <div className="mb-4">
-            <Button onClick={handleUnlockTicket} variant="outline" className="w-full">
-              <Unlock className="mr-2 h-4 w-4" /> Unlock Ticket
-            </Button>
-         </div>
-      )}
+}) => {
+  
+  const assignedStaffMember = dummyStaffMembers.find(s => s.email === ticket.assignedTo);
+  const assignedStaffName = assignedStaffMember?.name || ticket.assignedTo;
+  
+  return (
+    <>
+        {userRole === 'staff' && isTicketLockedByOther && (
+          <Alert variant="destructive" className="mb-4">
+            <Lock className="h-4 w-4" />
+            <AlertTitle>Ticket Locked</AlertTitle>
+            <AlertDescription>
+              This ticket is currently being handled by {lockerName}. 
+              You cannot make changes until it is unlocked.
+            </AlertDescription>
+          </Alert>
+        )}
+        {userRole === 'staff' && isTicketLockedByCurrentUser && (
+          <div className="mb-4">
+              <Button onClick={handleUnlockTicket} variant="outline" className="w-full">
+                <Unlock className="mr-2 h-4 w-4" /> Unlock Ticket
+              </Button>
+          </div>
+        )}
 
-      <CardHeader className="px-0 pt-0 pb-4">
-        <CardTitle className="text-xl md:text-2xl font-headline">{ticket.subject}</CardTitle>
-        <CardDescription>Ticket ID: {ticket.id}</CardDescription>
-      </CardHeader>
-      
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="ticket-status">Status</Label>
-          <Select
-            value={ticket.status} 
-            onValueChange={(value: TicketStatus) => handleStatusChange(value)}
-            disabled={(userRole === 'student' && ticket.status === 'Closed') || (userRole === 'staff' && isTicketLockedByOther)}
-            name="ticket-status"
-          >
-            <SelectTrigger className="w-full mt-1">
-              <SelectValue placeholder="Change status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Open">Open</SelectItem>
-              <SelectItem value="In Progress">In Progress</SelectItem>
-              <SelectItem value="Closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <CardHeader className="px-0 pt-0 pb-4">
+          <CardTitle className="text-xl md:text-2xl font-headline">{ticket.subject}</CardTitle>
+          <CardDescription>Ticket ID: {ticket.id}</CardDescription>
+        </CardHeader>
         
-        <div>
-          <h4 className="text-sm font-medium mb-1">Priority</h4>
-          <Badge className={cn("text-sm", priorityColors[ticket.priority])}>{ticket.priority}</Badge>
-        </div>
-
-        <div>
-          <h4 className="text-sm font-medium mb-1">Category</h4>
-          <Badge variant="secondary" className="text-sm">
-            <Tag className="w-3 h-3 mr-1.5" />
-            {ticket.category}
-          </Badge>
-        </div>
-
-        {userRole === 'staff' && (
+        <div className="space-y-4">
           <div>
-            <Label htmlFor="ticket-assignment">Assigned To</Label>
+            <Label htmlFor="ticket-status">Status</Label>
             <Select
-              value={dummyStaffMembers.find(s => s.name === ticket.assignedTo)?.id || "unassigned"}
-              onValueChange={handleAssignmentChange}
-              name="ticket-assignment"
-              disabled={isTicketLockedByOther}
+              value={ticket.status} 
+              onValueChange={(value: TicketStatus) => handleStatusChange(value)}
+              disabled={(userRole === 'student' && ticket.status === 'Closed') || (userRole === 'staff' && isTicketLockedByOther)}
+              name="ticket-status"
             >
               <SelectTrigger className="w-full mt-1">
-                <SelectValue placeholder="Assign to staff member" />
+                <SelectValue placeholder="Change status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {dummyStaffMembers.map(staff => (
-                  <SelectItem key={staff.id} value={staff.id}>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={staff.avatar} alt={staff.name} data-ai-hint="staff avatar"/>
-                        <AvatarFallback>{staff.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      {staff.name}
-                    </div>
-                  </SelectItem>
-                ))}
+                <SelectItem value="Open">Open</SelectItem>
+                <SelectItem value="In Progress">In Progress</SelectItem>
+                <SelectItem value="Closed">Closed</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        )}
-
-        {ticket.assignedTo && (
-           <div className="flex items-center gap-2 text-sm">
-            <UserCog className="w-4 h-4 text-muted-foreground" />
-            <span className="font-medium">Assigned:</span>
-            {ticket.assigneeAvatar && (
-              <Avatar className="h-6 w-6">
-                <AvatarImage src={ticket.assigneeAvatar} alt={ticket.assignedTo} data-ai-hint="staff avatar"/>
-                <AvatarFallback>{ticket.assignedTo.charAt(0)}</AvatarFallback>
-              </Avatar>
-            )}
-            <span>{ticket.assignedTo}</span>
+          
+          <div>
+            <h4 className="text-sm font-medium mb-1">Priority</h4>
+            <Badge className={cn("text-sm", priorityColors[ticket.priority])}>{ticket.priority}</Badge>
           </div>
-        )}
+
+          <div>
+            <h4 className="text-sm font-medium mb-1">Category</h4>
+            <Badge variant="secondary" className="text-sm">
+              <Tag className="w-3 h-3 mr-1.5" />
+              {ticket.category}
+            </Badge>
+          </div>
+
+          {userRole === 'staff' && (
+            <div>
+              <Label htmlFor="ticket-assignment">Assigned To</Label>
+              <Select
+                value={dummyStaffMembers.find(s => s.email === ticket.assignedTo)?.id || "unassigned"}
+                onValueChange={handleAssignmentChange}
+                name="ticket-assignment"
+                disabled={isTicketLockedByOther}
+              >
+                <SelectTrigger className="w-full mt-1">
+                  <SelectValue placeholder="Assign to staff member" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {dummyStaffMembers.map(staff => (
+                    <SelectItem key={staff.id} value={staff.id}>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={staff.avatar} alt={staff.name} data-ai-hint="staff avatar"/>
+                          <AvatarFallback>{staff.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        {staff.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {ticket.assignedTo && (
+            <div className="flex items-center gap-2 text-sm">
+              <UserCog className="w-4 h-4 text-muted-foreground" />
+              <span className="font-medium">Assigned:</span>
+              {ticket.assigneeAvatar && (
+                <Avatar className="h-6 w-6">
+                  <AvatarImage src={ticket.assigneeAvatar} alt={assignedStaffName || ''} data-ai-hint="staff avatar"/>
+                  <AvatarFallback>{(assignedStaffName || '').split(' ').map(n => n[0]).join('').substring(0, 2) || 'S'}</AvatarFallback>
+                </Avatar>
+              )}
+              <span>{assignedStaffName}</span>
+            </div>
+          )}
 
 
-        <div className="flex items-center gap-2 text-sm">
-          <User className="w-4 h-4 text-muted-foreground" />
-          <span className="font-medium">Student:</span>
-          <span>{ticket.studentName || 'Unknown Student'}</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <CalendarDays className="w-4 h-4 text-muted-foreground" />
-          <span className="font-medium">Created:</span>
-          <span>{new Date(ticket.createdAt).toLocaleString()}</span>
-        </div>
-        {ticket.updatedAt && (
           <div className="flex items-center gap-2 text-sm">
-            <ShieldCheck className="w-4 h-4 text-muted-foreground" />
-            <span className="font-medium">Last Updated:</span>
-            <span>{new Date(ticket.updatedAt).toLocaleString()}</span>
+            <User className="w-4 h-4 text-muted-foreground" />
+            <span className="font-medium">Student:</span>
+            <span>{ticket.studentName || 'Unknown Student'}</span>
           </div>
-        )}
-        <div>
-          <h4 className="text-sm font-medium mb-1">Description</h4>
-          <p className="text-sm text-muted-foreground bg-secondary p-3 rounded-md whitespace-pre-line">{ticket.description}</p>
+          <div className="flex items-center gap-2 text-sm">
+            <CalendarDays className="w-4 h-4 text-muted-foreground" />
+            <span className="font-medium">Created:</span>
+            <span>{new Date(ticket.createdAt).toLocaleString()}</span>
+          </div>
+          {ticket.updatedAt && (
+            <div className="flex items-center gap-2 text-sm">
+              <ShieldCheck className="w-4 h-4 text-muted-foreground" />
+              <span className="font-medium">Last Updated:</span>
+              <span>{new Date(ticket.updatedAt).toLocaleString()}</span>
+            </div>
+          )}
+          <div>
+            <h4 className="text-sm font-medium mb-1">Description</h4>
+            <p className="text-sm text-muted-foreground bg-secondary p-3 rounded-md whitespace-pre-line">{ticket.description}</p>
+          </div>
         </div>
-      </div>
-  </>
-));
+    </>
+  );
+});
 TicketInfoContent.displayName = "TicketInfoContent";
 
 const TicketDiscussionContent = ({ 
@@ -432,7 +438,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
         if (onAssignTicket) {
             onAssignTicket({
                 ticketId: ticket.id,
-                assignedTo: selectedStaff.name,
+                assignedTo: selectedStaff.email,
                 assigneeAvatar: selectedStaff.avatar,
                 lockedByStaffId: currentStaffId,
             });

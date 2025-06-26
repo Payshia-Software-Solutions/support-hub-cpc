@@ -42,9 +42,11 @@ export function TicketListItem({ ticket, currentStaffId }: TicketListItemProps) 
   const locker = ticket.isLocked && ticket.lockedByStaffId 
     ? dummyStaffMembers.find(s => s.id === ticket.lockedByStaffId) 
     : null;
-  
-  // const isLockedByOther = ticket.isLocked && ticket.lockedByStaffId !== currentStaffId;
 
+  const assignedStaffMember = dummyStaffMembers.find(s => s.email === ticket.assignedTo);
+  const assignedStaffName = assignedStaffMember?.name || ticket.assignedTo;
+  const fallback = (assignedStaffName || '').split(' ').filter(n => n).map(n => n[0]).join('').substring(0, 2) || 'S';
+  
   return (
     <Link href={linkPath} legacyBehavior>
       <Card className="hover:shadow-lg transition-shadow duration-200 cursor-pointer bg-card flex flex-col h-full">
@@ -89,12 +91,12 @@ export function TicketListItem({ ticket, currentStaffId }: TicketListItemProps) 
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Avatar className="h-6 w-6">
-                      <AvatarImage src={ticket.assigneeAvatar} alt={ticket.assignedTo} data-ai-hint="staff avatar"/>
-                      <AvatarFallback>{ticket.assignedTo.substring(0, 1)}</AvatarFallback>
+                      <AvatarImage src={ticket.assigneeAvatar} alt={assignedStaffName || ''} data-ai-hint="staff avatar"/>
+                      <AvatarFallback>{fallback}</AvatarFallback>
                     </Avatar>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{ticket.assignedTo}</p>
+                    <p>{assignedStaffName}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
