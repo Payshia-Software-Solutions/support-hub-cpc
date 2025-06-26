@@ -108,17 +108,17 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
         status: apiTicket.status,
         createdAt: apiTicket.created_at,
         updatedAt: apiTicket.updated_at,
+        studentNumber: apiTicket.student_number,
         studentName: apiTicket.student_name,
         studentAvatar: apiTicket.student_avatar,
         assignedTo: apiTicket.assigned_to,
         assigneeAvatar: apiTicket.assignee_avatar,
-        isLocked: apiTicket.is_locked == 1, // Fix: Convert "0" or "1" from API to a boolean
+        isLocked: apiTicket.is_locked == 1,
         lockedByStaffId: apiTicket.locked_by_staff_id,
     };
 }
 
 // Mapper for Ticket request (App -> API)
-// This handles both creation and updates.
 function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
     const apiPayload: { [key: string]: any } = {};
     if (ticketData.subject !== undefined) apiPayload.subject = ticketData.subject;
@@ -126,11 +126,11 @@ function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
     if (ticketData.priority !== undefined) apiPayload.priority = ticketData.priority;
     if (ticketData.category !== undefined) apiPayload.category = ticketData.category;
     if (ticketData.status !== undefined) apiPayload.status = ticketData.status;
+    if (ticketData.studentNumber !== undefined) apiPayload.student_number = ticketData.studentNumber;
     if (ticketData.studentName !== undefined) apiPayload.student_name = ticketData.studentName;
     if (ticketData.studentAvatar !== undefined) apiPayload.student_avatar = ticketData.studentAvatar;
     if (ticketData.assignedTo !== undefined) apiPayload.assigned_to = ticketData.assignedTo;
     if (ticketData.assigneeAvatar !== undefined) apiPayload.assignee_avatar = ticketData.assigneeAvatar;
-    // Fix: Send 1 or 0 to the API instead of true/false
     if (ticketData.isLocked !== undefined) apiPayload.is_locked = ticketData.isLocked ? 1 : 0;
     if (ticketData.lockedByStaffId !== undefined) apiPayload.locked_by_staff_id = ticketData.lockedByStaffId;
     return apiPayload;
@@ -141,8 +141,9 @@ function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
 export const getAnnouncements = (): Promise<Announcement[]> => apiFetch('/announcements');
 
 // Tickets
-export const getTickets = async (): Promise<Ticket[]> => {
-    const apiTickets = await apiFetch<any[]>('/tickets');
+export const getTickets = async (studentNumber?: string): Promise<Ticket[]> => {
+    const endpoint = studentNumber ? `/tickets/by-student/${studentNumber}` : '/tickets';
+    const apiTickets = await apiFetch<any[]>(endpoint);
     if (!apiTickets) return [];
     return apiTickets.map(mapApiTicketToTicket);
 };
@@ -209,10 +210,9 @@ export const getChats = async (studentNumber: string): Promise<Chat[]> => {
             return [];
         }
         const apiChats = Array.isArray(apiResult) ? apiResult : [apiResult];
-        const mappedChats = apiChats.map(mapApiChatToChat);
-
+        
         // Defensive check: ensure only the correct student's chat is returned
-        const studentChat = mappedChats.find(chat => chat.studentNumber === studentNumber || chat.userName === studentNumber);
+        const studentChat = apiChats.find(chat => chat.student_number === studentNumber || chat.user_name === studentNumber);
         return studentChat ? [studentChat] : [];
 
     } catch (error) {
@@ -241,7 +241,7 @@ export const getChat = async (id: string): Promise<Chat> => {
 export const createChat = async (studentInfo: { studentNumber: string, studentAvatar: string }): Promise<Chat> => {
     const apiPayload = {
         student_number: studentInfo.studentNumber,
-        user_name: studentInfo.studentNumber,
+        user_name: studentInfo.studentNumber, // Use studentNumber for user_name as well
         user_avatar: studentInfo.studentAvatar
     };
     const apiChat = await apiFetch<ApiChat>('/chats', { 

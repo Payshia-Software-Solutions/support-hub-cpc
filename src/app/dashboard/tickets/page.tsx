@@ -6,11 +6,15 @@ import { TicketList } from "@/components/dashboard/TicketList";
 import type { Ticket } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getTickets } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function TicketsPage() {
+  const { user } = useAuth();
+
   const { data: tickets, isLoading, isError, error } = useQuery<Ticket[]>({
-    queryKey: ['tickets'],
-    queryFn: getTickets,
+    queryKey: ['tickets', user?.username],
+    queryFn: () => getTickets(user!.username!),
+    enabled: !!user?.username,
   });
 
   if (isLoading) {

@@ -7,15 +7,18 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createTicket } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import type { Ticket } from "@/lib/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function CreateTicketPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const createTicketMutation = useMutation({
     mutationFn: createTicket,
     onSuccess: (newTicket: Ticket) => {
-      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      // Invalidate both the general and the user-specific ticket queries
+      queryClient.invalidateQueries({ queryKey: ['tickets', user?.username] });
       queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
       
       toast({
@@ -33,15 +36,21 @@ export default function CreateTicketPage() {
     },
   });
 
-  const handleTicketSubmit = (data: Omit<Ticket, 'id' | 'createdAt' | 'status' | 'studentName' | 'studentAvatar'>) => {
-    // Here you would get the current user's info
-    const studentName = "Current User"; // Placeholder
-    const studentAvatar = "https://placehold.co/100x100.png"; // Placeholder
+  const handleTicketSubmit = (data: Omit<Ticket, 'id' | 'createdAt' | 'status' | 'studentName' | 'studentAvatar' | 'studentNumber'>) => {
+    if (!user || !user.username) {
+        toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: "You must be logged in to create a ticket.",
+        });
+        return;
+    }
     
     createTicketMutation.mutate({
       ...data,
-      studentName,
-      studentAvatar,
+      studentNumber: user.username,
+      studentName: user.name,
+      studentAvatar: user.avatar,
       status: 'Open',
     });
   };

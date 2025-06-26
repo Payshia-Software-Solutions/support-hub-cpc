@@ -40,6 +40,7 @@ export interface Ticket {
   status: TicketStatus;
   createdAt: string; // ISO 8601 date string
   updatedAt?: string; // ISO 8601 date string
+  studentNumber: string;
   studentName: string;
   studentAvatar: string;
   // messages are now fetched separately
