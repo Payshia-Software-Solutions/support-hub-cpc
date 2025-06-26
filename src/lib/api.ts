@@ -211,8 +211,18 @@ export const getChats = async (studentNumber?: string): Promise<Chat[]> => {
 
         // If the API returns a single object for a student, wrap it in an array
         const apiChats = Array.isArray(apiResult) ? apiResult : [apiResult];
+        const mappedChats = apiChats.map(mapApiChatToChat);
 
-        return apiChats.map(mapApiChatToChat);
+        // If a studentNumber is provided, we must only return the chat for that student.
+        // This is a defensive check in case the API endpoint for a single user
+        // incorrectly returns all chats.
+        if (studentNumber) {
+            // The API is inconsistent. Sometimes the student ID is in `studentNumber`, sometimes in `userName`.
+            const studentChat = mappedChats.find(chat => chat.studentNumber === studentNumber || chat.userName === studentNumber);
+            return studentChat ? [studentChat] : [];
+        }
+        
+        return mappedChats;
     } catch (error) {
         // If a 404 error occurs when fetching a specific student's chat,
         // it means they don't have a chat history yet. We return an empty array
