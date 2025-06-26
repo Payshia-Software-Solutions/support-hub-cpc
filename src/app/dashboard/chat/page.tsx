@@ -47,7 +47,7 @@ export default function ChatPage() {
   }, [isMobile, setIsMobileDetailActive]);
 
   const createChatMutation = useMutation({
-    mutationFn: (studentInfo: { studentNumber: string, studentName: string, studentAvatar: string }) => createChat(studentInfo),
+    mutationFn: (studentInfo: { studentNumber: string, studentAvatar: string }) => createChat(studentInfo),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chats', user?.username] });
       toast({
@@ -180,7 +180,6 @@ export default function ChatPage() {
             if (user && user.username) {
               createChatMutation.mutate({
                 studentNumber: user.username,
-                studentName: user.username,
                 studentAvatar: user.avatar,
               })
             }

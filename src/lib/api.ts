@@ -240,10 +240,10 @@ export const getChat = async (id: string): Promise<Chat> => {
     return mapApiChatToChat(apiChat);
 };
 
-export const createChat = async (studentInfo: { studentNumber: string, studentName: string, studentAvatar: string }): Promise<Chat> => {
+export const createChat = async (studentInfo: { studentNumber: string, studentAvatar: string }): Promise<Chat> => {
     const apiPayload = {
         student_number: studentInfo.studentNumber,
-        user_name: studentInfo.studentName,
+        user_name: studentInfo.studentNumber, // Use the student number as the user_name
         user_avatar: studentInfo.studentAvatar
     };
     const apiChat = await apiFetch<ApiChat>('/chats', { 
