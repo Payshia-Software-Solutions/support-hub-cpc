@@ -136,15 +136,14 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (isLoading || !isAuthenticated) {
     return (
-        <div className="flex h-screen w-screen items-center justify-center">
-            <div className="w-full max-w-md p-8 space-y-4">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-8 w-3/4" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-10 w-full mt-4" />
-            </div>
+      <div className="flex h-screen w-screen flex-col items-center justify-center bg-background">
+        <div className="flex items-center gap-4 text-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-16 h-16 animate-pulse">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+            </svg>
         </div>
+        <p className="mt-4 text-muted-foreground">Loading your dashboard...</p>
+      </div>
     );
   }
 
