@@ -142,7 +142,7 @@ export const getAnnouncements = (): Promise<Announcement[]> => apiFetch('/announ
 
 // Tickets
 export const getTickets = async (studentNumber?: string): Promise<Ticket[]> => {
-    const endpoint = studentNumber ? `/tickets/by-student/${studentNumber}` : '/tickets';
+    const endpoint = studentNumber ? `/tickets/username/${studentNumber}` : '/tickets';
     const apiTickets = await apiFetch<any[]>(endpoint);
     if (!apiTickets) return [];
     return apiTickets.map(mapApiTicketToTicket);
@@ -157,7 +157,10 @@ export const getTicketMessages = async (ticketId: string): Promise<Message[]> =>
     return apiMessages.map(mapApiMessageToMessage);
 };
 export const createTicket = async (ticketData: CreateTicketPayload): Promise<Ticket> => {
-    const apiPayload = mapTicketToApiPayload(ticketData);
+    const apiPayload = mapTicketToApiPayload({
+        ...ticketData,
+        studentName: ticketData.studentNumber, // Set student_name to student_number
+    });
     const newApiTicket = await apiFetch<any>('/tickets', { method: 'POST', body: JSON.stringify(apiPayload) });
     return mapApiTicketToTicket(newApiTicket);
 };
@@ -209,11 +212,12 @@ export const getChats = async (studentNumber: string): Promise<Chat[]> => {
         if (!apiResult) {
             return [];
         }
+        // If the API returns a single object, wrap it in an array to handle it consistently.
         const apiChats = Array.isArray(apiResult) ? apiResult : [apiResult];
         
         // Defensive check: ensure only the correct student's chat is returned
-        const studentChat = apiChats.find(chat => chat.student_number === studentNumber || chat.user_name === studentNumber);
-        return studentChat ? [studentChat] : [];
+        const studentChat = apiChats.filter(chat => chat.student_number === studentNumber || chat.user_name === studentNumber);
+        return studentChat.map(mapApiChatToChat);
 
     } catch (error) {
         // If a 404 error occurs, it means no chat exists for this student yet.
@@ -241,7 +245,7 @@ export const getChat = async (id: string): Promise<Chat> => {
 export const createChat = async (studentInfo: { studentNumber: string, studentAvatar: string }): Promise<Chat> => {
     const apiPayload = {
         student_number: studentInfo.studentNumber,
-        user_name: studentInfo.studentNumber, // Use studentNumber for user_name as well
+        user_name: studentInfo.studentNumber,
         user_avatar: studentInfo.studentAvatar
     };
     const apiChat = await apiFetch<ApiChat>('/chats', { 
