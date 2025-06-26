@@ -1,15 +1,16 @@
+
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTickets, getChats } from "@/lib/api";
 import { useAnnouncements } from "@/contexts/AnnouncementsContext";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Ticket, Chat, Announcement } from "@/lib/types";
-import { ArrowRight, MessageSquare, Ticket as TicketIcon, Megaphone, PlusCircle } from "lucide-react";
+import type { Ticket } from "@/lib/types";
+import { ArrowRight, MessageSquare, Ticket as TicketIcon, Megaphone } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -22,10 +23,31 @@ const InfoListItem = ({ href, icon, title, description, badgeText, badgeVariant 
                 <p className="font-semibold text-card-foreground group-hover:text-primary truncate">{title}</p>
                 <p className="text-sm text-muted-foreground line-clamp-1">{description}</p>
             </div>
-            {badgeText && <Badge variant={badgeVariant} className="shrink-0">{badgeText}</Badge>}
-            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform shrink-0" />
+            <div className="flex items-center gap-2">
+                {badgeText && <Badge variant={badgeVariant} className="shrink-0">{badgeText}</Badge>}
+                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform shrink-0" />
+            </div>
         </div>
     </Link>
+);
+
+const StatCard = ({ title, value, icon, description, href, isLoading }: { title: string, value: string | number, icon: React.ReactNode, description: string, href: string, isLoading: boolean }) => (
+  <Link href={href}>
+    <Card className="shadow-lg hover:shadow-xl transition-shadow">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        {icon}
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+            <Skeleton className="h-8 w-1/2" />
+        ) : (
+            <div className="text-2xl font-bold">{value}</div>
+        )}
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </CardContent>
+    </Card>
+  </Link>
 );
 
 
@@ -45,13 +67,20 @@ export default function StudentDashboardPage() {
         enabled: !!user?.username,
     });
 
-    const { announcements, isLoading: isLoadingAnnouncements } = useAnnouncements();
+    const { announcements, unreadCount: unreadAnnouncementsCount, isLoading: isLoadingAnnouncements } = useAnnouncements();
 
     const isLoading = isLoadingTickets || isLoadingChats || isLoadingAnnouncements;
 
     const openTickets = tickets?.filter(t => t.status === 'Open' || t.status === 'In Progress') || [];
     const studentChat = chats?.[0];
+    const unreadMessagesCount = studentChat?.unreadCount || 0;
     const recentAnnouncements = announcements?.slice(0, 3) || [];
+
+    const dashboardStats = [
+        { title: "Open Tickets", value: openTickets.length, icon: <TicketIcon className="w-5 h-5 text-muted-foreground" />, description: "View your active tickets", href: "/dashboard/tickets" },
+        { title: "Unread Messages", value: unreadMessagesCount, icon: <MessageSquare className="w-5 h-5 text-muted-foreground" />, description: "Go to your support chat", href: "/dashboard/chat" },
+        { title: "New Announcements", value: unreadAnnouncementsCount, icon: <Megaphone className="w-5 h-5 text-muted-foreground" />, description: "See the latest updates", href: "/dashboard/announcements" },
+    ];
 
     return (
         <div className="p-4 md:p-8 space-y-8 pb-20">
@@ -60,24 +89,37 @@ export default function StudentDashboardPage() {
                 <p className="text-muted-foreground">Here's a quick overview of your support activity.</p>
             </header>
 
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {dashboardStats.map((stat, index) => (
+                    <StatCard 
+                        key={index}
+                        title={stat.title}
+                        value={stat.value}
+                        icon={stat.icon}
+                        description={stat.description}
+                        href={stat.href}
+                        isLoading={isLoading}
+                    />
+                ))}
+            </section>
+            
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="shadow-lg">
+                <Card className="shadow-lg flex flex-col">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <TicketIcon className="w-6 h-6 text-primary"/>
-                            My Open Tickets
+                            Recent Tickets
                         </CardTitle>
-                        <CardDescription>Your active support requests.</CardDescription>
+                        <CardDescription>Your most recently updated open tickets.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                        {isLoading && (
+                    <CardContent className="space-y-1 flex-grow">
+                        {isLoading ? (
                             <>
                                 <Skeleton className="h-16 w-full" />
                                 <Skeleton className="h-16 w-full" />
                             </>
-                        )}
-                        {!isLoading && openTickets.length > 0 ? (
-                            openTickets.slice(0, 2).map(ticket => (
+                        ) : openTickets.length > 0 ? (
+                            openTickets.slice(0, 3).map(ticket => (
                                 <InfoListItem 
                                     key={ticket.id}
                                     href={`/dashboard/tickets/${ticket.id}`}
@@ -89,70 +131,36 @@ export default function StudentDashboardPage() {
                                 />
                             ))
                         ) : (
-                            !isLoading && <p className="text-muted-foreground text-center p-4">No open tickets.</p>
+                           <div className="flex flex-col items-center justify-center h-full text-center py-8 text-muted-foreground">
+                                <p>You have no open tickets.</p>
+                                <Button asChild variant="link" className="mt-1">
+                                    <Link href="/dashboard/create-ticket">Create a new ticket</Link>
+                                </Button>
+                           </div>
                         )}
                     </CardContent>
-                    <div className="p-6 pt-0 flex gap-2">
-                        <Button asChild>
-                            <Link href="/dashboard/create-ticket"><PlusCircle className="mr-2"/>New Ticket</Link>
+                    <CardFooter>
+                         <Button variant="outline" className="w-full" asChild>
+                            <Link href="/dashboard/tickets">View All Tickets</Link>
                         </Button>
-                        <Button variant="outline" asChild>
-                            <Link href="/dashboard/tickets">View All</Link>
-                        </Button>
-                    </div>
+                    </CardFooter>
                 </Card>
 
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <MessageSquare className="w-6 h-6 text-primary"/>
-                            Support Chat
-                        </CardTitle>
-                        <CardDescription>Live chat with our support team.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {isLoading && <Skeleton className="h-16 w-full" />}
-                        {!isLoading && studentChat ? (
-                           <InfoListItem
-                                href="/dashboard/chat"
-                                icon={<MessageSquare className="w-5 h-5"/>}
-                                title={`Chat with Support`}
-                                description={studentChat.lastMessagePreview || "Click to start chatting."}
-                                badgeText={studentChat.unreadCount ? `${studentChat.unreadCount} New` : undefined}
-                                badgeVariant="destructive"
-                           />
-                        ) : (
-                           !isLoading &&  <p className="text-muted-foreground text-center p-4">No active chat session.</p>
-                        )}
-                    </CardContent>
-                    <div className="p-6 pt-0">
-                         <Button className="w-full" asChild>
-                            <Link href="/dashboard/chat">
-                                {studentChat ? 'Open Chat' : 'Start Chat'}
-                                <ArrowRight className="ml-2"/>
-                            </Link>
-                        </Button>
-                    </div>
-                </Card>
-            </section>
-
-             <section>
-                <Card className="shadow-lg">
+                <Card className="shadow-lg flex flex-col">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                            <Megaphone className="w-6 h-6 text-primary" />
-                           Recent Announcements
+                           Latest Announcements
                         </CardTitle>
-                        <CardDescription>Latest news and updates from the institution.</CardDescription>
+                        <CardDescription>Top news and updates from the institution.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                         {isLoading && (
+                    <CardContent className="space-y-1 flex-grow">
+                         {isLoading ? (
                             <>
                                 <Skeleton className="h-16 w-full" />
                                 <Skeleton className="h-16 w-full" />
                             </>
-                        )}
-                        {!isLoading && recentAnnouncements.length > 0 ? (
+                        ) : recentAnnouncements.length > 0 ? (
                             recentAnnouncements.map(announcement => (
                                 <InfoListItem
                                     key={announcement.id}
@@ -165,14 +173,16 @@ export default function StudentDashboardPage() {
                                 />
                             ))
                         ) : (
-                           !isLoading && <p className="text-muted-foreground text-center p-4">No recent announcements.</p>
+                           <div className="flex flex-col items-center justify-center h-full text-center py-8 text-muted-foreground">
+                                <p>No recent announcements.</p>
+                           </div>
                         )}
                     </CardContent>
-                    <div className="p-6 pt-0">
+                    <CardFooter>
                         <Button variant="outline" className="w-full" asChild>
                             <Link href="/dashboard/announcements">View All Announcements</Link>
                         </Button>
-                    </div>
+                    </CardFooter>
                 </Card>
             </section>
         </div>
