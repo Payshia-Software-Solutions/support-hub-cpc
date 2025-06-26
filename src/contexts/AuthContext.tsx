@@ -39,71 +39,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = useCallback(async (usernameOrEmail: string, password?: string) => {
-    // For staff, we'll use the mock data and assume any password is valid for the demo.
-    const foundStaff = dummyUsers.find(u => u.role === 'staff' && u.email.toLowerCase() === usernameOrEmail.toLowerCase());
-    if (foundStaff) {
-      if (!password) throw new Error("Password is required for staff login.");
-      // Mock staff login is successful with any password
-      setUser(foundStaff);
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(foundStaff));
-      router.push('/admin/dashboard');
-      return;
+    if (!password) {
+      throw new Error("Password is required.");
     }
 
-    // For students, we attempt to log in via API.
     try {
-        const response = await fetch(`https://qa-api.pharmacollege.lk/users/username/${usernameOrEmail.toUpperCase()}`);
-        if (response.ok) {
-            const apiUser = await response.json();
-            if (apiUser && apiUser.id) {
-                // In a real application, you would send the username and password to a
-                // dedicated login endpoint (e.g., POST /api/login) which would perform
-                // the password verification on the server.
-                //
-                // NEVER perform password verification on the client-side.
-                //
-                // For this prototype, we are skipping the password check as we cannot
-                // securely implement it without a proper backend endpoint. We'll proceed
-                // with login if the user is found.
-                if (!password) throw new Error("Password is required.");
-                
-                const userProfile: UserProfile = {
-                    id: apiUser.id,
-                    username: apiUser.username,
-                    name: `${apiUser.fname} ${apiUser.lname}`,
-                    email: apiUser.email,
-                    role: apiUser.userlevel === 'Student' ? 'student' : 'staff',
-                    avatar: `https://placehold.co/100x100.png?text=${apiUser.fname.charAt(0)}${apiUser.lname.charAt(0)}`,
-                    joinedDate: apiUser.created_at,
-                };
+      const response = await fetch(`https://qa-api.pharmacollege.lk/users/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: usernameOrEmail,
+          password: password,
+        }),
+      });
 
-                setUser(userProfile);
-                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userProfile));
-                
-                if (userProfile.role === 'staff') {
-                    router.push('/admin/dashboard');
-                } else {
-                    router.push('/dashboard');
-                }
-                return;
-            }
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Login failed with status: ${response.status}`);
+      }
+
+      if (data.user) {
+        const apiUser = data.user;
+        const userProfile: UserProfile = {
+          id: apiUser.id,
+          username: apiUser.username,
+          name: `${apiUser.fname} ${apiUser.lname}`,
+          email: apiUser.email,
+          role: apiUser.userlevel === 'Student' ? 'student' : 'staff',
+          avatar: `https://placehold.co/100x100.png?text=${apiUser.fname.charAt(0)}${apiUser.lname.charAt(0)}`,
+          joinedDate: apiUser.created_at,
+        };
+
+        setUser(userProfile);
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userProfile));
+
+        if (userProfile.role === 'staff') {
+          router.push('/admin/dashboard');
         } else {
-            // If user not found via student API, throw error
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || "Invalid username or password");
+          router.push('/dashboard');
         }
+        return;
+      } else {
+        throw new Error("Login failed: User data not found in response.");
+      }
     } catch (error) {
-        // Network error or other issues
-        console.error("Student API login failed:", error);
-        if (error instanceof Error) {
-            throw error;
-        }
-        throw new Error("An unknown login error occurred.");
+      console.error("Login failed:", error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("An unknown login error occurred.");
     }
-    
-    // If no staff or student user was found
-    throw new Error("Invalid username or password");
-
   }, [router]);
 
   const logout = useCallback(() => {
