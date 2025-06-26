@@ -19,6 +19,7 @@ import { dummyStaffMembers } from "@/lib/dummy-data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTicketMessages, createTicketMessage, updateTicketStatus } from "@/lib/api";
+import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { Skeleton } from "../ui/skeleton";
 
 
@@ -237,9 +238,20 @@ const TicketDiscussionContent = ({
         <ScrollArea className="flex-1 px-4 py-4" ref={scrollAreaRef}>
         <div className="space-y-6">
             {isLoading && (
-                <div className="space-y-6">
-                    <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[75%] mr-auto"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-16 w-48 rounded-xl" /></div>
-                    <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[75%] ml-auto flex-row-reverse"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-10 w-32 rounded-xl" /></div>
+                 <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[75%] mr-auto">
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage 
+                            src={userRole === 'staff' ? ticket.studentAvatar : staffAvatar}
+                            alt="Typing..." 
+                            data-ai-hint="avatar person"
+                        />
+                        <AvatarFallback>
+                            {userRole === 'staff' ? (ticket.studentName?.charAt(0).toUpperCase() || 'U') : 'S'}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="p-1 rounded-xl shadow-sm bg-card border rounded-bl-none">
+                        <TypingIndicator />
+                    </div>
                 </div>
             )}
             {isError && <p className="text-destructive text-center">Failed to load messages.</p>}

@@ -14,6 +14,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import { TypingIndicator } from "@/components/ui/typing-indicator";
 
 
 export default function ChatPage() {
@@ -145,8 +146,12 @@ export default function ChatPage() {
                   </div>
               </div>
               <div className="flex-1 p-4 space-y-4 overflow-hidden">
-                <div className="flex items-end gap-2 max-w-[75%] mr-auto"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-16 w-48 rounded-xl" /></div>
-                <div className="flex items-end gap-2 max-w-[75%] ml-auto flex-row-reverse"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-10 w-32 rounded-xl" /></div>
+                <div className="flex items-end gap-2 max-w-[75%] mr-auto">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <div className="p-1 rounded-xl shadow-sm bg-card border rounded-bl-none">
+                    <TypingIndicator />
+                  </div>
+                </div>
               </div>
               <div className="p-4 border-t bg-card shrink-0">
                   <div className="flex items-center gap-2">

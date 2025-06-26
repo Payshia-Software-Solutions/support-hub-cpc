@@ -15,6 +15,7 @@ import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { getChatMessages } from "@/lib/api";
+import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { Skeleton } from "../ui/skeleton";
 
 interface ChatWindowProps {
@@ -48,16 +49,32 @@ function ChatMessages({ chat, userRole, staffAvatar }: Pick<ChatWindowProps, 'ch
     const staffMessageAvatar = staffAvatar || defaultStaffMessageAvatar;
     const staffFallback = 'S';
 
+    if (isLoading) {
+        return (
+            <ScrollArea className="flex-1 p-4">
+                <div className="flex items-end gap-2 max-w-[75%] mr-auto">
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage
+                            src={userRole === 'student' ? staffMessageAvatar : studentAvatar}
+                            alt="Typing..."
+                            data-ai-hint="avatar person"
+                        />
+                        <AvatarFallback>
+                            {userRole === 'student' ? staffFallback : studentFallback}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className={cn("p-1 rounded-xl shadow-sm", "bg-card border rounded-bl-none")}>
+                        <TypingIndicator />
+                    </div>
+                </div>
+            </ScrollArea>
+        );
+    }
+    
+
     return (
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
             <div className="space-y-4">
-                {isLoading && (
-                    <div className="space-y-4">
-                        <div className="flex items-end gap-2 max-w-[75%] mr-auto"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-16 w-48 rounded-xl" /></div>
-                        <div className="flex items-end gap-2 max-w-[75%] ml-auto flex-row-reverse"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-10 w-32 rounded-xl" /></div>
-                        <div className="flex items-end gap-2 max-w-[75%] mr-auto"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-12 w-40 rounded-xl" /></div>
-                    </div>
-                )}
                 {isError && <p className="text-center text-destructive">Failed to load messages.</p>}
                 {!isLoading && messages?.map((message, index) => {
                     const isCurrentUserMessage = (message.from === 'student' && userRole === 'student') || (message.from === 'staff' && userRole === 'staff');
