@@ -73,7 +73,9 @@ export function TicketListItem({ ticket, currentStaffId }: TicketListItemProps) 
               )}
             </div>
           </div>
-          <CardDescription className="text-xs text-muted-foreground">Ticket ID: {ticket.id}</CardDescription>
+          <CardDescription className="text-xs text-muted-foreground">
+            Ticket ID: <span className="font-semibold text-foreground">{ticket.id}</span>
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 flex-grow">
           <div className="flex items-center text-sm">
