@@ -1,6 +1,7 @@
 
 
 
+
 import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload } from './types';
 
 // In a real app, you would move this to a .env file
@@ -261,7 +262,7 @@ export const getChats = async (studentNumber: string): Promise<Chat[]> => {
 
 // Admin Chats
 export const getAdminChats = async (): Promise<Chat[]> => {
-    const endpoint = '/chats/';
+    const endpoint = '/chats';
     const apiChats = await apiFetch<ApiChat[]>(endpoint);
     if (!apiChats) return [];
     return apiChats.map(mapApiChatToChat);
