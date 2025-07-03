@@ -6,13 +6,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllUserFullDetails, updateCertificateName } from '@/lib/api';
 import type { UserFullDetails, UpdateCertificateNamePayload } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import { Search, Save, Loader2 } from 'lucide-react';
+
+const ITEMS_PER_PAGE = 25;
 
 // Editable cell component to manage its own state
 const EditableCell = ({ student, user, mutation }: { student: UserFullDetails, user: any, mutation: any }) => {
@@ -72,16 +74,17 @@ export default function BulkNameUpdatePage() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
 
     const { data: students, isLoading, isError, error } = useQuery<UserFullDetails[]>({
         queryKey: ['allStudentDetails'],
         queryFn: getAllUserFullDetails,
+        staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     });
 
     const updateNameMutation = useMutation({
         mutationFn: updateCertificateName,
         onSuccess: (data, variables) => {
-            // Optimistically update the cache to avoid a full refetch
             queryClient.setQueryData(['allStudentDetails'], (oldData: UserFullDetails[] | undefined) => {
                 if (!oldData) return [];
                 return oldData.map(student => 
@@ -108,12 +111,27 @@ export default function BulkNameUpdatePage() {
     const filteredStudents = useMemo(() => {
         if (!students) return [];
         const lowercasedFilter = searchTerm.toLowerCase();
+        if (!lowercasedFilter) return students;
         return students.filter(student =>
             student.username?.toLowerCase().includes(lowercasedFilter) ||
             student.name_on_certificate?.toLowerCase().includes(lowercasedFilter) ||
             student.full_name?.toLowerCase().includes(lowercasedFilter)
         );
     }, [students, searchTerm]);
+
+    // Reset to page 1 whenever the search term changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
+    const paginatedStudents = useMemo(() => {
+        return filteredStudents.slice(
+            (currentPage - 1) * ITEMS_PER_PAGE,
+            currentPage * ITEMS_PER_PAGE
+        );
+    }, [filteredStudents, currentPage]);
+
 
     if (isLoading) {
         return (
@@ -148,7 +166,9 @@ export default function BulkNameUpdatePage() {
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
                             <CardTitle>All Students</CardTitle>
-                            <CardDescription>Found {filteredStudents.length} of {students?.length} students.</CardDescription>
+                            <CardDescription>
+                                Showing {paginatedStudents.length} of {filteredStudents.length} students.
+                            </CardDescription>
                         </div>
                         <div className="relative w-full md:w-auto md:max-w-xs">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -162,7 +182,7 @@ export default function BulkNameUpdatePage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="relative w-full overflow-auto max-h-[60vh] border rounded-lg">
+                    <div className="relative w-full overflow-auto border rounded-lg">
                         <Table>
                             <TableHeader className="sticky top-0 bg-muted/50 z-10">
                                 <TableRow>
@@ -172,7 +192,7 @@ export default function BulkNameUpdatePage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredStudents.length > 0 ? filteredStudents.map((student) => (
+                                {paginatedStudents.length > 0 ? paginatedStudents.map((student) => (
                                     <TableRow key={student.id}>
                                         <TableCell className="font-medium">{student.username}</TableCell>
                                         <TableCell>{student.full_name}</TableCell>
@@ -189,6 +209,27 @@ export default function BulkNameUpdatePage() {
                         </Table>
                     </div>
                 </CardContent>
+                 <CardFooter className="flex items-center justify-center space-x-2 pt-4">
+                     <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                     >
+                        Previous
+                     </Button>
+                     <span className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages || 1}
+                     </span>
+                     <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages || totalPages === 0}
+                     >
+                        Next
+                     </Button>
+                </CardFooter>
             </Card>
         </div>
     );
