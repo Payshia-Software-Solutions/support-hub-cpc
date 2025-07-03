@@ -14,8 +14,57 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import { Search, Save, Loader2, AlertTriangle } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { Badge } from '@/components/ui/badge';
 
 const ITEMS_PER_PAGE = 25;
+
+// Cell component to check and display convocation status
+const fetchConvocationStatus = async (studentNumber: string) => {
+    if (!studentNumber) return null;
+    try {
+        const response = await fetch(`https://qa-api.pharmacollege.lk/convocation-registrations/get-records-student-number/${studentNumber}`);
+        if (response.status === 404) {
+            return null; // No registration found, this is a valid state
+        }
+        if (!response.ok) {
+            throw new Error('Failed to fetch status');
+        }
+        const data = await response.json();
+        return data && data.registration_id ? data : null;
+    } catch (error) {
+        // Log the error but don't crash the cell
+        console.error(`Failed to fetch convocation status for ${studentNumber}:`, error);
+        throw error; // Let react-query handle the error state
+    }
+};
+
+const ConvocationStatusCell = ({ studentNumber }: { studentNumber: string }) => {
+    const { data, isLoading, isError } = useQuery({
+        queryKey: ['convocationStatus', studentNumber],
+        queryFn: () => fetchConvocationStatus(studentNumber),
+        retry: (failureCount, error: any) => {
+            // Don't retry for 404s, which are handled as a success(null)
+            if (error?.message?.includes('404')) return false;
+            return failureCount < 2;
+        },
+        staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    });
+
+    if (isLoading) {
+        return <Skeleton className="h-5 w-28" />;
+    }
+
+    if (isError) {
+        return <Badge variant="outline">Check Failed</Badge>;
+    }
+
+    if (data) {
+        return <Badge variant="destructive">Convocation Registered</Badge>;
+    }
+
+    return <Badge variant="secondary">Normal</Badge>;
+};
+
 
 // Editable cell component to manage its own state
 const EditableCell = ({ record, user, mutation }: { record: CertificateOrder, user: any, mutation: any }) => {
@@ -101,7 +150,6 @@ export default function CertificateOrderNameEditsPage() {
         onSuccess: (data, variables) => {
             queryClient.setQueryData(['certificateOrders'], (oldData: CertificateOrder[] | undefined) => {
                 if (!oldData) return [];
-                // Update the correct record based on `created_by` which we used as student_number
                 return oldData.map(record => 
                     record.created_by === variables.student_number 
                         ? { ...record, name_on_certificate: variables.name_on_certificate } 
@@ -201,6 +249,7 @@ export default function CertificateOrderNameEditsPage() {
                                 <TableRow>
                                     <TableHead className="w-[150px]">Student Number</TableHead>
                                     <TableHead>Name on Certificate</TableHead>
+                                    <TableHead>Convocation Status</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -210,10 +259,13 @@ export default function CertificateOrderNameEditsPage() {
                                         <TableCell>
                                             <EditableCell record={record} user={user} mutation={updateNameMutation} />
                                         </TableCell>
+                                        <TableCell>
+                                            <ConvocationStatusCell studentNumber={record.created_by} />
+                                        </TableCell>
                                     </TableRow>
                                 )) : (
                                     <TableRow>
-                                        <TableCell colSpan={2} className="text-center h-24">No records found matching your search.</TableCell>
+                                        <TableCell colSpan={3} className="text-center h-24">No records found matching your search.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
