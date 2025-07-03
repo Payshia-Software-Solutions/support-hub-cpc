@@ -55,6 +55,12 @@ const managementTasks = [
     href: "/admin/manage/convocation-name-edits",
   },
   {
+    title: "Certificate Order Name Edits",
+    description: "Edit names for all certificate orders.",
+    icon: <FileSignature className="w-6 h-6 text-primary" />,
+    href: "/admin/manage/certificate-order-name-edits",
+  },
+  {
     title: "Password Reset",
     description: "Reset a student's account password.",
     icon: <KeyRound className="w-6 h-6 text-primary" />,

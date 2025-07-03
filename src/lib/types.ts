@@ -1,6 +1,7 @@
 
 
 
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -186,4 +187,25 @@ export interface ConvocationRegistration {
     package_created_at: string;
     package_updated_at: string;
     name_on_certificate: string;
+}
+
+export interface CertificateOrder {
+  id: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  course_code: string;
+  mobile: string;
+  address_line1: string;
+  address_line2: string;
+  city_id: string;
+  district: string;
+  type: string;
+  payment: string;
+  package_id: string;
+  certificate_id: string;
+  certificate_status: string;
+  cod_amount: string;
+  is_active: string;
+  name_on_certificate: string;
 }
