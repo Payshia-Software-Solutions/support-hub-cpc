@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Ticket, MessageSquare, CheckCircle, Users } from "lucide-react";
@@ -36,34 +37,35 @@ export default function AdminDashboardPage() {
   });
 
   const isLoading = isLoadingTickets || isLoadingChats;
-  const isError = isErrorTickets || isErrorChats;
-  const error = errorTickets || errorChats;
 
-  const openTicketsCount = tickets?.filter(t => t.status === 'Open' || t.status === 'In Progress').length ?? 0;
-  const activeChatsCount = chats?.length ?? 0;
-  const totalTickets = tickets?.length ?? 0;
-  
-  const oneMonthAgo = subDays(new Date(), 30);
-  const resolvedThisMonthCount = tickets?.filter(t => t.status === 'Closed' && t.updatedAt && new Date(t.updatedAt) > oneMonthAgo).length ?? 0;
-  
-  const newUsersCount = "23"; // Static placeholder as user data API is not available
+  const dashboardStats = useMemo(() => {
+    const openTicketsCount = tickets?.filter(t => t.status === 'Open' || t.status === 'In Progress').length ?? 0;
+    const activeChatsCount = chats?.length ?? 0;
+    const oneMonthAgo = subDays(new Date(), 30);
+    const resolvedThisMonthCount = tickets?.filter(t => t.status === 'Closed' && t.updatedAt && new Date(t.updatedAt) > oneMonthAgo).length ?? 0;
+    const newUsersCount = "23"; // Static placeholder
 
-  const dashboardStats = [
-    { title: "Open Tickets", value: openTicketsCount.toString(), icon: <Ticket className="w-6 h-6 text-primary" />, trend: "All open & in-progress" },
-    { title: "Active Chats", value: activeChatsCount.toString(), icon: <MessageSquare className="w-6 h-6 text-primary" />, trend: "Total active conversations" },
-    { title: "Resolved Tickets (Month)", value: resolvedThisMonthCount.toString(), icon: <CheckCircle className="w-6 h-6 text-green-500" />, trend: "In the last 30 days" },
-    { title: "New Users (Week)", value: newUsersCount, icon: <Users className="w-6 h-6 text-primary" />, trend: "Static placeholder" },
-  ];
+    return [
+      { title: "Open Tickets", value: openTicketsCount.toString(), icon: <Ticket className="w-6 h-6 text-primary" />, trend: "All open & in-progress" },
+      { title: "Active Chats", value: activeChatsCount.toString(), icon: <MessageSquare className="w-6 h-6 text-primary" />, trend: "Total active conversations" },
+      { title: "Resolved Tickets (Month)", value: resolvedThisMonthCount.toString(), icon: <CheckCircle className="w-6 h-6 text-green-500" />, trend: "In the last 30 days" },
+      { title: "New Users (Week)", value: newUsersCount, icon: <Users className="w-6 h-6 text-primary" />, trend: "Static placeholder" },
+    ];
+  }, [tickets, chats]);
 
-  // Chart Data Processing
-  const ticketVolumeData = [...Array(7)].map((_, i) => {
-    const date = subDays(new Date(), 6 - i);
-    return {
-      date: format(date, "MMM d"),
-      shortDate: format(date, "EEE"),
-      total: tickets?.filter(t => isSameDay(new Date(t.createdAt), date)).length ?? 0,
-    };
-  });
+  const totalTickets = useMemo(() => tickets?.length ?? 0, [tickets]);
+
+  const ticketVolumeData = useMemo(() => {
+    if (!tickets) return [];
+    return [...Array(7)].map((_, i) => {
+      const date = subDays(new Date(), 6 - i);
+      return {
+        date: format(date, "MMM d"),
+        shortDate: format(date, "EEE"),
+        total: tickets.filter(t => isSameDay(new Date(t.createdAt), date)).length,
+      };
+    });
+  }, [tickets]);
   
   const statusChartConfig: ChartConfig = {
     Open: { label: "Open", color: "hsl(var(--chart-1))" },
@@ -71,54 +73,60 @@ export default function AdminDashboardPage() {
     Closed: { label: "Closed", color: "hsl(var(--chart-3))" },
   };
 
-  const ticketStatusData = (Object.keys(statusChartConfig) as Array<keyof typeof statusChartConfig>).map(status => ({
-      status: status,
-      total: tickets?.filter(t => t.status === status).length ?? 0,
-      fill: statusChartConfig[status].color,
-    })
-  ).filter(d => d.total > 0);
-
+  const ticketStatusData = useMemo(() => {
+    if (!tickets) return [];
+    return (Object.keys(statusChartConfig) as Array<keyof typeof statusChartConfig>).map(status => ({
+        status: status,
+        total: tickets.filter(t => t.status === status).length,
+        fill: statusChartConfig[status].color,
+      })
+    ).filter(d => d.total > 0);
+  }, [tickets]);
 
   const volumeChartConfig: ChartConfig = {
-    total: {
-      label: "Tickets",
-      color: "hsl(var(--primary))",
-    },
+    total: { label: "Tickets", color: "hsl(var(--primary))" },
   };
-
-  // Staff workload charts
-  const staffHandlingData = dummyStaffMembers.map(staff => {
-    const assignedTickets = tickets?.filter(t => t.assignedTo === staff.name) ?? [];
-    return {
-      name: staff.name,
-      Open: assignedTickets.filter(t => t.status === 'Open').length,
-      InProgress: assignedTickets.filter(t => t.status === 'In Progress').length,
-    };
-  }).filter(d => d.Open > 0 || d.InProgress > 0);
 
   const handlingChartConfig: ChartConfig = {
     Open: { label: "Open", color: "hsl(var(--chart-1))" },
     InProgress: { label: "In Progress", color: "hsl(var(--chart-2))" },
   };
 
-  const staffClosedData = dummyStaffMembers.map(staff => {
-    const closedTickets = tickets?.filter(t => t.assignedTo === staff.name && t.status === 'Closed').length ?? 0;
-    return {
-      name: staff.name,
-      Closed: closedTickets,
-    };
-  }).filter(d => d.Closed > 0);
-
+  const staffHandlingData = useMemo(() => {
+    if (!tickets) return [];
+    return dummyStaffMembers.map(staff => {
+      const assignedTickets = tickets.filter(t => t.assignedTo === staff.name) ?? [];
+      return {
+        name: staff.name,
+        Open: assignedTickets.filter(t => t.status === 'Open').length,
+        InProgress: assignedTickets.filter(t => t.status === 'In Progress').length,
+      };
+    }).filter(d => d.Open > 0 || d.InProgress > 0);
+  }, [tickets]);
+  
   const closedChartConfig: ChartConfig = {
     Closed: { label: "Closed", color: "hsl(var(--chart-3))" },
   };
+
+  const staffClosedData = useMemo(() => {
+    if (!tickets) return [];
+    return dummyStaffMembers.map(staff => {
+      const closedTickets = tickets.filter(t => t.assignedTo === staff.name && t.status === 'Closed').length ?? 0;
+      return {
+        name: staff.name,
+        Closed: closedTickets,
+      };
+    }).filter(d => d.Closed > 0);
+  }, [tickets]);
   
-  if (isError) {
+  if (isErrorTickets || isErrorChats) {
     return (
         <div className="p-4 md:p-8 space-y-8 pb-20">
             <h1 className="text-3xl font-headline font-semibold">Admin Dashboard</h1>
-            <div className="mt-4 text-destructive">
-                Error loading dashboard data: {error?.message}
+            <div className="mt-4 text-destructive space-y-2">
+                <p className="font-bold">Error loading dashboard data:</p>
+                {isErrorTickets && <p className="text-sm">Tickets Error: {errorTickets?.message}</p>}
+                {isErrorChats && <p className="text-sm">Chats Error: {errorChats?.message}</p>}
             </div>
         </div>
     )
