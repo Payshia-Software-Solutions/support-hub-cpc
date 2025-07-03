@@ -122,3 +122,34 @@ export interface StudentSearchResult {
 }
 
 export type CreateAnnouncementPayload = Omit<Announcement, 'id' | 'date' | 'isNew' | 'seenCount' | 'author'>;
+
+export interface UserFullDetails {
+  id: string;
+  student_id: string;
+  username: string;
+  civil_status: string;
+  first_name: string;
+  last_name: string;
+  gender: string;
+  address_line_1: string;
+  address_line_2: string;
+  city: string;
+  district: string;
+  postal_code: string;
+  telephone_1: string;
+  telephone_2: string;
+  nic: string;
+  e_mail: string;
+  birth_day: string;
+  updated_by: string;
+  updated_at: string;
+  full_name: string;
+  name_with_initials: string;
+  name_on_certificate: string;
+}
+
+export interface UpdateCertificateNamePayload {
+  student_number: string;
+  name_on_certificate: string;
+  updated_by: string;
+}

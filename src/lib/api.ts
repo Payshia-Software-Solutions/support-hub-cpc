@@ -1,6 +1,7 @@
 
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload } from './types';
+
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -200,10 +201,10 @@ export const updateTicket = async (ticketData: UpdateTicketPayload): Promise<Tic
 };
 export const assignTicket = async (ticketId: string, assignedTo: string, assigneeAvatar: string, lockedByStaffId: string): Promise<Ticket> => {
   const apiPayload = {
-    assignedTo,
-    assigneeAvatar,
-    isLocked: 1, // Assignment always locks
-    lockedByStaffId,
+    assigned_to: assignedTo,
+    assignee_avatar: assigneeAvatar,
+    is_locked: 1, // Assignment always locks
+    locked_by_staff_id: lockedByStaffId,
   };
   const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketId}/assign`, {
     method: 'POST',
@@ -318,3 +319,32 @@ export const searchStudents = (query: string): Promise<StudentSearchResult[]> =>
     if (!query) return Promise.resolve([]);
     return apiFetch(`/students/search?query=${encodeURIComponent(query)}`);
 };
+
+// --- Bulk Name Update ---
+
+// Note: Using native fetch for different API base URL
+export const getAllUserFullDetails = async (): Promise<UserFullDetails[]> => {
+    const response = await fetch(`https://qa-api.pharmacollege.lk/userFullDetails`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch user details' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+}
+
+export const updateCertificateName = async (payload: UpdateCertificateNamePayload): Promise<any> => {
+    const { student_number } = payload;
+    const response = await fetch(`https://qa-api.pharmacollege.lk/userFullDetails/update-certificate-name/${student_number}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Update failed. Status: ${response.status}` }));
+        throw new Error(errorData.message || 'Update failed');
+    }
+    return response.json();
+}

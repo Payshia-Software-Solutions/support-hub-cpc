@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature } from "lucide-react";
 import Link from "next/link";
 
 const managementTasks = [
@@ -41,6 +41,12 @@ const managementTasks = [
     description: "Process and manage requests for certificates.",
     icon: <Award className="w-6 h-6 text-primary" />,
     href: "/admin/manage/certificate-orders",
+  },
+   {
+    title: "Bulk Name Update",
+    description: "Update student names on certificates in bulk.",
+    icon: <FileSignature className="w-6 h-6 text-primary" />,
+    href: "/admin/manage/bulk-name-update",
   },
   {
     title: "Password Reset",
