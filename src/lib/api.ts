@@ -3,7 +3,8 @@
 
 
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload } from './types';
+
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -348,6 +349,16 @@ export const updateCertificateName = async (payload: UpdateCertificateNamePayloa
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: `Update failed. Status: ${response.status}` }));
         throw new Error(errorData.message || 'Update failed');
+    }
+    return response.json();
+}
+
+// Convocation
+export const getConvocationRegistrations = async (): Promise<ConvocationRegistration[]> => {
+    const response = await fetch(`https://qa-api.pharmacollege.lk/convocation-registrations`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch convocation registrations' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
 }
