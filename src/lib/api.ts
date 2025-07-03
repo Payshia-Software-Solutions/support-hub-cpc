@@ -335,7 +335,7 @@ export const getAllUserFullDetails = async (): Promise<UserFullDetails[]> => {
 export const updateCertificateName = async (payload: UpdateCertificateNamePayload): Promise<any> => {
     const { student_number } = payload;
     const response = await fetch(`https://qa-api.pharmacollege.lk/userFullDetails/update-certificate-name/${student_number}`, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
         },
