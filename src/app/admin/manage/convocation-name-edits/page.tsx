@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
-import { Search, Save, Loader2 } from 'lucide-react';
+import { Search, Save, Loader2, AlertTriangle } from 'lucide-react';
+import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 25;
 
@@ -41,30 +42,43 @@ const EditableCell = ({ record, user, mutation }: { record: ConvocationRegistrat
     };
 
     const isPendingForThisRow = mutation.isPending && mutation.variables?.student_number === record.student_number;
+    const characterCount = name ? name.length : 0;
+    const isOverLimit = characterCount > 30;
 
     return (
-        <div className="flex items-center gap-2">
-            <Input
-                value={name}
-                onChange={(e) => {
-                    setName(e.target.value);
-                    setIsDirty(e.target.value !== record.name_on_certificate);
-                }}
-                className="flex-grow"
-                disabled={isPendingForThisRow}
-            />
-            <Button
-                size="icon"
-                onClick={handleSave}
-                disabled={!isDirty || isPendingForThisRow}
-                aria-label={`Save name for ${record.student_number}`}
-            >
-                {isPendingForThisRow ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                    <Save className="h-4 w-4" />
-                )}
-            </Button>
+        <div>
+            <div className="flex items-center gap-2">
+                <Input
+                    value={name}
+                    onChange={(e) => {
+                        setName(e.target.value);
+                        setIsDirty(e.target.value !== record.name_on_certificate);
+                    }}
+                    className={cn(
+                        "flex-grow",
+                        isOverLimit && "border-amber-500 focus-visible:ring-amber-500 text-amber-700"
+                    )}
+                    disabled={isPendingForThisRow}
+                />
+                <Button
+                    size="icon"
+                    onClick={handleSave}
+                    disabled={!isDirty || isPendingForThisRow}
+                    aria-label={`Save name for ${record.student_number}`}
+                >
+                    {isPendingForThisRow ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <Save className="h-4 w-4" />
+                    )}
+                </Button>
+            </div>
+             {isOverLimit && (
+                <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Warning: Name exceeds 30 characters ({characterCount}/30).
+                </p>
+            )}
         </div>
     );
 };
