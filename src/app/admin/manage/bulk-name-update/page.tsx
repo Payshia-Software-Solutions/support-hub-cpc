@@ -182,7 +182,8 @@ export default function BulkNameUpdatePage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="relative w-full overflow-auto border rounded-lg">
+                    {/* Desktop View */}
+                    <div className="relative w-full overflow-auto border rounded-lg hidden md:block">
                         <Table>
                             <TableHeader className="sticky top-0 bg-muted/50 z-10">
                                 <TableRow>
@@ -207,6 +208,30 @@ export default function BulkNameUpdatePage() {
                                 )}
                             </TableBody>
                         </Table>
+                    </div>
+
+                    {/* Mobile View */}
+                    <div className="md:hidden space-y-4">
+                        {paginatedStudents.length > 0 ? paginatedStudents.map((student) => (
+                             <div key={student.id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Username</p>
+                                    <p className="font-medium">{student.username}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Full Name</p>
+                                    <p className="font-medium">{student.full_name}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-1">Name on Certificate</p>
+                                    <EditableCell student={student} user={user} mutation={updateNameMutation} />
+                                </div>
+                            </div>
+                        )) : (
+                            <div className="text-center h-24 flex items-center justify-center">
+                                <p>No students found matching your search.</p>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
                  <CardFooter className="flex items-center justify-center space-x-2 pt-4">

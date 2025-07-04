@@ -195,6 +195,55 @@ export default function ConvocationNameEditsPage() {
             </div>
         )
     }
+    
+    const SmsAlert = ({ record }: { record: ConvocationRegistration }) => (
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button 
+                    variant="outline" 
+                    size="icon" 
+                    disabled={
+                        !record.telephone_1 || 
+                        (sendSmsMutation.isPending && sendSmsMutation.variables?.studenNumber === record.student_number)
+                    }
+                    aria-label={`Send SMS to ${record.student_number}`}
+                >
+                    {(sendSmsMutation.isPending && sendSmsMutation.variables?.studenNumber === record.student_number) ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <Send className="h-4 w-4" />
+                    )}
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm SMS</AlertDialogTitle>
+                    <AlertDialogDescription asChild>
+                        <div>
+                            <p>This will send the certificate name to the student.</p>
+                            <div className="mt-4 space-y-1 text-sm text-foreground">
+                                <p><strong>Student:</strong> {record.student_number}</p>
+                                <p><strong>Phone:</strong> {record.telephone_1}</p>
+                                <p><strong>Name:</strong> {record.name_on_certificate}</p>
+                            </div>
+                        </div>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => {
+                        sendSmsMutation.mutate({
+                            mobile: record.telephone_1!,
+                            studentNameOnCertificate: record.name_on_certificate,
+                            studenNumber: record.student_number,
+                        })
+                    }}>
+                        Send SMS
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -223,7 +272,8 @@ export default function ConvocationNameEditsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="relative w-full overflow-auto border rounded-lg">
+                    {/* Desktop View */}
+                    <div className="relative w-full overflow-auto border rounded-lg hidden md:block">
                         <Table>
                             <TableHeader className="sticky top-0 bg-muted/50 z-10">
                                 <TableRow>
@@ -240,52 +290,7 @@ export default function ConvocationNameEditsPage() {
                                             <EditableCell record={record} user={user} mutation={updateNameMutation} />
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button 
-                                                        variant="outline" 
-                                                        size="icon" 
-                                                        disabled={
-                                                            !record.telephone_1 || 
-                                                            (sendSmsMutation.isPending && sendSmsMutation.variables?.studenNumber === record.student_number)
-                                                        }
-                                                        aria-label={`Send SMS to ${record.student_number}`}
-                                                    >
-                                                        {(sendSmsMutation.isPending && sendSmsMutation.variables?.studenNumber === record.student_number) ? (
-                                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                                        ) : (
-                                                            <Send className="h-4 w-4" />
-                                                        )}
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Confirm SMS</AlertDialogTitle>
-                                                        <AlertDialogDescription asChild>
-                                                            <div>
-                                                                <p>This will send the certificate name to the student.</p>
-                                                                <div className="mt-4 space-y-1 text-sm text-foreground">
-                                                                    <p><strong>Student:</strong> {record.student_number}</p>
-                                                                    <p><strong>Phone:</strong> {record.telephone_1}</p>
-                                                                    <p><strong>Name:</strong> {record.name_on_certificate}</p>
-                                                                </div>
-                                                            </div>
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => {
-                                                            sendSmsMutation.mutate({
-                                                                mobile: record.telephone_1!,
-                                                                studentNameOnCertificate: record.name_on_certificate,
-                                                                studenNumber: record.student_number,
-                                                            })
-                                                        }}>
-                                                            Send SMS
-                                                        </AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
+                                            <SmsAlert record={record} />
                                         </TableCell>
                                     </TableRow>
                                 )) : (
@@ -295,6 +300,29 @@ export default function ConvocationNameEditsPage() {
                                 )}
                             </TableBody>
                         </Table>
+                    </div>
+                     {/* Mobile View */}
+                    <div className="md:hidden space-y-4">
+                        {paginatedRecords.length > 0 ? paginatedRecords.map((record) => (
+                            <div key={record.registration_id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Student Number</p>
+                                    <p className="font-medium">{record.student_number}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-1">Name on Certificate</p>
+                                    <EditableCell record={record} user={user} mutation={updateNameMutation} />
+                                </div>
+                                <div className="flex items-center justify-between pt-2 border-t mt-3">
+                                     <p className="text-sm text-muted-foreground">Send Name via SMS</p>
+                                    <SmsAlert record={record} />
+                                </div>
+                            </div>
+                        )) : (
+                            <div className="text-center h-24 flex items-center justify-center">
+                                <p>No records found matching your search.</p>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
                  <CardFooter className="flex items-center justify-center space-x-2 pt-4">

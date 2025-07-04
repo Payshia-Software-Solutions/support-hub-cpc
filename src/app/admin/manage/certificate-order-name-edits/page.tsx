@@ -243,7 +243,8 @@ export default function CertificateOrderNameEditsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="relative w-full overflow-auto border rounded-lg">
+                    {/* Desktop View */}
+                    <div className="relative w-full overflow-auto border rounded-lg hidden md:block">
                         <Table>
                             <TableHeader className="sticky top-0 bg-muted/50 z-10">
                                 <TableRow>
@@ -270,6 +271,32 @@ export default function CertificateOrderNameEditsPage() {
                                 )}
                             </TableBody>
                         </Table>
+                    </div>
+
+                    {/* Mobile View */}
+                    <div className="md:hidden space-y-4">
+                        {paginatedRecords.length > 0 ? paginatedRecords.map((record) => (
+                             <div key={record.id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Student Number</p>
+                                    <p className="font-medium">{record.created_by}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-1">Name on Certificate</p>
+                                    <EditableCell record={record} user={user} mutation={updateNameMutation} />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Convocation Status</p>
+                                    <div className="mt-1">
+                                        <ConvocationStatusCell studentNumber={record.created_by} />
+                                    </div>
+                                </div>
+                            </div>
+                        )) : (
+                            <div className="text-center h-24 flex items-center justify-center">
+                                <p>No records found matching your search.</p>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
                  <CardFooter className="flex items-center justify-center space-x-2 pt-4">
