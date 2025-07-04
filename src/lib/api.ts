@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload } from './types';
 
 // In a real app, you would move this to a .env file
@@ -15,7 +8,6 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
-      credentials: 'include', // Send cookies with cross-origin requests
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
