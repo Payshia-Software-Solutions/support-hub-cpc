@@ -4,17 +4,28 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getCertificateOrders, updateCertificateName } from '@/lib/api';
-import type { CertificateOrder, UpdateCertificateNamePayload } from '@/lib/types';
+import { getCertificateOrders, updateCertificateName, sendCertificateNameSms } from '@/lib/api';
+import type { CertificateOrder, UpdateCertificateNamePayload, SendSmsPayload } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
-import { Search, Save, Loader2, AlertTriangle } from 'lucide-react';
+import { Search, Save, Loader2, AlertTriangle, Send } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const ITEMS_PER_PAGE = 25;
 
@@ -170,6 +181,22 @@ export default function CertificateOrderNameEditsPage() {
         },
     });
 
+    const sendSmsMutation = useMutation({
+        mutationFn: (payload: SendSmsPayload) => sendCertificateNameSms(payload),
+        onSuccess: (data, variables) => {
+            toast({
+                title: 'SMS Sent!',
+                description: `Message sent to ${variables.studenNumber} successfully.`
+            });
+        },
+        onError: (error: Error, variables) => {
+            toast({
+                variant: 'destructive',
+                title: 'SMS Failed',
+                description: `Could not send SMS to ${variables.studenNumber}: ${error.message}`
+            })
+        }
+    });
 
     const filteredRecords = useMemo(() => {
         if (!records) return [];
@@ -193,6 +220,54 @@ export default function CertificateOrderNameEditsPage() {
         );
     }, [filteredRecords, currentPage]);
 
+    const SmsAlert = ({ record }: { record: CertificateOrder }) => (
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button 
+                    variant="outline" 
+                    size="icon" 
+                    disabled={
+                        !record.mobile || 
+                        (sendSmsMutation.isPending && sendSmsMutation.variables?.studenNumber === record.created_by)
+                    }
+                    aria-label={`Send SMS to ${record.created_by}`}
+                >
+                    {(sendSmsMutation.isPending && sendSmsMutation.variables?.studenNumber === record.created_by) ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <Send className="h-4 w-4" />
+                    )}
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm SMS</AlertDialogTitle>
+                    <AlertDialogDescription asChild>
+                        <div>
+                            <p>This will send the certificate name to the student.</p>
+                            <div className="mt-4 space-y-1 text-sm text-foreground">
+                                <p><strong>Student:</strong> {record.created_by}</p>
+                                <p><strong>Phone:</strong> {record.mobile}</p>
+                                <p><strong>Name:</strong> {record.name_on_certificate}</p>
+                            </div>
+                        </div>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => {
+                        sendSmsMutation.mutate({
+                            mobile: record.mobile,
+                            studentNameOnCertificate: record.name_on_certificate,
+                            studenNumber: record.created_by,
+                        })
+                    }}>
+                        Send SMS
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
 
     if (isLoading) {
         return (
@@ -251,6 +326,7 @@ export default function CertificateOrderNameEditsPage() {
                                     <TableHead className="w-[150px]">Student Number</TableHead>
                                     <TableHead>Name on Certificate</TableHead>
                                     <TableHead>Convocation Status</TableHead>
+                                    <TableHead className="w-[100px] text-center">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -263,10 +339,13 @@ export default function CertificateOrderNameEditsPage() {
                                         <TableCell>
                                             <ConvocationStatusCell studentNumber={record.created_by} />
                                         </TableCell>
+                                        <TableCell className="text-center">
+                                            <SmsAlert record={record} />
+                                        </TableCell>
                                     </TableRow>
                                 )) : (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="text-center h-24">No records found matching your search.</TableCell>
+                                        <TableCell colSpan={4} className="text-center h-24">No records found matching your search.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
@@ -290,6 +369,10 @@ export default function CertificateOrderNameEditsPage() {
                                     <div className="mt-1">
                                         <ConvocationStatusCell studentNumber={record.created_by} />
                                     </div>
+                                </div>
+                                <div className="flex items-center justify-between pt-2 border-t mt-3">
+                                     <p className="text-sm text-muted-foreground">Send Name via SMS</p>
+                                    <SmsAlert record={record} />
                                 </div>
                             </div>
                         )) : (
@@ -324,3 +407,5 @@ export default function CertificateOrderNameEditsPage() {
         </div>
     );
 }
+
+    
