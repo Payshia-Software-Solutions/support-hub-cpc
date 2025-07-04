@@ -2,6 +2,7 @@
 
 
 
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -187,6 +188,7 @@ export interface ConvocationRegistration {
     package_created_at: string;
     package_updated_at: string;
     name_on_certificate: string;
+    telephone_1?: string;
 }
 
 export interface CertificateOrder {
@@ -208,4 +210,10 @@ export interface CertificateOrder {
   cod_amount: string;
   is_active: string;
   name_on_certificate: string;
+}
+
+export interface SendSmsPayload {
+  mobile: string;
+  studentNameOnCertificate: string;
+  studenNumber: string;
 }

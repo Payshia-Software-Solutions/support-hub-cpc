@@ -4,16 +4,27 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getConvocationRegistrations, updateCertificateName } from '@/lib/api';
-import type { ConvocationRegistration, UpdateCertificateNamePayload } from '@/lib/types';
+import { getConvocationRegistrations, updateCertificateName, sendCertificateNameSms } from '@/lib/api';
+import type { ConvocationRegistration, UpdateCertificateNamePayload, SendSmsPayload } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
-import { Search, Save, Loader2, AlertTriangle } from 'lucide-react';
+import { Search, Save, Loader2, AlertTriangle, Send } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const ITEMS_PER_PAGE = 25;
 
@@ -121,6 +132,23 @@ export default function ConvocationNameEditsPage() {
         },
     });
 
+    const sendSmsMutation = useMutation({
+        mutationFn: (payload: SendSmsPayload) => sendCertificateNameSms(payload),
+        onSuccess: (data, variables) => {
+            toast({
+                title: 'SMS Sent!',
+                description: `Message sent to ${variables.studenNumber} successfully.`
+            });
+        },
+        onError: (error: Error, variables) => {
+            toast({
+                variant: 'destructive',
+                title: 'SMS Failed',
+                description: `Could not send SMS to ${variables.studenNumber}: ${error.message}`
+            })
+        }
+    });
+
 
     const filteredRecords = useMemo(() => {
         if (!records) return [];
@@ -201,6 +229,7 @@ export default function ConvocationNameEditsPage() {
                                 <TableRow>
                                     <TableHead className="w-[150px]">Student Number</TableHead>
                                     <TableHead>Name on Certificate</TableHead>
+                                    <TableHead className="w-[100px] text-center">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -210,10 +239,58 @@ export default function ConvocationNameEditsPage() {
                                         <TableCell>
                                             <EditableCell record={record} user={user} mutation={updateNameMutation} />
                                         </TableCell>
+                                        <TableCell className="text-center">
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="icon" 
+                                                        disabled={
+                                                            !record.telephone_1 || 
+                                                            (sendSmsMutation.isPending && sendSmsMutation.variables?.studenNumber === record.student_number)
+                                                        }
+                                                        aria-label={`Send SMS to ${record.student_number}`}
+                                                    >
+                                                        {(sendSmsMutation.isPending && sendSmsMutation.variables?.studenNumber === record.student_number) ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Send className="h-4 w-4" />
+                                                        )}
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Confirm SMS</AlertDialogTitle>
+                                                        <AlertDialogDescription asChild>
+                                                            <div>
+                                                                <p>This will send the certificate name to the student.</p>
+                                                                <div className="mt-4 space-y-1 text-sm text-foreground">
+                                                                    <p><strong>Student:</strong> {record.student_number}</p>
+                                                                    <p><strong>Phone:</strong> {record.telephone_1}</p>
+                                                                    <p><strong>Name:</strong> {record.name_on_certificate}</p>
+                                                                </div>
+                                                            </div>
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => {
+                                                            sendSmsMutation.mutate({
+                                                                mobile: record.telephone_1!,
+                                                                studentNameOnCertificate: record.name_on_certificate,
+                                                                studenNumber: record.student_number,
+                                                            })
+                                                        }}>
+                                                            Send SMS
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </TableCell>
                                     </TableRow>
                                 )) : (
                                     <TableRow>
-                                        <TableCell colSpan={2} className="text-center h-24">No records found matching your search.</TableCell>
+                                        <TableCell colSpan={3} className="text-center h-24">No records found matching your search.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>

@@ -5,7 +5,8 @@
 
 
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder } from './types';
+
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -370,6 +371,21 @@ export const getCertificateOrders = async (): Promise<CertificateOrder[]> => {
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch certificate orders' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+}
+
+export const sendCertificateNameSms = async (payload: SendSmsPayload): Promise<any> => {
+    const response = await fetch(`https://qa-api.pharmacollege.lk/send-name-sms`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `SMS sending failed. Status: ${response.status}` }));
+        throw new Error(errorData.message || 'SMS sending failed');
     }
     return response.json();
 }
