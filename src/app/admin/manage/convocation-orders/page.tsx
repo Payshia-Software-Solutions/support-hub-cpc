@@ -1,18 +1,107 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getCoursesForFilter, getFilteredConvocationRegistrations } from '@/lib/api';
-import type { ConvocationCourse, FilteredConvocationRegistration } from '@/lib/types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getCoursesForFilter, getFilteredConvocationRegistrations, getStudentFullInfo } from '@/lib/api';
+import type { ConvocationCourse, FilteredConvocationRegistration, FullStudentData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, ClipboardList } from 'lucide-react';
+import { AlertTriangle, ClipboardList, Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const ITEMS_PER_PAGE = 25;
+
+// --- Action Component ---
+const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocationRegistration }) => {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [dialogContent, setDialogContent] = useState<{ title: string, description: string, onConfirm?: () => void }>({});
+
+    const { mutate, isPending } = useMutation({
+        mutationFn: () => getStudentFullInfo(registration.student_number),
+        onSuccess: (data: FullStudentData) => {
+            const currentCourses = registration.course_id.split(',').map(s => s.trim()).filter(Boolean);
+            const allEligibleCourses = Object.values(data.studentEnrollments)
+                .filter(e => e.certificate_eligibility)
+                .map(e => e.parent_course_id);
+            
+            const newEligibleCourses = allEligibleCourses.filter(id => !currentCourses.includes(id));
+
+            if (newEligibleCourses.length > 0) {
+                const newCourseString = [...currentCourses, ...newEligibleCourses].join(',');
+                setDialogContent({
+                    title: "Update Available",
+                    description: `This student is also eligible for course(s) ${newEligibleCourses.join(', ')}. Do you want to add them to this convocation booking?`,
+                    onConfirm: () => {
+                        // Mock API call to update the registration
+                        console.log(`UPDATING registration ${registration.registration_id} with new course list: ${newCourseString}`);
+                        toast({
+                            title: "Update Successful",
+                            description: `Registration updated for ${registration.student_number} with new courses.`,
+                        });
+                        setIsDialogOpen(false);
+                    }
+                });
+                setIsDialogOpen(true);
+            } else {
+                toast({
+                    title: "No Updates Needed",
+                    description: "Student is already registered for all eligible courses.",
+                });
+            }
+        },
+        onError: (error: Error) => {
+            toast({
+                variant: 'destructive',
+                title: 'Error Checking Eligibility',
+                description: error.message,
+            });
+        }
+    });
+
+    return (
+        <>
+            <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{dialogContent.title}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {dialogContent.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={dialogContent.onConfirm}>Update Booking</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => mutate()}
+                disabled={isPending}
+            >
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Courses
+            </Button>
+        </>
+    );
+};
+
 
 export default function ConvocationOrdersPage() {
     const [selectedCourse, setSelectedCourse] = useState<string>('');
@@ -150,9 +239,8 @@ export default function ConvocationOrdersPage() {
                                             <TableHead>Student Number</TableHead>
                                             <TableHead>Ceremony Number</TableHead>
                                             <TableHead>Certificate Status</TableHead>
-                                            <TableHead>Certificate ID</TableHead>
                                             <TableHead>Advanced Cert. Status</TableHead>
-                                            <TableHead>Advanced ID</TableHead>
+                                            <TableHead>Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -161,9 +249,10 @@ export default function ConvocationOrdersPage() {
                                                 <TableCell className="font-medium">{reg.student_number}</TableCell>
                                                 <TableCell>{reg.ceremony_number}</TableCell>
                                                 <TableCell>{renderStatusBadge(reg.certificate_print_status)}</TableCell>
-                                                <TableCell>{reg.certificate_id || 'N/A'}</TableCell>
                                                 <TableCell>{renderStatusBadge(reg.advanced_print_status)}</TableCell>
-                                                <TableCell>{reg.advanced_id || 'N/A'}</TableCell>
+                                                <TableCell>
+                                                    <UpdateCoursesAction registration={reg} />
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -179,18 +268,17 @@ export default function ConvocationOrdersPage() {
                                             <p className="text-sm text-muted-foreground">Ceremony: {reg.ceremony_number}</p>
                                         </div>
                                         <div className="text-sm space-y-2 pt-2 border-t">
-                                            <p><strong className="text-foreground">Certificate:</strong> {reg.certificate_id || 'N/A'}</p>
                                             <div className="flex items-center justify-between">
-                                                <p className="text-muted-foreground">Status</p>
+                                                <p className="text-muted-foreground">Certificate Status</p>
                                                 {renderStatusBadge(reg.certificate_print_status)}
                                             </div>
-                                        </div>
-                                         <div className="text-sm space-y-2 pt-2 border-t">
-                                            <p><strong className="text-foreground">Advanced Cert:</strong> {reg.advanced_id || 'N/A'}</p>
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-muted-foreground">Status</p>
+                                             <div className="flex items-center justify-between">
+                                                <p className="text-muted-foreground">Advanced Cert. Status</p>
                                                 {renderStatusBadge(reg.advanced_print_status)}
                                             </div>
+                                        </div>
+                                        <div className="pt-2 border-t">
+                                            <UpdateCoursesAction registration={reg} />
                                         </div>
                                     </div>
                                 ))}

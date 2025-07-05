@@ -1,3 +1,4 @@
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -240,4 +241,38 @@ export interface FilteredConvocationRegistration {
   advanced_print_status: string;
   certificate_id: string;
   advanced_id: string;
+}
+
+// Types for Student Full Info API
+interface StudentInfo {
+    id: string;
+    student_id: string;
+    username: string;
+    full_name: string;
+    e_mail: string;
+    telephone_1: string;
+    nic: string;
+}
+interface CriteriaDetail {
+    id: string;
+    list_name: string;
+    moq: string;
+    evaluation: {
+        completed: boolean;
+        currentValue: number;
+        requiredValue: number;
+    };
+}
+interface StudentEnrollment {
+    id: string;
+    course_code: string;
+    parent_course_id: string;
+    batch_name: string;
+    parent_course_name: string;
+    certificate_eligibility: boolean;
+    criteria_details: CriteriaDetail[];
+}
+export interface FullStudentData {
+    studentInfo: StudentInfo;
+    studentEnrollments: Record<string, StudentEnrollment>;
 }

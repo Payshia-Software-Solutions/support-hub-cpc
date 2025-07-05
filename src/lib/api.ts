@@ -1,4 +1,5 @@
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration } from './types';
+
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -398,4 +399,17 @@ export const getFilteredConvocationRegistrations = async (courseCode: string, se
         throw new Error('Failed to fetch filtered convocation registrations');
     }
     return response.json();
+};
+
+export const getStudentFullInfo = async (studentNumber: string): Promise<FullStudentData> => {
+    const response = await fetch(`https://qa-api.pharmacollege.lk/get-student-full-info?loggedUser=${studentNumber.trim().toUpperCase()}`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Student full info not found for ${studentNumber}` }));
+        throw new Error(errorData.message || 'Failed to fetch student full info');
+    }
+    const data = await response.json();
+    if (!data.studentInfo || !data.studentEnrollments) {
+        throw new Error('Incomplete student data received from API');
+    }
+    return data as FullStudentData;
 };
