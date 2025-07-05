@@ -45,9 +45,6 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
             );
 
             if (newEligibleEnrollments.length > 0) {
-                const newEligibleCourseIds = newEligibleEnrollments.map(e => e.parent_course_id);
-                const newCourseString = [...currentCourses, ...newEligibleCourseIds].join(',');
-                
                 setDialogContent({
                     title: "Update Available",
                     description: (
@@ -75,9 +72,15 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
                         </div>
                     ),
                     onConfirm: () => {
+                        const newEligibleCourseIds = newEligibleEnrollments.map(e => e.parent_course_id);
+                        const allCourseIds = [...currentCourses, ...newEligibleCourseIds];
+                        const allCourseIdsAsNumbers = allCourseIds
+                            .map(id => parseInt(id, 10))
+                            .filter(id => !isNaN(id));
+
                         updateCourses({
-                            registrationId: registration.registration_id,
-                            courseIds: newCourseString,
+                            studentNumber: registration.student_number,
+                            courseIds: allCourseIdsAsNumbers,
                         });
                     }
                 });

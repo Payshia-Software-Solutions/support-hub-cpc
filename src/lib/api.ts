@@ -414,24 +414,20 @@ export const getStudentFullInfo = async (studentNumber: string): Promise<FullStu
     return data as FullStudentData;
 };
 
-// Mock function to update convocation courses
-export const updateConvocationCourses = async (payload: UpdateConvocationCoursesPayload): Promise<{ success: boolean; message: string }> => {
-    // In a real application, this would be a PUT or POST request to your backend
-    // For example:
-    // const response = await fetch(`https://qa-api.pharmacollege.lk/convocation-registrations/${payload.registrationId}/courses`, {
-    //   method: 'PUT',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ course_id: payload.courseIds })
-    // });
-    // if (!response.ok) {
-    //    const errorData = await response.json();
-    //    throw new Error(errorData.message || 'Failed to update courses');
-    // }
-    // return response.json();
+// Function to update convocation courses
+export const updateConvocationCourses = async (payload: UpdateConvocationCoursesPayload): Promise<{ status: string; message: string; registration_id: string; }> => {
+    const { studentNumber, courseIds } = payload;
+    const response = await fetch(`https://qa-api.pharmacollege.lk/convocation-registrations/update-courses/${studentNumber}/`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ course_id: courseIds })
+    });
 
-    console.log("MOCK API CALL: Updating convocation courses", payload);
-    // Simulate a successful API response
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-    
-    return { success: true, message: `Courses for registration ${payload.registrationId} updated successfully.` };
+    if (!response.ok) {
+       const errorData = await response.json().catch(() => ({ error: `Failed to update courses. Status: ${response.status}` }));
+       throw new Error(errorData.error || 'Failed to update courses');
+    }
+    return response.json();
 };
