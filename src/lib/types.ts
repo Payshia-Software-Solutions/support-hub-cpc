@@ -278,6 +278,6 @@ export interface FullStudentData {
 }
 
 export interface UpdateConvocationCoursesPayload {
-  studentNumber: string;
+  registrationId: string;
   courseIds: number[];
 }

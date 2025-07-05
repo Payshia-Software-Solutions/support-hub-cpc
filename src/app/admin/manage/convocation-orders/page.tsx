@@ -79,7 +79,7 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
                             .filter(id => !isNaN(id));
 
                         updateCourses({
-                            studentNumber: registration.student_number,
+                            registrationId: registration.registration_id,
                             courseIds: allCourseIdsAsNumbers,
                         });
                     }

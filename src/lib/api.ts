@@ -416,8 +416,8 @@ export const getStudentFullInfo = async (studentNumber: string): Promise<FullStu
 
 // Function to update convocation courses
 export const updateConvocationCourses = async (payload: UpdateConvocationCoursesPayload): Promise<{ status: string; message: string; registration_id: string; }> => {
-    const { studentNumber, courseIds } = payload;
-    const response = await fetch(`https://qa-api.pharmacollege.lk/convocation-registrations/update-courses/${studentNumber}/`, {
+    const { registrationId, courseIds } = payload;
+    const response = await fetch(`https://qa-api.pharmacollege.lk/convocation-registrations/update-courses/${registrationId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
