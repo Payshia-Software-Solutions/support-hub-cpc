@@ -47,7 +47,9 @@ const CertificateStatusCell = ({ studentNumber, convocationCourseIds }: { studen
         return <Badge variant="destructive">Error</Badge>;
     }
 
-    const relevantCertificates = certificates?.filter(cert => relevantCourseIds.includes(cert.parent_course_id)) || [];
+    const relevantCertificates = certificates?.filter(
+        cert => relevantCourseIds.includes(cert.parent_course_id) && cert.type === 'Certificate'
+    ) || [];
 
     if (relevantCertificates.length === 0) {
         return <Badge variant="secondary">None</Badge>;
@@ -60,12 +62,13 @@ const CertificateStatusCell = ({ studentNumber, convocationCourseIds }: { studen
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Badge variant={cert.print_status === '1' ? 'default' : 'secondary'}>
-                                {cert.type.charAt(0)}: {cert.certificate_id}
+                                {cert.parent_course_id}: {cert.certificate_id}
                             </Badge>
                         </TooltipTrigger>
                         <TooltipContent>
+                            <p>Course ID: {cert.parent_course_id}</p>
                             <p>{cert.type}: {cert.certificate_id}</p>
-                            <p>Course: {cert.course_code}</p>
+                            <p>Course Code: {cert.course_code}</p>
                             <p>Status: {cert.print_status === '1' ? 'Printed' : 'Not Printed'}</p>
                             <p>Date: {new Date(cert.print_date).toLocaleDateString()}</p>
                         </TooltipContent>
@@ -405,5 +408,3 @@ export default function ConvocationOrdersPage() {
         </div>
     );
 }
-
-    
