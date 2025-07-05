@@ -276,3 +276,8 @@ export interface FullStudentData {
     studentInfo: StudentInfo;
     studentEnrollments: Record<string, StudentEnrollment>;
 }
+
+export interface UpdateConvocationCoursesPayload {
+  registrationId: string;
+  courseIds: string;
+}

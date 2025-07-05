@@ -3,8 +3,8 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCoursesForFilter, getFilteredConvocationRegistrations, getStudentFullInfo } from '@/lib/api';
-import type { ConvocationCourse, FilteredConvocationRegistration, FullStudentData } from '@/lib/types';
+import { getCoursesForFilter, getFilteredConvocationRegistrations, getStudentFullInfo, updateConvocationCourses } from '@/lib/api';
+import type { ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -30,8 +30,9 @@ const ITEMS_PER_PAGE = 25;
 const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocationRegistration }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [dialogContent, setDialogContent] = useState<{ title: string, description: string, onConfirm?: () => void }>({});
+    const queryClient = useQueryClient();
 
-    const { mutate, isPending } = useMutation({
+    const { mutate: checkEligibility, isPending: isChecking } = useMutation<FullStudentData, Error>({
         mutationFn: () => getStudentFullInfo(registration.student_number),
         onSuccess: (data: FullStudentData) => {
             const currentCourses = registration.course_id.split(',').map(s => s.trim()).filter(Boolean);
@@ -47,13 +48,10 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
                     title: "Update Available",
                     description: `This student is also eligible for course(s) ${newEligibleCourses.join(', ')}. Do you want to add them to this convocation booking?`,
                     onConfirm: () => {
-                        // Mock API call to update the registration
-                        console.log(`UPDATING registration ${registration.registration_id} with new course list: ${newCourseString}`);
-                        toast({
-                            title: "Update Successful",
-                            description: `Registration updated for ${registration.student_number} with new courses.`,
+                        updateCourses({
+                            registrationId: registration.registration_id,
+                            courseIds: newCourseString,
                         });
-                        setIsDialogOpen(false);
                     }
                 });
                 setIsDialogOpen(true);
@@ -73,6 +71,26 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
         }
     });
 
+    const { mutate: updateCourses, isPending: isUpdating } = useMutation({
+        mutationFn: (payload: UpdateConvocationCoursesPayload) => updateConvocationCourses(payload),
+        onSuccess: (data) => {
+            toast({
+                title: "Update Successful",
+                description: data.message,
+            });
+            queryClient.invalidateQueries({ queryKey: ['filteredConvocation'] });
+            setIsDialogOpen(false);
+        },
+        onError: (error: Error) => {
+            toast({
+                variant: 'destructive',
+                title: 'Update Failed',
+                description: error.message,
+            });
+        }
+    });
+
+
     return (
         <>
             <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -84,18 +102,21 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={dialogContent.onConfirm}>Update Booking</AlertDialogAction>
+                        <AlertDialogCancel disabled={isUpdating}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={dialogContent.onConfirm} disabled={isUpdating}>
+                            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Update Booking
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
             <Button
                 variant="outline"
                 size="sm"
-                onClick={() => mutate()}
-                disabled={isPending}
+                onClick={() => checkEligibility()}
+                disabled={isChecking}
             >
-                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isChecking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Update Courses
             </Button>
         </>
@@ -213,7 +234,7 @@ export default function ConvocationOrdersPage() {
                         </div>
                     )}
 
-                    {!isLoadingRegistrations && !isFetching && !isError && !registrations && (
+                    {!isLoadingRegistrations && !isFetching && !registrations && (
                         <div className="text-muted-foreground flex flex-col items-center justify-center p-8 text-center">
                             <ClipboardList className="h-10 w-10 mb-4" />
                             <h3 className="text-lg font-semibold">Select filters to begin</h3>

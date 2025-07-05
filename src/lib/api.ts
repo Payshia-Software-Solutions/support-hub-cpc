@@ -1,5 +1,5 @@
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -412,4 +412,26 @@ export const getStudentFullInfo = async (studentNumber: string): Promise<FullStu
         throw new Error('Incomplete student data received from API');
     }
     return data as FullStudentData;
+};
+
+// Mock function to update convocation courses
+export const updateConvocationCourses = async (payload: UpdateConvocationCoursesPayload): Promise<{ success: boolean; message: string }> => {
+    // In a real application, this would be a PUT or POST request to your backend
+    // For example:
+    // const response = await fetch(`https://qa-api.pharmacollege.lk/convocation-registrations/${payload.registrationId}/courses`, {
+    //   method: 'PUT',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ course_id: payload.courseIds })
+    // });
+    // if (!response.ok) {
+    //    const errorData = await response.json();
+    //    throw new Error(errorData.message || 'Failed to update courses');
+    // }
+    // return response.json();
+
+    console.log("MOCK API CALL: Updating convocation courses", payload);
+    // Simulate a successful API response
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    
+    return { success: true, message: `Courses for registration ${payload.registrationId} updated successfully.` };
 };
