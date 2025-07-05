@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, ClipboardList, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ClipboardList, Loader2, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -29,24 +29,51 @@ const ITEMS_PER_PAGE = 25;
 // --- Action Component ---
 const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocationRegistration }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [dialogContent, setDialogContent] = useState<{ title: string, description: string, onConfirm?: () => void }>({});
+    const [dialogContent, setDialogContent] = useState<{ title: string, description: React.ReactNode, onConfirm?: () => void }>({});
     const queryClient = useQueryClient();
 
     const { mutate: checkEligibility, isPending: isChecking } = useMutation<FullStudentData, Error>({
         mutationFn: () => getStudentFullInfo(registration.student_number),
         onSuccess: (data: FullStudentData) => {
             const currentCourses = registration.course_id.split(',').map(s => s.trim()).filter(Boolean);
-            const allEligibleCourses = Object.values(data.studentEnrollments)
-                .filter(e => e.certificate_eligibility)
-                .map(e => e.parent_course_id);
             
-            const newEligibleCourses = allEligibleCourses.filter(id => !currentCourses.includes(id));
+            const allEligibleEnrollments = Object.values(data.studentEnrollments)
+                .filter(e => e.certificate_eligibility);
 
-            if (newEligibleCourses.length > 0) {
-                const newCourseString = [...currentCourses, ...newEligibleCourses].join(',');
+            const newEligibleEnrollments = allEligibleEnrollments.filter(enrollment => 
+                !currentCourses.includes(enrollment.parent_course_id)
+            );
+
+            if (newEligibleEnrollments.length > 0) {
+                const newEligibleCourseIds = newEligibleEnrollments.map(e => e.parent_course_id);
+                const newCourseString = [...currentCourses, ...newEligibleCourseIds].join(',');
+                
                 setDialogContent({
                     title: "Update Available",
-                    description: `This student is also eligible for course(s) ${newEligibleCourses.join(', ')}. Do you want to add them to this convocation booking?`,
+                    description: (
+                        <div>
+                            <p className="mb-3">This student is eligible for the following additional course(s). Do you want to add them to this convocation booking?</p>
+                            <div className="space-y-4 rounded-md border bg-muted/50 p-3 max-h-60 overflow-y-auto">
+                                {newEligibleEnrollments.map(enrollment => (
+                                    <div key={enrollment.parent_course_id}>
+                                        <h4 className="font-semibold text-card-foreground">{enrollment.parent_course_name}</h4>
+                                        <ul className="mt-1 list-disc list-inside text-xs text-muted-foreground space-y-1 pl-2">
+                                            {enrollment.criteria_details.map(c => (
+                                                <li key={c.id} className="flex items-center justify-between">
+                                                    <span>{c.list_name}</span>
+                                                    {c.evaluation.completed ? (
+                                                         <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5" /> Complete</span>
+                                                    ) : (
+                                                         <span className="text-red-600 font-medium flex items-center gap-1"><XCircle className="h-3.5 w-3.5" /> Incomplete</span>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ),
                     onConfirm: () => {
                         updateCourses({
                             registrationId: registration.registration_id,
