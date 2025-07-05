@@ -27,9 +27,10 @@ import {
 const ITEMS_PER_PAGE = 25;
 
 // --- Action Component ---
-const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocationRegistration }) => {
+const EligibilityCellAction = ({ registration }: { registration: FilteredConvocationRegistration }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [dialogContent, setDialogContent] = useState<{ title: string, description: React.ReactNode, onConfirm?: () => void }>({});
+    const [eligibilityStatus, setEligibilityStatus] = useState<'idle' | 'upToDate' | 'updateAvailable' | 'error'>('idle');
     const queryClient = useQueryClient();
 
     const { mutate: checkEligibility, isPending: isChecking } = useMutation<FullStudentData, Error>({
@@ -45,6 +46,7 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
             );
 
             if (newEligibleEnrollments.length > 0) {
+                setEligibilityStatus('updateAvailable');
                 setDialogContent({
                     title: "Update Available",
                     description: (
@@ -84,8 +86,8 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
                         });
                     }
                 });
-                setIsDialogOpen(true);
             } else {
+                setEligibilityStatus('upToDate');
                 toast({
                     title: "No Updates Needed",
                     description: "Student is already registered for all eligible courses.",
@@ -93,6 +95,7 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
             }
         },
         onError: (error: Error) => {
+            setEligibilityStatus('error');
             toast({
                 variant: 'destructive',
                 title: 'Error Checking Eligibility',
@@ -110,6 +113,7 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
             });
             queryClient.invalidateQueries({ queryKey: ['filteredConvocation'] });
             setIsDialogOpen(false);
+            setEligibilityStatus('upToDate'); // After a successful update
         },
         onError: (error: Error) => {
             toast({
@@ -119,6 +123,29 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
             });
         }
     });
+
+    const renderCellContent = () => {
+        if (isChecking) {
+             return (
+                <div className="flex items-center gap-2 text-muted-foreground" aria-live="polite">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Checking...</span>
+                </div>
+            );
+        }
+
+        switch(eligibilityStatus) {
+            case 'upToDate':
+                return <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">Up to date</Badge>;
+            case 'updateAvailable':
+                return <Button variant="default" size="sm" onClick={() => setIsDialogOpen(true)}>Update Available</Button>;
+            case 'error':
+                 return <Button variant="destructive" size="sm" onClick={() => checkEligibility()}>Check Failed</Button>
+            case 'idle':
+            default:
+                return <Button variant="outline" size="sm" onClick={() => checkEligibility()}>Check Eligibility</Button>;
+        }
+    };
 
 
     return (
@@ -140,15 +167,7 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={() => checkEligibility()}
-                disabled={isChecking}
-            >
-                {isChecking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Update Courses
-            </Button>
+            {renderCellContent()}
         </>
     );
 };
@@ -288,23 +307,21 @@ export default function ConvocationOrdersPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Student Number</TableHead>
-                                            <TableHead>Ceremony Number</TableHead>
                                             <TableHead>Course IDs</TableHead>
                                             <TableHead>Certificate Status</TableHead>
                                             <TableHead>Advanced Cert. Status</TableHead>
-                                            <TableHead>Actions</TableHead>
+                                            <TableHead>Eligibility Status</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {paginatedRegistrations.map(reg => (
                                             <TableRow key={reg.registration_id}>
                                                 <TableCell className="font-medium">{reg.student_number}</TableCell>
-                                                <TableCell>{reg.ceremony_number}</TableCell>
                                                 <TableCell>{reg.course_id}</TableCell>
                                                 <TableCell>{renderStatusBadge(reg.certificate_print_status)}</TableCell>
                                                 <TableCell>{renderStatusBadge(reg.advanced_print_status)}</TableCell>
                                                 <TableCell>
-                                                    <UpdateCoursesAction registration={reg} />
+                                                    <EligibilityCellAction registration={reg} />
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -318,7 +335,6 @@ export default function ConvocationOrdersPage() {
                                     <div key={reg.registration_id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
                                         <div>
                                             <p className="font-bold">{reg.student_number}</p>
-                                            <p className="text-sm text-muted-foreground">Ceremony: {reg.ceremony_number}</p>
                                             <p className="text-sm text-muted-foreground">Course IDs: {reg.course_id}</p>
                                         </div>
                                         <div className="text-sm space-y-2 pt-2 border-t">
@@ -332,7 +348,7 @@ export default function ConvocationOrdersPage() {
                                             </div>
                                         </div>
                                         <div className="pt-2 border-t">
-                                            <UpdateCoursesAction registration={reg} />
+                                            <EligibilityCellAction registration={reg} />
                                         </div>
                                     </div>
                                 ))}
@@ -351,3 +367,5 @@ export default function ConvocationOrdersPage() {
         </div>
     );
 }
+
+    
