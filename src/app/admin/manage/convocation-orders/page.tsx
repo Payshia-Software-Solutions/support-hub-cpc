@@ -37,6 +37,7 @@ const EligibilityStatusCell = ({ registration }: { registration: FilteredConvoca
         queryFn: () => getStudentFullInfo(registration.student_number),
         staleTime: 5 * 60 * 1000,
         retry: 1,
+        enabled: true, // Auto-fetch on render
     });
 
     const { newEligibleEnrollments, isUpdateAvailable } = useMemo(() => {
