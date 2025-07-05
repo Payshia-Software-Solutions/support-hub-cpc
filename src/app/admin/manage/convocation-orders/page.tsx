@@ -32,11 +32,11 @@ const EligibilityStatusCell = ({ registration }: { registration: FilteredConvoca
     const [dialogContent, setDialogContent] = useState<{ title: string, description: React.ReactNode, onConfirm?: () => void }>({});
     const queryClient = useQueryClient();
 
-    const { data: fullStudentData, isLoading, isError } = useQuery<FullStudentData, Error>({
+    const { data: fullStudentData, isLoading, isError, isFetching } = useQuery<FullStudentData, Error>({
         queryKey: ['studentFullInfo', registration.student_number],
         queryFn: () => getStudentFullInfo(registration.student_number),
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        retry: 1, // Don't retry aggressively on error for this
+        staleTime: 5 * 60 * 1000,
+        retry: 1,
     });
 
     const { newEligibleEnrollments, isUpdateAvailable } = useMemo(() => {
@@ -122,7 +122,7 @@ const EligibilityStatusCell = ({ registration }: { registration: FilteredConvoca
         setIsDialogOpen(true);
     };
 
-    if (isLoading) {
+    if (isLoading || isFetching) {
         return (
             <div className="flex items-center gap-2 text-muted-foreground" aria-live="polite">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -298,6 +298,7 @@ export default function ConvocationOrdersPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Student Number</TableHead>
+                                            <TableHead>Ceremony #</TableHead>
                                             <TableHead>Course IDs</TableHead>
                                             <TableHead>Certificate Status</TableHead>
                                             <TableHead>Advanced Cert. Status</TableHead>
@@ -308,6 +309,7 @@ export default function ConvocationOrdersPage() {
                                         {paginatedRegistrations.map(reg => (
                                             <TableRow key={reg.registration_id}>
                                                 <TableCell className="font-medium">{reg.student_number}</TableCell>
+                                                <TableCell>{reg.ceremony_number}</TableCell>
                                                 <TableCell>{reg.course_id}</TableCell>
                                                 <TableCell>{renderStatusBadge(reg.certificate_print_status)}</TableCell>
                                                 <TableCell>{renderStatusBadge(reg.advanced_print_status)}</TableCell>
@@ -324,9 +326,15 @@ export default function ConvocationOrdersPage() {
                             <div className="md:hidden space-y-4">
                                 {paginatedRegistrations.map(reg => (
                                     <div key={reg.registration_id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
-                                        <div>
-                                            <p className="font-bold">{reg.student_number}</p>
-                                            <p className="text-sm text-muted-foreground">Course IDs: {reg.course_id}</p>
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="font-bold">{reg.student_number}</p>
+                                                <p className="text-sm text-muted-foreground">Course IDs: {reg.course_id}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-xs text-muted-foreground">Ceremony</p>
+                                                <p className="font-medium">{reg.ceremony_number}</p>
+                                            </div>
                                         </div>
                                         <div className="text-sm space-y-2 pt-2 border-t">
                                             <div className="flex items-center justify-between">
