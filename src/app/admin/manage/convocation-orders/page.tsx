@@ -124,7 +124,7 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>{dialogContent.title}</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogDescription asChild>
                             {dialogContent.description}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
