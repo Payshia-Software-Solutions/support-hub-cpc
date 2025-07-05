@@ -281,3 +281,17 @@ export interface UpdateConvocationCoursesPayload {
   registrationId: string;
   courseIds: number[];
 }
+
+export interface UserCertificatePrintStatus {
+    id: string;
+    student_number: string;
+    certificate_id: string;
+    print_date: string;
+    print_status: "0" | "1";
+    print_by: string;
+    type: string;
+    course_code: string;
+    parent_course_id: string;
+}
+
+    

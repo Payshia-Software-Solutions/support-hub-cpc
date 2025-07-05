@@ -3,8 +3,8 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCoursesForFilter, getFilteredConvocationRegistrations, getStudentFullInfo, updateConvocationCourses } from '@/lib/api';
-import type { ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload } from '@/lib/types';
+import { getCoursesForFilter, getFilteredConvocationRegistrations, getStudentFullInfo, updateConvocationCourses, getUserCertificatePrintStatus } from '@/lib/api';
+import type { ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,8 +23,59 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 const ITEMS_PER_PAGE = 25;
+
+// --- Certificate Status Component ---
+const CertificateStatusCell = ({ studentNumber, convocationCourseIds }: { studentNumber: string, convocationCourseIds: string }) => {
+    const { data: certificates, isLoading, isError } = useQuery<UserCertificatePrintStatus[], Error>({
+        queryKey: ['userCertificateStatus', studentNumber],
+        queryFn: () => getUserCertificatePrintStatus(studentNumber),
+        staleTime: 5 * 60 * 1000,
+        enabled: !!studentNumber,
+    });
+
+    const relevantCourseIds = convocationCourseIds.split(',').map(id => id.trim());
+
+    if (isLoading) {
+        return <Skeleton className="h-6 w-24" />;
+    }
+
+    if (isError) {
+        return <Badge variant="destructive">Error</Badge>;
+    }
+
+    const relevantCertificates = certificates?.filter(cert => relevantCourseIds.includes(cert.parent_course_id)) || [];
+
+    if (relevantCertificates.length === 0) {
+        return <Badge variant="secondary">None</Badge>;
+    }
+
+    return (
+        <div className="flex flex-wrap gap-1">
+            {relevantCertificates.map(cert => (
+                <TooltipProvider key={cert.id}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Badge variant={cert.print_status === '1' ? 'default' : 'secondary'}>
+                                {cert.type.charAt(0)}: {cert.certificate_id}
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{cert.type}: {cert.certificate_id}</p>
+                            <p>Course: {cert.course_code}</p>
+                            <p>Status: {cert.print_status === '1' ? 'Printed' : 'Not Printed'}</p>
+                            <p>Date: {new Date(cert.print_date).toLocaleDateString()}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            ))}
+        </div>
+    );
+};
+
 
 // --- Action Component ---
 const EligibilityStatusCell = ({ registration }: { registration: FilteredConvocationRegistration }) => {
@@ -200,15 +251,6 @@ export default function ConvocationOrdersPage() {
         );
     }, [registrations, currentPage]);
 
-    const renderStatusBadge = (status: string) => {
-        const isPrinted = status?.toLowerCase() === 'generated';
-        return (
-            <Badge variant={isPrinted ? 'default' : 'secondary'}>
-                {status || 'N/A'}
-            </Badge>
-        );
-    };
-
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
@@ -301,8 +343,7 @@ export default function ConvocationOrdersPage() {
                                             <TableHead>Student Number</TableHead>
                                             <TableHead>Ceremony #</TableHead>
                                             <TableHead>Course IDs</TableHead>
-                                            <TableHead>Certificate Status</TableHead>
-                                            <TableHead>Advanced Cert. Status</TableHead>
+                                            <TableHead>Certificates</TableHead>
                                             <TableHead>Eligibility Status</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -312,8 +353,9 @@ export default function ConvocationOrdersPage() {
                                                 <TableCell className="font-medium">{reg.student_number}</TableCell>
                                                 <TableCell>{reg.ceremony_number}</TableCell>
                                                 <TableCell>{reg.course_id}</TableCell>
-                                                <TableCell>{renderStatusBadge(reg.certificate_print_status)}</TableCell>
-                                                <TableCell>{renderStatusBadge(reg.advanced_print_status)}</TableCell>
+                                                <TableCell>
+                                                    <CertificateStatusCell studentNumber={reg.student_number} convocationCourseIds={reg.course_id} />
+                                                </TableCell>
                                                 <TableCell>
                                                     <EligibilityStatusCell registration={reg} />
                                                 </TableCell>
@@ -339,12 +381,8 @@ export default function ConvocationOrdersPage() {
                                         </div>
                                         <div className="text-sm space-y-2 pt-2 border-t">
                                             <div className="flex items-center justify-between">
-                                                <p className="text-muted-foreground">Certificate Status</p>
-                                                {renderStatusBadge(reg.certificate_print_status)}
-                                            </div>
-                                             <div className="flex items-center justify-between">
-                                                <p className="text-muted-foreground">Advanced Cert. Status</p>
-                                                {renderStatusBadge(reg.advanced_print_status)}
+                                                <p className="text-muted-foreground font-medium">Certificates</p>
+                                                <CertificateStatusCell studentNumber={reg.student_number} convocationCourseIds={reg.course_id} />
                                             </div>
                                         </div>
                                         <div className="pt-2 border-t">
@@ -367,3 +405,5 @@ export default function ConvocationOrdersPage() {
         </div>
     );
 }
+
+    
