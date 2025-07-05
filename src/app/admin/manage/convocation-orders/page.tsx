@@ -27,82 +27,34 @@ import {
 const ITEMS_PER_PAGE = 25;
 
 // --- Action Component ---
-const EligibilityCellAction = ({ registration }: { registration: FilteredConvocationRegistration }) => {
+const EligibilityStatusCell = ({ registration }: { registration: FilteredConvocationRegistration }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [dialogContent, setDialogContent] = useState<{ title: string, description: React.ReactNode, onConfirm?: () => void }>({});
-    const [eligibilityStatus, setEligibilityStatus] = useState<'idle' | 'upToDate' | 'updateAvailable' | 'error'>('idle');
     const queryClient = useQueryClient();
 
-    const { mutate: checkEligibility, isPending: isChecking } = useMutation<FullStudentData, Error>({
-        mutationFn: () => getStudentFullInfo(registration.student_number),
-        onSuccess: (data: FullStudentData) => {
-            const currentCourses = registration.course_id.split(',').map(s => s.trim()).filter(Boolean);
-            
-            const allEligibleEnrollments = Object.values(data.studentEnrollments)
-                .filter(e => e.certificate_eligibility);
-
-            const newEligibleEnrollments = allEligibleEnrollments.filter(enrollment => 
-                !currentCourses.includes(enrollment.parent_course_id)
-            );
-
-            if (newEligibleEnrollments.length > 0) {
-                setEligibilityStatus('updateAvailable');
-                setDialogContent({
-                    title: "Update Available",
-                    description: (
-                        <div className="text-sm">
-                            <p className="mb-3">This student is eligible for the following additional course(s). Do you want to add them to this convocation booking?</p>
-                            <div className="space-y-4 rounded-md border bg-muted/50 p-3 max-h-60 overflow-y-auto">
-                                {newEligibleEnrollments.map(enrollment => (
-                                    <div key={enrollment.parent_course_id}>
-                                        <h4 className="font-semibold text-card-foreground">{enrollment.parent_course_name}</h4>
-                                        <ul className="mt-1 list-disc list-inside text-xs text-muted-foreground space-y-1 pl-2">
-                                            {enrollment.criteria_details.map(c => (
-                                                <li key={c.id} className="flex items-center justify-between">
-                                                    <span>{c.list_name}</span>
-                                                    {c.evaluation.completed ? (
-                                                         <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5" /> Complete</span>
-                                                    ) : (
-                                                         <span className="text-red-600 font-medium flex items-center gap-1"><XCircle className="h-3.5 w-3.5" /> Incomplete</span>
-                                                    )}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ),
-                    onConfirm: () => {
-                        const newEligibleCourseIds = newEligibleEnrollments.map(e => e.parent_course_id);
-                        const allCourseIds = [...currentCourses, ...newEligibleCourseIds];
-                        const allCourseIdsAsNumbers = allCourseIds
-                            .map(id => parseInt(id, 10))
-                            .filter(id => !isNaN(id));
-
-                        updateCourses({
-                            registrationId: registration.registration_id,
-                            courseIds: allCourseIdsAsNumbers,
-                        });
-                    }
-                });
-            } else {
-                setEligibilityStatus('upToDate');
-                toast({
-                    title: "No Updates Needed",
-                    description: "Student is already registered for all eligible courses.",
-                });
-            }
-        },
-        onError: (error: Error) => {
-            setEligibilityStatus('error');
-            toast({
-                variant: 'destructive',
-                title: 'Error Checking Eligibility',
-                description: error.message,
-            });
-        }
+    const { data: fullStudentData, isLoading, isError } = useQuery<FullStudentData, Error>({
+        queryKey: ['studentFullInfo', registration.student_number],
+        queryFn: () => getStudentFullInfo(registration.student_number),
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        retry: 1, // Don't retry aggressively on error for this
     });
+
+    const { newEligibleEnrollments, isUpdateAvailable } = useMemo(() => {
+        if (!fullStudentData) {
+            return { newEligibleEnrollments: [], isUpdateAvailable: false };
+        }
+        
+        const currentCourses = registration.course_id.split(',').map(s => s.trim()).filter(Boolean);
+        
+        const allEligibleEnrollments = Object.values(fullStudentData.studentEnrollments)
+            .filter(e => e.certificate_eligibility);
+
+        const newEnrollments = allEligibleEnrollments.filter(enrollment => 
+            !currentCourses.includes(enrollment.parent_course_id)
+        );
+        
+        return { newEligibleEnrollments: newEnrollments, isUpdateAvailable: newEnrollments.length > 0 };
+    }, [fullStudentData, registration.course_id]);
 
     const { mutate: updateCourses, isPending: isUpdating } = useMutation({
         mutationFn: (payload: UpdateConvocationCoursesPayload) => updateConvocationCourses(payload),
@@ -113,7 +65,6 @@ const EligibilityCellAction = ({ registration }: { registration: FilteredConvoca
             });
             queryClient.invalidateQueries({ queryKey: ['filteredConvocation'] });
             setIsDialogOpen(false);
-            setEligibilityStatus('upToDate'); // After a successful update
         },
         onError: (error: Error) => {
             toast({
@@ -124,52 +75,92 @@ const EligibilityCellAction = ({ registration }: { registration: FilteredConvoca
         }
     });
 
-    const renderCellContent = () => {
-        if (isChecking) {
-             return (
-                <div className="flex items-center gap-2 text-muted-foreground" aria-live="polite">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Checking...</span>
-                </div>
-            );
-        }
+    const openUpdateDialog = () => {
+        if (!newEligibleEnrollments.length) return;
 
-        switch(eligibilityStatus) {
-            case 'upToDate':
-                return <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">Up to date</Badge>;
-            case 'updateAvailable':
-                return <Button variant="default" size="sm" onClick={() => setIsDialogOpen(true)}>Update Available</Button>;
-            case 'error':
-                 return <Button variant="destructive" size="sm" onClick={() => checkEligibility()}>Check Failed</Button>
-            case 'idle':
-            default:
-                return <Button variant="outline" size="sm" onClick={() => checkEligibility()}>Check Eligibility</Button>;
-        }
+        const currentCourses = registration.course_id.split(',').map(s => s.trim()).filter(Boolean);
+        
+        const onConfirm = () => {
+            const newEligibleCourseIds = newEligibleEnrollments.map(e => e.parent_course_id);
+            const allCourseIds = [...currentCourses, ...newEligibleCourseIds];
+            const allCourseIdsAsNumbers = allCourseIds.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+
+            updateCourses({
+                registrationId: registration.registration_id,
+                courseIds: allCourseIdsAsNumbers,
+            });
+        };
+
+        setDialogContent({
+            title: "Update Available",
+            description: (
+                 <div className="text-sm">
+                    <p className="mb-3">This student is eligible for the following additional course(s). Do you want to add them to this convocation booking?</p>
+                    <div className="space-y-4 rounded-md border bg-muted/50 p-3 max-h-60 overflow-y-auto">
+                        {newEligibleEnrollments.map(enrollment => (
+                            <div key={enrollment.parent_course_id}>
+                                <h4 className="font-semibold text-card-foreground">{enrollment.parent_course_name}</h4>
+                                <ul className="mt-1 list-disc list-inside text-xs text-muted-foreground space-y-1 pl-2">
+                                    {enrollment.criteria_details.map(c => (
+                                        <li key={c.id} className="flex items-center justify-between">
+                                            <span>{c.list_name}</span>
+                                            {c.evaluation.completed ? (
+                                                 <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5" /> Complete</span>
+                                            ) : (
+                                                 <span className="text-red-600 font-medium flex items-center gap-1"><XCircle className="h-3.5 w-3.5" /> Incomplete</span>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ),
+            onConfirm
+        });
+        setIsDialogOpen(true);
     };
 
+    if (isLoading) {
+        return (
+            <div className="flex items-center gap-2 text-muted-foreground" aria-live="polite">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Checking...</span>
+            </div>
+        );
+    }
 
-    return (
-        <>
-            <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>{dialogContent.title}</AlertDialogTitle>
-                        <AlertDialogDescription asChild>
-                            {dialogContent.description}
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isUpdating}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={dialogContent.onConfirm} disabled={isUpdating}>
-                            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Update Booking
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-            {renderCellContent()}
-        </>
-    );
+    if (isError) {
+        return <Badge variant="destructive">Check Failed</Badge>;
+    }
+
+    if (isUpdateAvailable) {
+        return (
+            <>
+                <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>{dialogContent.title}</AlertDialogTitle>
+                             <AlertDialogDescription asChild>
+                                {dialogContent.description || <div />}
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={isUpdating}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={dialogContent.onConfirm} disabled={isUpdating}>
+                                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Update Booking
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <Button variant="default" size="sm" onClick={openUpdateDialog}>Update Available</Button>
+            </>
+        );
+    }
+    
+    return <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">Up to date</Badge>;
 };
 
 
@@ -321,7 +312,7 @@ export default function ConvocationOrdersPage() {
                                                 <TableCell>{renderStatusBadge(reg.certificate_print_status)}</TableCell>
                                                 <TableCell>{renderStatusBadge(reg.advanced_print_status)}</TableCell>
                                                 <TableCell>
-                                                    <EligibilityCellAction registration={reg} />
+                                                    <EligibilityStatusCell registration={reg} />
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -348,7 +339,7 @@ export default function ConvocationOrdersPage() {
                                             </div>
                                         </div>
                                         <div className="pt-2 border-t">
-                                            <EligibilityCellAction registration={reg} />
+                                            <EligibilityStatusCell registration={reg} />
                                         </div>
                                     </div>
                                 ))}
@@ -367,5 +358,3 @@ export default function ConvocationOrdersPage() {
         </div>
     );
 }
-
-    
