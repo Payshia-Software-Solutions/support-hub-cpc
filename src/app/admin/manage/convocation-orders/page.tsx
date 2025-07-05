@@ -48,7 +48,7 @@ const UpdateCoursesAction = ({ registration }: { registration: FilteredConvocati
                 setDialogContent({
                     title: "Update Available",
                     description: (
-                        <div>
+                        <div className="text-sm">
                             <p className="mb-3">This student is eligible for the following additional course(s). Do you want to add them to this convocation booking?</p>
                             <div className="space-y-4 rounded-md border bg-muted/50 p-3 max-h-60 overflow-y-auto">
                                 {newEligibleEnrollments.map(enrollment => (
@@ -289,6 +289,7 @@ export default function ConvocationOrdersPage() {
                                         <TableRow>
                                             <TableHead>Student Number</TableHead>
                                             <TableHead>Ceremony Number</TableHead>
+                                            <TableHead>Course IDs</TableHead>
                                             <TableHead>Certificate Status</TableHead>
                                             <TableHead>Advanced Cert. Status</TableHead>
                                             <TableHead>Actions</TableHead>
@@ -299,6 +300,7 @@ export default function ConvocationOrdersPage() {
                                             <TableRow key={reg.registration_id}>
                                                 <TableCell className="font-medium">{reg.student_number}</TableCell>
                                                 <TableCell>{reg.ceremony_number}</TableCell>
+                                                <TableCell>{reg.course_id}</TableCell>
                                                 <TableCell>{renderStatusBadge(reg.certificate_print_status)}</TableCell>
                                                 <TableCell>{renderStatusBadge(reg.advanced_print_status)}</TableCell>
                                                 <TableCell>
@@ -317,6 +319,7 @@ export default function ConvocationOrdersPage() {
                                         <div>
                                             <p className="font-bold">{reg.student_number}</p>
                                             <p className="text-sm text-muted-foreground">Ceremony: {reg.ceremony_number}</p>
+                                            <p className="text-sm text-muted-foreground">Course IDs: {reg.course_id}</p>
                                         </div>
                                         <div className="text-sm space-y-2 pt-2 border-t">
                                             <div className="flex items-center justify-between">
