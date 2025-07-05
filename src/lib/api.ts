@@ -1,5 +1,4 @@
-
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -12,6 +11,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      credentials: 'omit', // Explicitly set credentials to omit
     });
 
     if (!response.ok) {
@@ -381,3 +381,21 @@ export const sendCertificateNameSms = async (payload: SendSmsPayload): Promise<a
     }
     return response.json();
 }
+
+
+// Filtered Convocation Data
+export const getCoursesForFilter = async (): Promise<ConvocationCourse[]> => {
+    const response = await fetch(`https://qa-api.pharmacollege.lk/parent-main-course`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch courses');
+    }
+    return response.json();
+};
+
+export const getFilteredConvocationRegistrations = async (courseCode: string, session: string): Promise<FilteredConvocationRegistration[]> => {
+    const response = await fetch(`https://qa-api.pharmacollege.lk/convocation-registrations-certificate?courseCode=${courseCode}&viewSession=${session}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch filtered convocation registrations');
+    }
+    return response.json();
+};

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -59,6 +58,12 @@ const managementTasks = [
     description: "Edit names for all certificate orders.",
     icon: <FileSignature className="w-6 h-6 text-primary" />,
     href: "/admin/manage/certificate-order-name-edits",
+  },
+   {
+    title: "Convocation Orders",
+    description: "View convocation orders by course and session.",
+    icon: <ClipboardList className="w-6 h-6 text-primary" />,
+    href: "/admin/manage/convocation-orders",
   },
   {
     title: "Password Reset",
