@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getCoursesForFilter, getFilteredConvocationRegistrations, getStudentFullInfo, updateConvocationCourses, getUserCertificatePrintStatus } from '@/lib/api';
 import type { ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, CeylonPharmacyInfo, PharmaHunterInfo, PharmaHunterProInfo } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -319,10 +320,24 @@ const EligibilityStatusCell = ({ registration }: { registration: FilteredConvoca
 
 
 export default function ConvocationOrdersPage() {
-    const [selectedCourse, setSelectedCourse] = useState<string>('');
-    const [selectedSession, setSelectedSession] = useState<string>('');
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const [selectedCourse, setSelectedCourse] = useState<string>(searchParams.get('course') || '');
+    const [selectedSession, setSelectedSession] = useState<string>(searchParams.get('session') || '');
     const [currentPage, setCurrentPage] = useState(1);
     const [isExporting, setIsExporting] = useState(false);
+
+    useEffect(() => {
+        const params = new URLSearchParams();
+        if (selectedCourse) {
+            params.set('course', selectedCourse);
+        }
+        if (selectedSession) {
+            params.set('session', selectedSession);
+        }
+        router.replace(`/admin/manage/convocation-orders?${params.toString()}`);
+    }, [selectedCourse, selectedSession, router]);
 
     const { data: courses, isLoading: isLoadingCourses } = useQuery<ConvocationCourse[]>({
         queryKey: ['convocationCourses'],
@@ -654,3 +669,5 @@ export default function ConvocationOrdersPage() {
         </div>
     );
 }
+
+    
