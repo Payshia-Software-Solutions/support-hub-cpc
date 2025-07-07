@@ -1,4 +1,5 @@
 
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -206,6 +207,7 @@ export interface CertificateOrder {
   cod_amount: string;
   is_active: string;
   name_on_certificate: string;
+  telephone_1?: string;
 }
 
 export interface SendSmsPayload {
