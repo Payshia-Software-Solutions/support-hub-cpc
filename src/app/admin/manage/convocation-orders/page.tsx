@@ -69,7 +69,7 @@ const CertificateStatusCell = ({ studentNumber, convocationCourseIds }: { studen
                             </Badge>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Course ID: {cert.parent_course_id}</p>
+                            <p>Parent Course ID: {cert.parent_course_id}</p>
                             <p>{cert.type}: {cert.certificate_id}</p>
                             <p>Course Code: {cert.course_code}</p>
                             <p>Status: {cert.print_status === '1' ? 'Printed' : 'Not Printed'}</p>
@@ -371,7 +371,7 @@ export default function ConvocationOrdersPage() {
         });
 
         try {
-            const studentDataPromises = registrations.map(reg => 
+            const studentDataPromises = registrations.map(reg =>
                 getStudentFullInfo(reg.student_number).catch(e => {
                     console.error(`Failed to fetch data for ${reg.student_number}:`, e);
                     return null; // Return null on error to not fail the whole batch
@@ -383,14 +383,14 @@ export default function ConvocationOrdersPage() {
                 'Registration ID',
                 'Student Number',
                 'Ceremony Number',
-                'Course Code',
-                'Course Name',
-                'Ceylon Pharmacy Recovered',
-                'Pharma Hunter Correct',
-                'Pharma Hunter Gems',
-                'Pharma Hunter Coins',
-                'Pharma Hunter Pro Progress (%)',
-                'Pharma Hunter Pro Gems',
+                'Course Codes',
+                'Course Names',
+                'Total Ceylon Pharmacy Recovered',
+                'Total Pharma Hunter Correct',
+                'Total Pharma Hunter Gems',
+                'Total Pharma Hunter Coins',
+                'Avg Pharma Hunter Pro Progress (%)',
+                'Total Pharma Hunter Pro Gems',
             ];
 
             const csvRows = [headers.join(',')];
@@ -400,27 +400,54 @@ export default function ConvocationOrdersPage() {
                 if (!studentData) return; // Skip if fetching failed for this student
 
                 const courseIds = reg.course_id.split(',').map(id => id.trim()).filter(Boolean);
-                
+
+                let courseCodes: string[] = [];
+                let courseNames: string[] = [];
+                let totalCeylonRecovered = 0;
+                let totalPharmaHunterCorrect = 0;
+                let totalPharmaHunterGems = 0;
+                let totalPharmaHunterCoins = 0;
+                let pharmaProProgressValues: number[] = [];
+                let totalPharmaHunterProGems = 0;
+
                 courseIds.forEach(courseId => {
                     const enrollment = Object.values(studentData.studentEnrollments).find(e => e.parent_course_id === courseId);
-                    
-                    const row = [
-                        reg.registration_id,
-                        reg.student_number,
-                        reg.ceremony_number,
-                        enrollment?.course_code ?? 'N/A',
-                        enrollment ? `"${enrollment.parent_course_name.replace(/"/g, '""')}"` : 'N/A',
-                        enrollment?.ceylon_pharmacy?.recoveredCount ?? 'N/A',
-                        enrollment?.pharma_hunter?.correctCount ?? 'N/A',
-                        enrollment?.pharma_hunter?.gemCount ?? 'N/A',
-                        enrollment?.pharma_hunter?.coinCount ?? 'N/A',
-                        enrollment?.pharma_hunter_pro?.results?.progressPercentage ?? 'N/A',
-                        enrollment?.pharma_hunter_pro?.results?.gemCount ?? 'N/A',
-                    ];
-                    csvRows.push(row.join(','));
+                    if (enrollment) {
+                        courseCodes.push(enrollment.course_code);
+                        courseNames.push(enrollment.parent_course_name);
+
+                        totalCeylonRecovered += enrollment.ceylon_pharmacy?.recoveredCount ?? 0;
+                        totalPharmaHunterCorrect += parseInt(enrollment.pharma_hunter?.correctCount ?? '0', 10);
+                        totalPharmaHunterGems += enrollment.pharma_hunter?.gemCount ?? 0;
+                        totalPharmaHunterCoins += enrollment.pharma_hunter?.coinCount ?? 0;
+                        
+                        if (enrollment.pharma_hunter_pro?.results) {
+                            pharmaProProgressValues.push(enrollment.pharma_hunter_pro.results.progressPercentage ?? 0);
+                            totalPharmaHunterProGems += enrollment.pharma_hunter_pro.results.gemCount ?? 0;
+                        }
+                    }
                 });
+
+                const avgPharmaProProgress = pharmaProProgressValues.length > 0
+                    ? (pharmaProProgressValues.reduce((a, b) => a + b, 0) / pharmaProProgressValues.length).toFixed(2)
+                    : 'N/A';
+                    
+                const row = [
+                    reg.registration_id,
+                    reg.student_number,
+                    reg.ceremony_number,
+                    `"${courseCodes.join(', ')}"`,
+                    `"${courseNames.join(', ')}"`,
+                    totalCeylonRecovered,
+                    totalPharmaHunterCorrect,
+                    totalPharmaHunterGems,
+                    totalPharmaHunterCoins,
+                    avgPharmaProProgress,
+                    totalPharmaHunterProGems,
+                ];
+                csvRows.push(row.join(','));
             });
-            
+
             const csvString = csvRows.join('\n');
             const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -449,7 +476,6 @@ export default function ConvocationOrdersPage() {
             setIsExporting(false);
         }
     };
-
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
