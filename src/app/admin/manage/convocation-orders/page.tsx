@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, ClipboardList, Loader2, XCircle, Swords, Gem, Heart } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ClipboardList, Loader2, XCircle, Swords, Gem, Heart, FileDown } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -353,6 +353,62 @@ export default function ConvocationOrdersPage() {
         );
     }, [registrations, currentPage]);
 
+    const handleExport = () => {
+        if (!registrations || registrations.length === 0) {
+            toast({
+                variant: 'destructive',
+                title: 'No data to export',
+                description: 'Please select filters and load data before exporting.',
+            });
+            return;
+        }
+
+        const headers = [
+            'Registration ID',
+            'Student Number',
+            'Ceremony Number',
+            'Course IDs',
+            'Session',
+            'Payment Status',
+            'Registration Status',
+            'Registered At',
+        ];
+
+        const csvRows = [
+            headers.join(','),
+            ...registrations.map(reg => {
+                const row = [
+                    reg.registration_id,
+                    reg.student_number,
+                    reg.ceremony_number,
+                    `"${reg.course_id}"`, // Wrap in quotes to handle commas
+                    reg.session,
+                    reg.payment_status,
+                    reg.registration_status,
+                    reg.registered_at,
+                ];
+                return row.join(',');
+            })
+        ];
+        
+        const csvString = csvRows.join('\n');
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `convocation-orders-${selectedCourse}-${selectedSession}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        toast({
+            title: 'Export Started',
+            description: 'Your download will begin shortly.',
+        });
+    };
+
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
@@ -398,8 +454,19 @@ export default function ConvocationOrdersPage() {
 
             <Card className="shadow-lg">
                 <CardHeader>
-                    <CardTitle>Registration List</CardTitle>
-                    <CardDescription>Showing {paginatedRegistrations.length} of {registrations?.length || 0} records.</CardDescription>
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                        <div>
+                            <CardTitle>Registration List</CardTitle>
+                            <CardDescription>Showing {paginatedRegistrations.length} of {registrations?.length || 0} records.</CardDescription>
+                        </div>
+                        <Button
+                            onClick={handleExport}
+                            disabled={!registrations || registrations.length === 0 || isLoadingRegistrations || isFetching}
+                        >
+                            <FileDown className="mr-2 h-4 w-4" />
+                            Export All to CSV
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     {(isLoadingRegistrations || isFetching) && (
