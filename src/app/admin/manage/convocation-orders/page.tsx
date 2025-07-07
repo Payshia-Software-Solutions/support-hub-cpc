@@ -322,6 +322,7 @@ export default function ConvocationOrdersPage() {
     const [selectedCourse, setSelectedCourse] = useState<string>('');
     const [selectedSession, setSelectedSession] = useState<string>('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [isExporting, setIsExporting] = useState(false);
 
     const { data: courses, isLoading: isLoadingCourses } = useQuery<ConvocationCourse[]>({
         queryKey: ['convocationCourses'],
@@ -353,7 +354,7 @@ export default function ConvocationOrdersPage() {
         );
     }, [registrations, currentPage]);
 
-    const handleExport = () => {
+    const handleExport = async () => {
         if (!registrations || registrations.length === 0) {
             toast({
                 variant: 'destructive',
@@ -363,51 +364,92 @@ export default function ConvocationOrdersPage() {
             return;
         }
 
-        const headers = [
-            'Registration ID',
-            'Student Number',
-            'Ceremony Number',
-            'Course IDs',
-            'Session',
-            'Payment Status',
-            'Registration Status',
-            'Registered At',
-        ];
-
-        const csvRows = [
-            headers.join(','),
-            ...registrations.map(reg => {
-                const row = [
-                    reg.registration_id,
-                    reg.student_number,
-                    reg.ceremony_number,
-                    `"${reg.course_id}"`, // Wrap in quotes to handle commas
-                    reg.session,
-                    reg.payment_status,
-                    reg.registration_status,
-                    reg.registered_at,
-                ];
-                return row.join(',');
-            })
-        ];
-        
-        const csvString = csvRows.join('\n');
-        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `convocation-orders-${selectedCourse}-${selectedSession}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
+        setIsExporting(true);
         toast({
-            title: 'Export Started',
-            description: 'Your download will begin shortly.',
+            title: 'Preparing Export',
+            description: 'Fetching detailed student data. This may take a moment...',
         });
+
+        try {
+            const studentDataPromises = registrations.map(reg => 
+                getStudentFullInfo(reg.student_number).catch(e => {
+                    console.error(`Failed to fetch data for ${reg.student_number}:`, e);
+                    return null; // Return null on error to not fail the whole batch
+                })
+            );
+            const allStudentData = await Promise.all(studentDataPromises);
+
+            const headers = [
+                'Registration ID',
+                'Student Number',
+                'Ceremony Number',
+                'Course Code',
+                'Course Name',
+                'Ceylon Pharmacy Recovered',
+                'Pharma Hunter Correct',
+                'Pharma Hunter Gems',
+                'Pharma Hunter Coins',
+                'Pharma Hunter Pro Progress (%)',
+                'Pharma Hunter Pro Gems',
+            ];
+
+            const csvRows = [headers.join(',')];
+
+            registrations.forEach((reg, index) => {
+                const studentData = allStudentData[index];
+                if (!studentData) return; // Skip if fetching failed for this student
+
+                const courseIds = reg.course_id.split(',').map(id => id.trim()).filter(Boolean);
+                
+                courseIds.forEach(courseId => {
+                    const enrollment = Object.values(studentData.studentEnrollments).find(e => e.parent_course_id === courseId);
+                    
+                    const row = [
+                        reg.registration_id,
+                        reg.student_number,
+                        reg.ceremony_number,
+                        enrollment?.course_code ?? 'N/A',
+                        enrollment ? `"${enrollment.parent_course_name.replace(/"/g, '""')}"` : 'N/A',
+                        enrollment?.ceylon_pharmacy?.recoveredCount ?? 'N/A',
+                        enrollment?.pharma_hunter?.correctCount ?? 'N/A',
+                        enrollment?.pharma_hunter?.gemCount ?? 'N/A',
+                        enrollment?.pharma_hunter?.coinCount ?? 'N/A',
+                        enrollment?.pharma_hunter_pro?.results?.progressPercentage ?? 'N/A',
+                        enrollment?.pharma_hunter_pro?.results?.gemCount ?? 'N/A',
+                    ];
+                    csvRows.push(row.join(','));
+                });
+            });
+            
+            const csvString = csvRows.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `convocation-orders-${selectedCourse}-${selectedSession}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            toast({
+                title: 'Export Complete',
+                description: 'Your download has started.',
+            });
+
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Export Failed',
+                description: 'An error occurred while preparing the data for export.',
+            });
+            console.error("Export error:", error);
+        } finally {
+            setIsExporting(false);
+        }
     };
+
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -461,10 +503,14 @@ export default function ConvocationOrdersPage() {
                         </div>
                         <Button
                             onClick={handleExport}
-                            disabled={!registrations || registrations.length === 0 || isLoadingRegistrations || isFetching}
+                            disabled={!registrations || registrations.length === 0 || isLoadingRegistrations || isFetching || isExporting}
                         >
-                            <FileDown className="mr-2 h-4 w-4" />
-                            Export All to CSV
+                            {isExporting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <FileDown className="mr-2 h-4 w-4" />
+                            )}
+                            {isExporting ? 'Exporting...' : 'Export All to CSV'}
                         </Button>
                     </div>
                 </CardHeader>
