@@ -243,6 +243,43 @@ export interface FilteredConvocationRegistration {
   advanced_id: string;
 }
 
+// Game Information Types from FullStudentData
+export interface CeylonPharmacyInfo {
+    title: string;
+    userName: string;
+    recoveredCount: number;
+}
+
+export interface PharmaHunterInfo {
+    title: string;
+    userName: string;
+    correctCount: string;
+    pendingCount: number;
+    wrongCount: string;
+    gemCount: number;
+    coinCount: number;
+    ProgressValue: number;
+}
+
+export interface PharmaHunterProInfo {
+    "report-title": string;
+    studentNumber: string;
+    courseCode: string;
+    progressValue: number;
+    pendingCount: number;
+    correctCount: number;
+    gemCount: number;
+    coinCount: number;
+    results: {
+        progressPercentage: number;
+        pendingCount: number;
+        correctCount: number;
+        gemCount: number;
+        coinCount: number;
+    };
+}
+
+
 // Types for Student Full Info API
 interface StudentInfo {
     id: string;
@@ -271,6 +308,10 @@ interface StudentEnrollment {
     parent_course_name: string;
     certificate_eligibility: boolean;
     criteria_details: CriteriaDetail[];
+    // Add optional game properties
+    ceylon_pharmacy?: CeylonPharmacyInfo;
+    pharma_hunter?: PharmaHunterInfo;
+    pharma_hunter_pro?: PharmaHunterProInfo;
 }
 export interface FullStudentData {
     studentInfo: StudentInfo;

@@ -4,14 +4,14 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCoursesForFilter, getFilteredConvocationRegistrations, getStudentFullInfo, updateConvocationCourses, getUserCertificatePrintStatus } from '@/lib/api';
-import type { ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus } from '@/lib/types';
+import type { ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, CeylonPharmacyInfo, PharmaHunterInfo, PharmaHunterProInfo } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, ClipboardList, Loader2, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ClipboardList, Loader2, XCircle, Swords, Gem, Heart } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -22,7 +22,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
@@ -76,6 +79,102 @@ const CertificateStatusCell = ({ studentNumber, convocationCourseIds }: { studen
                 </TooltipProvider>
             ))}
         </div>
+    );
+};
+
+// --- Game Info Component ---
+const GameDetailItem = ({ label, value }: { label: string, value: string | number }) => (
+    <div className="flex justify-between items-center text-sm py-1.5 border-b border-dashed">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium">{value}</span>
+    </div>
+);
+
+const GameInfoCell = ({ studentNumber, convocationCourseIds }: { studentNumber: string, convocationCourseIds: string }) => {
+    const { data: fullStudentData, isLoading, isError } = useQuery<FullStudentData, Error>({
+        queryKey: ['studentFullInfoForGames', studentNumber],
+        queryFn: () => getStudentFullInfo(studentNumber),
+        staleTime: 5 * 60 * 1000,
+        enabled: !!studentNumber,
+    });
+
+    if (isLoading) {
+        return <Button variant="outline" size="sm" disabled><Loader2 className="h-4 w-4 animate-spin mr-2"/>Loading...</Button>;
+    }
+
+    if (isError || !fullStudentData) {
+        return <Badge variant="destructive">Error</Badge>;
+    }
+
+    const relevantCourseIds = convocationCourseIds.split(',').map(id => id.trim());
+    const relevantEnrollments = Object.values(fullStudentData.studentEnrollments).filter(
+        enrollment => relevantCourseIds.includes(enrollment.parent_course_id)
+    );
+
+    if (relevantEnrollments.length === 0) {
+        return <Badge variant="secondary">No Data</Badge>;
+    }
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="sm">View Games</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Game Progress</DialogTitle>
+                    <DialogDescription>Student: {studentNumber}</DialogDescription>
+                </DialogHeader>
+                <Tabs defaultValue={relevantEnrollments[0]?.parent_course_id} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        {relevantEnrollments.map(e => (
+                            <TabsTrigger key={e.parent_course_id} value={e.parent_course_id}>{e.course_code}</TabsTrigger>
+                        ))}
+                    </TabsList>
+                    {relevantEnrollments.map(e => (
+                        <TabsContent key={e.parent_course_id} value={e.parent_course_id} className="space-y-4 pt-4">
+                            {e.ceylon_pharmacy && (
+                                <Card>
+                                    <CardHeader className="p-4">
+                                        <CardTitle className="text-base flex items-center gap-2"><Heart className="h-5 w-5 text-red-500" /> Ceylon Pharmacy</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-4 pt-0">
+                                        <GameDetailItem label="Recovered Count" value={e.ceylon_pharmacy.recoveredCount} />
+                                    </CardContent>
+                                </Card>
+                            )}
+                             {e.pharma_hunter && (
+                                <Card>
+                                    <CardHeader className="p-4">
+                                        <CardTitle className="text-base flex items-center gap-2"><Swords className="h-5 w-5 text-blue-500" /> Pharma Hunter</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-4 pt-0 space-y-1">
+                                        <GameDetailItem label="Correct Answers" value={e.pharma_hunter.correctCount} />
+                                        <GameDetailItem label="Gems" value={e.pharma_hunter.gemCount} />
+                                        <GameDetailItem label="Coins" value={e.pharma_hunter.coinCount} />
+                                    </CardContent>
+                                </Card>
+                            )}
+                             {e.pharma_hunter_pro && (
+                                <Card>
+                                    <CardHeader className="p-4">
+                                        <CardTitle className="text-base flex items-center gap-2"><Gem className="h-5 w-5 text-purple-500" /> Pharma Hunter Pro</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-4 pt-0 space-y-1">
+                                        <GameDetailItem label="Progress" value={`${e.pharma_hunter_pro.results.progressPercentage}%`} />
+                                        <GameDetailItem label="Correct Answers" value={e.pharma_hunter_pro.results.correctCount} />
+                                        <GameDetailItem label="Gems" value={e.pharma_hunter_pro.results.gemCount} />
+                                    </CardContent>
+                                </Card>
+                            )}
+                             {!e.ceylon_pharmacy && !e.pharma_hunter && !e.pharma_hunter_pro && (
+                                <p className="text-sm text-muted-foreground text-center py-4">No game data available for this course.</p>
+                             )}
+                        </TabsContent>
+                    ))}
+                </Tabs>
+            </DialogContent>
+        </Dialog>
     );
 };
 
@@ -347,6 +446,7 @@ export default function ConvocationOrdersPage() {
                                             <TableHead>Ceremony #</TableHead>
                                             <TableHead>Course IDs</TableHead>
                                             <TableHead>Certificates</TableHead>
+                                            <TableHead>Game Info</TableHead>
                                             <TableHead>Eligibility Status</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -358,6 +458,9 @@ export default function ConvocationOrdersPage() {
                                                 <TableCell>{reg.course_id}</TableCell>
                                                 <TableCell>
                                                     <CertificateStatusCell studentNumber={reg.student_number} convocationCourseIds={reg.course_id} />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <GameInfoCell studentNumber={reg.student_number} convocationCourseIds={reg.course_id} />
                                                 </TableCell>
                                                 <TableCell>
                                                     <EligibilityStatusCell registration={reg} />
@@ -386,6 +489,10 @@ export default function ConvocationOrdersPage() {
                                             <div className="flex items-center justify-between">
                                                 <p className="text-muted-foreground font-medium">Certificates</p>
                                                 <CertificateStatusCell studentNumber={reg.student_number} convocationCourseIds={reg.course_id} />
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-muted-foreground font-medium">Game Info</p>
+                                                <GameInfoCell studentNumber={reg.student_number} convocationCourseIds={reg.course_id} />
                                             </div>
                                         </div>
                                         <div className="pt-2 border-t">
