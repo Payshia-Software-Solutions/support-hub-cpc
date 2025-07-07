@@ -2,9 +2,9 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getCertificateOrders, getStudentFullInfo } from '@/lib/api';
-import type { CertificateOrder, FullStudentData } from '@/lib/types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getCertificateOrders, getStudentFullInfo, updateCertificateOrderCourses } from '@/lib/api';
+import type { CertificateOrder, FullStudentData, UpdateCertificateOrderCoursesPayload } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,27 +12,116 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle, Loader2, XCircle, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const ITEMS_PER_PAGE = 25;
 
-// --- Eligibility Status Component ---
-const EligibilityStatusCell = ({ studentNumber, courseId }: { studentNumber: string, courseId: string }) => {
-    const { data: studentData, isLoading, isError, isFetching } = useQuery<FullStudentData, Error>({
-        queryKey: ['studentFullInfoForEligibility', studentNumber],
-        queryFn: () => getStudentFullInfo(studentNumber),
-        staleTime: 5 * 60 * 1000, // 5 minutes
+// --- Action Component ---
+const OrderActionsCell = ({ order }: { order: CertificateOrder }) => {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [dialogContent, setDialogContent] = useState<{ title: string, description: React.ReactNode, onConfirm?: () => void }>({});
+    const queryClient = useQueryClient();
+
+    const { data: fullStudentData, isLoading, isError } = useQuery<FullStudentData, Error>({
+        queryKey: ['studentFullInfoForEligibility', order.created_by],
+        queryFn: () => getStudentFullInfo(order.created_by),
+        staleTime: 5 * 60 * 1000,
         retry: 1,
-        enabled: !!studentNumber,
     });
 
-    const eligibilityStatus = useMemo(() => {
-        if (!studentData) return null;
-        const enrollment = Object.values(studentData.studentEnrollments).find(e => e.parent_course_id === courseId);
-        if (!enrollment) return 'not_found';
-        return enrollment.certificate_eligibility;
-    }, [studentData, courseId]);
+    const { newEligibleEnrollments, isUpdateAvailable } = useMemo(() => {
+        if (!fullStudentData) {
+            return { newEligibleEnrollments: [], isUpdateAvailable: false };
+        }
+        
+        const currentCourses = order.course_code.split(',').map(s => s.trim()).filter(Boolean);
+        
+        const allEligibleEnrollments = Object.values(fullStudentData.studentEnrollments)
+            .filter(e => e.certificate_eligibility);
 
-    if (isLoading || isFetching) {
+        const newEnrollments = allEligibleEnrollments.filter(enrollment => 
+            !currentCourses.includes(enrollment.parent_course_id)
+        );
+        
+        return { newEligibleEnrollments, isUpdateAvailable: newEnrollments.length > 0 };
+    }, [fullStudentData, order.course_code]);
+
+    const { mutate: updateCourses, isPending: isUpdating } = useMutation({
+        mutationFn: (payload: UpdateCertificateOrderCoursesPayload) => updateCertificateOrderCourses(payload),
+        onSuccess: (data) => {
+            toast({
+                title: "Update Successful",
+                description: "The certificate order has been updated.",
+            });
+            queryClient.invalidateQueries({ queryKey: ['allCertificateOrders'] });
+            setIsDialogOpen(false);
+        },
+        onError: (error: Error) => {
+            toast({
+                variant: 'destructive',
+                title: 'Update Failed',
+                description: error.message,
+            });
+        }
+    });
+
+    const openUpdateDialog = () => {
+        if (!newEligibleEnrollments.length) return;
+
+        const currentCourses = order.course_code.split(',').map(s => s.trim()).filter(Boolean);
+        
+        const onConfirm = () => {
+            const newEligibleCourseIds = newEligibleEnrollments.map(e => e.parent_course_id);
+            const allCourseIds = [...currentCourses, ...newEligibleCourseIds];
+
+            updateCourses({
+                orderId: order.id,
+                courseCodes: allCourseIds.join(','),
+            });
+        };
+
+        setDialogContent({
+            title: "Update Certificate Order",
+            description: (
+                <div className="text-sm">
+                    <p className="mb-3">This student is eligible for the following additional course(s). Do you want to add them to this certificate order?</p>
+                    <div className="space-y-4 rounded-md border bg-muted/50 p-3 max-h-60 overflow-y-auto">
+                        {newEligibleEnrollments.map(enrollment => (
+                            <div key={enrollment.parent_course_id}>
+                                <h4 className="font-semibold text-card-foreground">{enrollment.parent_course_name}</h4>
+                                <ul className="mt-1 list-disc list-inside text-xs text-muted-foreground space-y-1 pl-2">
+                                    {enrollment.criteria_details.map(c => (
+                                        <li key={c.id} className="flex items-center justify-between">
+                                            <span>{c.list_name}</span>
+                                            {c.evaluation.completed ? (
+                                                 <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5" /> Complete</span>
+                                            ) : (
+                                                 <span className="text-red-600 font-medium flex items-center gap-1"><XCircle className="h-3.5 w-3.5" /> Incomplete</span>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ),
+            onConfirm
+        });
+        setIsDialogOpen(true);
+    };
+
+    if (isLoading) {
         return (
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -45,26 +134,36 @@ const EligibilityStatusCell = ({ studentNumber, courseId }: { studentNumber: str
         return <Badge variant="destructive">Check Failed</Badge>;
     }
 
-    if (eligibilityStatus === 'not_found') {
-        return <Badge variant="secondary">Enrollment Not Found</Badge>;
-    }
-
-    if (eligibilityStatus) {
+    if (isUpdateAvailable) {
         return (
-            <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">
-                <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
-                Eligible
-            </Badge>
+            <>
+                <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>{dialogContent.title}</AlertDialogTitle>
+                            <AlertDialogDescription asChild>
+                                {dialogContent.description || <div />}
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={isUpdating}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={dialogContent.onConfirm} disabled={isUpdating}>
+                                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Update Order
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <Button variant="default" size="sm" onClick={openUpdateDialog}>
+                    Update Available
+                </Button>
+            </>
         );
     }
-
-    return (
-        <Badge variant="destructive">
-            <XCircle className="mr-1.5 h-3.5 w-3.5" />
-            Not Eligible
-        </Badge>
-    );
+    
+    return <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">Up to date</Badge>;
 };
+
 
 export default function CertificateOrdersListPage() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -162,10 +261,10 @@ export default function CertificateOrdersListPage() {
                                 <TableRow>
                                     <TableHead>Student</TableHead>
                                     <TableHead>Name on Certificate</TableHead>
-                                    <TableHead>Course ID</TableHead>
+                                    <TableHead>Course Code(s)</TableHead>
                                     <TableHead>Order Date</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead>Eligibility</TableHead>
+                                    <TableHead>Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -177,7 +276,7 @@ export default function CertificateOrdersListPage() {
                                         <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell><Badge variant="secondary">{order.certificate_status}</Badge></TableCell>
                                         <TableCell>
-                                            <EligibilityStatusCell studentNumber={order.created_by} courseId={order.course_code} />
+                                            <OrderActionsCell order={order} />
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -204,12 +303,12 @@ export default function CertificateOrdersListPage() {
                                         <Badge variant="secondary">{order.certificate_status}</Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <p className="text-muted-foreground font-medium">Course ID</p>
+                                        <p className="text-muted-foreground font-medium">Course Code(s)</p>
                                         <p>{order.course_code}</p>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-muted-foreground font-medium">Eligibility</p>
-                                        <EligibilityStatusCell studentNumber={order.created_by} courseId={order.course_code} />
+                                    <div className="flex items-center justify-between pt-2 border-t mt-2">
+                                        <p className="text-muted-foreground font-medium">Actions</p>
+                                        <OrderActionsCell order={order} />
                                     </div>
                                 </div>
                             </div>

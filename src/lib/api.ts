@@ -1,5 +1,5 @@
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -431,6 +431,25 @@ export const updateConvocationCourses = async (payload: UpdateConvocationCourses
     }
     return response.json();
 };
+
+export const updateCertificateOrderCourses = async (payload: UpdateCertificateOrderCoursesPayload): Promise<{ status: string; message: string; id: string; }> => {
+    const { orderId, courseCodes } = payload;
+    // NOTE: This endpoint is assumed. The actual endpoint may differ.
+    const response = await fetch(`https://qa-api.pharmacollege.lk/certificate-orders/update-courses/${orderId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ course_code: courseCodes })
+    });
+
+    if (!response.ok) {
+       const errorData = await response.json().catch(() => ({ error: `Failed to update courses for order. Status: ${response.status}` }));
+       throw new Error(errorData.error || 'Failed to update courses for order');
+    }
+    return response.json();
+};
+
 
 // User Certificate Print Status
 export const getUserCertificatePrintStatus = async (studentNumber: string): Promise<UserCertificatePrintStatus[]> => {

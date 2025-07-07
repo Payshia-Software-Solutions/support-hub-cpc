@@ -325,6 +325,11 @@ export interface UpdateConvocationCoursesPayload {
   courseIds: number[];
 }
 
+export interface UpdateCertificateOrderCoursesPayload {
+  orderId: string;
+  courseCodes: string;
+}
+
 export interface UserCertificatePrintStatus {
     id: string;
     student_number: string;
