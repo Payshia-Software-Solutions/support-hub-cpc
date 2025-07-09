@@ -85,27 +85,29 @@ const CertificateStatusCell = ({ order, studentNumber, orderCourseCodes }: { ord
 
     const orderCourseIds = orderCourseCodes.split(',').map(id => id.trim()).filter(Boolean);
 
-    const printedCertificates = certificates?.filter(
-        cert => cert.type === 'Certificate' && orderCourseIds.includes(cert.parent_course_id) && cert.print_status === '1'
+    // A certificate is "generated" if a record exists for it, regardless of print_status.
+    const generatedCertificates = certificates?.filter(
+        cert => cert.type === 'Certificate' && orderCourseIds.includes(cert.parent_course_id)
     ) || [];
 
-    const printedCourseIds = printedCertificates.map(c => c.parent_course_id);
-    const ungeneratedCourseIds = orderCourseIds.filter(id => !printedCourseIds.includes(id));
+    const generatedCourseIds = generatedCertificates.map(c => c.parent_course_id);
+    const ungeneratedCourseIds = orderCourseIds.filter(id => !generatedCourseIds.includes(id));
+
 
     return (
         <div className="flex flex-wrap gap-2 items-center">
-            {printedCertificates.map(cert => (
+            {generatedCertificates.map(cert => (
                 <TooltipProvider key={cert.id}>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Badge variant='default'>
+                             <Badge variant={cert.print_status === '1' ? 'default' : 'secondary'}>
                                 {cert.parent_course_id}: {cert.certificate_id}
                             </Badge>
                         </TooltipTrigger>
                         <TooltipContent>
                             <p>Course ID: {cert.parent_course_id}</p>
                             <p>{cert.type}: {cert.certificate_id}</p>
-                            <p>Status: Printed</p>
+                            <p>Status: {cert.print_status === '1' ? 'Printed' : 'Generated'}</p>
                             <p>Date: {new Date(cert.print_date).toLocaleDateString()}</p>
                         </TooltipContent>
                     </Tooltip>
@@ -144,7 +146,7 @@ const CertificateStatusCell = ({ order, studentNumber, orderCourseCodes }: { ord
                 )
             })}
 
-            {printedCertificates.length === 0 && ungeneratedCourseIds.length === 0 && (
+            {generatedCertificates.length === 0 && ungeneratedCourseIds.length === 0 && (
                  <Badge variant="secondary">None</Badge>
             )}
         </div>
@@ -469,5 +471,3 @@ export default function CertificateOrdersListPage() {
         </div>
     );
 }
-
-    
