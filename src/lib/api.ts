@@ -454,6 +454,12 @@ export const updateCertificateOrderCourses = async (payload: UpdateCertificateOr
 // User Certificate Print Status
 export const getUserCertificatePrintStatus = async (studentNumber: string): Promise<UserCertificatePrintStatus[]> => {
     const response = await fetch(`https://qa-api.pharmacollege.lk/user_certificate_print_status?studentNumber=${studentNumber}`);
+    
+    // If not found, it's not a server error, just no records. Return empty array.
+    if (response.status === 404) {
+        return [];
+    }
+    
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: `Failed to fetch certificate status. Status: ${response.status}` }));
         throw new Error(errorData.error || 'Failed to fetch certificate status');
