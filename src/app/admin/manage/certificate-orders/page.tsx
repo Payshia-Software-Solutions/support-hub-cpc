@@ -119,10 +119,14 @@ const CertificateStatusCell = ({ order, studentNumber, orderCourseCodes }: { ord
                 const isGeneratingThisOne = isGenerating && generatingVariables?.parentCourseCode === parseInt(courseId, 10);
 
                 const handleGenerateClick = () => {
+                     if (!user || !user.username) {
+                        toast({ variant: 'destructive', title: 'Error', description: 'Could not identify admin user.' });
+                        return;
+                    }
                     const payload: GenerateCertificatePayload = {
                         student_number: studentNumber,
                         print_status: "Printed",
-                        print_by: "admin_user", // As requested
+                        print_by: user.username,
                         type: "Certificate",
                         parentCourseCode: parseInt(courseId, 10),
                         referenceId: parseInt(order.id, 10),
@@ -465,3 +469,5 @@ export default function CertificateOrdersListPage() {
         </div>
     );
 }
+
+    
