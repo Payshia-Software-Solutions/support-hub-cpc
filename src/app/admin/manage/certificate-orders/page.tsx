@@ -135,7 +135,7 @@ const OrderActionsCell = ({ order }: { order: CertificateOrder }) => {
             !currentCourses.includes(enrollment.parent_course_id)
         );
         
-        return { newEligibleEnrollments, isUpdateAvailable: newEnrollments.length > 0 };
+        return { newEligibleEnrollments: newEnrollments, isUpdateAvailable: newEnrollments.length > 0 };
     }, [fullStudentData, order.course_code]);
 
     const { mutate: updateCourses, isPending: isUpdating } = useMutation({
@@ -424,5 +424,3 @@ export default function CertificateOrdersListPage() {
         </div>
     );
 }
-
-    
