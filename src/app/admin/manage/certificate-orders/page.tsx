@@ -3,8 +3,8 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCertificateOrders, getStudentFullInfo, updateCertificateOrderCourses } from '@/lib/api';
-import type { CertificateOrder, FullStudentData, UpdateCertificateOrderCoursesPayload } from '@/lib/types';
+import { getCertificateOrders, getStudentFullInfo, updateCertificateOrderCourses, getUserCertificatePrintStatus } from '@/lib/api';
+import type { CertificateOrder, FullStudentData, UpdateCertificateOrderCoursesPayload, UserCertificatePrintStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,8 +23,65 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const ITEMS_PER_PAGE = 25;
+
+// --- Certificate Status Component ---
+const CertificateStatusCell = ({ studentNumber, orderCourseCodes }: { studentNumber: string, orderCourseCodes: string }) => {
+    const { data: certificates, isLoading, isError } = useQuery<UserCertificatePrintStatus[], Error>({
+        queryKey: ['userCertificateStatus', studentNumber],
+        queryFn: () => getUserCertificatePrintStatus(studentNumber),
+        staleTime: 5 * 60 * 1000,
+        enabled: !!studentNumber,
+    });
+
+    const relevantCourseIds = orderCourseCodes.split(',').map(id => id.trim());
+
+    if (isLoading) {
+        return <Skeleton className="h-6 w-24" />;
+    }
+
+    if (isError) {
+        return <Badge variant="destructive">Error</Badge>;
+    }
+
+    const printedCertificates = certificates?.filter(
+        cert => cert.type === 'Certificate' && relevantCourseIds.includes(cert.parent_course_id) && cert.print_status === '1'
+    ) || [];
+
+    if (printedCertificates.length === 0) {
+        return <Badge variant="secondary">None</Badge>;
+    }
+
+    return (
+        <div className="flex flex-wrap gap-1">
+            {printedCertificates.map(cert => (
+                <TooltipProvider key={cert.id}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Badge variant='default'>
+                                {cert.certificate_id}
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Course ID: {cert.parent_course_id}</p>
+                            <p>{cert.type}: {cert.certificate_id}</p>
+                            <p>Status: Printed</p>
+                            <p>Date: {new Date(cert.print_date).toLocaleDateString()}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            ))}
+        </div>
+    );
+};
+
 
 // --- Action Component ---
 const OrderActionsCell = ({ order }: { order: CertificateOrder }) => {
@@ -262,6 +319,7 @@ export default function CertificateOrdersListPage() {
                                     <TableHead>Student</TableHead>
                                     <TableHead>Name on Certificate</TableHead>
                                     <TableHead>Course Code(s)</TableHead>
+                                    <TableHead>Generated Certificates</TableHead>
                                     <TableHead>Order Date</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Actions</TableHead>
@@ -273,6 +331,9 @@ export default function CertificateOrdersListPage() {
                                         <TableCell className="font-medium">{order.created_by}</TableCell>
                                         <TableCell>{order.name_on_certificate}</TableCell>
                                         <TableCell>{order.course_code}</TableCell>
+                                        <TableCell>
+                                            <CertificateStatusCell studentNumber={order.created_by} orderCourseCodes={order.course_code} />
+                                        </TableCell>
                                         <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell><Badge variant="secondary">{order.certificate_status}</Badge></TableCell>
                                         <TableCell>
@@ -305,6 +366,10 @@ export default function CertificateOrdersListPage() {
                                     <div className="flex items-center justify-between">
                                         <p className="text-muted-foreground font-medium">Course Code(s)</p>
                                         <p>{order.course_code}</p>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-muted-foreground font-medium">Generated Certs</p>
+                                        <CertificateStatusCell studentNumber={order.created_by} orderCourseCodes={order.course_code} />
                                     </div>
                                     <div className="flex items-center justify-between pt-2 border-t mt-2">
                                         <p className="text-muted-foreground font-medium">Actions</p>
