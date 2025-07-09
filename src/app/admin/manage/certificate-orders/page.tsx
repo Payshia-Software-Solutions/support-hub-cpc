@@ -66,7 +66,7 @@ const CertificateStatusCell = ({ studentNumber, orderCourseCodes }: { studentNum
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Badge variant='default'>
-                                {cert.certificate_id}
+                                {cert.parent_course_id}: {cert.certificate_id}
                             </Badge>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -106,11 +106,11 @@ const OrderActionsCell = ({ order }: { order: CertificateOrder }) => {
         const allEligibleEnrollments = Object.values(fullStudentData.studentEnrollments)
             .filter(e => e.certificate_eligibility);
 
-        const newEligibleEnrollments = allEligibleEnrollments.filter(enrollment => 
+        const newEnrollments = allEligibleEnrollments.filter(enrollment => 
             !currentCourses.includes(enrollment.parent_course_id)
         );
         
-        return { newEligibleEnrollments, isUpdateAvailable: newEligibleEnrollments.length > 0 };
+        return { newEligibleEnrollments: newEnrollments, isUpdateAvailable: newEnrollments.length > 0 };
     }, [fullStudentData, order.course_code]);
 
     const { mutate: updateCourses, isPending: isUpdating } = useMutation({
@@ -397,5 +397,3 @@ export default function CertificateOrdersListPage() {
         </div>
     );
 }
-
-    
