@@ -3,8 +3,8 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCertificateOrders, getStudentFullInfo, updateCertificateOrderCourses, getUserCertificatePrintStatus } from '@/lib/api';
-import type { CertificateOrder, FullStudentData, UpdateCertificateOrderCoursesPayload, UserCertificatePrintStatus } from '@/lib/types';
+import { getCertificateOrders, getStudentFullInfo, updateCertificateOrderCourses, getUserCertificatePrintStatus, generateCertificate } from '@/lib/api';
+import type { CertificateOrder, FullStudentData, UpdateCertificateOrderCoursesPayload, UserCertificatePrintStatus, GenerateCertificatePayload } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -29,11 +29,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAuth } from '@/contexts/AuthContext';
+
 
 const ITEMS_PER_PAGE = 25;
 
 // --- Certificate Status Component ---
-const CertificateStatusCell = ({ studentNumber, orderCourseCodes }: { studentNumber: string, orderCourseCodes: string }) => {
+const CertificateStatusCell = ({ order, studentNumber, orderCourseCodes }: { order: CertificateOrder, studentNumber: string, orderCourseCodes: string }) => {
+    const queryClient = useQueryClient();
+    const { user } = useAuth();
+
     const { data: certificates, isLoading: isLoadingCerts, isError: isErrorCerts } = useQuery<UserCertificatePrintStatus[], Error>({
         queryKey: ['userCertificateStatus', studentNumber],
         queryFn: () => getUserCertificatePrintStatus(studentNumber),
@@ -46,6 +51,25 @@ const CertificateStatusCell = ({ studentNumber, orderCourseCodes }: { studentNum
         queryFn: () => getStudentFullInfo(studentNumber),
         staleTime: 5 * 60 * 1000,
         enabled: !!studentNumber,
+    });
+
+    const { mutate: generateCert, isPending: isGenerating, variables: generatingVariables } = useMutation({
+        mutationFn: (payload: GenerateCertificatePayload) => generateCertificate(payload),
+        onSuccess: () => {
+            toast({
+                title: "Certificate Generated",
+                description: "The certificate record has been created successfully.",
+            });
+            // Refetch the status to update the UI
+            queryClient.invalidateQueries({ queryKey: ['userCertificateStatus', studentNumber] });
+        },
+        onError: (error: Error) => {
+            toast({
+                variant: 'destructive',
+                title: 'Generation Failed',
+                description: error.message,
+            });
+        }
     });
 
     const isLoading = isLoadingCerts || isLoadingInfo;
@@ -92,8 +116,25 @@ const CertificateStatusCell = ({ studentNumber, orderCourseCodes }: { studentNum
                 const enrollment = Object.values(fullStudentData.studentEnrollments).find(e => e.parent_course_id === courseId);
                 if (!enrollment) return null;
 
+                const isGeneratingThisOne = isGenerating && generatingVariables?.parentCourseCode === parseInt(courseId, 10);
+
+                const handleGenerateClick = () => {
+                    const payload: GenerateCertificatePayload = {
+                        student_number: studentNumber,
+                        print_status: "Printed",
+                        print_by: "admin_user", // As requested
+                        type: "Certificate",
+                        parentCourseCode: parseInt(courseId, 10),
+                        referenceId: parseInt(order.id, 10),
+                        course_code: enrollment.course_code,
+                        source: "courier"
+                    };
+                    generateCert(payload);
+                };
+
                 return (
-                    <Button key={courseId} size="sm" variant="outline">
+                    <Button key={courseId} size="sm" variant="outline" onClick={handleGenerateClick} disabled={isGeneratingThisOne}>
+                        {isGeneratingThisOne && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Generate ({enrollment.course_code})
                     </Button>
                 )
@@ -357,7 +398,7 @@ export default function CertificateOrdersListPage() {
                                         <TableCell>{order.name_on_certificate}</TableCell>
                                         <TableCell>{order.course_code}</TableCell>
                                         <TableCell>
-                                            <CertificateStatusCell studentNumber={order.created_by} orderCourseCodes={order.course_code} />
+                                            <CertificateStatusCell order={order} studentNumber={order.created_by} orderCourseCodes={order.course_code} />
                                         </TableCell>
                                         <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell><Badge variant="secondary">{order.certificate_status}</Badge></TableCell>
@@ -395,7 +436,7 @@ export default function CertificateOrdersListPage() {
                                     <div className="flex items-start justify-between">
                                         <p className="text-muted-foreground font-medium shrink-0 pr-2">Generated Certs</p>
                                         <div className="text-right">
-                                            <CertificateStatusCell studentNumber={order.created_by} orderCourseCodes={order.course_code} />
+                                            <CertificateStatusCell order={order} studentNumber={order.created_by} orderCourseCodes={order.course_code} />
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between pt-2 border-t mt-2">

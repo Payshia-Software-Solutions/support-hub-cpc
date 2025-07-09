@@ -342,4 +342,14 @@ export interface UserCertificatePrintStatus {
     parent_course_id: string;
 }
 
+export interface GenerateCertificatePayload {
+  student_number: string;
+  print_status: string;
+  print_by: string;
+  type: string;
+  parentCourseCode: number;
+  referenceId: number;
+  course_code: string; 
+  source: string;
+}
     

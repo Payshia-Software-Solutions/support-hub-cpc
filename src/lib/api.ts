@@ -1,5 +1,5 @@
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -463,6 +463,22 @@ export const getUserCertificatePrintStatus = async (studentNumber: string): Prom
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: `Failed to fetch certificate status. Status: ${response.status}` }));
         throw new Error(errorData.error || 'Failed to fetch certificate status');
+    }
+    return response.json();
+};
+
+export const generateCertificate = async (payload: GenerateCertificatePayload): Promise<any> => {
+    const response = await fetch(`https://qa-api.pharmacollege.lk/certificate-print-status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Certificate generation failed. Status: ${response.status}` }));
+        throw new Error(errorData.message || 'Certificate generation failed');
     }
     return response.json();
 };
