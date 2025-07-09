@@ -106,11 +106,11 @@ const OrderActionsCell = ({ order }: { order: CertificateOrder }) => {
         const allEligibleEnrollments = Object.values(fullStudentData.studentEnrollments)
             .filter(e => e.certificate_eligibility);
 
-        const newEnrollments = allEligibleEnrollments.filter(enrollment => 
+        const newEligibleEnrollments = allEligibleEnrollments.filter(enrollment => 
             !currentCourses.includes(enrollment.parent_course_id)
         );
         
-        return { newEligibleEnrollments: newEnrollments, isUpdateAvailable: newEnrollments.length > 0 };
+        return { newEligibleEnrollments, isUpdateAvailable: newEligibleEnrollments.length > 0 };
     }, [fullStudentData, order.course_code]);
 
     const { mutate: updateCourses, isPending: isUpdating } = useMutation({
@@ -397,3 +397,5 @@ export default function CertificateOrdersListPage() {
         </div>
     );
 }
+
+    
