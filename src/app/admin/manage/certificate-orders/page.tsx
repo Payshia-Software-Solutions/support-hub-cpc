@@ -34,14 +34,22 @@ const ITEMS_PER_PAGE = 25;
 
 // --- Certificate Status Component ---
 const CertificateStatusCell = ({ studentNumber, orderCourseCodes }: { studentNumber: string, orderCourseCodes: string }) => {
-    const { data: certificates, isLoading, isError } = useQuery<UserCertificatePrintStatus[], Error>({
+    const { data: certificates, isLoading: isLoadingCerts, isError: isErrorCerts } = useQuery<UserCertificatePrintStatus[], Error>({
         queryKey: ['userCertificateStatus', studentNumber],
         queryFn: () => getUserCertificatePrintStatus(studentNumber),
         staleTime: 5 * 60 * 1000,
         enabled: !!studentNumber,
     });
 
-    const relevantCourseIds = orderCourseCodes.split(',').map(id => id.trim());
+    const { data: fullStudentData, isLoading: isLoadingInfo, isError: isErrorInfo } = useQuery<FullStudentData, Error>({
+        queryKey: ['studentFullInfoForCertGen', studentNumber],
+        queryFn: () => getStudentFullInfo(studentNumber),
+        staleTime: 5 * 60 * 1000,
+        enabled: !!studentNumber,
+    });
+
+    const isLoading = isLoadingCerts || isLoadingInfo;
+    const isError = isErrorCerts || isErrorInfo;
 
     if (isLoading) {
         return <Skeleton className="h-6 w-24" />;
@@ -51,16 +59,17 @@ const CertificateStatusCell = ({ studentNumber, orderCourseCodes }: { studentNum
         return <Badge variant="destructive">Error</Badge>;
     }
 
+    const orderCourseIds = orderCourseCodes.split(',').map(id => id.trim()).filter(Boolean);
+
     const printedCertificates = certificates?.filter(
-        cert => cert.type === 'Certificate' && relevantCourseIds.includes(cert.parent_course_id) && cert.print_status === '1'
+        cert => cert.type === 'Certificate' && orderCourseIds.includes(cert.parent_course_id) && cert.print_status === '1'
     ) || [];
 
-    if (printedCertificates.length === 0) {
-        return <Badge variant="secondary">None</Badge>;
-    }
+    const printedCourseIds = printedCertificates.map(c => c.parent_course_id);
+    const ungeneratedCourseIds = orderCourseIds.filter(id => !printedCourseIds.includes(id));
 
     return (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-2 items-center">
             {printedCertificates.map(cert => (
                 <TooltipProvider key={cert.id}>
                     <Tooltip>
@@ -78,9 +87,25 @@ const CertificateStatusCell = ({ studentNumber, orderCourseCodes }: { studentNum
                     </Tooltip>
                 </TooltipProvider>
             ))}
+            
+            {fullStudentData && ungeneratedCourseIds.map(courseId => {
+                const enrollment = Object.values(fullStudentData.studentEnrollments).find(e => e.parent_course_id === courseId);
+                if (!enrollment) return null;
+
+                return (
+                    <Button key={courseId} size="sm" variant="outline">
+                        Generate ({enrollment.course_code})
+                    </Button>
+                )
+            })}
+
+            {printedCertificates.length === 0 && ungeneratedCourseIds.length === 0 && (
+                 <Badge variant="secondary">None</Badge>
+            )}
         </div>
     );
 };
+
 
 
 // --- Action Component ---
@@ -110,7 +135,7 @@ const OrderActionsCell = ({ order }: { order: CertificateOrder }) => {
             !currentCourses.includes(enrollment.parent_course_id)
         );
         
-        return { newEligibleEnrollments: newEnrollments, isUpdateAvailable: newEnrollments.length > 0 };
+        return { newEligibleEnrollments, isUpdateAvailable: newEnrollments.length > 0 };
     }, [fullStudentData, order.course_code]);
 
     const { mutate: updateCourses, isPending: isUpdating } = useMutation({
@@ -367,9 +392,11 @@ export default function CertificateOrdersListPage() {
                                         <p className="text-muted-foreground font-medium">Course Code(s)</p>
                                         <p>{order.course_code}</p>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-muted-foreground font-medium">Generated Certs</p>
-                                        <CertificateStatusCell studentNumber={order.created_by} orderCourseCodes={order.course_code} />
+                                    <div className="flex items-start justify-between">
+                                        <p className="text-muted-foreground font-medium shrink-0 pr-2">Generated Certs</p>
+                                        <div className="text-right">
+                                            <CertificateStatusCell studentNumber={order.created_by} orderCourseCodes={order.course_code} />
+                                        </div>
                                     </div>
                                     <div className="flex items-center justify-between pt-2 border-t mt-2">
                                         <p className="text-muted-foreground font-medium">Actions</p>
@@ -397,3 +424,5 @@ export default function CertificateOrdersListPage() {
         </div>
     );
 }
+
+    
