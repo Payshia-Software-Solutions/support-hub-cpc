@@ -1,5 +1,5 @@
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -464,7 +464,8 @@ export const getUserCertificatePrintStatus = async (studentNumber: string): Prom
         const errorData = await response.json().catch(() => ({ error: `Failed to fetch certificate status. Status: ${response.status}` }));
         throw new Error(errorData.error || 'Failed to fetch certificate status');
     }
-    return response.json();
+    const data = await response.json();
+    return data.certificateStatus || []; // Ensure it returns an array
 };
 
 export const generateCertificate = async (payload: GenerateCertificatePayload): Promise<any> => {
@@ -493,4 +494,49 @@ export const getDeliveryOrdersForStudent = async (studentNumber: string): Promis
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
+};
+
+
+// Batch-based student fetching
+export const getStudentsByBatch = async (batchId: string): Promise<StudentInBatch[]> => {
+    // This is a placeholder for a real API endpoint.
+    // In a real app, this would be: `https://qa-api.pharmacollege.lk/students?batchId=${batchId}`
+    // For now, we fetch all users and filter them based on a dummy enrollment check.
+    const allUsers = await getAllUserFullDetails();
+    // This is a mock filter. Replace with real logic.
+    return allUsers.filter(u => u.username.startsWith('PA'));
+};
+
+
+// Create delivery order
+export const createDeliveryOrderForStudent = async (payload: CreateDeliveryOrderPayload): Promise<any> => {
+    // This is a placeholder for the real API endpoint and payload structure
+    console.log("Simulating delivery order creation with payload:", payload);
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+    
+    // In a real implementation:
+    /*
+    const response = await fetch(`https://qa-api.pharmacollege.lk/delivery_orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            index_number: payload.studentNumber,
+            course_code: payload.courseCode,
+            full_name: payload.fullName,
+            street_address: payload.address,
+            phone_1: payload.phone,
+            delivery_title: payload.title, // Assuming API supports this
+            notes: payload.notes, // Assuming API supports this
+            // ... other required fields
+        })
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create delivery order' }));
+        throw new Error(errorData.message || 'Request failed');
+    }
+    return response.json();
+    */
+
+    // Returning a mock success response
+    return { success: true, message: "Order created successfully." };
 };

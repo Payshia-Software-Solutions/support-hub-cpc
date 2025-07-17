@@ -1,5 +1,6 @@
 
 
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -370,4 +371,24 @@ export interface DeliveryOrder {
   city: string;
   district: string;
   order_recived_status: string; // The display status
+}
+
+export interface StudentInBatch {
+    id: string;
+    username: string;
+    full_name: string;
+    address_line_1: string;
+    address_line_2: string;
+    city: string;
+    telephone_1: string;
+}
+
+export interface CreateDeliveryOrderPayload {
+    studentNumber: string;
+    courseCode: string;
+    title: string;
+    notes: string;
+    address: string;
+    fullName: string;
+    phone: string;
 }
