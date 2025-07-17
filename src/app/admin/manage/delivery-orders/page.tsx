@@ -62,6 +62,14 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
     // Effect to default to the first delivery setting if available and none is selected
     useEffect(() => {
         if (!isLoadingSettings && deliverySettings && deliverySettings.length > 0 && !selectedDeliverySettingId) {
+            const savedDefaults = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if(savedDefaults) {
+                const { deliverySettingId, remember } = JSON.parse(savedDefaults);
+                if(remember && deliverySettingId) {
+                     setSelectedDeliverySettingId(deliverySettingId);
+                     return;
+                }
+            }
             setSelectedDeliverySettingId(deliverySettings[0].id);
         }
     }, [isLoadingSettings, deliverySettings, selectedDeliverySettingId]);
@@ -180,6 +188,8 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
                             <SelectContent>
                                 <SelectItem value="1">Processing</SelectItem>
                                 <SelectItem value="2">Packed</SelectItem>
+                                <SelectItem value="3">Delivered</SelectItem>
+                                <SelectItem value="4">Removed</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
