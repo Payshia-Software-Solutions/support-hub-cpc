@@ -17,8 +17,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { getStudentsByCourseCode, createDeliveryOrderForStudent, getDeliveryOrdersForStudent, getCourses, getDeliverySettingsForCourse } from '@/lib/api';
 import type { StudentInBatch, DeliveryOrder, Course, DeliverySetting } from '@/lib/types';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const ITEMS_PER_PAGE = 25;
+const LOCAL_STORAGE_KEY = 'deliveryOrderDefaults';
 
 // --- Sub-components for actions ---
 
@@ -28,7 +30,27 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
     const [trackingNumber, setTrackingNumber] = useState('');
     const [deliveryNotes, setDeliveryNotes] = useState('');
     const [currentStatus, setCurrentStatus] = useState('1'); // Default to '1' (Processing)
+    const [rememberSettings, setRememberSettings] = useState(false);
     const queryClient = useQueryClient();
+
+    // Load saved settings from localStorage when the dialog is opened
+    useEffect(() => {
+        if (isDialogOpen) {
+            try {
+                const savedDefaults = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (savedDefaults) {
+                    const { deliverySettingId, status, remember } = JSON.parse(savedDefaults);
+                    if (remember) {
+                        setSelectedDeliverySettingId(deliverySettingId || '');
+                        setCurrentStatus(status || '1');
+                        setRememberSettings(true);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to load saved settings:", error);
+            }
+        }
+    }, [isDialogOpen]);
 
     const { data: deliverySettings, isLoading: isLoadingSettings } = useQuery<DeliverySetting[]>({
         queryKey: ['deliverySettings', selectedBatch.courseCode],
@@ -43,13 +65,33 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
                 title: 'Order Created!',
                 description: `A new delivery order for ${student.full_name} has been created.`,
             });
-            // Refetch the delivery orders for this student to update the UI
             queryClient.invalidateQueries({ queryKey: ['studentDeliveryOrders', student.username] });
-            setIsDialogOpen(false);
-            setSelectedDeliverySettingId('');
+
+            // Save settings if checked
+            if (rememberSettings) {
+                try {
+                    const defaults = {
+                        deliverySettingId: selectedDeliverySettingId,
+                        status: currentStatus,
+                        remember: true,
+                    };
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(defaults));
+                } catch (error) {
+                    console.error("Failed to save settings:", error);
+                }
+            } else {
+                // Clear saved settings if unchecked
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+            }
+
+            // Reset for next entry
+            if (!rememberSettings) {
+                setSelectedDeliverySettingId('');
+                setCurrentStatus('1');
+            }
             setTrackingNumber('');
             setDeliveryNotes('');
-            setCurrentStatus('1');
+            setIsDialogOpen(false);
         },
         onError: (error: Error) => {
             toast({
@@ -87,7 +129,7 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
                     <PlusCircle className="mr-2 h-4 w-4" /> Create Order
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>New Delivery for {student.full_name}</DialogTitle>
                     <DialogDescription>
@@ -141,6 +183,16 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
                         <Label htmlFor="delivery-notes">Notes (Optional)</Label>
                         <Textarea id="delivery-notes" value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} placeholder="Special instructions..."/>
                     </div>
+                    <div className="flex items-center space-x-2 pt-2">
+                        <Checkbox 
+                            id="remember-settings" 
+                            checked={rememberSettings}
+                            onCheckedChange={(checked) => setRememberSettings(Boolean(checked))}
+                        />
+                        <Label htmlFor="remember-settings" className="text-sm font-normal text-muted-foreground">
+                            Remember my selections for next entry.
+                        </Label>
+                    </div>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
@@ -161,7 +213,6 @@ const OrderStatusCell = ({ student, selectedBatch }: { student: StudentInBatch, 
         staleTime: 5 * 60 * 1000,
     });
     
-    // Check if there is an order for the selected batch's course code
     const orderForBatch = useMemo(() => {
         if (!deliveryOrders) return undefined;
         return deliveryOrders.find(order => order.course_code === selectedBatch.courseCode);
@@ -177,8 +228,8 @@ const OrderStatusCell = ({ student, selectedBatch }: { student: StudentInBatch, 
 
     if (orderForBatch) {
         return (
-            <div className="flex flex-col items-start gap-1">
-                <span className="font-semibold">{orderForBatch.id}</span>
+             <div className="flex flex-col items-start gap-1">
+                <Badge variant="secondary">{orderForBatch.id}</Badge>
                 <span className="text-xs text-muted-foreground">{orderForBatch.tracking_number}</span>
             </div>
         );
