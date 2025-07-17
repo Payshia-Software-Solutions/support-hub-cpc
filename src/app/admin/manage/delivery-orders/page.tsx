@@ -129,7 +129,7 @@ const OrderStatusCell = ({ student, selectedBatch }: { student: StudentInBatch, 
     if (orderForBatch) {
         return (
             <div className="flex flex-col items-start gap-1">
-                <span className="font-semibold">{orderForBatch.delivery_id}</span>
+                <span className="font-semibold">{orderForBatch.id}</span>
                 <span className="text-xs text-muted-foreground">{orderForBatch.tracking_number}</span>
             </div>
         );
