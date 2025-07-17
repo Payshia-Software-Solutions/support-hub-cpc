@@ -116,13 +116,16 @@ const OrderStatusCell = ({ student, selectedBatch, onStatusChange }: { student: 
     });
     
     // Check if there is an order for the selected batch's course code
-    const orderForBatch = deliveryOrders?.find(order => order.course_code === selectedBatch.courseCode);
+    const orderForBatch = useMemo(() => {
+        if (!deliveryOrders) return undefined;
+        return deliveryOrders.find(order => order.course_code === selectedBatch.courseCode);
+    }, [deliveryOrders, selectedBatch.courseCode]);
 
     useEffect(() => {
         if (!isLoading) {
             onStatusChange(!!orderForBatch);
         }
-    }, [isLoading, !!orderForBatch, onStatusChange]);
+    }, [isLoading, orderForBatch, onStatusChange]);
 
     if (isLoading) {
         return <Skeleton className="h-6 w-24" />;
@@ -198,14 +201,8 @@ export default function BatchDeliveryOrdersPage() {
     const { orderedCount, notOrderedCount } = useMemo(() => {
         if (!students) return { orderedCount: 0, notOrderedCount: 0 };
         const ordered = students.filter(s => studentOrderStatus[s.student_course_id] === true).length;
-        // We only count students for whom we have a status, to avoid flicker
-        const checkedStudents = Object.keys(studentOrderStatus).length;
         const totalStudents = students.length;
         
-        // If not all students are checked yet, the notOrderedCount is less certain,
-        // but we can calculate based on what we know.
-        const notOrdered = Object.values(studentOrderStatus).filter(status => status === false).length;
-
         return { orderedCount: ordered, notOrderedCount: totalStudents - ordered };
     }, [students, studentOrderStatus]);
 
