@@ -1,53 +1,56 @@
+
 "use client";
 
 import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, AlertTriangle, User, Mail, Phone, Truck, Package, MapPin, CalendarDays, BookOpen, Tag } from 'lucide-react';
+import { Search, Loader2, AlertTriangle, User, Mail, Phone, Truck } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-
-// --- Type Definitions ---
-interface StudentInfo {
-    id: string;
-    student_id: string;
-    full_name: string;
-    e_mail: string;
-    telephone_1: string;
-    nic: string;
-    address_line_1: string;
-    address_line_2: string;
-    city: string;
-    district: string;
-}
-
-interface StudentEnrollment {
-    id: string;
-    course_code: string;
-    batch_name: string;
-    parent_course_name: string;
-}
-
-interface FullStudentData {
-    studentInfo: StudentInfo;
-    studentEnrollments: Record<string, StudentEnrollment>;
-}
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { createDeliveryOrder } from '@/lib/api';
+import type { FullStudentData, StudentEnrollment, DeliveryOrderPayload } from '@/lib/types';
 
 export default function CreateDeliveryOrderPage() {
+    const queryClient = useQueryClient();
     const [studentId, setStudentId] = useState('');
     const [studentData, setStudentData] = useState<FullStudentData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Form state for new delivery
     const [deliveryTitle, setDeliveryTitle] = useState('');
     const [deliveryNotes, setDeliveryNotes] = useState('');
     const [deliveryAddress, setDeliveryAddress] = useState('');
+    const [selectedCourseCode, setSelectedCourseCode] = useState('');
+
+    const createOrderMutation = useMutation({
+        mutationFn: (payload: DeliveryOrderPayload) => createDeliveryOrder(payload),
+        onSuccess: (response) => {
+            toast({
+                title: 'Order Created Successfully',
+                description: `New delivery order has been created.`,
+            });
+            // Reset the form
+            setDeliveryTitle('');
+            setDeliveryNotes('');
+            setSelectedCourseCode('');
+            // Optionally clear student data to allow for a new search
+            // setStudentData(null); 
+            // setStudentId('');
+        },
+        onError: (err: Error) => {
+            toast({
+                variant: 'destructive',
+                title: 'Failed to Create Order',
+                description: err.message || 'An unknown error occurred.',
+            });
+        },
+    });
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -61,15 +64,15 @@ export default function CreateDeliveryOrderPage() {
         setStudentData(null);
 
         try {
+            // Using a generic fetch here, assuming getStudentFullInfo in api.ts exists
             const response = await fetch(`https://qa-api.pharmacollege.lk/get-student-full-info?loggedUser=${studentId.trim().toUpperCase()}`);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: `Student not found or server error. Status: ${response.status}` }));
                 throw new Error(errorData.message || 'Student data is invalid or not found.');
             }
-            const data = await response.json();
+            const data: FullStudentData = await response.json();
             if (data && data.studentInfo) {
                 setStudentData(data);
-                // Pre-fill address from student info
                 const fullAddress = [data.studentInfo.address_line_1, data.studentInfo.address_line_2, data.studentInfo.city, data.studentInfo.district]
                     .filter(Boolean)
                     .join(', ');
@@ -87,33 +90,44 @@ export default function CreateDeliveryOrderPage() {
 
     const handleCreateOrder = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!deliveryTitle || !deliveryAddress) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Delivery title and address are required.' });
+        if (!deliveryTitle || !deliveryAddress || !selectedCourseCode || !studentData) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Title, address, and course are required.' });
             return;
         }
 
-        setIsSubmitting(true);
-        // --- API call will go here ---
-        console.log("Submitting order:", {
-            studentId: studentData?.studentInfo.student_id,
-            title: deliveryTitle,
-            address: deliveryAddress,
+        const payload: DeliveryOrderPayload = {
+            delivery_id: '0', // API might handle this
+            tracking_number: 'PENDING',
+            index_number: studentData.studentInfo.student_id,
+            order_date: new Date().toISOString(),
+            packed_date: null,
+            send_date: null,
+            removed_date: null,
+            current_status: '1', // '1' for pending/new order
+            delivery_partner: '0',
+            value: '0.00',
+            payment_method: '0',
+            course_code: selectedCourseCode,
+            estimate_delivery: null,
+            full_name: studentData.studentInfo.full_name,
+            street_address: deliveryAddress,
+            city: studentData.studentInfo.city,
+            district: studentData.studentInfo.district,
+            phone_1: studentData.studentInfo.telephone_1,
+            phone_2: studentData.studentInfo.telephone_2,
+            is_active: '1',
+            received_date: null,
+            cod_amount: '0.00',
+            package_weight: '0.000',
+            // Custom fields from our form
+            delivery_title: deliveryTitle,
             notes: deliveryNotes,
-        });
+        };
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        toast({
-            title: 'Order Created (Simulated)',
-            description: `A new delivery order for ${studentData?.studentInfo.full_name} has been created.`,
-        });
-
-        // Reset form
-        setDeliveryTitle('');
-        setDeliveryNotes('');
-        setIsSubmitting(false);
+        createOrderMutation.mutate(payload);
     };
+
+    const enrollmentsArray = studentData ? Object.values(studentData.studentEnrollments) : [];
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -142,12 +156,7 @@ export default function CreateDeliveryOrderPage() {
                 </CardContent>
             </Card>
 
-            {isLoading && (
-                <div className="space-y-6">
-                    <Skeleton className="h-[170px] w-full" />
-                </div>
-            )}
-
+            {isLoading && <div className="space-y-6"><Skeleton className="h-[170px] w-full" /></div>}
             {error && !isLoading && (
                 <Card className="border-destructive">
                     <CardHeader><CardTitle className="flex items-center gap-2 text-destructive"><AlertTriangle /> Search Error</CardTitle></CardHeader>
@@ -158,9 +167,7 @@ export default function CreateDeliveryOrderPage() {
             {studentData && !isLoading && (
                 <div className="space-y-6">
                     <Card className="shadow-lg">
-                        <CardHeader>
-                            <CardTitle>Selected Student</CardTitle>
-                        </CardHeader>
+                        <CardHeader><CardTitle>Selected Student</CardTitle></CardHeader>
                         <CardContent className="p-4 md:p-6">
                             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-6">
                                 <Avatar className="w-24 h-24 text-4xl border-2 border-primary" data-ai-hint="student avatar">
@@ -186,42 +193,38 @@ export default function CreateDeliveryOrderPage() {
                                 <CardDescription>Enter the details for the new delivery.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="delivery-title">Delivery Title</Label>
-                                    <Input
-                                        id="delivery-title"
-                                        placeholder="e.g., Semester 2 Study Pack"
-                                        value={deliveryTitle}
-                                        onChange={(e) => setDeliveryTitle(e.target.value)}
-                                        required
-                                    />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="delivery-title">Delivery Title</Label>
+                                        <Input id="delivery-title" placeholder="e.g., Semester 2 Study Pack" value={deliveryTitle} onChange={(e) => setDeliveryTitle(e.target.value)} required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="course-code">Course</Label>
+                                        <Select value={selectedCourseCode} onValueChange={setSelectedCourseCode} required>
+                                            <SelectTrigger id="course-code"><SelectValue placeholder="Select a course" /></SelectTrigger>
+                                            <SelectContent>
+                                                {enrollmentsArray.map(enrollment => (
+                                                    <SelectItem key={enrollment.id} value={enrollment.course_code}>
+                                                        {enrollment.parent_course_name} ({enrollment.course_code})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="delivery-address">Delivery Address</Label>
-                                    <Textarea
-                                        id="delivery-address"
-                                        placeholder="Full delivery address"
-                                        value={deliveryAddress}
-                                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                                        required
-                                        rows={3}
-                                    />
-                                    <p className="text-xs text-muted-foreground">Address is pre-filled from the student's profile. You can edit it if needed.</p>
+                                    <Textarea id="delivery-address" placeholder="Full delivery address" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} required rows={3}/>
+                                    <p className="text-xs text-muted-foreground">Address is pre-filled. You can edit it if needed.</p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="delivery-notes">Notes (Optional)</Label>
-                                    <Textarea
-                                        id="delivery-notes"
-                                        placeholder="Any special instructions for the courier..."
-                                        value={deliveryNotes}
-                                        onChange={(e) => setDeliveryNotes(e.target.value)}
-                                        rows={2}
-                                    />
+                                    <Textarea id="delivery-notes" placeholder="Any special instructions for the courier..." value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} rows={2}/>
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <Button type="submit" disabled={isSubmitting}>
-                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Truck className="mr-2 h-4 w-4" />}
+                                <Button type="submit" disabled={createOrderMutation.isPending}>
+                                    {createOrderMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Truck className="mr-2 h-4 w-4" />}
                                     Create Delivery Order
                                 </Button>
                             </CardFooter>

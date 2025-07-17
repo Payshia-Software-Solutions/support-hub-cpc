@@ -3,6 +3,7 @@
 
 
 
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -293,7 +294,12 @@ interface StudentInfo {
     full_name: string;
     e_mail: string;
     telephone_1: string;
+    telephone_2: string;
     nic: string;
+    city: string;
+    district: string;
+    address_line_1: string;
+    address_line_2: string;
 }
 interface CriteriaDetail {
     id: string;
@@ -305,7 +311,7 @@ interface CriteriaDetail {
         requiredValue: number;
     };
 }
-interface StudentEnrollment {
+export interface StudentEnrollment {
     id: string;
     course_code: string;
     parent_course_id: string;
@@ -369,9 +375,6 @@ export interface DeliveryOrder {
   send_date: string | null;
   current_status: string; // This seems to be a number code
   course_code: string;
-  street_address: string;
-  city: string;
-  district: string;
   order_recived_status: string; // The display status
 }
 
@@ -409,4 +412,33 @@ export interface ApiCourse {
 // Type for the entire API response (object of objects)
 export interface ApiCourseResponse {
     [courseCode: string]: ApiCourse;
+}
+
+export interface DeliveryOrderPayload {
+    delivery_id: string;
+    tracking_number: string;
+    index_number: string;
+    order_date: string;
+    packed_date: string | null;
+    send_date: string | null;
+    removed_date: string | null;
+    current_status: string;
+    delivery_partner: string;
+    value: string;
+    payment_method: string;
+    course_code: string;
+    estimate_delivery: string | null;
+    full_name: string;
+    street_address: string;
+    city: string;
+    district: string;
+    phone_1: string;
+    phone_2: string;
+    is_active: string;
+    received_date: string | null;
+    cod_amount: string;
+    package_weight: string;
+    // These are custom fields for our form, not part of the direct API payload
+    delivery_title: string; 
+    notes?: string;
 }

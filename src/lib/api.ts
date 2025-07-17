@@ -1,5 +1,5 @@
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -509,36 +509,25 @@ export const getStudentsByCourseCode = async (courseCode: string): Promise<Stude
 
 
 // Create delivery order
-export const createDeliveryOrderForStudent = async (payload: CreateDeliveryOrderPayload): Promise<any> => {
-    // This is a placeholder for the real API endpoint and payload structure
-    console.log("Simulating delivery order creation with payload:", payload);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+export const createDeliveryOrder = async (payload: DeliveryOrderPayload): Promise<any> => {
+    // The payload received here contains the custom fields delivery_title and notes.
+    // We remove them before sending to the API as they are not in the database schema.
+    const { delivery_title, notes, ...apiPayload } = payload;
     
-    // In a real implementation:
-    /*
-    const response = await fetch(`https://qa-api.pharmacollege.lk/delivery_orders`, {
+    console.log("Sending to /delivery_orders with payload:", apiPayload);
+    console.log("Custom data (not sent):", { delivery_title, notes });
+    
+    // Using the main API_BASE_URL for consistency
+    const response = await fetch(`${API_BASE_URL}/delivery_orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            index_number: payload.studentNumber,
-            course_code: payload.courseCode,
-            full_name: payload.fullName,
-            street_address: payload.address,
-            phone_1: payload.phone,
-            delivery_title: payload.title, // Assuming API supports this
-            notes: payload.notes, // Assuming API supports this
-            // ... other required fields
-        })
+        body: JSON.stringify(apiPayload)
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to create delivery order' }));
-        throw new Error(errorData.message || 'Request failed');
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
-    */
-
-    // Returning a mock success response
-    return { success: true, message: "Order created successfully." };
 };
 
 // Courses / Batches
