@@ -108,7 +108,7 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
     );
 };
 
-const OrderStatusCell = ({ student, selectedBatch, onStatusChange }: { student: StudentInBatch, selectedBatch: Course, onStatusChange: (hasOrder: boolean) => void }) => {
+const OrderStatusCell = ({ student, selectedBatch }: { student: StudentInBatch, selectedBatch: Course }) => {
     const { data: deliveryOrders, isLoading, isError } = useQuery<DeliveryOrder[]>({
         queryKey: ['studentDeliveryOrders', student.username],
         queryFn: () => getDeliveryOrdersForStudent(student.username),
@@ -120,12 +120,6 @@ const OrderStatusCell = ({ student, selectedBatch, onStatusChange }: { student: 
         if (!deliveryOrders) return undefined;
         return deliveryOrders.find(order => order.course_code === selectedBatch.courseCode);
     }, [deliveryOrders, selectedBatch.courseCode]);
-
-    useEffect(() => {
-        if (!isLoading) {
-            onStatusChange(!!orderForBatch);
-        }
-    }, [isLoading, orderForBatch, onStatusChange]);
 
     if (isLoading) {
         return <Skeleton className="h-6 w-24" />;
@@ -153,7 +147,6 @@ export default function BatchDeliveryOrdersPage() {
     const [selectedCourseId, setSelectedCourseId] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [studentOrderStatus, setStudentOrderStatus] = useState<Record<string, boolean>>({});
 
     const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[]>({
         queryKey: ['allCourses'],
@@ -173,13 +166,8 @@ export default function BatchDeliveryOrdersPage() {
     
     useEffect(() => {
         setCurrentPage(1);
-        setStudentOrderStatus({}); // Reset status on filter change
     }, [selectedCourseId, searchTerm]);
 
-    const handleStudentStatusChange = (studentId: string, hasOrder: boolean) => {
-        setStudentOrderStatus(prev => ({ ...prev, [studentId]: hasOrder }));
-    };
-    
     const filteredStudents = useMemo(() => {
         if (!students) return [];
         const lowercasedFilter = searchTerm.toLowerCase();
@@ -198,15 +186,6 @@ export default function BatchDeliveryOrdersPage() {
         );
     }, [filteredStudents, currentPage]);
     
-    const { orderedCount, notOrderedCount } = useMemo(() => {
-        if (!students) return { orderedCount: 0, notOrderedCount: 0 };
-        const ordered = students.filter(s => studentOrderStatus[s.student_course_id] === true).length;
-        const totalStudents = students.length;
-        
-        return { orderedCount: ordered, notOrderedCount: totalStudents - ordered };
-    }, [students, studentOrderStatus]);
-
-
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
@@ -241,7 +220,7 @@ export default function BatchDeliveryOrdersPage() {
                             <div>
                                 <CardTitle>Students in {selectedCourse.name}</CardTitle>
                                 <CardDescription>
-                                     {isLoadingStudents ? "Loading..." : `${orderedCount} ordered, ${notOrderedCount} not ordered. Total: ${students?.length || 0}`}
+                                     {isLoadingStudents ? "Loading..." : `Total students: ${students?.length || 0}`}
                                 </CardDescription>
                             </div>
                             <div className="relative w-full sm:w-auto sm:max-w-xs">
@@ -286,7 +265,6 @@ export default function BatchDeliveryOrdersPage() {
                                                     <OrderStatusCell 
                                                         student={student} 
                                                         selectedBatch={selectedCourse!} 
-                                                        onStatusChange={(hasOrder) => handleStudentStatusChange(student.student_course_id, hasOrder)}
                                                     />
                                                 </TableCell>
                                             </TableRow>
