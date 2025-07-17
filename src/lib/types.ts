@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -410,6 +403,7 @@ export interface CreateDeliveryOrderPayload {
     fullName: string;
     phone: string;
     currentStatus: string;
+    trackingNumber?: string;
 }
 
 // Type for the raw API response for a single course object

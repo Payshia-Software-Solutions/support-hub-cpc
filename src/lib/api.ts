@@ -1,8 +1,4 @@
 
-
-
-
-
 import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting } from './types';
 
 // In a real app, you would move this to a .env file
@@ -514,12 +510,7 @@ export const getStudentsByCourseCode = async (courseCode: string): Promise<Stude
 
 // Create delivery order
 export const createDeliveryOrder = async (payload: DeliveryOrderPayload): Promise<any> => {
-    // The payload received here contains the custom fields delivery_title and notes.
-    // We remove them before sending to the API as they are not in the database schema.
     const { delivery_title, notes, ...apiPayload } = payload;
-    
-    console.log("Sending to /delivery_orders with payload:", apiPayload);
-    console.log("Custom data (not sent):", { delivery_title, notes });
     
     const response = await fetch(`https://qa-api.pharmacollege.lk/delivery_orders`, {
         method: 'POST',
@@ -535,13 +526,13 @@ export const createDeliveryOrder = async (payload: DeliveryOrderPayload): Promis
 
 
 export const createDeliveryOrderForStudent = async (payload: CreateDeliveryOrderPayload): Promise<any> => {
-    const { studentNumber, courseCode, deliverySetting, notes, address, fullName, phone, currentStatus } = payload;
+    const { studentNumber, courseCode, deliverySetting, notes, address, fullName, phone, currentStatus, trackingNumber } = payload;
     
     // Note: The 'notes' field is not part of the DB schema, so it's not included in the payload.
     // We could potentially log it separately or decide where it should go.
     const fullPayload: Omit<DeliveryOrderPayload, 'delivery_title' | 'notes'> = {
         delivery_id: deliverySetting.id,
-        tracking_number: 'PENDING',
+        tracking_number: trackingNumber || 'PENDING',
         index_number: studentNumber,
         order_date: new Date().toISOString(),
         packed_date: null,

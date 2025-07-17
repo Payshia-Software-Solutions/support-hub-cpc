@@ -25,6 +25,7 @@ const ITEMS_PER_PAGE = 25;
 const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch, selectedBatch: Course }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedDeliverySettingId, setSelectedDeliverySettingId] = useState('');
+    const [trackingNumber, setTrackingNumber] = useState('');
     const [deliveryNotes, setDeliveryNotes] = useState('');
     const [currentStatus, setCurrentStatus] = useState('1'); // Default to '1' (Processing)
     const queryClient = useQueryClient();
@@ -46,6 +47,7 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
             queryClient.invalidateQueries({ queryKey: ['studentDeliveryOrders', student.username] });
             setIsDialogOpen(false);
             setSelectedDeliverySettingId('');
+            setTrackingNumber('');
             setDeliveryNotes('');
             setCurrentStatus('1');
         },
@@ -74,6 +76,7 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
             fullName: student.full_name,
             phone: student.telephone_1,
             currentStatus: currentStatus,
+            trackingNumber: trackingNumber || 'PENDING',
         });
     };
 
@@ -111,6 +114,10 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
                                 </SelectContent>
                             </Select>
                         )}
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="tracking-number">Tracking Number (Optional)</Label>
+                        <Input id="tracking-number" value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} placeholder="Enter tracking number..."/>
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="order-status">Status</Label>
@@ -260,7 +267,7 @@ export default function BatchDeliveryOrdersPage() {
                             <div>
                                 <CardTitle>Students in {selectedCourse.name}</CardTitle>
                                 <CardDescription>
-                                     {isLoadingStudents ? "Loading..." : `Total students: ${students?.length || 0}`}
+                                     {isLoadingStudents ? "Loading..." : `Showing ${paginatedStudents.length} of ${filteredStudents.length} students.`}
                                 </CardDescription>
                             </div>
                             <div className="relative w-full sm:w-auto sm:max-w-xs">
