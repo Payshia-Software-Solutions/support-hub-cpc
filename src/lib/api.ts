@@ -1,4 +1,5 @@
 
+
 import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload } from './types';
 
 // In a real app, you would move this to a .env file
@@ -522,6 +523,50 @@ export const createDeliveryOrder = async (payload: DeliveryOrderPayload): Promis
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(apiPayload)
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create delivery order' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
+
+export const createDeliveryOrderForStudent = async (payload: CreateDeliveryOrderPayload): Promise<any> => {
+    // This function will construct the full DeliveryOrderPayload from the simpler CreateDeliveryOrderPayload
+    const fullPayload: Omit<DeliveryOrderPayload, 'delivery_title' | 'notes'> = {
+        delivery_id: '0', 
+        tracking_number: 'PENDING',
+        index_number: payload.studentNumber,
+        order_date: new Date().toISOString(),
+        packed_date: null,
+        send_date: null,
+        removed_date: null,
+        current_status: '1', // '1' for pending/new order
+        delivery_partner: '0',
+        value: '0.00',
+        payment_method: '0',
+        course_code: payload.courseCode,
+        estimate_delivery: null,
+        full_name: payload.fullName,
+        street_address: payload.address,
+        city: '', // This data is not available in StudentInBatch, needs to be handled
+        district: '', // This data is not available in StudentInBatch
+        phone_1: payload.phone,
+        phone_2: '',
+        is_active: '1',
+        received_date: null,
+        cod_amount: '0.00',
+        package_weight: '0.000',
+    };
+
+    // Note: 'notes' and 'title' are not part of the standard DB schema, so they are not included here.
+    // If they need to be stored, the API and DB would need to be updated.
+
+    const response = await fetch(`${API_BASE_URL}/delivery_orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fullPayload)
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to create delivery order' }));
