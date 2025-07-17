@@ -103,7 +103,7 @@ export default function CreateDeliveryOrderPage() {
             packed_date: null,
             send_date: null,
             removed_date: null,
-            current_status: '1', // '1' for pending/new order
+            current_status: '1', // Default status is '1' for "Processing"
             delivery_partner: '0',
             value: '0.00',
             payment_method: '0',

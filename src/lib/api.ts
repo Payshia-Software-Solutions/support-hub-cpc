@@ -1,6 +1,7 @@
 
 
 
+
 import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting } from './types';
 
 // In a real app, you would move this to a .env file
@@ -535,6 +536,8 @@ export const createDeliveryOrder = async (payload: DeliveryOrderPayload): Promis
 export const createDeliveryOrderForStudent = async (payload: CreateDeliveryOrderPayload): Promise<any> => {
     const { studentNumber, courseCode, deliverySetting, notes, address, fullName, phone } = payload;
     
+    // Note: The 'notes' field is not part of the DB schema, so it's not included in the payload.
+    // We could potentially log it separately or decide where it should go.
     const fullPayload: Omit<DeliveryOrderPayload, 'delivery_title' | 'notes'> = {
         delivery_id: deliverySetting.id,
         tracking_number: 'PENDING',
@@ -543,7 +546,7 @@ export const createDeliveryOrderForStudent = async (payload: CreateDeliveryOrder
         packed_date: null,
         send_date: null,
         removed_date: null,
-        current_status: '1',
+        current_status: '1', // Default status is '1' for "Processing"
         delivery_partner: '0',
         value: deliverySetting.value,
         payment_method: '0',

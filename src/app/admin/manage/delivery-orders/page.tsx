@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -202,8 +202,9 @@ export default function BatchDeliveryOrdersPage() {
         );
     }, [students, searchTerm]);
 
-    const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil((filteredStudents?.length || 0) / ITEMS_PER_PAGE);
     const paginatedStudents = useMemo(() => {
+        if (!filteredStudents) return [];
         return filteredStudents.slice(
             (currentPage - 1) * ITEMS_PER_PAGE,
             currentPage * ITEMS_PER_PAGE
