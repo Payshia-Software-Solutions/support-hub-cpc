@@ -1,6 +1,7 @@
 
 
 
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -391,4 +392,18 @@ export interface CreateDeliveryOrderPayload {
     address: string;
     fullName: string;
     phone: string;
+}
+
+// Type for the raw API response for a single course object
+export interface ApiCourse {
+    id: string;
+    course_name: string;
+    parent_course_id: string;
+    course_code: string;
+    // ... other fields that we don't need for the dropdown
+}
+
+// Type for the entire API response (object of ApiCourse objects)
+export interface ApiCourseResponse {
+    [courseCode: string]: ApiCourse;
 }

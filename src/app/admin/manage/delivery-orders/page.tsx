@@ -15,9 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogClose, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { getStudentsByBatch, createDeliveryOrderForStudent, getDeliveryOrdersForStudent } from '@/lib/api';
+import { getStudentsByBatch, createDeliveryOrderForStudent, getDeliveryOrdersForStudent, getCourses } from '@/lib/api';
 import type { StudentInBatch, DeliveryOrder, Course } from '@/lib/types';
-import { dummyCourses } from '@/lib/dummy-data';
 
 // --- Sub-components for actions ---
 
@@ -143,6 +142,12 @@ export default function BatchDeliveryOrdersPage() {
     const [selectedBatchId, setSelectedBatchId] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
 
+    const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[]>({
+        queryKey: ['allCourses'],
+        queryFn: getCourses,
+        staleTime: Infinity, // Cache course list forever as it's unlikely to change often
+    });
+
     const { data: students, isLoading: isLoadingStudents, isError, error } = useQuery<StudentInBatch[]>({
         queryKey: ['studentsByBatch', selectedBatchId],
         queryFn: () => getStudentsByBatch(selectedBatchId),
@@ -159,7 +164,7 @@ export default function BatchDeliveryOrdersPage() {
         );
     }, [students, searchTerm]);
     
-    const selectedBatch = dummyCourses.find(c => c.id === selectedBatchId);
+    const selectedBatch = courses?.find(c => c.id === selectedBatchId);
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -173,12 +178,12 @@ export default function BatchDeliveryOrdersPage() {
                     <CardTitle>Select Batch</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
+                    <Select value={selectedBatchId} onValueChange={setSelectedBatchId} disabled={isLoadingCourses}>
                         <SelectTrigger className="w-full md:w-1/2">
-                            <SelectValue placeholder="Choose a batch to load students..." />
+                            <SelectValue placeholder={isLoadingCourses ? "Loading batches..." : "Choose a batch to load students..."} />
                         </SelectTrigger>
                         <SelectContent>
-                            {dummyCourses.map(course => (
+                            {courses?.map(course => (
                                 <SelectItem key={course.id} value={course.id}>
                                     {course.name} ({course.courseCode})
                                 </SelectItem>
@@ -257,4 +262,3 @@ export default function BatchDeliveryOrdersPage() {
         </div>
     );
 }
-
