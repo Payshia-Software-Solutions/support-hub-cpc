@@ -157,7 +157,7 @@ const CertificateStatusCell = ({ order, studentNumber, orderCourseCodes }: { ord
 
 
 // --- Action Component ---
-const OrderActionsCell = ({ order }: { order: CertificateOrder }) => {
+const OrderActionsCell = ({ order, onEligibilityStatusChange }: { order: CertificateOrder, onEligibilityStatusChange: (orderId: string, isUpdatable: boolean) => void }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [dialogContent, setDialogContent] = useState<{ title: string, description: React.ReactNode, onConfirm?: () => void }>({});
     const queryClient = useQueryClient();
@@ -185,6 +185,13 @@ const OrderActionsCell = ({ order }: { order: CertificateOrder }) => {
         
         return { newEligibleEnrollments: newEnrollments, isUpdateAvailable: newEnrollments.length > 0 };
     }, [fullStudentData, order.course_code]);
+
+    useEffect(() => {
+        if (!isLoading) {
+            onEligibilityStatusChange(order.id, isUpdateAvailable);
+        }
+    }, [isLoading, isUpdateAvailable, order.id, onEligibilityStatusChange]);
+
 
     const { mutate: updateCourses, isPending: isUpdating } = useMutation({
         mutationFn: (payload: UpdateCertificateOrderCoursesPayload) => updateCertificateOrderCourses(payload),
@@ -311,6 +318,7 @@ const OrderActionsCell = ({ order }: { order: CertificateOrder }) => {
 export default function CertificateOrdersListPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [updatableOrders, setUpdatableOrders] = useState<Record<string, boolean>>({});
 
     const { data: orders, isLoading: isLoadingOrders, isError, error } = useQuery<CertificateOrder[]>({
         queryKey: ['allCertificateOrders'],
@@ -328,8 +336,17 @@ export default function CertificateOrdersListPage() {
         );
     }, [orders, searchTerm]);
 
+    const updatableCount = useMemo(() => {
+        return Object.values(updatableOrders).filter(Boolean).length;
+    }, [updatableOrders]);
+
+    const handleEligibilityStatusChange = (orderId: string, isUpdatable: boolean) => {
+        setUpdatableOrders(prev => ({ ...prev, [orderId]: isUpdatable }));
+    };
+
     useEffect(() => {
         setCurrentPage(1);
+        setUpdatableOrders({});
     }, [searchTerm]);
 
     const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
@@ -382,7 +399,7 @@ export default function CertificateOrdersListPage() {
                         <div>
                             <CardTitle>All Orders</CardTitle>
                             <CardDescription>
-                                Showing {paginatedOrders.length} of {filteredOrders.length} certificate orders.
+                                {filteredOrders.length} orders found. {updatableCount > 0 && `(${updatableCount} need updates)`}
                             </CardDescription>
                         </div>
                         <div className="relative w-full sm:w-auto sm:max-w-xs">
@@ -423,7 +440,7 @@ export default function CertificateOrdersListPage() {
                                         <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell><Badge variant="secondary">{order.certificate_status}</Badge></TableCell>
                                         <TableCell>
-                                            <OrderActionsCell order={order} />
+                                            <OrderActionsCell order={order} onEligibilityStatusChange={handleEligibilityStatusChange} />
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -461,7 +478,7 @@ export default function CertificateOrdersListPage() {
                                     </div>
                                     <div className="flex items-center justify-between pt-2 border-t mt-2">
                                         <p className="text-muted-foreground font-medium">Actions</p>
-                                        <OrderActionsCell order={order} />
+                                        <OrderActionsCell order={order} onEligibilityStatusChange={handleEligibilityStatusChange} />
                                     </div>
                                 </div>
                             </div>
