@@ -498,13 +498,13 @@ export const getDeliveryOrdersForStudent = async (studentNumber: string): Promis
 
 
 // Batch-based student fetching
-export const getStudentsByBatch = async (batchId: string): Promise<StudentInBatch[]> => {
-    // This is a placeholder for a real API endpoint.
-    // In a real app, this would be: `https://qa-api.pharmacollege.lk/students?batchId=${batchId}`
-    // For now, we fetch all users and filter them based on a dummy enrollment check.
-    const allUsers = await getAllUserFullDetails();
-    // This is a mock filter. Replace with real logic.
-    return allUsers.filter(u => u.username.startsWith('PA'));
+export const getStudentsByCourseCode = async (courseCode: string): Promise<StudentInBatch[]> => {
+    const response = await fetch(`https://qa-api.pharmacollege.lk/student-courses-new/course-code/${courseCode}/`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch students for batch' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
 };
 
 

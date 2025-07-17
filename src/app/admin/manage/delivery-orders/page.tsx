@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,13 @@ import { AlertTriangle, Loader2, PlusCircle, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogClose, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { getStudentsByBatch, createDeliveryOrderForStudent, getDeliveryOrdersForStudent, getCourses } from '@/lib/api';
+import { getStudentsByCourseCode, createDeliveryOrderForStudent, getDeliveryOrdersForStudent, getCourses } from '@/lib/api';
 import type { StudentInBatch, DeliveryOrder, Course } from '@/lib/types';
+
+const ITEMS_PER_PAGE = 25;
 
 // --- Sub-components for actions ---
 
@@ -139,20 +141,29 @@ const OrderStatusCell = ({ student, selectedBatch }: { student: StudentInBatch, 
 
 // --- Main Page Component ---
 export default function BatchDeliveryOrdersPage() {
-    const [selectedBatchId, setSelectedBatchId] = useState<string>('');
+    const [selectedCourseId, setSelectedCourseId] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
 
     const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[]>({
         queryKey: ['allCourses'],
         queryFn: getCourses,
-        staleTime: Infinity, // Cache course list forever as it's unlikely to change often
+        staleTime: Infinity,
     });
 
+    const selectedCourse = useMemo(() => {
+        return courses?.find(c => c.id === selectedCourseId);
+    }, [courses, selectedCourseId]);
+
     const { data: students, isLoading: isLoadingStudents, isError, error } = useQuery<StudentInBatch[]>({
-        queryKey: ['studentsByBatch', selectedBatchId],
-        queryFn: () => getStudentsByBatch(selectedBatchId),
-        enabled: !!selectedBatchId,
+        queryKey: ['studentsByCourse', selectedCourse?.courseCode],
+        queryFn: () => getStudentsByCourseCode(selectedCourse!.courseCode),
+        enabled: !!selectedCourse?.courseCode,
     });
+    
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedCourseId, searchTerm]);
 
     const filteredStudents = useMemo(() => {
         if (!students) return [];
@@ -163,8 +174,15 @@ export default function BatchDeliveryOrdersPage() {
             student.full_name.toLowerCase().includes(lowercasedFilter)
         );
     }, [students, searchTerm]);
+
+    const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
+    const paginatedStudents = useMemo(() => {
+        return filteredStudents.slice(
+            (currentPage - 1) * ITEMS_PER_PAGE,
+            currentPage * ITEMS_PER_PAGE
+        );
+    }, [filteredStudents, currentPage]);
     
-    const selectedBatch = courses?.find(c => c.id === selectedBatchId);
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -178,7 +196,7 @@ export default function BatchDeliveryOrdersPage() {
                     <CardTitle>Select Batch</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Select value={selectedBatchId} onValueChange={setSelectedBatchId} disabled={isLoadingCourses}>
+                    <Select value={selectedCourseId} onValueChange={setSelectedCourseId} disabled={isLoadingCourses}>
                         <SelectTrigger className="w-full md:w-1/2">
                             <SelectValue placeholder={isLoadingCourses ? "Loading batches..." : "Choose a batch to load students..."} />
                         </SelectTrigger>
@@ -193,14 +211,14 @@ export default function BatchDeliveryOrdersPage() {
                 </CardContent>
             </Card>
 
-            {selectedBatch && (
+            {selectedCourse && (
                  <Card className="shadow-lg">
                     <CardHeader>
                         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                             <div>
-                                <CardTitle>Students in {selectedBatch.name}</CardTitle>
+                                <CardTitle>Students in {selectedCourse.name}</CardTitle>
                                 <CardDescription>
-                                    Showing {filteredStudents.length} of {students?.length || 0} students.
+                                    Showing {paginatedStudents.length} of {filteredStudents.length} students.
                                 </CardDescription>
                             </div>
                             <div className="relative w-full sm:w-auto sm:max-w-xs">
@@ -237,12 +255,12 @@ export default function BatchDeliveryOrdersPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {filteredStudents.length > 0 ? filteredStudents.map(student => (
-                                            <TableRow key={student.id}>
+                                        {paginatedStudents.length > 0 ? paginatedStudents.map(student => (
+                                            <TableRow key={student.student_course_id}>
                                                 <TableCell className="font-medium">{student.username}</TableCell>
                                                 <TableCell>{student.full_name}</TableCell>
                                                 <TableCell>
-                                                    <OrderStatusCell student={student} selectedBatch={selectedBatch!} />
+                                                    <OrderStatusCell student={student} selectedBatch={selectedCourse!} />
                                                 </TableCell>
                                             </TableRow>
                                         )) : (
@@ -257,6 +275,13 @@ export default function BatchDeliveryOrdersPage() {
                             </div>
                         )}
                     </CardContent>
+                    {totalPages > 1 && (
+                        <CardFooter className="flex items-center justify-center space-x-2 pt-6">
+                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>Previous</Button>
+                            <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</span>
+                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>Next</Button>
+                        </CardFooter>
+                    )}
                  </Card>
             )}
         </div>

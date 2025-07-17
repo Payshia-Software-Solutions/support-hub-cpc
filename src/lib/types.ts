@@ -2,6 +2,7 @@
 
 
 
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -375,7 +376,9 @@ export interface DeliveryOrder {
 }
 
 export interface StudentInBatch {
-    id: string;
+    student_course_id: string;
+    course_code: string;
+    student_id: string;
     username: string;
     full_name: string;
     address_line_1: string;
@@ -403,7 +406,7 @@ export interface ApiCourse {
     // ... other fields that we don't need for the dropdown
 }
 
-// Type for the entire API response (object of ApiCourse objects)
+// Type for the entire API response (object of objects)
 export interface ApiCourseResponse {
     [courseCode: string]: ApiCourse;
 }
