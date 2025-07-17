@@ -30,6 +30,12 @@ const managementTasks = [
     href: "/admin/manage/delivery-orders",
   },
   {
+    title: "Create Delivery Order",
+    description: "Create a new delivery order for a student.",
+    icon: <Truck className="w-6 h-6 text-primary" />,
+    href: "/admin/manage/create-delivery-order",
+  },
+  {
     title: "Convocation",
     description: "Handle registrations for convocation ceremonies.",
     icon: <GraduationCap className="w-6 h-6 text-primary" />,
