@@ -39,10 +39,11 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
             try {
                 const savedDefaults = localStorage.getItem(LOCAL_STORAGE_KEY);
                 if (savedDefaults) {
-                    const { deliverySettingId, status, remember } = JSON.parse(savedDefaults);
+                    const { deliverySettingId, status, remember, tracking } = JSON.parse(savedDefaults);
                     if (remember) {
                         setSelectedDeliverySettingId(deliverySettingId || '');
                         setCurrentStatus(status || '1');
+                        setTrackingNumber(tracking || '');
                         setRememberSettings(true);
                     }
                 }
@@ -57,6 +58,14 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
         queryFn: () => getDeliverySettingsForCourse(selectedBatch.courseCode),
         enabled: isDialogOpen, // Only fetch when the dialog is open
     });
+    
+    // Effect to default to the first delivery setting if available and none is selected
+    useEffect(() => {
+        if (!isLoadingSettings && deliverySettings && deliverySettings.length > 0 && !selectedDeliverySettingId) {
+            setSelectedDeliverySettingId(deliverySettings[0].id);
+        }
+    }, [isLoadingSettings, deliverySettings, selectedDeliverySettingId]);
+
 
     const createOrderMutation = useMutation({
         mutationFn: createDeliveryOrderForStudent,
@@ -73,6 +82,7 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
                     const defaults = {
                         deliverySettingId: selectedDeliverySettingId,
                         status: currentStatus,
+                        tracking: trackingNumber,
                         remember: true,
                     };
                     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(defaults));
@@ -84,13 +94,13 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
                 localStorage.removeItem(LOCAL_STORAGE_KEY);
             }
 
-            // Reset for next entry
+            // Reset for next entry only if not remembering settings
             if (!rememberSettings) {
-                setSelectedDeliverySettingId('');
+                setSelectedDeliverySettingId(deliverySettings?.[0]?.id || '');
                 setCurrentStatus('1');
+                setTrackingNumber('');
             }
-            setTrackingNumber('');
-            setDeliveryNotes('');
+            setDeliveryNotes(''); // Always clear notes
             setIsDialogOpen(false);
         },
         onError: (error: Error) => {
