@@ -173,8 +173,8 @@ export default function BatchDeliveryOrdersPage() {
         const lowercasedFilter = searchTerm.toLowerCase();
         if (!lowercasedFilter) return students;
         return students.filter(student =>
-            student.username.toLowerCase().includes(lowercasedFilter) ||
-            student.full_name.toLowerCase().includes(lowercasedFilter)
+            (student.username?.toLowerCase() || '').includes(lowercasedFilter) ||
+            (student.full_name?.toLowerCase() || '').includes(lowercasedFilter)
         );
     }, [students, searchTerm]);
 
