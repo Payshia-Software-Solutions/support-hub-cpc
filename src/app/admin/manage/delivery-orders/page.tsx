@@ -26,6 +26,7 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedDeliverySettingId, setSelectedDeliverySettingId] = useState('');
     const [deliveryNotes, setDeliveryNotes] = useState('');
+    const [currentStatus, setCurrentStatus] = useState('1'); // Default to '1' (Processing)
     const queryClient = useQueryClient();
 
     const { data: deliverySettings, isLoading: isLoadingSettings } = useQuery<DeliverySetting[]>({
@@ -46,6 +47,7 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
             setIsDialogOpen(false);
             setSelectedDeliverySettingId('');
             setDeliveryNotes('');
+            setCurrentStatus('1');
         },
         onError: (error: Error) => {
             toast({
@@ -71,6 +73,7 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
             address: `${student.address_line_1 || ''}, ${student.city || ''}`,
             fullName: student.full_name,
             phone: student.telephone_1,
+            currentStatus: currentStatus,
         });
     };
 
@@ -108,6 +111,18 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
                                 </SelectContent>
                             </Select>
                         )}
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="order-status">Status</Label>
+                        <Select value={currentStatus} onValueChange={setCurrentStatus}>
+                            <SelectTrigger id="order-status">
+                                <SelectValue placeholder="Set initial status..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="1">Processing</SelectItem>
+                                <SelectItem value="2">Packed</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                      <div className="space-y-2">
                         <Label>Student Address</Label>
