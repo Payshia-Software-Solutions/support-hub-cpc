@@ -318,6 +318,9 @@ interface StudentEnrollment {
 export interface FullStudentData {
     studentInfo: StudentInfo;
     studentEnrollments: Record<string, StudentEnrollment>;
+    studentBalance?: {
+        studentBalance: number;
+    };
 }
 
 export interface UpdateConvocationCoursesPayload {
@@ -353,4 +356,18 @@ export interface GenerateCertificatePayload {
   source: string;
 }
 
-    
+export interface DeliveryOrder {
+  id: string;
+  delivery_id: string;
+  tracking_number: string;
+  index_number: string;
+  order_date: string;
+  packed_date: string | null;
+  send_date: string | null;
+  current_status: string; // This seems to be a number code
+  course_code: string;
+  street_address: string;
+  city: string;
+  district: string;
+  order_recived_status: string; // The display status
+}
