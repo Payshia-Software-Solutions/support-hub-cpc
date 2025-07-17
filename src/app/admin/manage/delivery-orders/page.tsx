@@ -15,8 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { getStudentsByCourseCode, createDeliveryOrderForStudent, getDeliveryOrdersForStudent, getCourses } from '@/lib/api';
-import type { StudentInBatch, DeliveryOrder, Course } from '@/lib/types';
+import { getStudentsByCourseCode, createDeliveryOrderForStudent, getDeliveryOrdersForStudent, getCourses, getDeliverySettingsForCourse } from '@/lib/api';
+import type { StudentInBatch, DeliveryOrder, Course, DeliverySetting } from '@/lib/types';
 
 const ITEMS_PER_PAGE = 25;
 
@@ -24,9 +24,15 @@ const ITEMS_PER_PAGE = 25;
 
 const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch, selectedBatch: Course }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [deliveryTitle, setDeliveryTitle] = useState(`${selectedBatch.name} Study Pack`);
+    const [selectedDeliverySettingId, setSelectedDeliverySettingId] = useState('');
     const [deliveryNotes, setDeliveryNotes] = useState('');
     const queryClient = useQueryClient();
+
+    const { data: deliverySettings, isLoading: isLoadingSettings } = useQuery<DeliverySetting[]>({
+        queryKey: ['deliverySettings', selectedBatch.courseCode],
+        queryFn: () => getDeliverySettingsForCourse(selectedBatch.courseCode),
+        enabled: isDialogOpen, // Only fetch when the dialog is open
+    });
 
     const createOrderMutation = useMutation({
         mutationFn: createDeliveryOrderForStudent,
@@ -38,6 +44,8 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
             // Refetch the delivery orders for this student to update the UI
             queryClient.invalidateQueries({ queryKey: ['studentDeliveryOrders', student.username] });
             setIsDialogOpen(false);
+            setSelectedDeliverySettingId('');
+            setDeliveryNotes('');
         },
         onError: (error: Error) => {
             toast({
@@ -49,17 +57,17 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
     });
 
     const handleCreateOrder = () => {
-        if (!deliveryTitle.trim()) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Delivery title is required.' });
+        const selectedSetting = deliverySettings?.find(s => s.id === selectedDeliverySettingId);
+        if (!selectedSetting) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select a delivery pack.' });
             return;
         }
 
         createOrderMutation.mutate({
             studentNumber: student.username,
             courseCode: selectedBatch.courseCode,
-            title: deliveryTitle,
+            deliverySetting: selectedSetting,
             notes: deliveryNotes,
-            // These would come from student details in a real scenario
             address: `${student.address_line_1 || ''}, ${student.city || ''}`,
             fullName: student.full_name,
             phone: student.telephone_1,
@@ -77,13 +85,29 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
                 <DialogHeader>
                     <DialogTitle>New Delivery for {student.full_name}</DialogTitle>
                     <DialogDescription>
-                        Confirm the details for this new delivery order. The address is pre-filled from the student's profile.
+                        Select a delivery pack and confirm the details for this order.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="delivery-title">Delivery Title</Label>
-                        <Input id="delivery-title" value={deliveryTitle} onChange={(e) => setDeliveryTitle(e.target.value)} />
+                        <Label htmlFor="delivery-pack">Delivery Pack</Label>
+                        {isLoadingSettings ? (
+                            <Skeleton className="h-10 w-full" />
+                        ) : (
+                            <Select value={selectedDeliverySettingId} onValueChange={setSelectedDeliverySettingId}>
+                                <SelectTrigger id="delivery-pack">
+                                    <SelectValue placeholder="Select a delivery pack..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {deliverySettings?.map(setting => (
+                                        <SelectItem key={setting.id} value={setting.id}>
+                                            {setting.delivery_title} (LKR {setting.value})
+                                        </SelectItem>
+                                    ))}
+                                    {deliverySettings?.length === 0 && <p className="p-4 text-sm text-muted-foreground">No settings found.</p>}
+                                </SelectContent>
+                            </Select>
+                        )}
                     </div>
                      <div className="space-y-2">
                         <Label>Student Address</Label>
@@ -98,7 +122,7 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                    <Button onClick={handleCreateOrder} disabled={createOrderMutation.isPending}>
+                    <Button onClick={handleCreateOrder} disabled={createOrderMutation.isPending || isLoadingSettings}>
                         {createOrderMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Confirm Order
                     </Button>

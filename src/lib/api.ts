@@ -1,6 +1,7 @@
 
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload } from './types';
+
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -532,35 +533,33 @@ export const createDeliveryOrder = async (payload: DeliveryOrderPayload): Promis
 
 
 export const createDeliveryOrderForStudent = async (payload: CreateDeliveryOrderPayload): Promise<any> => {
-    // This function will construct the full DeliveryOrderPayload from the simpler CreateDeliveryOrderPayload
+    const { studentNumber, courseCode, deliverySetting, notes, address, fullName, phone } = payload;
+    
     const fullPayload: Omit<DeliveryOrderPayload, 'delivery_title' | 'notes'> = {
-        delivery_id: '0', 
+        delivery_id: deliverySetting.id,
         tracking_number: 'PENDING',
-        index_number: payload.studentNumber,
+        index_number: studentNumber,
         order_date: new Date().toISOString(),
         packed_date: null,
         send_date: null,
         removed_date: null,
-        current_status: '1', // '1' for pending/new order
+        current_status: '1',
         delivery_partner: '0',
-        value: '0.00',
+        value: deliverySetting.value,
         payment_method: '0',
-        course_code: payload.courseCode,
+        course_code: courseCode,
         estimate_delivery: null,
-        full_name: payload.fullName,
-        street_address: payload.address,
+        full_name: fullName,
+        street_address: address,
         city: '', // This data is not available in StudentInBatch, needs to be handled
         district: '', // This data is not available in StudentInBatch
-        phone_1: payload.phone,
+        phone_1: phone,
         phone_2: '',
         is_active: '1',
         received_date: null,
-        cod_amount: '0.00',
+        cod_amount: deliverySetting.value,
         package_weight: '0.000',
     };
-
-    // Note: 'notes' and 'title' are not part of the standard DB schema, so they are not included here.
-    // If they need to be stored, the API and DB would need to be updated.
 
     const response = await fetch(`https://qa-api.pharmacollege.lk/delivery_orders`, {
         method: 'POST',
@@ -590,3 +589,15 @@ export const getCourses = async (): Promise<Course[]> => {
         name: courseDetails.course_name,
     }));
 };
+
+export const getDeliverySettingsForCourse = async (courseCode: string): Promise<DeliverySetting[]> => {
+    const response = await fetch(`https://qa-api.pharmacollege.lk/delivery-settings/by-course/${courseCode}`);
+    if (response.status === 404) {
+        return []; // No settings found is not an error
+    }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch delivery settings' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+}
