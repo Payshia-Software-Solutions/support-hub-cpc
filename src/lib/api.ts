@@ -518,8 +518,7 @@ export const createDeliveryOrder = async (payload: DeliveryOrderPayload): Promis
     console.log("Sending to /delivery_orders with payload:", apiPayload);
     console.log("Custom data (not sent):", { delivery_title, notes });
     
-    // Using the main API_BASE_URL for consistency
-    const response = await fetch(`${API_BASE_URL}/delivery_orders`, {
+    const response = await fetch(`https://qa-api.pharmacollege.lk/delivery_orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(apiPayload)
@@ -563,7 +562,7 @@ export const createDeliveryOrderForStudent = async (payload: CreateDeliveryOrder
     // Note: 'notes' and 'title' are not part of the standard DB schema, so they are not included here.
     // If they need to be stored, the API and DB would need to be updated.
 
-    const response = await fetch(`${API_BASE_URL}/delivery_orders`, {
+    const response = await fetch(`https://qa-api.pharmacollege.lk/delivery_orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(fullPayload)
