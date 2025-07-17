@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Loader2, XCircle, Search } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -30,6 +30,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 
 const ITEMS_PER_PAGE = 25;
@@ -262,35 +263,48 @@ const OrderActionsCell = ({ order }: { order: CertificateOrder }) => {
     if (isError) {
         return <Badge variant="destructive">Check Failed</Badge>;
     }
-
-    if (isUpdateAvailable) {
-        return (
-            <>
-                <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>{dialogContent.title}</AlertDialogTitle>
-                            <AlertDialogDescription asChild>
-                                {dialogContent.description || <div />}
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel disabled={isUpdating}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={dialogContent.onConfirm} disabled={isUpdating}>
-                                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Update Order
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-                <Button variant="default" size="sm" onClick={openUpdateDialog}>
-                    Update Available
-                </Button>
-            </>
-        );
-    }
     
-    return <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">Up to date</Badge>;
+    const balance = fullStudentData?.studentBalance?.studentBalance;
+
+    return (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <div className="flex-shrink-0">
+                {isUpdateAvailable ? (
+                     <>
+                        <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>{dialogContent.title}</AlertDialogTitle>
+                                    <AlertDialogDescription asChild>
+                                        {dialogContent.description || <div />}
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel disabled={isUpdating}>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={dialogContent.onConfirm} disabled={isUpdating}>
+                                        {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Update Order
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                        <Button variant="default" size="sm" onClick={openUpdateDialog}>
+                            Update Available
+                        </Button>
+                    </>
+                ) : (
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">Up to date</Badge>
+                )}
+            </div>
+
+            {balance !== undefined && (
+                <div className={cn("flex items-center gap-1.5 text-xs font-medium p-1.5 rounded-md", balance > 0 ? 'bg-destructive/10 text-destructive' : 'bg-green-100 text-green-800')}>
+                    <Wallet className="h-3.5 w-3.5" />
+                    <span>LKR {balance.toLocaleString()}</span>
+                </div>
+            )}
+        </div>
+    );
 };
 
 
