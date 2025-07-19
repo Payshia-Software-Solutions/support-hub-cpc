@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package, RotateCw, FlipHorizontal, FlipVertical, ArrowLeft, Briefcase, Trash2, PlusCircle, Tag } from 'lucide-react';
+import { ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package, RotateCw, FlipHorizontal, FlipVertical, ArrowLeft, Briefcase, Trash2, PlusCircle } from 'lucide-react';
 import { getPaymentRequests, checkDuplicateSlips, getStudentEnrollments, getCourses, addStudentEnrollment, removeStudentEnrollment, createStudentPayment, updatePaymentRequestStatus } from '@/lib/api';
 import type { PaymentRequest, StudentEnrollmentInfo, Course, CreatePaymentPayload } from '@/lib/types';
 import { format } from 'date-fns';
@@ -412,13 +412,13 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
             setSelectedCourseCode('');
             setPaymentMethod('');
             setDiscountAmount('');
+            setSelectedCategory(null);
             
             const checkMobile = () => setIsMobileView(window.innerWidth < 768);
             checkMobile();
             window.addEventListener('resize', checkMobile);
             return () => {
                 window.removeEventListener('resize', checkMobile);
-                setSelectedCategory(null);
             }
         }
     }, [isOpen]);
@@ -426,7 +426,7 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
     const recordAndApproveMutation = useMutation({
         mutationFn: async (paymentPayload: CreatePaymentPayload) => {
             await createStudentPayment(paymentPayload);
-            await updatePaymentRequestStatus(request.id, 'Approved');
+            await updatePaymentRequestStatus(request, 'Approved');
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['paymentRequests'] });
@@ -446,7 +446,7 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
     });
 
     const markApprovedMutation = useMutation({
-        mutationFn: (requestId: string) => updatePaymentRequestStatus(requestId, 'Approved'),
+        mutationFn: (req: PaymentRequest) => updatePaymentRequestStatus(req, 'Approved'),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['paymentRequests'] });
             toast({
@@ -461,7 +461,7 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
     });
     
     const rejectionMutation = useMutation({
-        mutationFn: (requestId: string) => updatePaymentRequestStatus(requestId, 'Rejected'),
+        mutationFn: (req: PaymentRequest) => updatePaymentRequestStatus(req, 'Rejected'),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['paymentRequests'] });
             toast({
@@ -673,7 +673,7 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
                     <div className="flex w-full flex-wrap items-center justify-end gap-2">
                          <Button 
                             variant="destructive" 
-                            onClick={() => rejectionMutation.mutate(request.id)}
+                            onClick={() => rejectionMutation.mutate(request)}
                             disabled={isMutating}
                             size="sm"
                         >
@@ -682,7 +682,7 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
                         </Button>
                         <Button 
                             variant="outline"
-                            onClick={() => markApprovedMutation.mutate(request.id)}
+                            onClick={() => markApprovedMutation.mutate(request)}
                             disabled={isMutating}
                             size="sm"
                         >

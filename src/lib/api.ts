@@ -654,11 +654,11 @@ export const createStudentPayment = async (payload: CreatePaymentPayload): Promi
     return response.json();
 };
 
-export const updatePaymentRequestStatus = async (requestId: string, status: 'Approved' | 'Rejected'): Promise<any> => {
-    const response = await fetch(`${PAYMENT_API_BASE_URL}/payment-portal-requests/update-status/${requestId}`, {
+export const updatePaymentRequestStatus = async (request: PaymentRequest, status: 'Approved' | 'Rejected'): Promise<any> => {
+    const response = await fetch(`${PAYMENT_API_BASE_URL}/payment-portal-requests/${request.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payment_status: status })
+        body: JSON.stringify({ ...request, payment_status: status })
     });
 
     if (!response.ok) {
