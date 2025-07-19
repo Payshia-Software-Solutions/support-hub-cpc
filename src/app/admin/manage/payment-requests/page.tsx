@@ -37,7 +37,7 @@ const ITEMS_PER_PAGE = 25;
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk';
 
 
-// --- Sub-components for actions ---
+// --- INDEPENDENT, STABLE COMPONENTS TO PREVENT RE-RENDERING ISSUES ---
 
 const ViewSlipDialog = ({ slipPath, isOpen, onOpenChange }: { slipPath: string, isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
     if (!isOpen) return null;
@@ -705,6 +705,7 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
     );
 };
 
+// --- MAIN PAGE COMPONENT ---
 export default function PaymentRequestsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
@@ -1026,4 +1027,3 @@ export default function PaymentRequestsPage() {
         </div>
     );
 }
-
