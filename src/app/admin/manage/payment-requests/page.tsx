@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package, RotateCw, FlipHorizontal, FlipVertical, ArrowLeft, Briefcase } from 'lucide-react';
+import { ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package, RotateCw, FlipHorizontal, FlipVertical, ArrowLeft, Briefcase, Trash2, PlusCircle, Tag } from 'lucide-react';
 import { getPaymentRequests, checkDuplicateSlips, getStudentEnrollments, getCourses } from '@/lib/api';
 import type { PaymentRequest, StudentEnrollmentInfo, Course } from '@/lib/types';
 import { format } from 'date-fns';
@@ -22,6 +22,7 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogDescription,
+  DialogClose,
 } from "@/components/ui/dialog"
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -163,6 +164,102 @@ const DuplicateSlipCheck = ({ hashValue, currentRequestId }: { hashValue: string
     return null; 
 };
 
+
+const ManageEnrollmentsDialog = ({
+    isOpen,
+    onOpenChange,
+    studentNumber,
+    allCourses,
+    currentEnrollments,
+    onEnrollmentsChange,
+}: {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    studentNumber: string;
+    allCourses: Course[];
+    currentEnrollments: StudentEnrollmentInfo[];
+    onEnrollmentsChange: (newEnrollments: StudentEnrollmentInfo[]) => void;
+}) => {
+    const [newCourseCode, setNewCourseCode] = useState('');
+
+    const handleAddEnrollment = () => {
+        if (!newCourseCode) return;
+        const courseToAdd = allCourses.find(c => c.courseCode === newCourseCode);
+        if (!courseToAdd) return;
+        if (currentEnrollments.some(e => e.course_code === newCourseCode)) {
+            toast({ variant: 'destructive', title: 'Already Enrolled' });
+            return;
+        }
+        
+        const newEnrollment: StudentEnrollmentInfo = {
+            student_course_id: `new-${Date.now()}`,
+            course_code: courseToAdd.courseCode,
+            student_id: studentNumber,
+            username: studentNumber,
+            full_name: '', // Not needed for this display
+            name_on_certificate: '', // Not needed
+        };
+        onEnrollmentsChange([...currentEnrollments, newEnrollment]);
+        toast({ title: 'Enrollment Added (Locally)' });
+        setNewCourseCode('');
+    };
+
+    const handleRemoveEnrollment = (courseCode: string) => {
+        const updatedEnrollments = currentEnrollments.filter(e => e.course_code !== courseCode);
+        onEnrollmentsChange(updatedEnrollments);
+        toast({ title: 'Enrollment Removed (Locally)' });
+    };
+
+    const availableCourses = allCourses.filter(
+        (course) => !currentEnrollments.some(e => e.course_code === course.courseCode)
+    );
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Manage Enrollments for {studentNumber}</DialogTitle>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div>
+                        <Label>Current Enrollments</Label>
+                        <div className="mt-2 space-y-2">
+                            {currentEnrollments.map(e => (
+                                <div key={e.student_course_id} className="flex items-center justify-between p-2 border rounded-md">
+                                    <p className="text-sm font-medium">
+                                        {allCourses.find(c => c.courseCode === e.course_code)?.name || e.course_code}
+                                        <span className="text-muted-foreground"> ({e.course_code})</span>
+                                    </p>
+                                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleRemoveEnrollment(e.course_code)}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="pt-4 border-t">
+                        <Label>Add New Enrollment</Label>
+                        <div className="mt-2 flex gap-2">
+                            <Select value={newCourseCode} onValueChange={setNewCourseCode}>
+                                <SelectTrigger><SelectValue placeholder="Select a course..." /></SelectTrigger>
+                                <SelectContent>
+                                    {availableCourses.map(c => (
+                                        <SelectItem key={c.id} value={c.courseCode}>{c.name} ({c.courseCode})</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Button onClick={handleAddEnrollment}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, courses: Course[] }) => {
     const queryClient = useQueryClient();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -173,13 +270,22 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
     const [paymentMethod, setPaymentMethod] = useState('');
     const [discountAmount, setDiscountAmount] = useState('');
     const [isMobileView, setIsMobileView] = useState(false);
+    const [isEnrollmentDialogOpen, setIsEnrollmentDialogOpen] = useState(false);
     
-    const { data: enrollments, isLoading: isLoadingEnrollments } = useQuery<StudentEnrollmentInfo[]>({
+    const { data, isLoading: isLoadingEnrollments } = useQuery({
         queryKey: ['studentEnrollments', request.unique_number],
         queryFn: () => getStudentEnrollments(request.unique_number),
         enabled: isDialogOpen,
     });
     
+    // Manage enrollments locally for immediate UI updates
+    const [localEnrollments, setLocalEnrollments] = useState<StudentEnrollmentInfo[]>([]);
+    useEffect(() => {
+        if (data) {
+            setLocalEnrollments(data);
+        }
+    }, [data]);
+
     // Reset state when dialog opens or category changes
     useEffect(() => {
         if (isDialogOpen) {
@@ -276,11 +382,14 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
                 </Select>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="course-select">Associated Batch</Label>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="course-select">Associated Batch</Label>
+                    <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => setIsEnrollmentDialogOpen(true)}>Manage</Button>
+                </div>
                 <Select value={selectedCourseCode} onValueChange={setSelectedCourseCode} disabled={isLoadingEnrollments}>
                     <SelectTrigger id="course-select"><SelectValue placeholder={isLoadingEnrollments ? "Loading batches..." : "Select an enrolled batch..."} /></SelectTrigger>
                     <SelectContent>
-                        {enrollments?.map(enrollment => {
+                        {localEnrollments.map(enrollment => {
                             const courseInfo = courses.find(c => c.courseCode === enrollment.course_code);
                             const courseName = courseInfo ? courseInfo.name : 'Unknown Course';
                             return (
@@ -291,6 +400,14 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
                         })}
                     </SelectContent>
                 </Select>
+                 <ManageEnrollmentsDialog 
+                    isOpen={isEnrollmentDialogOpen}
+                    onOpenChange={setIsEnrollmentDialogOpen}
+                    studentNumber={request.unique_number}
+                    allCourses={courses}
+                    currentEnrollments={localEnrollments}
+                    onEnrollmentsChange={setLocalEnrollments}
+                />
             </div>
         </div>
     );
@@ -298,21 +415,21 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
     const CategorySelection = () => (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
             <Card onClick={() => setSelectedCategory('course')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer">
-                <CardHeader className="items-center text-center">
-                    <BookOpen className="w-10 h-10 text-primary mb-2"/>
-                    <CardTitle>Course Fee</CardTitle>
+                <CardHeader className="items-center text-center p-4">
+                    <BookOpen className="w-8 h-8 text-primary mb-2"/>
+                    <CardTitle className="text-base">Course Fee</CardTitle>
                 </CardHeader>
             </Card>
             <Card onClick={() => setSelectedCategory('convocation')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer">
-                 <CardHeader className="items-center text-center">
-                    <GraduationCap className="w-10 h-10 text-primary mb-2"/>
-                    <CardTitle>Convocation</CardTitle>
+                 <CardHeader className="items-center text-center p-4">
+                    <GraduationCap className="w-8 h-8 text-primary mb-2"/>
+                    <CardTitle className="text-base">Convocation</CardTitle>
                 </CardHeader>
             </Card>
             <Card onClick={() => setSelectedCategory('other')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer">
-                 <CardHeader className="items-center text-center">
-                    <Briefcase className="w-10 h-10 text-primary mb-2"/>
-                    <CardTitle>Other</CardTitle>
+                 <CardHeader className="items-center text-center p-4">
+                    <Briefcase className="w-8 h-8 text-primary mb-2"/>
+                    <CardTitle className="text-base">Other</CardTitle>
                 </CardHeader>
             </Card>
         </div>
