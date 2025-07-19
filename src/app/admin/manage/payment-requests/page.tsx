@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, Link as LinkIcon, FileText, Search } from 'lucide-react';
+import { AlertTriangle, ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, Link as LinkIcon, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package } from 'lucide-react';
 import { getPaymentRequests, checkDuplicateSlips } from '@/lib/api';
 import type { PaymentRequest } from '@/lib/types';
 import { format } from 'date-fns';
@@ -357,13 +357,27 @@ export default function PaymentRequestsPage() {
     }, [requests, searchTerm]);
 
     const requestStats = useMemo(() => {
-        if (!requests) return { total: 0, pending: 0, approved: 0, rejected: 0 };
-        return {
+        if (!requests) {
+            return {
+                status: { total: 0, pending: 0, approved: 0, rejected: 0 },
+                reasons: {}
+            };
+        }
+        
+        const status = {
             total: requests.length,
             pending: requests.filter(r => r.payment_status === 'Pending').length,
             approved: requests.filter(r => r.payment_status === 'Approved').length,
             rejected: requests.filter(r => r.payment_status === 'Rejected').length,
         };
+
+        const reasons = requests.reduce((acc, req) => {
+            const reason = req.payment_reson || 'unknown';
+            acc[reason] = (acc[reason] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        return { status, reasons };
     }, [requests]);
 
 
@@ -414,6 +428,12 @@ export default function PaymentRequestsPage() {
                 return 'secondary';
         }
     }
+    
+    const reasonIcons: Record<string, React.ReactNode> = {
+        course: <BookOpen className="w-6 h-6 text-primary" />,
+        convocation: <GraduationCap className="w-6 h-6 text-primary" />,
+        default: <Package className="w-6 h-6 text-primary" />,
+    }
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -422,13 +442,62 @@ export default function PaymentRequestsPage() {
                 <p className="text-muted-foreground">View and manage incoming payment requests from the portal.</p>
             </header>
 
+            <section className="space-y-4">
+                <h2 className="text-xl font-semibold font-headline">Overview by Status</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                           <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                           <Hourglass className="w-4 h-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent><div className="text-2xl font-bold">{requestStats.status.pending}</div></CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                           <CardTitle className="text-sm font-medium">Approved</CardTitle>
+                           <CheckCircle className="w-4 h-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent><div className="text-2xl font-bold">{requestStats.status.approved}</div></CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                           <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+                           <XCircle className="w-4 h-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent><div className="text-2xl font-bold">{requestStats.status.rejected}</div></CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                           <CardTitle className="text-sm font-medium">Total</CardTitle>
+                           <Package className="w-4 h-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent><div className="text-2xl font-bold">{requestStats.status.total}</div></CardContent>
+                    </Card>
+                </div>
+            </section>
+            
+            <section className="space-y-4">
+                 <h2 className="text-xl font-semibold font-headline">Overview by Reason</h2>
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {Object.entries(requestStats.reasons).map(([reason, count]) => (
+                        <Card key={reason}>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                               <CardTitle className="text-sm font-medium capitalize">{reason.replace('_', ' ')}</CardTitle>
+                               {reasonIcons[reason] || reasonIcons.default}
+                            </CardHeader>
+                            <CardContent><div className="text-2xl font-bold">{count}</div></CardContent>
+                        </Card>
+                    ))}
+                 </div>
+            </section>
+
             <Card className="shadow-lg">
                 <CardHeader>
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                         <div>
                             <CardTitle>All Requests</CardTitle>
                             <CardDescription>
-                                {filteredRequests.length} of {requests?.length} records found. Pending: {requestStats.pending}
+                                Showing {paginatedRequests.length} of {filteredRequests.length} records.
                             </CardDescription>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
