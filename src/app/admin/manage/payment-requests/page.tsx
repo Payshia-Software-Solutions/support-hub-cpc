@@ -214,6 +214,7 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                              <div className="space-y-3 rounded-md border p-4 bg-muted/50">
                                 <h3 className="font-semibold text-base">Submitted Information</h3>
                                 <div className="text-sm space-y-2 text-muted-foreground">
+                                    <p><strong className="text-card-foreground">Student / Ref #:</strong> {request.unique_number}</p>
                                     <p><strong className="text-card-foreground">Original Reason:</strong> {request.payment_reson}</p>
                                     <p><strong className="text-card-foreground">Original Amount:</strong> LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                                     <p><strong className="text-card-foreground">Paid Date:</strong> {format(new Date(request.paid_date), 'PPP')}</p>
