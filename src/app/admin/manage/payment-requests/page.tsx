@@ -25,6 +25,9 @@ import {
 } from "@/components/ui/dialog"
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const ITEMS_PER_PAGE = 25;
 
@@ -32,24 +35,30 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
     const queryClient = useQueryClient();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isZoomed, setIsZoomed] = useState(false);
+    const [paymentAmount, setPaymentAmount] = useState(request.paid_amount);
+    const [paymentType, setPaymentType] = useState(request.payment_reson || '');
+    
     const contentProviderUrl = 'https://content-provider.pharmacollege.lk';
     const fullSlipUrl = `${contentProviderUrl}${request.slip_path}`;
     const isImage = /\.(jpg|jpeg|png|gif)$/i.test(request.slip_path);
 
-    // Reset zoom state when dialog closes
+    // Reset state when dialog opens
     useEffect(() => {
-        if (!isDialogOpen) {
+        if (isDialogOpen) {
             setIsZoomed(false);
+            setPaymentAmount(request.paid_amount);
+            setPaymentType(request.payment_reson || '');
         }
-    }, [isDialogOpen]);
+    }, [isDialogOpen, request.paid_amount, request.payment_reson]);
 
-    // Mock mutation for approving/rejecting. Replace with real API calls.
+    // Mock mutation for approving/rejecting.
     const mutation = useMutation({
-        mutationFn: async (action: 'approve' | 'reject') => {
+        mutationFn: async ({ action, amount, type }: { action: 'approve' | 'reject', amount?: string, type?: string }) => {
             // Placeholder: Replace with actual API call
-            console.log(`Performing action: ${action} for request ${request.id}`);
+            console.log(`Performing action: ${action} for request ${request.id} with amount ${amount} and type ${type}`);
             await new Promise(resolve => setTimeout(resolve, 1000));
             if (action === 'approve') {
+                // Here you would also post to create the payment record
                 return { ...request, payment_status: 'Approved' };
             }
             return { ...request, payment_status: 'Rejected' };
@@ -73,22 +82,50 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
         }
     });
 
+    const handleApprove = () => {
+        if (!paymentAmount || !paymentType) {
+            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please provide both amount and payment type.' });
+            return;
+        }
+        mutation.mutate({ action: 'approve', amount: paymentAmount, type: paymentType });
+    }
+
     return (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
                 <Button variant="outline" size="sm">Manage</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl">
+            <DialogContent className="max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>Manage Payment Request</DialogTitle>
                     <DialogDescription>Review the slip and approve or reject the payment for reference #{request.unique_number}.</DialogDescription>
                 </DialogHeader>
-                <div className="grid md:grid-cols-2 gap-6 mt-4">
+                <div className="grid md:grid-cols-2 gap-x-8 gap-y-6 mt-4">
                     <div className="space-y-4">
-                         <h3 className="font-semibold text-lg">Details</h3>
-                         <div className="text-sm space-y-2 text-muted-foreground">
-                            <p><strong className="text-card-foreground">Amount:</strong> LKR {parseFloat(request.paid_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
-                            <p><strong className="text-card-foreground">Reason:</strong> {request.payment_reson}</p>
+                         <h3 className="font-semibold text-lg">Details & Actions</h3>
+                         <div className="space-y-4">
+                             <div className="space-y-2">
+                                <Label htmlFor="payment-amount">Payment Amount (LKR)</Label>
+                                <Input id="payment-amount" type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder="e.g. 6000.00" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="payment-type">Payment Type</Label>
+                                <Select value={paymentType} onValueChange={setPaymentType}>
+                                    <SelectTrigger id="payment-type">
+                                        <SelectValue placeholder="Select a payment type..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="course_fee">Course Fee</SelectItem>
+                                        <SelectItem value="exam_fee">Exam Fee</SelectItem>
+                                        <SelectItem value="convocation">Convocation</SelectItem>
+                                        <SelectItem value="t_shirt">T-Shirt / Merchandise</SelectItem>
+                                        <SelectItem value="other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                         </div>
+                         <div className="text-sm space-y-2 text-muted-foreground pt-4 border-t">
+                            <p><strong className="text-card-foreground">Original Reason:</strong> {request.payment_reson}</p>
                             <p><strong className="text-card-foreground">Paid Date:</strong> {format(new Date(request.paid_date), 'PPP')}</p>
                             <p><strong className="text-card-foreground">Bank:</strong> {request.bank}</p>
                             <p><strong className="text-card-foreground">Branch:</strong> {request.branch}</p>
@@ -104,7 +141,7 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                                 </Button>
                             )}
                         </div>
-                        <div className="max-h-[50vh] overflow-auto border rounded-lg p-2 bg-muted">
+                        <div className="max-h-[60vh] overflow-auto border rounded-lg p-2 bg-muted">
                             {isImage ? (
                                 <div 
                                     className={cn(
@@ -145,18 +182,18 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                     </DialogClose>
                      <Button 
                         variant="destructive" 
-                        onClick={() => mutation.mutate('reject')}
+                        onClick={() => mutation.mutate({ action: 'reject' })}
                         disabled={mutation.isPending}
                     >
-                        {mutation.isPending && mutation.variables === 'reject' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4"/>}
+                        {mutation.isPending && mutation.variables?.action === 'reject' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4"/>}
                         Reject
                     </Button>
                     <Button 
                         variant="default" 
-                        onClick={() => mutation.mutate('approve')}
+                        onClick={handleApprove}
                         disabled={mutation.isPending}
                     >
-                         {mutation.isPending && mutation.variables === 'approve' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                         {mutation.isPending && mutation.variables?.action === 'approve' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
                         Approve
                     </Button>
                 </DialogFooter>
@@ -329,3 +366,5 @@ export default function PaymentRequestsPage() {
         </div>
     );
 }
+
+    
