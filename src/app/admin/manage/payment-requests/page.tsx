@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Dispatch, SetStateAction } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,9 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const ITEMS_PER_PAGE = 25;
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk';
+
+
+// --- Sub-components for actions ---
 
 const ViewSlipDialog = ({ slipPath, isOpen, onOpenChange }: { slipPath: string, isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
     if (!isOpen) return null;
@@ -290,16 +293,25 @@ const ManageEnrollmentsDialog = ({
     );
 };
 
-// --- Form Components (moved outside main component) ---
 const CoursePaymentForm = ({
   request,
   paymentAmount, setPaymentAmount,
   discountAmount, setDiscountAmount,
   paymentMethod, setPaymentMethod,
   selectedCourseCode, setSelectedCourseCode,
-  isEnrollmentDialogOpen, setIsEnrollmentDialogOpen,
-  enrollments, isLoadingEnrollments, courses, refetchEnrollments
-}: any) => {
+  setIsEnrollmentDialogOpen,
+  enrollments, isLoadingEnrollments, courses
+}: {
+    request: PaymentRequest;
+    paymentAmount: string; setPaymentAmount: Dispatch<SetStateAction<string>>;
+    discountAmount: string; setDiscountAmount: Dispatch<SetStateAction<string>>;
+    paymentMethod: string; setPaymentMethod: Dispatch<SetStateAction<string>>;
+    selectedCourseCode: string; setSelectedCourseCode: Dispatch<SetStateAction<string>>;
+    setIsEnrollmentDialogOpen: Dispatch<SetStateAction<boolean>>;
+    enrollments: StudentEnrollmentInfo[] | undefined;
+    isLoadingEnrollments: boolean;
+    courses: Course[];
+}) => {
     return (
         <div className="space-y-4">
              <div className="grid grid-cols-2 gap-4">
@@ -340,8 +352,8 @@ const CoursePaymentForm = ({
                 <Select value={selectedCourseCode} onValueChange={setSelectedCourseCode} disabled={isLoadingEnrollments}>
                     <SelectTrigger id="course-select"><SelectValue placeholder={isLoadingEnrollments ? "Loading batches..." : "Select an enrolled batch..."} /></SelectTrigger>
                     <SelectContent>
-                        {enrollments?.map((enrollment: StudentEnrollmentInfo) => {
-                            const courseInfo = courses.find((c: Course) => c.courseCode === enrollment.course_code);
+                        {enrollments?.map((enrollment) => {
+                            const courseInfo = courses.find((c) => c.courseCode === enrollment.course_code);
                             const courseName = courseInfo ? courseInfo.name : 'Unknown Course';
                             return (
                                 <SelectItem key={enrollment.student_course_id} value={enrollment.course_code}>
@@ -351,14 +363,6 @@ const CoursePaymentForm = ({
                         })}
                     </SelectContent>
                 </Select>
-                 <ManageEnrollmentsDialog 
-                    isOpen={isEnrollmentDialogOpen}
-                    onOpenChange={setIsEnrollmentDialogOpen}
-                    studentNumber={request.unique_number}
-                    allCourses={courses}
-                    currentEnrollments={enrollments || []}
-                    onEnrollmentsChange={() => refetchEnrollments()}
-                />
             </div>
         </div>
     );
@@ -511,12 +515,10 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
                             setPaymentMethod={setPaymentMethod}
                             selectedCourseCode={selectedCourseCode}
                             setSelectedCourseCode={setSelectedCourseCode}
-                            isEnrollmentDialogOpen={isEnrollmentDialogOpen}
                             setIsEnrollmentDialogOpen={setIsEnrollmentDialogOpen}
                             enrollments={enrollments}
                             isLoadingEnrollments={isLoadingEnrollments}
                             courses={courses}
-                            refetchEnrollments={refetchEnrollments}
                         />;
             case 'convocation':
                 return <p className="text-center text-muted-foreground py-8">Convocation payment form placeholder.</p>;
@@ -551,6 +553,14 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
                     <h3 className="font-semibold text-base">Verification &amp; Approval</h3>
                 </div>
                 <FormContent />
+                 <ManageEnrollmentsDialog 
+                    isOpen={isEnrollmentDialogOpen}
+                    onOpenChange={setIsEnrollmentDialogOpen}
+                    studentNumber={request.unique_number}
+                    allCourses={courses}
+                    currentEnrollments={enrollments || []}
+                    onEnrollmentsChange={() => refetchEnrollments()}
+                />
             </div>
         </div>
     );
@@ -1006,5 +1016,3 @@ export default function PaymentRequestsPage() {
         </div>
     );
 }
-
-    
