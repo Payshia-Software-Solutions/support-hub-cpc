@@ -13,13 +13,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { dummyCourses } from '@/lib/dummy-data';
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-// Simplified types for this page, similar to quick-links
+// --- Types for this page ---
 interface StudentInfo {
     id: string;
     student_id: string;
@@ -45,9 +44,17 @@ interface StudentBalance {
     paymentRecords: Record<string, ApiPaymentRecord>;
 }
 
+// Simplified Enrollment, as we only need course code and name for the dropdown
+interface SimpleEnrollment {
+    id: string;
+    course_code: string;
+    parent_course_name: string;
+}
+
 interface FullStudentData {
     studentInfo: StudentInfo;
     studentBalance: StudentBalance;
+    studentEnrollments: Record<string, SimpleEnrollment>; // Added enrollments
 }
 
 export default function PaymentUpdatePage() {
@@ -59,9 +66,11 @@ export default function PaymentUpdatePage() {
     
     // Form state for new payment
     const [newPaymentAmount, setNewPaymentAmount] = useState('');
-    const [newPaymentCourseId, setNewPaymentCourseId] = useState('');
+    const [newPaymentCourseCode, setNewPaymentCourseCode] = useState('');
     const [newPaymentDate, setNewPaymentDate] = useState<Date | undefined>(new Date());
     const [newReceiptNumber, setNewReceiptNumber] = useState('');
+    const [newPaymentMethod, setNewPaymentMethod] = useState('');
+    const [newDiscountAmount, setNewDiscountAmount] = useState('');
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -81,7 +90,7 @@ export default function PaymentUpdatePage() {
                 throw new Error(errorData.message || 'Student not found or API response is invalid.');
             }
             const data = await response.json();
-            if (data && data.studentInfo && data.studentBalance) {
+            if (data && data.studentInfo && data.studentBalance && data.studentEnrollments) {
                 setStudentData(data);
             } else {
                  throw new Error('Student data is incomplete or invalid in the API response.');
@@ -95,27 +104,28 @@ export default function PaymentUpdatePage() {
     };
 
     const handleAddPayment = () => {
-        if (!studentData || !newPaymentAmount || !newPaymentCourseId || !newReceiptNumber) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please fill all fields.' });
+        if (!studentData || !newPaymentAmount || !newPaymentCourseCode || !newReceiptNumber || !newPaymentMethod) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please fill all required fields.' });
             return;
         }
 
-        const course = dummyCourses.find(c => c.id === newPaymentCourseId);
+        const course = Object.values(studentData.studentEnrollments).find(c => c.course_code === newPaymentCourseCode);
         if (!course) return;
 
         // Mock addition
         const newRecord: ApiPaymentRecord = {
             id: `new-${Date.now()}`,
             receipt_number: newReceiptNumber,
-            course_code: course.courseCode,
+            course_code: newPaymentCourseCode,
             paid_amount: newPaymentAmount,
             payment_status: 'Paid', // Assuming new payments are always paid
-            payment_type: 'Manual Entry',
+            payment_type: newPaymentMethod,
             paid_date: newPaymentDate ? format(newPaymentDate, "yyyy-MM-dd") : new Date().toISOString(),
         };
 
-        const updatedBalance = studentData.studentBalance.studentBalance - parseFloat(newPaymentAmount);
-        const updatedTotalPaid = studentData.studentBalance.totalPaymentAmount + parseFloat(newPaymentAmount);
+        const paymentValue = parseFloat(newPaymentAmount) - parseFloat(newDiscountAmount || '0');
+        const updatedBalance = studentData.studentBalance.studentBalance - paymentValue;
+        const updatedTotalPaid = studentData.studentBalance.totalPaymentAmount + paymentValue;
         
         setStudentData({
             ...studentData,
@@ -137,13 +147,16 @@ export default function PaymentUpdatePage() {
 
         // Reset form and close dialog
         setNewPaymentAmount('');
-        setNewPaymentCourseId('');
+        setNewPaymentCourseCode('');
         setNewReceiptNumber('');
         setNewPaymentDate(new Date());
+        setNewPaymentMethod('');
+        setNewDiscountAmount('');
         setIsAddDialogOpen(false);
     };
 
     const paymentRecordsArray = studentData ? Object.values(studentData.studentBalance.paymentRecords).sort((a, b) => new Date(b.paid_date).getTime() - new Date(a.paid_date).getTime()) : [];
+    const enrollmentsArray = studentData ? Object.values(studentData.studentEnrollments) : [];
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -238,9 +251,41 @@ export default function PaymentUpdatePage() {
                                             <label htmlFor="receipt-number">Receipt Number</label>
                                             <Input id="receipt-number" value={newReceiptNumber} onChange={(e) => setNewReceiptNumber(e.target.value)} placeholder="e.g. 123456" />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label htmlFor="payment-amount">Amount (LKR)</label>
-                                            <Input id="payment-amount" type="number" value={newPaymentAmount} onChange={(e) => setNewPaymentAmount(e.target.value)} placeholder="e.g. 5000" />
+                                         <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label htmlFor="payment-amount">Amount (LKR)</label>
+                                                <Input id="payment-amount" type="number" value={newPaymentAmount} onChange={(e) => setNewPaymentAmount(e.target.value)} placeholder="e.g. 5000" />
+                                            </div>
+                                             <div className="space-y-2">
+                                                <label htmlFor="discount-amount">Discount (LKR)</label>
+                                                <Input id="discount-amount" type="number" value={newDiscountAmount} onChange={(e) => setNewDiscountAmount(e.target.value)} placeholder="e.g. 500" />
+                                            </div>
+                                        </div>
+                                         <div className="space-y-2">
+                                            <label htmlFor="payment-method">Payment Method</label>
+                                            <Select value={newPaymentMethod} onValueChange={setNewPaymentMethod}>
+                                                <SelectTrigger id="payment-method"><SelectValue placeholder="Select a method..." /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Cash">Cash</SelectItem>
+                                                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                                                    <SelectItem value="Card Payment">Card Payment</SelectItem>
+                                                    <SelectItem value="Online Gateway">Online Gateway</SelectItem>
+                                                    <SelectItem value="Other">Other</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                         <div className="space-y-2">
+                                            <label htmlFor="course-select">Associated Batch</label>
+                                            <Select value={newPaymentCourseCode} onValueChange={setNewPaymentCourseCode}>
+                                                <SelectTrigger id="course-select"><SelectValue placeholder="Select an enrolled batch..." /></SelectTrigger>
+                                                <SelectContent>
+                                                    {enrollmentsArray.map(enrollment => (
+                                                        <SelectItem key={enrollment.id} value={enrollment.course_code}>
+                                                            {enrollment.parent_course_name} ({enrollment.course_code})
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                          <div className="space-y-2">
                                             <label htmlFor="payment-date">Payment Date</label>
@@ -255,17 +300,6 @@ export default function PaymentUpdatePage() {
                                                     <Calendar mode="single" selected={newPaymentDate} onSelect={setNewPaymentDate} initialFocus />
                                                 </PopoverContent>
                                             </Popover>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label htmlFor="course-select">Associated Course</label>
-                                            <Select value={newPaymentCourseId} onValueChange={setNewPaymentCourseId}>
-                                                <SelectTrigger id="course-select"><SelectValue placeholder="Select a course..." /></SelectTrigger>
-                                                <SelectContent>
-                                                    {dummyCourses.map(course => (
-                                                        <SelectItem key={course.id} value={course.id}>{course.name} ({course.courseCode})</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
                                         </div>
                                     </div>
                                     <DialogFooter>
@@ -335,3 +369,5 @@ export default function PaymentUpdatePage() {
         </div>
     );
 }
+
+    
