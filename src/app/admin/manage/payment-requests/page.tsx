@@ -374,6 +374,7 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                             variant="destructive" 
                             onClick={() => mutation.mutate({ action: 'reject' })}
                             disabled={mutation.isPending}
+                            size="sm"
                         >
                             {mutation.isPending && mutation.variables?.action === 'reject' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4"/>}
                             Reject
@@ -382,6 +383,7 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                             variant="default" 
                             onClick={handleApprove}
                             disabled={mutation.isPending}
+                             size="sm"
                         >
                              {mutation.isPending && mutation.variables?.action === 'approve' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
                             Approve
@@ -398,6 +400,8 @@ export default function PaymentRequestsPage() {
     const queryClient = useQueryClient();
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [reasonFilter, setReasonFilter] = useState('all');
 
     const { data: requests, isLoading, isError, error, refetch, isFetching } = useQuery<PaymentRequest[]>({
         queryKey: ['paymentRequests'],
@@ -407,18 +411,7 @@ export default function PaymentRequestsPage() {
     
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm]);
-
-    const filteredRequests = useMemo(() => {
-        if (!requests) return [];
-        const lowercasedFilter = searchTerm.toLowerCase();
-        if (!lowercasedFilter) return requests;
-        return requests.filter(req =>
-            (req.id?.toLowerCase() || '').includes(lowercasedFilter) ||
-            (req.unique_number?.toLowerCase() || '').includes(lowercasedFilter) ||
-            (req.payment_reson?.toLowerCase() || '').includes(lowercasedFilter)
-        );
-    }, [requests, searchTerm]);
+    }, [searchTerm, statusFilter, reasonFilter]);
 
     const requestStats = useMemo(() => {
         if (!requests) {
@@ -443,6 +436,24 @@ export default function PaymentRequestsPage() {
 
         return { status, reasons };
     }, [requests]);
+    
+    const filteredRequests = useMemo(() => {
+        if (!requests) return [];
+        const lowercasedFilter = searchTerm.toLowerCase();
+        
+        return requests.filter(req => {
+            const matchesSearch = lowercasedFilter ? 
+                (req.id?.toLowerCase() || '').includes(lowercasedFilter) ||
+                (req.unique_number?.toLowerCase() || '').includes(lowercasedFilter) ||
+                (req.payment_reson?.toLowerCase() || '').includes(lowercasedFilter)
+                : true;
+            
+            const matchesStatus = statusFilter === 'all' || req.payment_status === statusFilter;
+            const matchesReason = reasonFilter === 'all' || req.payment_reson === reasonFilter;
+
+            return matchesSearch && matchesStatus && matchesReason;
+        });
+    }, [requests, searchTerm, statusFilter, reasonFilter]);
 
 
     const totalPages = Math.ceil((filteredRequests.length) / ITEMS_PER_PAGE);
@@ -557,14 +568,20 @@ export default function PaymentRequestsPage() {
 
             <Card className="shadow-lg">
                 <CardHeader>
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                        <div>
-                            <CardTitle>All Requests</CardTitle>
-                            <CardDescription>
-                                Showing {paginatedRequests.length} of {filteredRequests.length} records.
-                            </CardDescription>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                             <div>
+                                <CardTitle>All Requests</CardTitle>
+                                <CardDescription>
+                                    Showing {paginatedRequests.length} of {filteredRequests.length} records.
+                                </CardDescription>
+                            </div>
+                            <Button onClick={() => refetch()} disabled={isFetching} className="w-full sm:w-auto">
+                                <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+                                Refresh
+                            </Button>
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                        <div className="flex flex-col md:flex-row gap-2">
                             <div className="relative flex-grow">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
@@ -574,10 +591,26 @@ export default function PaymentRequestsPage() {
                                     className="pl-10 w-full"
                                 />
                             </div>
-                            <Button onClick={() => refetch()} disabled={isFetching} className="w-full sm:w-auto">
-                                <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-                                Refresh
-                            </Button>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                    <SelectTrigger><SelectValue placeholder="Filter by status"/></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Statuses</SelectItem>
+                                        <SelectItem value="Pending">Pending</SelectItem>
+                                        <SelectItem value="Approved">Approved</SelectItem>
+                                        <SelectItem value="Rejected">Rejected</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Select value={reasonFilter} onValueChange={setReasonFilter}>
+                                    <SelectTrigger><SelectValue placeholder="Filter by reason"/></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Reasons</SelectItem>
+                                        {Object.keys(requestStats.reasons).map(reason => (
+                                            <SelectItem key={reason} value={reason} className="capitalize">{reason.replace('_', ' ')}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </div>
                 </CardHeader>
