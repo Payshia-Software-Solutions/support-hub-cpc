@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -30,6 +31,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const ITEMS_PER_PAGE = 25;
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk';
@@ -168,6 +170,7 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
     const [isZoomed, setIsZoomed] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentType, setPaymentType] = useState('');
+    const [isMobileView, setIsMobileView] = useState(false);
     
     const fullSlipUrl = `${CONTENT_PROVIDER_URL}${request.slip_path}`;
     const isImage = /\.(jpg|jpeg|png|gif)$/i.test(request.slip_path);
@@ -178,6 +181,11 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
             setIsZoomed(false);
             setPaymentAmount('');
             setPaymentType('');
+            
+            const checkMobile = () => setIsMobileView(window.innerWidth < 768);
+            checkMobile();
+            window.addEventListener('resize', checkMobile);
+            return () => window.removeEventListener('resize', checkMobile);
         }
     }, [isDialogOpen]);
 
@@ -219,6 +227,103 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
         }
         mutation.mutate({ action: 'approve', amount: paymentAmount, type: paymentType });
     }
+    
+    const DetailsSection = () => (
+        <div className="space-y-4">
+            <div className="space-y-3 rounded-md border p-4 bg-muted/50">
+                <h3 className="font-semibold text-base">Submitted Information</h3>
+                <div className="text-sm space-y-2 text-muted-foreground">
+                    <p><strong className="text-card-foreground">Request ID:</strong> {request.id}</p>
+                    <p><strong className="text-card-foreground">Student / Ref #:</strong> {request.unique_number}</p>
+                    <p><strong className="text-card-foreground">Original Reason:</strong> {request.payment_reson}</p>
+                    <p><strong className="text-card-foreground">Original Amount:</strong> LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                    <p><strong className="text-card-foreground">Paid Date:</strong> {format(new Date(request.paid_date), 'PPP')}</p>
+                    <p><strong className="text-card-foreground">Bank:</strong> {request.bank}</p>
+                    <p><strong className="text-card-foreground">Branch:</strong> {request.branch}</p>
+                </div>
+            </div>
+            <div className="space-y-4 pt-4 border-t">
+                <h3 className="font-semibold text-base">Verification &amp; Approval</h3>
+                <div className="space-y-2">
+                    <Label htmlFor="payment-amount">Verified Payment Amount (LKR)</Label>
+                    <Input id="payment-amount" type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder="Enter verified amount" />
+                    <p className="text-xs text-muted-foreground">
+                        Suggested amount:{" "}
+                        <button
+                            type="button"
+                            className="text-primary hover:underline font-medium"
+                            onClick={() => setPaymentAmount(request.paid_amount)}
+                        >
+                            LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </button>
+                    </p>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="payment-type">Payment Type</Label>
+                    <Select value={paymentType} onValueChange={setPaymentType}>
+                        <SelectTrigger id="payment-type">
+                            <SelectValue placeholder="Select a payment type..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="course_fee">Course Fee</SelectItem>
+                            <SelectItem value="exam_fee">Exam Fee</SelectItem>
+                            <SelectItem value="convocation">Convocation</SelectItem>
+                            <SelectItem value="t_shirt">T-Shirt / Merchandise</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+        </div>
+    );
+    
+    const SlipSection = () => (
+         <div className="space-y-2">
+            <div className="flex justify-between items-center">
+                <h3 className="font-semibold text-lg">Payment Slip</h3>
+                {isImage && (
+                    <Button variant="ghost" size="sm" onClick={() => setIsZoomed(!isZoomed)}>
+                        {isZoomed ? <ZoomOut className="mr-2 h-4 w-4" /> : <ZoomIn className="mr-2 h-4 w-4" />}
+                        {isZoomed ? 'Zoom Out' : 'Zoom In'}
+                    </Button>
+                )}
+            </div>
+            <div className="max-h-[60vh] overflow-auto border rounded-lg p-2 bg-muted">
+                {isImage ? (
+                    <div 
+                        className={cn(
+                            "w-full h-full overflow-auto transition-transform duration-300",
+                            isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
+                        )}
+                        onClick={() => setIsZoomed(!isZoomed)}
+                    >
+                        <Image
+                            src={fullSlipUrl}
+                            alt="Payment Slip"
+                            width={800}
+                            height={1200}
+                            className={cn(
+                                "w-full h-auto object-contain transition-transform duration-300",
+                                isZoomed && "scale-[1.75]"
+                            )}
+                            data-ai-hint="payment slip"
+                        />
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center p-8 text-center bg-background rounded-lg">
+                        <p className="mb-4">This file is not an image and cannot be previewed directly.</p>
+                        <a href={fullSlipUrl} target="_blank" rel="noopener noreferrer">
+                            <Button>
+                                <ExternalLink className="mr-2 h-4 w-4"/>
+                                Open Slip in New Tab
+                            </Button>
+                        </a>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
 
     return (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -226,107 +331,33 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                 <Button variant="outline" size="sm">Manage</Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
-                <DialogHeader className="p-6 pb-0">
+                <DialogHeader className="p-6 pb-2">
                     <DialogTitle>Manage Payment Request</DialogTitle>
                     <DialogDescription>Review the slip and approve or reject the payment for reference #{request.unique_number}.</DialogDescription>
                 </DialogHeader>
-                <div className="flex-1 overflow-y-auto px-6">
-                    <div className="space-y-4 mt-4">
-                         {isDialogOpen && <DuplicateSlipCheck hashValue={request.hash_value} currentRequestId={request.id} />}
-                        <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
-                            <div className="space-y-4">
-                                 <div className="space-y-3 rounded-md border p-4 bg-muted/50">
-                                    <h3 className="font-semibold text-base">Submitted Information</h3>
-                                    <div className="text-sm space-y-2 text-muted-foreground">
-                                        <p><strong className="text-card-foreground">Request ID:</strong> {request.id}</p>
-                                        <p><strong className="text-card-foreground">Student / Ref #:</strong> {request.unique_number}</p>
-                                        <p><strong className="text-card-foreground">Original Reason:</strong> {request.payment_reson}</p>
-                                        <p><strong className="text-card-foreground">Original Amount:</strong> LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-                                        <p><strong className="text-card-foreground">Paid Date:</strong> {format(new Date(request.paid_date), 'PPP')}</p>
-                                        <p><strong className="text-card-foreground">Bank:</strong> {request.bank}</p>
-                                        <p><strong className="text-card-foreground">Branch:</strong> {request.branch}</p>
-                                    </div>
-                                 </div>
-                                 <div className="space-y-4 pt-4 border-t">
-                                     <h3 className="font-semibold text-base">Verification &amp; Approval</h3>
-                                     <div className="space-y-2">
-                                        <Label htmlFor="payment-amount">Verified Payment Amount (LKR)</Label>
-                                        <Input id="payment-amount" type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder="Enter verified amount" />
-                                        <p className="text-xs text-muted-foreground">
-                                            Suggested amount:{" "}
-                                            <button
-                                                type="button"
-                                                className="text-primary hover:underline font-medium"
-                                                onClick={() => setPaymentAmount(request.paid_amount)}
-                                            >
-                                                LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                                            </button>
-                                        </p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="payment-type">Payment Type</Label>
-                                        <Select value={paymentType} onValueChange={setPaymentType}>
-                                            <SelectTrigger id="payment-type">
-                                                <SelectValue placeholder="Select a payment type..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="course_fee">Course Fee</SelectItem>
-                                                <SelectItem value="exam_fee">Exam Fee</SelectItem>
-                                                <SelectItem value="convocation">Convocation</SelectItem>
-                                                <SelectItem value="t_shirt">T-Shirt / Merchandise</SelectItem>
-                                                <SelectItem value="other">Other</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                 </div>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                    <h3 className="font-semibold text-lg">Payment Slip</h3>
-                                    {isImage && (
-                                        <Button variant="ghost" size="sm" onClick={() => setIsZoomed(!isZoomed)}>
-                                            {isZoomed ? <ZoomOut className="mr-2 h-4 w-4" /> : <ZoomIn className="mr-2 h-4 w-4" />}
-                                            {isZoomed ? 'Zoom Out' : 'Zoom In'}
-                                        </Button>
-                                    )}
-                                </div>
-                                <div className="max-h-[60vh] overflow-auto border rounded-lg p-2 bg-muted">
-                                    {isImage ? (
-                                        <div 
-                                            className={cn(
-                                                "w-full h-full overflow-auto transition-transform duration-300",
-                                                isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
-                                            )}
-                                            onClick={() => setIsZoomed(!isZoomed)}
-                                        >
-                                            <Image
-                                                src={fullSlipUrl}
-                                                alt="Payment Slip"
-                                                width={800}
-                                                height={1200}
-                                                className={cn(
-                                                    "w-full h-auto object-contain transition-transform duration-300",
-                                                    isZoomed && "scale-[1.75]"
-                                                )}
-                                                data-ai-hint="payment slip"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center p-8 text-center bg-background rounded-lg">
-                                            <p className="mb-4">This file is not an image and cannot be previewed directly.</p>
-                                            <a href={fullSlipUrl} target="_blank" rel="noopener noreferrer">
-                                                <Button>
-                                                    <ExternalLink className="mr-2 h-4 w-4"/>
-                                                    Open Slip in New Tab
-                                                </Button>
-                                            </a>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                
+                <div className="flex-1 overflow-y-auto px-6 pt-2 pb-6">
+                    <div className="mt-4 space-y-4">
+                        {isDialogOpen && <DuplicateSlipCheck hashValue={request.hash_value} currentRequestId={request.id} />}
+                        
+                        {isMobileView ? (
+                            <Tabs defaultValue="details" className="w-full">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="details">Details</TabsTrigger>
+                                    <TabsTrigger value="slip">Slip</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="details" className="pt-4"><DetailsSection /></TabsContent>
+                                <TabsContent value="slip" className="pt-4"><SlipSection /></TabsContent>
+                            </Tabs>
+                        ) : (
+                             <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
+                                <DetailsSection />
+                                <SlipSection />
+                             </div>
+                        )}
                     </div>
                 </div>
+
                  <DialogFooter className="mt-auto p-6 bg-card border-t flex-shrink-0">
                     <DialogClose asChild>
                         <Button variant="outline" disabled={mutation.isPending}>Cancel</Button>
