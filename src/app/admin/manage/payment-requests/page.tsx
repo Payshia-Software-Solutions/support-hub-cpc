@@ -424,7 +424,7 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
         }
     }, [isOpen]);
     
-    const approvalMutation = useMutation({
+    const recordAndApproveMutation = useMutation({
         mutationFn: async (paymentPayload: CreatePaymentPayload) => {
             await createStudentPayment(paymentPayload);
             await updatePaymentRequestStatus(request.id, 'Approved');
@@ -446,6 +446,21 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
         }
     });
 
+    const markApprovedMutation = useMutation({
+        mutationFn: (requestId: string) => updatePaymentRequestStatus(requestId, 'Approved'),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['paymentRequests'] });
+            toast({
+                title: 'Request Marked as Approved',
+                description: `Request #${request.id} status has been updated.`,
+            });
+            onOpenChange(false);
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+        }
+    });
+    
     const rejectionMutation = useMutation({
         mutationFn: (requestId: string) => updatePaymentRequestStatus(requestId, 'Rejected'),
         onSuccess: () => {
@@ -465,7 +480,7 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
         }
     });
 
-    const handleApprove = () => {
+    const handleRecordAndApprove = () => {
         if (!paymentAmount || !paymentMethod || !selectedCourseCode) {
             toast({ variant: 'destructive', title: 'Missing Information', description: 'Amount, method, and batch are required.' });
             return;
@@ -491,10 +506,10 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
             created_by: adminUser.username
         };
         
-        approvalMutation.mutate(paymentPayload);
+        recordAndApproveMutation.mutate(paymentPayload);
     }
     
-    const isMutating = approvalMutation.isPending || rejectionMutation.isPending;
+    const isMutating = recordAndApproveMutation.isPending || rejectionMutation.isPending || markApprovedMutation.isPending;
 
     const FormContent = () => {
         if (!selectedCategory) {
@@ -656,7 +671,7 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
                 </div>
 
                  <DialogFooter className="mt-auto p-6 bg-card border-t flex-shrink-0">
-                    <div className="flex justify-end gap-2 w-full">
+                    <div className="flex w-full flex-wrap items-center justify-end gap-2">
                          <Button 
                             variant="destructive" 
                             onClick={() => rejectionMutation.mutate(request.id)}
@@ -667,13 +682,22 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
                             Reject
                         </Button>
                         <Button 
+                            variant="outline"
+                            onClick={() => markApprovedMutation.mutate(request.id)}
+                            disabled={isMutating}
+                            size="sm"
+                        >
+                            {markApprovedMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                            Mark as Approved
+                        </Button>
+                        <Button 
                             variant="default" 
-                            onClick={handleApprove}
+                            onClick={handleRecordAndApprove}
                             disabled={isMutating || isLoadingEnrollments || !selectedCategory}
                              size="sm"
                         >
-                             {approvalMutation.isPending || isLoadingEnrollments ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
-                            Approve
+                             {(recordAndApproveMutation.isPending || isLoadingEnrollments) ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                            Approve & Record
                         </Button>
                     </div>
                 </DialogFooter>
