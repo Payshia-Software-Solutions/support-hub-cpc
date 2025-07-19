@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, Link as LinkIcon, FileText } from 'lucide-react';
+import { AlertTriangle, ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, Link as LinkIcon, FileText, Search } from 'lucide-react';
 import { getPaymentRequests, checkDuplicateSlips } from '@/lib/api';
 import type { PaymentRequest } from '@/lib/types';
 import { format } from 'date-fns';
@@ -113,6 +113,7 @@ const DuplicateSlipCheck = ({ hashValue, currentRequestId }: { hashValue: string
                                 {otherRecords.map(record => (
                                     <li key={record.id} className="flex items-center justify-between p-2 rounded-md bg-destructive/10">
                                         <div className="space-y-0.5">
+                                            <p><strong>Req ID:</strong> {record.id}</p>
                                             <p><strong>Ref:</strong> {record.unique_number} ({record.payment_reson})</p>
                                             <p><strong>Status:</strong> {record.payment_status}</p>
                                             <p><strong>Submitted:</strong> {format(new Date(record.created_at), 'Pp')}</p>
@@ -214,6 +215,7 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                              <div className="space-y-3 rounded-md border p-4 bg-muted/50">
                                 <h3 className="font-semibold text-base">Submitted Information</h3>
                                 <div className="text-sm space-y-2 text-muted-foreground">
+                                    <p><strong className="text-card-foreground">Request ID:</strong> {request.id}</p>
                                     <p><strong className="text-card-foreground">Student / Ref #:</strong> {request.unique_number}</p>
                                     <p><strong className="text-card-foreground">Original Reason:</strong> {request.payment_reson}</p>
                                     <p><strong className="text-card-foreground">Original Amount:</strong> LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
@@ -331,21 +333,47 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
 export default function PaymentRequestsPage() {
     const queryClient = useQueryClient();
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const { data: requests, isLoading, isError, error, refetch, isFetching } = useQuery<PaymentRequest[]>({
         queryKey: ['paymentRequests'],
         queryFn: getPaymentRequests,
         staleTime: 1000 * 60, // 1 minute stale time
     });
+    
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
 
-    const totalPages = Math.ceil((requests?.length || 0) / ITEMS_PER_PAGE);
-    const paginatedRequests = useMemo(() => {
+    const filteredRequests = useMemo(() => {
         if (!requests) return [];
-        return requests.slice(
+        const lowercasedFilter = searchTerm.toLowerCase();
+        if (!lowercasedFilter) return requests;
+        return requests.filter(req =>
+            (req.id?.toLowerCase() || '').includes(lowercasedFilter) ||
+            (req.unique_number?.toLowerCase() || '').includes(lowercasedFilter) ||
+            (req.payment_reson?.toLowerCase() || '').includes(lowercasedFilter)
+        );
+    }, [requests, searchTerm]);
+
+    const requestStats = useMemo(() => {
+        if (!requests) return { total: 0, pending: 0, approved: 0, rejected: 0 };
+        return {
+            total: requests.length,
+            pending: requests.filter(r => r.payment_status === 'Pending').length,
+            approved: requests.filter(r => r.payment_status === 'Approved').length,
+            rejected: requests.filter(r => r.payment_status === 'Rejected').length,
+        };
+    }, [requests]);
+
+
+    const totalPages = Math.ceil((filteredRequests.length) / ITEMS_PER_PAGE);
+    const paginatedRequests = useMemo(() => {
+        return filteredRequests.slice(
             (currentPage - 1) * ITEMS_PER_PAGE,
             currentPage * ITEMS_PER_PAGE
         );
-    }, [requests, currentPage]);
+    }, [filteredRequests, currentPage]);
 
     if (isLoading) {
         return (
@@ -400,13 +428,24 @@ export default function PaymentRequestsPage() {
                         <div>
                             <CardTitle>All Requests</CardTitle>
                             <CardDescription>
-                                Showing {paginatedRequests.length} of {requests?.length || 0} requests.
+                                {filteredRequests.length} of {requests?.length} records found. Pending: {requestStats.pending}
                             </CardDescription>
                         </div>
-                         <Button onClick={() => refetch()} disabled={isFetching}>
-                            <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-                            Refresh
-                        </Button>
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                            <div className="relative flex-grow">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search by ID, Ref #..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10 w-full"
+                                />
+                            </div>
+                            <Button onClick={() => refetch()} disabled={isFetching} className="w-full sm:w-auto">
+                                <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+                                Refresh
+                            </Button>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -415,6 +454,7 @@ export default function PaymentRequestsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead>Request ID</TableHead>
                                     <TableHead>Reference #</TableHead>
                                     <TableHead>Reason</TableHead>
                                     <TableHead>Amount (LKR)</TableHead>
@@ -426,6 +466,7 @@ export default function PaymentRequestsPage() {
                             <TableBody>
                                 {paginatedRequests.map(req => (
                                     <TableRow key={req.id}>
+                                        <TableCell className="font-mono text-xs">{req.id}</TableCell>
                                         <TableCell className="font-medium">{req.unique_number}</TableCell>
                                         <TableCell>{req.payment_reson}</TableCell>
                                         <TableCell className="font-semibold">{parseFloat(req.paid_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</TableCell>
@@ -451,6 +492,7 @@ export default function PaymentRequestsPage() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="font-bold">{req.unique_number}</p>
+                                        <p className="text-xs text-muted-foreground">ID: {req.id}</p>
                                         <p className="text-sm text-muted-foreground">{req.payment_reson}</p>
                                     </div>
                                      <Badge variant={getStatusVariant(req.payment_status)}>
@@ -476,7 +518,7 @@ export default function PaymentRequestsPage() {
 
                     {paginatedRequests.length === 0 && (
                         <div className="text-center py-10">
-                            <p className="text-muted-foreground">No payment requests found.</p>
+                            <p className="text-muted-foreground">No payment requests found matching your filters.</p>
                         </div>
                     )}
                 </CardContent>
