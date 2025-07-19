@@ -300,6 +300,83 @@ const CategorySelection = ({ setSelectedCategory }: { setSelectedCategory: (cate
 );
 
 
+const DetailsSection = ({ request, selectedCategory, setSelectedCategory, paymentAmount, setPaymentAmount, discountAmount, setDiscountAmount, paymentMethod, setPaymentMethod, selectedCourseCode, setSelectedCourseCode, isEnrollmentDialogOpen, setIsEnrollmentDialogOpen, enrollments, isLoadingEnrollments, courses }: {
+    request: PaymentRequest;
+    selectedCategory: 'course' | 'convocation' | 'other' | null;
+    setSelectedCategory: Dispatch<SetStateAction<'course' | 'convocation' | 'other' | null>>;
+    paymentAmount: string;
+    setPaymentAmount: Dispatch<SetStateAction<string>>;
+    discountAmount: string;
+    setDiscountAmount: Dispatch<SetStateAction<string>>;
+    paymentMethod: string;
+    setPaymentMethod: Dispatch<SetStateAction<string>>;
+    selectedCourseCode: string;
+    setSelectedCourseCode: Dispatch<SetStateAction<string>>;
+    isEnrollmentDialogOpen: boolean;
+    setIsEnrollmentDialogOpen: Dispatch<SetStateAction<boolean>>;
+    enrollments: StudentEnrollmentInfo[] | undefined;
+    isLoadingEnrollments: boolean;
+    courses: Course[];
+    
+}) => {
+    
+    const FormContent = () => {
+        if (!selectedCategory) return <CategorySelection setSelectedCategory={setSelectedCategory} />;
+        switch (selectedCategory) {
+            case 'course':
+                return <CoursePaymentForm request={request} paymentAmount={paymentAmount} setPaymentAmount={setPaymentAmount} discountAmount={discountAmount} setDiscountAmount={setDiscountAmount} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} selectedCourseCode={selectedCourseCode} setSelectedCourseCode={setSelectedCourseCode} setIsEnrollmentDialogOpen={setIsEnrollmentDialogOpen} enrollments={enrollments} isLoadingEnrollments={isLoadingEnrollments} courses={courses} />;
+            case 'convocation': return <p className="text-center text-muted-foreground py-8">Convocation payment form placeholder.</p>;
+            case 'other': return <p className="text-center text-muted-foreground py-8">Other payment form placeholder.</p>;
+            default: return null;
+        }
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="space-y-3 rounded-md border p-4 bg-muted/50">
+                <h3 className="font-semibold text-base">Submitted Information</h3>
+                <div className="text-sm space-y-2 text-muted-foreground">
+                    <p><strong className="text-card-foreground">Request ID:</strong> {request.id}</p>
+                    <p><strong className="text-card-foreground">Student / Ref #:</strong> {request.unique_number}</p>
+                    <p><strong className="text-card-foreground">Reason:</strong> {request.payment_reson}</p>
+                    <p><strong className="text-card-foreground">Amount:</strong> LKR {parseFloat(request.paid_amount).toLocaleString()}</p>
+                    <p><strong className="text-card-foreground">Paid Date:</strong> {format(new Date(request.paid_date), 'PPP')}</p>
+                </div>
+            </div>
+            <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-center gap-2">
+                    {selectedCategory && <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)} className="pl-1"><ArrowLeft className="h-4 w-4 mr-1"/>Back</Button>}
+                    <h3 className="font-semibold text-base">Verification &amp; Approval</h3>
+                </div>
+                <FormContent />
+            </div>
+        </div>
+    );
+};
+
+const SlipSection = ({ request }: { request: PaymentRequest }) => {
+    const [isZoomed, setIsZoomed] = useState(false);
+    const [rotation, setRotation] = useState(0);
+    const fullSlipUrl = `${CONTENT_PROVIDER_URL}${request.slip_path}`;
+    const isImage = /\.(jpg|jpeg|png|gif)$/i.test(request.slip_path);
+    
+    const transformStyle = `scale(${isZoomed ? 2 : 1}) rotate(${rotation}deg)`;
+
+    return (
+         <div className="space-y-2">
+            <div className="flex justify-between items-center flex-wrap gap-2">
+                <h3 className="font-semibold text-lg">Payment Slip</h3>
+                {isImage && <div className="flex items-center gap-1"><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsZoomed(!isZoomed)}><span className="sr-only">Zoom</span>{isZoomed ? <ZoomOut /> : <ZoomIn />}</Button><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRotation(p => (p + 90) % 360)}><span className="sr-only">Rotate</span><RotateCw /></Button></div>}
+            </div>
+            <div className="max-h-[60vh] overflow-auto border rounded-lg p-2 bg-muted">
+                {isImage ? (<div className={cn("w-full h-full overflow-auto transition-transform duration-300", isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in')} onClick={() => setIsZoomed(!isZoomed)}><Image src={fullSlipUrl} alt="Payment Slip" width={800} height={1200} className={cn("w-full h-auto object-contain transition-transform duration-300")} style={{ transform: transformStyle }} data-ai-hint="payment slip"/></div>) 
+                         : (<div className="flex flex-col items-center justify-center p-8 text-center bg-background rounded-lg"><p className="mb-4">Cannot preview file.</p><a href={fullSlipUrl} target="_blank" rel="noopener noreferrer"><Button><ExternalLink className="mr-2 h-4 w-4"/>Open in New Tab</Button></a></div>)}
+            </div>
+        </div>
+    );
+};
+
+
 // --- THE MAIN DIALOG COMPONENT ---
 
 export function PaymentRequestDialog({ isOpen, onOpenChange, request, courses, onSuccess }: {
@@ -395,62 +472,6 @@ export function PaymentRequestDialog({ isOpen, onOpenChange, request, courses, o
 
     const isMutating = recordAndApproveMutation.isPending || rejectionMutation.isPending || markApprovedMutation.isPending;
 
-    const FormContent = () => {
-        if (!selectedCategory) return <CategorySelection setSelectedCategory={setSelectedCategory} />;
-        switch (selectedCategory) {
-            case 'course':
-                return <CoursePaymentForm request={request} paymentAmount={paymentAmount} setPaymentAmount={setPaymentAmount} discountAmount={discountAmount} setDiscountAmount={setDiscountAmount} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} selectedCourseCode={selectedCourseCode} setSelectedCourseCode={setSelectedCourseCode} setIsEnrollmentDialogOpen={setIsEnrollmentDialogOpen} enrollments={enrollments} isLoadingEnrollments={isLoadingEnrollments} courses={courses} />;
-            case 'convocation': return <p className="text-center text-muted-foreground py-8">Convocation payment form placeholder.</p>;
-            case 'other': return <p className="text-center text-muted-foreground py-8">Other payment form placeholder.</p>;
-            default: return null;
-        }
-    };
-    
-    const DetailsSection = () => (
-        <div className="space-y-4">
-            <div className="space-y-3 rounded-md border p-4 bg-muted/50">
-                <h3 className="font-semibold text-base">Submitted Information</h3>
-                <div className="text-sm space-y-2 text-muted-foreground">
-                    <p><strong className="text-card-foreground">Request ID:</strong> {request.id}</p>
-                    <p><strong className="text-card-foreground">Student / Ref #:</strong> {request.unique_number}</p>
-                    <p><strong className="text-card-foreground">Reason:</strong> {request.payment_reson}</p>
-                    <p><strong className="text-card-foreground">Amount:</strong> LKR {parseFloat(request.paid_amount).toLocaleString()}</p>
-                    <p><strong className="text-card-foreground">Paid Date:</strong> {format(new Date(request.paid_date), 'PPP')}</p>
-                </div>
-            </div>
-            <div className="space-y-4 pt-4 border-t">
-                <div className="flex items-center gap-2">
-                    {selectedCategory && <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)} className="pl-1"><ArrowLeft className="h-4 w-4 mr-1"/>Back</Button>}
-                    <h3 className="font-semibold text-base">Verification &amp; Approval</h3>
-                </div>
-                <FormContent />
-                 <ManageEnrollmentsDialog isOpen={isEnrollmentDialogOpen} onOpenChange={setIsEnrollmentDialogOpen} studentNumber={request.unique_number} allCourses={courses} currentEnrollments={enrollments || []} onEnrollmentsChange={() => refetchEnrollments()} />
-            </div>
-        </div>
-    );
-    
-    const SlipSection = () => {
-        const [isZoomed, setIsZoomed] = useState(false);
-        const [rotation, setRotation] = useState(0);
-        const fullSlipUrl = `${CONTENT_PROVIDER_URL}${request.slip_path}`;
-        const isImage = /\.(jpg|jpeg|png|gif)$/i.test(request.slip_path);
-        
-        const transformStyle = `scale(${isZoomed ? 2 : 1}) rotate(${rotation}deg)`;
-
-        return (
-             <div className="space-y-2">
-                <div className="flex justify-between items-center flex-wrap gap-2">
-                    <h3 className="font-semibold text-lg">Payment Slip</h3>
-                    {isImage && <div className="flex items-center gap-1"><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsZoomed(!isZoomed)}><span className="sr-only">Zoom</span>{isZoomed ? <ZoomOut /> : <ZoomIn />}</Button><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRotation(p => (p + 90) % 360)}><span className="sr-only">Rotate</span><RotateCw /></Button></div>}
-                </div>
-                <div className="max-h-[60vh] overflow-auto border rounded-lg p-2 bg-muted">
-                    {isImage ? (<div className={cn("w-full h-full overflow-auto transition-transform duration-300", isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in')} onClick={() => setIsZoomed(!isZoomed)}><Image src={fullSlipUrl} alt="Payment Slip" width={800} height={1200} className={cn("w-full h-auto object-contain transition-transform duration-300")} style={{ transform: transformStyle }} data-ai-hint="payment slip"/></div>) 
-                             : (<div className="flex flex-col items-center justify-center p-8 text-center bg-background rounded-lg"><p className="mb-4">Cannot preview file.</p><a href={fullSlipUrl} target="_blank" rel="noopener noreferrer"><Button><ExternalLink className="mr-2 h-4 w-4"/>Open in New Tab</Button></a></div>)}
-                </div>
-            </div>
-        );
-    };
-
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className={cn("max-w-4xl p-0 flex flex-col", isMobileView ? "h-screen w-screen max-w-full rounded-none" : "h-[90vh]")}>
@@ -459,8 +480,8 @@ export function PaymentRequestDialog({ isOpen, onOpenChange, request, courses, o
                     <div className="mt-4 space-y-4">
                         <DuplicateSlipCheck hashValue={request.hash_value} currentRequestId={request.id} />
                         {isMobileView ? (
-                            <Tabs defaultValue="details" className="w-full"><TabsList className="grid w-full grid-cols-2"><TabsTrigger value="details">Details</TabsTrigger><TabsTrigger value="slip">Slip</TabsTrigger></TabsList><TabsContent value="details" className="pt-4"><DetailsSection /></TabsContent><TabsContent value="slip" className="pt-4"><SlipSection /></TabsContent></Tabs>
-                        ) : (<div className="grid md:grid-cols-2 gap-x-8 gap-y-6"><DetailsSection /><SlipSection /></div>)}
+                            <Tabs defaultValue="details" className="w-full"><TabsList className="grid w-full grid-cols-2"><TabsTrigger value="details">Details</TabsTrigger><TabsTrigger value="slip">Slip</TabsTrigger></TabsList><TabsContent value="details" className="pt-4"><DetailsSection request={request} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} paymentAmount={paymentAmount} setPaymentAmount={setPaymentAmount} discountAmount={discountAmount} setDiscountAmount={setDiscountAmount} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} selectedCourseCode={selectedCourseCode} setSelectedCourseCode={setSelectedCourseCode} isEnrollmentDialogOpen={isEnrollmentDialogOpen} setIsEnrollmentDialogOpen={setIsEnrollmentDialogOpen} enrollments={enrollments} isLoadingEnrollments={isLoadingEnrollments} courses={courses} /></TabsContent><TabsContent value="slip" className="pt-4"><SlipSection request={request} /></TabsContent></Tabs>
+                        ) : (<div className="grid md:grid-cols-2 gap-x-8 gap-y-6"><DetailsSection request={request} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} paymentAmount={paymentAmount} setPaymentAmount={setPaymentAmount} discountAmount={discountAmount} setDiscountAmount={setDiscountAmount} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} selectedCourseCode={selectedCourseCode} setSelectedCourseCode={setSelectedCourseCode} isEnrollmentDialogOpen={isEnrollmentDialogOpen} setIsEnrollmentDialogOpen={setIsEnrollmentDialogOpen} enrollments={enrollments} isLoadingEnrollments={isLoadingEnrollments} courses={courses} /><SlipSection request={request} /></div>)}
                     </div>
                 </div>
                  <DialogFooter className="mt-auto p-6 bg-card border-t flex-shrink-0">
@@ -470,6 +491,7 @@ export function PaymentRequestDialog({ isOpen, onOpenChange, request, courses, o
                         <Button variant="default" onClick={handleRecordAndApprove} disabled={isMutating || isLoadingEnrollments || !selectedCategory} size="sm">{(recordAndApproveMutation.isPending || isLoadingEnrollments) ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}Approve & Record</Button>
                     </div>
                 </DialogFooter>
+                 <ManageEnrollmentsDialog isOpen={isEnrollmentDialogOpen} onOpenChange={setIsEnrollmentDialogOpen} studentNumber={request.unique_number} allCourses={courses} currentEnrollments={enrollments || []} onEnrollmentsChange={() => refetchEnrollments()} />
             </DialogContent>
         </Dialog>
     );
