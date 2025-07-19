@@ -10,8 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package, RotateCw, FlipHorizontal, FlipVertical } from 'lucide-react';
-import { getPaymentRequests, checkDuplicateSlips } from '@/lib/api';
-import type { PaymentRequest } from '@/lib/types';
+import { getPaymentRequests, checkDuplicateSlips, getStudentFullInfo } from '@/lib/api';
+import type { PaymentRequest, FullStudentData } from '@/lib/types';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import {
@@ -21,7 +21,6 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-  DialogClose,
   DialogDescription,
 } from "@/components/ui/dialog"
 import { toast } from '@/hooks/use-toast';
@@ -169,13 +168,27 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentType, setPaymentType] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState('');
+    const [selectedCourseCode, setSelectedCourseCode] = useState('');
+    const [discountAmount, setDiscountAmount] = useState('');
     const [isMobileView, setIsMobileView] = useState(false);
+    
+    // Fetch student full info for enrollments
+    const { data: studentData, isLoading: isLoadingStudentInfo } = useQuery<FullStudentData>({
+        queryKey: ['studentFullInfo', request.unique_number],
+        queryFn: () => getStudentFullInfo(request.unique_number),
+        enabled: isDialogOpen, // Only fetch when dialog is open
+    });
+    const enrollmentsArray = studentData ? Object.values(studentData.studentEnrollments) : [];
     
     // Reset state when dialog opens
     useEffect(() => {
         if (isDialogOpen) {
             setPaymentAmount('');
             setPaymentType('');
+            setPaymentMethod('');
+            setSelectedCourseCode('');
+            setDiscountAmount('');
             
             const checkMobile = () => setIsMobileView(window.innerWidth < 768);
             checkMobile();
@@ -188,7 +201,13 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
     const mutation = useMutation({
         mutationFn: async ({ action, amount, type }: { action: 'approve' | 'reject', amount?: string, type?: string }) => {
             // Placeholder: Replace with actual API call
-            console.log(`Performing action: ${action} for request ${request.id} with amount ${amount} and type ${type}`);
+            console.log(`Performing action: ${action} for request ${request.id} with payload:`, {
+                amount,
+                type,
+                method: paymentMethod,
+                courseCode: selectedCourseCode,
+                discount: discountAmount
+            });
             await new Promise(resolve => setTimeout(resolve, 1000));
             if (action === 'approve') {
                 // Here you would also post to create the payment record
@@ -216,8 +235,8 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
     });
     
     const handleApprove = () => {
-        if (!paymentAmount || !paymentType) {
-            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please provide both amount and payment type.' });
+        if (!paymentAmount || !paymentType || !paymentMethod || !selectedCourseCode) {
+            toast({ variant: 'destructive', title: 'Missing Information', description: 'Amount, type, method, and batch are required.' });
             return;
         }
         mutation.mutate({ action: 'approve', amount: paymentAmount, type: paymentType });
@@ -239,32 +258,59 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
             </div>
             <div className="space-y-4 pt-4 border-t">
                 <h3 className="font-semibold text-base">Verification &amp; Approval</h3>
-                <div className="space-y-2">
-                    <Label htmlFor="payment-amount">Verified Payment Amount (LKR)</Label>
-                    <Input id="payment-amount" type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder="Enter verified amount" />
-                    <p className="text-xs text-muted-foreground">
-                        Suggested amount:{" "}
-                        <button
-                            type="button"
-                            className="text-primary hover:underline font-medium"
-                            onClick={() => setPaymentAmount(request.paid_amount)}
-                        >
-                            LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </button>
-                    </p>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="payment-amount">Verified Amount (LKR)</Label>
+                        <Input id="payment-amount" type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder="e.g., 5000" />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="discount-amount">Discount (LKR)</Label>
+                        <Input id="discount-amount" type="number" value={discountAmount} onChange={(e) => setDiscountAmount(e.target.value)} placeholder="e.g., 500" />
+                    </div>
                 </div>
+                 <p className="text-xs text-muted-foreground -mt-2">
+                    Suggested amount:{" "}
+                    <button type="button" className="text-primary hover:underline font-medium" onClick={() => setPaymentAmount(request.paid_amount)} >
+                        LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </button>
+                </p>
+
                 <div className="space-y-2">
                     <Label htmlFor="payment-type">Payment Type</Label>
                     <Select value={paymentType} onValueChange={setPaymentType}>
-                        <SelectTrigger id="payment-type">
-                            <SelectValue placeholder="Select a payment type..." />
-                        </SelectTrigger>
+                        <SelectTrigger id="payment-type"><SelectValue placeholder="Select a payment type..." /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="course_fee">Course Fee</SelectItem>
                             <SelectItem value="exam_fee">Exam Fee</SelectItem>
                             <SelectItem value="convocation">Convocation</SelectItem>
                             <SelectItem value="t_shirt">T-Shirt / Merchandise</SelectItem>
                             <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="payment-method">Payment Method</Label>
+                    <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                        <SelectTrigger id="payment-method"><SelectValue placeholder="Select a payment method..." /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Cash">Cash</SelectItem>
+                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                            <SelectItem value="Card Payment">Card Payment</SelectItem>
+                            <SelectItem value="Online Gateway">Online Gateway</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="course-select">Associated Batch</Label>
+                    <Select value={selectedCourseCode} onValueChange={setSelectedCourseCode} disabled={isLoadingStudentInfo}>
+                        <SelectTrigger id="course-select"><SelectValue placeholder={isLoadingStudentInfo ? "Loading batches..." : "Select an enrolled batch..."} /></SelectTrigger>
+                        <SelectContent>
+                            {enrollmentsArray.map(enrollment => (
+                                <SelectItem key={enrollment.id} value={enrollment.course_code}>
+                                    {enrollment.parent_course_name} ({enrollment.course_code})
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>
@@ -382,10 +428,10 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                         <Button 
                             variant="default" 
                             onClick={handleApprove}
-                            disabled={mutation.isPending}
+                            disabled={mutation.isPending || isLoadingStudentInfo}
                              size="sm"
                         >
-                             {mutation.isPending && mutation.variables?.action === 'approve' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                             {(mutation.isPending && mutation.variables?.action === 'approve') || isLoadingStudentInfo ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
                             Approve
                         </Button>
                     </div>
