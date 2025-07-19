@@ -499,8 +499,8 @@ export function PaymentRequestDialog({ isOpen, onOpenChange, request, courses, o
                  <DialogFooter className="mt-auto p-6 bg-card border-t flex-shrink-0">
                     <div className="flex w-full flex-wrap items-center justify-end gap-2">
                          <Button variant="destructive" onClick={() => rejectionMutation.mutate(request)} disabled={isMutating} size="sm">{rejectionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4"/>}Reject</Button>
-                        <Button variant="outline" onClick={() => markApprovedMutation.mutate(request)} disabled={isMutating} size="sm">{markApprovedMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}Mark as Approved</Button>
-                        <Button variant="default" onClick={handleRecordAndApprove} disabled={isMutating || isLoadingEnrollments || !selectedCategory} size="sm">{(recordAndApproveMutation.isPending || isLoadingEnrollments) ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}Approve & Record</Button>
+                        <Button variant="outline" onClick={() => markApprovedMutation.mutate(request)} disabled={isMutating} size="sm">{markApprovedMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}Approved</Button>
+                        <Button variant="default" onClick={handleRecordAndApprove} disabled={isMutating || isLoadingEnrollments || !selectedCategory} size="sm">{(recordAndApproveMutation.isPending || isLoadingEnrollments) ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}Payment</Button>
                     </div>
                 </DialogFooter>
                  <ManageEnrollmentsDialog isOpen={isEnrollmentDialogOpen} onOpenChange={setIsEnrollmentDialogOpen} studentNumber={request.unique_number} allCourses={courses} currentEnrollments={enrollments || []} onEnrollmentsChange={() => refetchEnrollments()} />
