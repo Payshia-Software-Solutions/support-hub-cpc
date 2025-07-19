@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, Link as LinkIcon, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package } from 'lucide-react';
+import { ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package } from 'lucide-react';
 import { getPaymentRequests, checkDuplicateSlips } from '@/lib/api';
 import type { PaymentRequest } from '@/lib/types';
 import { format } from 'date-fns';
@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 
 const ITEMS_PER_PAGE = 25;
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk';
@@ -473,28 +474,28 @@ export default function PaymentRequestsPage() {
                            <CardTitle className="text-sm font-medium">Pending</CardTitle>
                            <Hourglass className="w-4 h-4 text-muted-foreground" />
                         </CardHeader>
-                        <CardContent><div className="text-2xl font-bold">{requestStats.status.pending}</div></CardContent>
+                        <CardContent><div className="text-2xl font-bold"><AnimatedCounter value={requestStats.status.pending} /></div></CardContent>
                     </Card>
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                            <CardTitle className="text-sm font-medium">Approved</CardTitle>
                            <CheckCircle className="w-4 h-4 text-muted-foreground" />
                         </CardHeader>
-                        <CardContent><div className="text-2xl font-bold">{requestStats.status.approved}</div></CardContent>
+                        <CardContent><div className="text-2xl font-bold"><AnimatedCounter value={requestStats.status.approved} /></div></CardContent>
                     </Card>
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                            <CardTitle className="text-sm font-medium">Rejected</CardTitle>
                            <XCircle className="w-4 h-4 text-muted-foreground" />
                         </CardHeader>
-                        <CardContent><div className="text-2xl font-bold">{requestStats.status.rejected}</div></CardContent>
+                        <CardContent><div className="text-2xl font-bold"><AnimatedCounter value={requestStats.status.rejected} /></div></CardContent>
                     </Card>
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                            <CardTitle className="text-sm font-medium">Total</CardTitle>
                            <Package className="w-4 h-4 text-muted-foreground" />
                         </CardHeader>
-                        <CardContent><div className="text-2xl font-bold">{requestStats.status.total}</div></CardContent>
+                        <CardContent><div className="text-2xl font-bold"><AnimatedCounter value={requestStats.status.total} /></div></CardContent>
                     </Card>
                 </div>
             </section>
@@ -508,7 +509,7 @@ export default function PaymentRequestsPage() {
                                <CardTitle className="text-sm font-medium capitalize">{reason.replace('_', ' ')}</CardTitle>
                                {reasonIcons[reason] || reasonIcons.default}
                             </CardHeader>
-                            <CardContent><div className="text-2xl font-bold">{count}</div></CardContent>
+                            <CardContent><div className="text-2xl font-bold"><AnimatedCounter value={count} /></div></CardContent>
                         </Card>
                     ))}
                  </div>
