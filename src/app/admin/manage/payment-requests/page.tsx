@@ -33,7 +33,6 @@ import { AnimatedCounter } from '@/components/ui/animated-counter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 
-
 const ITEMS_PER_PAGE = 25;
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk';
 
@@ -1027,3 +1026,4 @@ export default function PaymentRequestsPage() {
         </div>
     );
 }
+
