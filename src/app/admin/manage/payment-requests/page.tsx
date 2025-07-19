@@ -330,7 +330,10 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
             <DialogTrigger asChild>
                 <Button variant="outline" size="sm">Manage</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+            <DialogContent className={cn(
+                "max-w-4xl p-0 flex flex-col",
+                isMobileView ? "h-screen w-screen max-w-full rounded-none" : "h-[90vh]"
+            )}>
                 <DialogHeader className="p-6 pb-2">
                     <DialogTitle>Manage Payment Request</DialogTitle>
                     <DialogDescription>Review the slip and approve or reject the payment for reference #{request.unique_number}.</DialogDescription>
