@@ -3,6 +3,7 @@ import type {NextConfig} from 'next';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
 const apiHostname = new URL(apiBaseUrl).hostname;
+const contentProviderHostname = "content-provider.pharmacollege.lk";
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -40,7 +41,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'content-provider.pharmacollege.lk',
+        hostname: contentProviderHostname,
         port: '',
         pathname: '/**',
       },

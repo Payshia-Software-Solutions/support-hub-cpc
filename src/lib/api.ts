@@ -1,8 +1,11 @@
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting } from './types';
+
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting, PaymentRequest } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
+const QA_API_BASE_URL = 'https://qa-api.pharmacollege.lk';
+
 
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   try {
@@ -323,7 +326,7 @@ export const searchStudents = (query: string): Promise<StudentSearchResult[]> =>
 
 // Note: Using native fetch for different API base URL
 export const getAllUserFullDetails = async (): Promise<UserFullDetails[]> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/userFullDetails`);
+    const response = await fetch(`${QA_API_BASE_URL}/userFullDetails`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch user details' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
@@ -333,7 +336,7 @@ export const getAllUserFullDetails = async (): Promise<UserFullDetails[]> => {
 
 export const updateCertificateName = async (payload: UpdateCertificateNamePayload): Promise<any> => {
     const { student_number } = payload;
-    const response = await fetch(`https://qa-api.pharmacollege.lk/userFullDetails/update-certificate-name/${student_number}`, {
+    const response = await fetch(`${QA_API_BASE_URL}/userFullDetails/update-certificate-name/${student_number}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -350,7 +353,7 @@ export const updateCertificateName = async (payload: UpdateCertificateNamePayloa
 
 // Convocation
 export const getConvocationRegistrations = async (): Promise<ConvocationRegistration[]> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/convocation-registrations`);
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch convocation registrations' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
@@ -360,7 +363,7 @@ export const getConvocationRegistrations = async (): Promise<ConvocationRegistra
 
 // Certificate Orders
 export const getCertificateOrders = async (): Promise<CertificateOrder[]> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/certificate-orders`);
+    const response = await fetch(`${QA_API_BASE_URL}/certificate-orders`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch certificate orders' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
@@ -369,7 +372,7 @@ export const getCertificateOrders = async (): Promise<CertificateOrder[]> => {
 }
 
 export const sendCertificateNameSms = async (payload: SendSmsPayload): Promise<any> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/send-name-sms`, {
+    const response = await fetch(`${QA_API_BASE_URL}/send-name-sms`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -386,7 +389,7 @@ export const sendCertificateNameSms = async (payload: SendSmsPayload): Promise<a
 
 // Filtered Convocation Data
 export const getCoursesForFilter = async (): Promise<ConvocationCourse[]> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/parent-main-course`);
+    const response = await fetch(`${QA_API_BASE_URL}/parent-main-course`);
     if (!response.ok) {
         throw new Error('Failed to fetch courses');
     }
@@ -394,7 +397,7 @@ export const getCoursesForFilter = async (): Promise<ConvocationCourse[]> => {
 };
 
 export const getFilteredConvocationRegistrations = async (courseCode: string, session: string): Promise<FilteredConvocationRegistration[]> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/convocation-registrations-certificate?courseCode=${courseCode}&viewSession=${session}`);
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations-certificate?courseCode=${courseCode}&viewSession=${session}`);
     if (!response.ok) {
         throw new Error('Failed to fetch filtered convocation registrations');
     }
@@ -402,7 +405,7 @@ export const getFilteredConvocationRegistrations = async (courseCode: string, se
 };
 
 export const getStudentFullInfo = async (studentNumber: string): Promise<FullStudentData> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/get-student-full-info?loggedUser=${studentNumber.trim().toUpperCase()}`);
+    const response = await fetch(`${QA_API_BASE_URL}/get-student-full-info?loggedUser=${studentNumber.trim().toUpperCase()}`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: `Student full info not found for ${studentNumber}` }));
         throw new Error(errorData.message || 'Failed to fetch student full info');
@@ -417,7 +420,7 @@ export const getStudentFullInfo = async (studentNumber: string): Promise<FullStu
 // Function to update convocation courses
 export const updateConvocationCourses = async (payload: UpdateConvocationCoursesPayload): Promise<{ status: string; message: string; registration_id: string; }> => {
     const { registrationId, courseIds } = payload;
-    const response = await fetch(`https://qa-api.pharmacollege.lk/convocation-registrations/update-courses/${registrationId}`, {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/update-courses/${registrationId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -435,7 +438,7 @@ export const updateConvocationCourses = async (payload: UpdateConvocationCourses
 export const updateCertificateOrderCourses = async (payload: UpdateCertificateOrderCoursesPayload): Promise<{ status: string; message: string; id: string; }> => {
     const { orderId, courseCodes } = payload;
     // NOTE: This endpoint is assumed. The actual endpoint may differ.
-    const response = await fetch(`https://qa-api.pharmacollege.lk/certificate-orders/update-courses/${orderId}`, {
+    const response = await fetch(`${QA_API_BASE_URL}/certificate-orders/update-courses/${orderId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -453,7 +456,7 @@ export const updateCertificateOrderCourses = async (payload: UpdateCertificateOr
 
 // User Certificate Print Status
 export const getUserCertificatePrintStatus = async (studentNumber: string): Promise<UserCertificatePrintStatus[]> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/user_certificate_print_status?studentNumber=${studentNumber}`);
+    const response = await fetch(`${QA_API_BASE_URL}/user_certificate_print_status?studentNumber=${studentNumber}`);
     
     // If not found, it's not a server error, just no records. Return empty array.
     if (response.status === 404) {
@@ -469,7 +472,7 @@ export const getUserCertificatePrintStatus = async (studentNumber: string): Prom
 };
 
 export const generateCertificate = async (payload: GenerateCertificatePayload): Promise<any> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/certificate-print-status`, {
+    const response = await fetch(`${QA_API_BASE_URL}/certificate-print-status`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -485,7 +488,7 @@ export const generateCertificate = async (payload: GenerateCertificatePayload): 
 };
 
 export const getDeliveryOrdersForStudent = async (studentNumber: string): Promise<DeliveryOrder[]> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/delivery_orders?indexNumber=${studentNumber.trim().toUpperCase()}`);
+    const response = await fetch(`${QA_API_BASE_URL}/delivery_orders?indexNumber=${studentNumber.trim().toUpperCase()}`);
     if (response.status === 404) {
         return []; // No orders found is not an error
     }
@@ -499,7 +502,7 @@ export const getDeliveryOrdersForStudent = async (studentNumber: string): Promis
 
 // Batch-based student fetching
 export const getStudentsByCourseCode = async (courseCode: string): Promise<StudentInBatch[]> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/student-courses-new/course-code/${courseCode}/`);
+    const response = await fetch(`${QA_API_BASE_URL}/student-courses-new/course-code/${courseCode}/`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch students for batch' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
@@ -512,7 +515,7 @@ export const getStudentsByCourseCode = async (courseCode: string): Promise<Stude
 export const createDeliveryOrder = async (payload: DeliveryOrderPayload): Promise<any> => {
     const { delivery_title, notes, ...apiPayload } = payload;
     
-    const response = await fetch(`https://qa-api.pharmacollege.lk/delivery_orders`, {
+    const response = await fetch(`${QA_API_BASE_URL}/delivery_orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(apiPayload)
@@ -556,7 +559,7 @@ export const createDeliveryOrderForStudent = async (payload: CreateDeliveryOrder
         package_weight: '0.000',
     };
 
-    const response = await fetch(`https://qa-api.pharmacollege.lk/delivery_orders`, {
+    const response = await fetch(`${QA_API_BASE_URL}/delivery_orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(fullPayload)
@@ -570,7 +573,7 @@ export const createDeliveryOrderForStudent = async (payload: CreateDeliveryOrder
 
 // Courses / Batches
 export const getCourses = async (): Promise<Course[]> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/course`);
+    const response = await fetch(`${QA_API_BASE_URL}/course`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch courses' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
@@ -586,7 +589,7 @@ export const getCourses = async (): Promise<Course[]> => {
 };
 
 export const getDeliverySettingsForCourse = async (courseCode: string): Promise<DeliverySetting[]> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/delivery-settings/by-course/${courseCode}`);
+    const response = await fetch(`${QA_API_BASE_URL}/delivery-settings/by-course/${courseCode}`);
     if (response.status === 404) {
         return []; // No settings found is not an error
     }
@@ -596,3 +599,13 @@ export const getDeliverySettingsForCourse = async (courseCode: string): Promise<
     }
     return response.json();
 }
+
+// Payment Requests
+export const getPaymentRequests = async (): Promise<PaymentRequest[]> => {
+    const response = await fetch(`https://api.pharmacollege.lk/payment-portal-requests`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch payment requests' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};

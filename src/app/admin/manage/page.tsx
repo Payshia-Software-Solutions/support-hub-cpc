@@ -1,7 +1,8 @@
+
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote } from "lucide-react";
 import Link from "next/link";
 
 const managementTasks = [
@@ -16,6 +17,12 @@ const managementTasks = [
     description: "Record and verify student payments.",
     icon: <CreditCard className="w-6 h-6 text-primary" />,
     href: "/admin/manage/payment-update",
+  },
+   {
+    title: "Payment Requests",
+    description: "View and manage incoming payment requests.",
+    icon: <Banknote className="w-6 h-6 text-primary" />,
+    href: "/admin/manage/payment-requests",
   },
   {
     title: "Assignment Info",
@@ -94,7 +101,7 @@ export default function AdminManagePage() {
       </header>
       <section>
         <div className="space-y-4">
-          {managementTasks.map((task) => (
+          {managementTasks.sort((a, b) => a.title.localeCompare(b.title)).map((task) => (
             <Link key={task.title} href={task.href} className="group block">
               <Card className="hover:shadow-lg hover:border-primary/50 transition-all duration-200">
                 <CardContent className="p-4 flex items-center gap-4">

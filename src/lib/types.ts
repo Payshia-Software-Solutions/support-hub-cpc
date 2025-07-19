@@ -1,4 +1,5 @@
 
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -447,4 +448,21 @@ export interface DeliveryOrderPayload {
     // These are custom fields for our form, not part of the direct API payload
     delivery_title: string; 
     notes?: string;
+}
+
+export interface PaymentRequest {
+    id: string;
+    unique_number: string;
+    number_type: "ref_number" | "student_id";
+    payment_reson: string;
+    paid_amount: string;
+    payment_reference: string;
+    bank: string;
+    branch: string;
+    slip_path: string;
+    paid_date: string; // "2025-05-23"
+    created_at: string; // "2025-05-23 18:59:16.000000"
+    is_active: "1" | "0";
+    hash_value: string;
+    payment_status: "Pending" | "Approved" | "Rejected";
 }
