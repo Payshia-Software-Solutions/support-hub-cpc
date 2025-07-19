@@ -285,6 +285,8 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
         const handleFlipHorizontal = () => setScaleX(prev => prev * -1);
         const handleFlipVertical = () => setScaleY(prev => prev * -1);
 
+        const transformStyle = `scale(${isZoomed ? 2 : 1}) rotate(${rotation}deg) scaleX(${scaleX}) scaleY(${scaleY})`;
+
         return (
              <div className="space-y-2">
                 <div className="flex justify-between items-center flex-wrap gap-2">
@@ -310,7 +312,7 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                                 width={800}
                                 height={1200}
                                 className={cn( "w-full h-auto object-contain transition-transform duration-300" )}
-                                style={{ transform: `rotate(${rotation}deg) scaleX(${scaleX}) scaleY(${scaleY})` }}
+                                style={{ transform: transformStyle }}
                                 data-ai-hint="payment slip"
                             />
                         </div>
