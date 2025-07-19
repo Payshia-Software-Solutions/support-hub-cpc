@@ -74,14 +74,26 @@ const ViewSlipDialog = ({ slipPath, isOpen, onOpenChange }: { slipPath: string, 
 
 const DuplicateSlipCheck = ({ hashValue, currentRequestId }: { hashValue: string, currentRequestId: string }) => {
     const [viewingSlipPath, setViewingSlipPath] = useState<string | null>(null);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     const { data: duplicateRecords, isLoading, isError } = useQuery<PaymentRequest[]>({
         queryKey: ['duplicateCheck', hashValue],
         queryFn: () => checkDuplicateSlips(hashValue),
         enabled: !!hashValue,
     });
+    
+    useEffect(() => {
+        if (!isLoading && !isError && duplicateRecords) {
+            if (duplicateRecords.length <= 1) {
+                setShowSuccess(true);
+                const timer = setTimeout(() => setShowSuccess(false), 3000);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [isLoading, isError, duplicateRecords]);
 
-    if (isLoading) {
+
+    if (isLoading && hashValue) {
         return (
             <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-800">
                 <AlertCircle className="h-4 w-4 !text-blue-800" />
@@ -97,6 +109,15 @@ const DuplicateSlipCheck = ({ hashValue, currentRequestId }: { hashValue: string
                 <AlertDescription>Could not verify duplicate slips.</AlertDescription>
             </Alert>
         )
+    }
+
+    if (showSuccess) {
+         return (
+            <Alert variant="default" className="bg-green-50 border-green-200 text-green-800 animate-in fade-in-50">
+                <CheckCircle className="h-4 w-4 !text-green-800" />
+                <AlertDescription>No duplicate slips found.</AlertDescription>
+            </Alert>
+        );
     }
 
     if (duplicateRecords && duplicateRecords.length > 1) {
@@ -137,7 +158,7 @@ const DuplicateSlipCheck = ({ hashValue, currentRequestId }: { hashValue: string
         );
     }
 
-    return null; // No duplicates found or only the current one exists
+    return null; 
 };
 
 const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
