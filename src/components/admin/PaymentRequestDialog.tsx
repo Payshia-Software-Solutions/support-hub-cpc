@@ -28,9 +28,10 @@ import {
 
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk';
 
-// --- Sub-components for the dialog, defined at the top-level for stability ---
 
-const ViewSlipDialog = ({ slipPath, isOpen, onOpenChange }: { slipPath: string, isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
+// --- SUB-COMPONENTS (DEFINED AT TOP LEVEL FOR STABILITY) ---
+
+function ViewSlipDialog({ slipPath, isOpen, onOpenChange }: { slipPath: string, isOpen: boolean, onOpenChange: (open: boolean) => void }) {
     if (!isOpen) return null;
     const fullSlipUrl = `${CONTENT_PROVIDER_URL}${slipPath}`;
     const isImage = /\.(jpg|jpeg|png|gif)$/i.test(slipPath);
@@ -68,7 +69,7 @@ const ViewSlipDialog = ({ slipPath, isOpen, onOpenChange }: { slipPath: string, 
     );
 };
 
-const DuplicateSlipCheck = ({ hashValue, currentRequestId }: { hashValue: string, currentRequestId: string }) => {
+function DuplicateSlipCheck({ hashValue, currentRequestId }: { hashValue: string, currentRequestId: string }) {
     const [viewingSlipPath, setViewingSlipPath] = useState<string | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
 
@@ -157,14 +158,14 @@ const DuplicateSlipCheck = ({ hashValue, currentRequestId }: { hashValue: string
     return null; 
 };
 
-const ManageEnrollmentsDialog = ({ isOpen, onOpenChange, studentNumber, allCourses, currentEnrollments, onEnrollmentsChange }: {
+function ManageEnrollmentsDialog({ isOpen, onOpenChange, studentNumber, allCourses, currentEnrollments, onEnrollmentsChange }: {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     studentNumber: string;
     allCourses: Course[];
     currentEnrollments: StudentEnrollmentInfo[];
     onEnrollmentsChange: () => void;
-}) => {
+}) {
     const [newCourseCode, setNewCourseCode] = useState('');
 
     const addMutation = useMutation({
@@ -236,7 +237,7 @@ const ManageEnrollmentsDialog = ({ isOpen, onOpenChange, studentNumber, allCours
     );
 };
 
-const CoursePaymentForm = ({ request, paymentAmount, setPaymentAmount, discountAmount, setDiscountAmount, paymentMethod, setPaymentMethod, selectedCourseCode, setSelectedCourseCode, setIsEnrollmentDialogOpen, enrollments, isLoadingEnrollments, courses }: {
+function CoursePaymentForm({ request, paymentAmount, setPaymentAmount, discountAmount, setDiscountAmount, paymentMethod, setPaymentMethod, selectedCourseCode, setSelectedCourseCode, setIsEnrollmentDialogOpen, enrollments, isLoadingEnrollments, courses }: {
     request: PaymentRequest;
     paymentAmount: string; setPaymentAmount: Dispatch<SetStateAction<string>>;
     discountAmount: string; setDiscountAmount: Dispatch<SetStateAction<string>>;
@@ -246,7 +247,7 @@ const CoursePaymentForm = ({ request, paymentAmount, setPaymentAmount, discountA
     enrollments: StudentEnrollmentInfo[] | undefined;
     isLoadingEnrollments: boolean;
     courses: Course[];
-}) => {
+}) {
     return (
         <div className="space-y-4">
              <div className="grid grid-cols-2 gap-4">
@@ -291,16 +292,17 @@ const CoursePaymentForm = ({ request, paymentAmount, setPaymentAmount, discountA
     );
 };
 
-const CategorySelection = ({ setSelectedCategory }: { setSelectedCategory: (category: 'course' | 'convocation' | 'other') => void }) => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
-        <Card onClick={() => setSelectedCategory('course')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer"><CardHeader className="items-center text-center p-4"><BookOpen className="w-8 h-8 text-primary mb-2"/><CardTitle className="text-sm">Course Fee</CardTitle></CardHeader></Card>
-        <Card onClick={() => setSelectedCategory('convocation')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer"><CardHeader className="items-center text-center p-4"><GraduationCap className="w-8 h-8 text-primary mb-2"/><CardTitle className="text-sm">Convocation</CardTitle></CardHeader></Card>
-        <Card onClick={() => setSelectedCategory('other')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer"><CardHeader className="items-center text-center p-4"><Briefcase className="w-8 h-8 text-primary mb-2"/><CardTitle className="text-sm">Other</CardTitle></CardHeader></Card>
-    </div>
-);
+function CategorySelection({ setSelectedCategory }: { setSelectedCategory: (category: 'course' | 'convocation' | 'other') => void }) {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
+            <Card onClick={() => setSelectedCategory('course')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer"><CardHeader className="items-center text-center p-4"><BookOpen className="w-8 h-8 text-primary mb-2"/><CardTitle className="text-sm">Course Fee</CardTitle></CardHeader></Card>
+            <Card onClick={() => setSelectedCategory('convocation')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer"><CardHeader className="items-center text-center p-4"><GraduationCap className="w-8 h-8 text-primary mb-2"/><CardTitle className="text-sm">Convocation</CardTitle></CardHeader></Card>
+            <Card onClick={() => setSelectedCategory('other')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer"><CardHeader className="items-center text-center p-4"><Briefcase className="w-8 h-8 text-primary mb-2"/><CardTitle className="text-sm">Other</CardTitle></CardHeader></Card>
+        </div>
+    );
+}
 
-
-const DetailsSection = ({ request, selectedCategory, setSelectedCategory, paymentAmount, setPaymentAmount, discountAmount, setDiscountAmount, paymentMethod, setPaymentMethod, selectedCourseCode, setSelectedCourseCode, isEnrollmentDialogOpen, setIsEnrollmentDialogOpen, enrollments, isLoadingEnrollments, courses }: {
+function DetailsSection({ request, selectedCategory, setSelectedCategory, paymentAmount, setPaymentAmount, discountAmount, setDiscountAmount, paymentMethod, setPaymentMethod, selectedCourseCode, setSelectedCourseCode, isEnrollmentDialogOpen, setIsEnrollmentDialogOpen, enrollments, isLoadingEnrollments, courses }: {
     request: PaymentRequest;
     selectedCategory: 'course' | 'convocation' | 'other' | null;
     setSelectedCategory: Dispatch<SetStateAction<'course' | 'convocation' | 'other' | null>>;
@@ -318,19 +320,8 @@ const DetailsSection = ({ request, selectedCategory, setSelectedCategory, paymen
     isLoadingEnrollments: boolean;
     courses: Course[];
     
-}) => {
+}) {
     
-    const FormContent = () => {
-        if (!selectedCategory) return <CategorySelection setSelectedCategory={setSelectedCategory} />;
-        switch (selectedCategory) {
-            case 'course':
-                return <CoursePaymentForm request={request} paymentAmount={paymentAmount} setPaymentAmount={setPaymentAmount} discountAmount={discountAmount} setDiscountAmount={setDiscountAmount} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} selectedCourseCode={selectedCourseCode} setSelectedCourseCode={setSelectedCourseCode} setIsEnrollmentDialogOpen={setIsEnrollmentDialogOpen} enrollments={enrollments} isLoadingEnrollments={isLoadingEnrollments} courses={courses} />;
-            case 'convocation': return <p className="text-center text-muted-foreground py-8">Convocation payment form placeholder.</p>;
-            case 'other': return <p className="text-center text-muted-foreground py-8">Other payment form placeholder.</p>;
-            default: return null;
-        }
-    };
-
     return (
         <div className="space-y-4">
             <div className="space-y-3 rounded-md border p-4 bg-muted/50">
@@ -348,13 +339,34 @@ const DetailsSection = ({ request, selectedCategory, setSelectedCategory, paymen
                     {selectedCategory && <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)} className="pl-1"><ArrowLeft className="h-4 w-4 mr-1"/>Back</Button>}
                     <h3 className="font-semibold text-base">Verification &amp; Approval</h3>
                 </div>
-                <FormContent />
+                
+                {!selectedCategory && <CategorySelection setSelectedCategory={setSelectedCategory} />}
+
+                {selectedCategory === 'course' && (
+                    <CoursePaymentForm 
+                        request={request} 
+                        paymentAmount={paymentAmount} 
+                        setPaymentAmount={setPaymentAmount} 
+                        discountAmount={discountAmount} 
+                        setDiscountAmount={setDiscountAmount} 
+                        paymentMethod={paymentMethod} 
+                        setPaymentMethod={setPaymentMethod} 
+                        selectedCourseCode={selectedCourseCode} 
+                        setSelectedCourseCode={setSelectedCourseCode} 
+                        setIsEnrollmentDialogOpen={setIsEnrollmentDialogOpen} 
+                        enrollments={enrollments} 
+                        isLoadingEnrollments={isLoadingEnrollments} 
+                        courses={courses} 
+                    />
+                )}
+                {selectedCategory === 'convocation' && <p className="text-center text-muted-foreground py-8">Convocation payment form placeholder.</p>}
+                {selectedCategory === 'other' && <p className="text-center text-muted-foreground py-8">Other payment form placeholder.</p>}
             </div>
         </div>
     );
 };
 
-const SlipSection = ({ request }: { request: PaymentRequest }) => {
+function SlipSection({ request }: { request: PaymentRequest }) {
     const [isZoomed, setIsZoomed] = useState(false);
     const [rotation, setRotation] = useState(0);
     const fullSlipUrl = `${CONTENT_PROVIDER_URL}${request.slip_path}`;
