@@ -89,6 +89,7 @@ const DuplicateSlipCheck = ({ hashValue, currentRequestId }: { hashValue: string
     
     useEffect(() => {
         if (!isLoading && !isError && duplicateRecords) {
+            // Only show success if there's exactly 1 record (the current one) or 0 (shouldn't happen)
             if (duplicateRecords.length <= 1) {
                 setShowSuccess(true);
                 const timer = setTimeout(() => setShowSuccess(false), 3000);
@@ -173,21 +174,22 @@ const ManageEnrollmentsDialog = ({
     studentNumber,
     allCourses,
     currentEnrollments,
+    onEnrollmentsChange,
 }: {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     studentNumber: string;
     allCourses: Course[];
     currentEnrollments: StudentEnrollmentInfo[];
+    onEnrollmentsChange: () => void;
 }) => {
-    const queryClient = useQueryClient();
     const [newCourseCode, setNewCourseCode] = useState('');
 
     const addMutation = useMutation({
         mutationFn: addStudentEnrollment,
         onSuccess: () => {
             toast({ title: 'Enrollment Added' });
-            queryClient.invalidateQueries({ queryKey: ['studentEnrollments', studentNumber] });
+            onEnrollmentsChange(); 
             setNewCourseCode('');
         },
         onError: (error: Error) => {
@@ -197,9 +199,9 @@ const ManageEnrollmentsDialog = ({
 
     const removeMutation = useMutation({
         mutationFn: removeStudentEnrollment,
-        onSuccess: (data, studentCourseId) => {
+        onSuccess: () => {
             toast({ title: 'Enrollment Removed' });
-            queryClient.invalidateQueries({ queryKey: ['studentEnrollments', studentNumber] });
+            onEnrollmentsChange();
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Failed to Remove Enrollment', description: error.message });
@@ -288,10 +290,10 @@ const ManageEnrollmentsDialog = ({
     );
 };
 
-const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, courses: Course[] }) => {
+// --- DIALOG COMPONENT ---
+const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpen: boolean, onOpenChange: (open: boolean) => void, request: PaymentRequest, courses: Course[] }) => {
     const queryClient = useQueryClient();
     const { user: adminUser } = useAuth();
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<'course' | 'convocation' | 'other' | null>(null);
 
     const [paymentAmount, setPaymentAmount] = useState('');
@@ -301,14 +303,14 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
     const [isMobileView, setIsMobileView] = useState(false);
     const [isEnrollmentDialogOpen, setIsEnrollmentDialogOpen] = useState(false);
     
-    const { data: enrollments, isLoading: isLoadingEnrollments } = useQuery({
+    const { data: enrollments, isLoading: isLoadingEnrollments, refetch: refetchEnrollments } = useQuery({
         queryKey: ['studentEnrollments', request.unique_number],
         queryFn: () => getStudentEnrollments(request.unique_number),
-        enabled: isDialogOpen,
+        enabled: isOpen,
     });
     
     useEffect(() => {
-        if (isDialogOpen) {
+        if (isOpen) {
             setPaymentAmount('');
             setSelectedCourseCode('');
             setPaymentMethod('');
@@ -322,13 +324,11 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
                 setSelectedCategory(null);
             }
         }
-    }, [isDialogOpen]);
+    }, [isOpen]);
     
     const approvalMutation = useMutation({
         mutationFn: async (paymentPayload: CreatePaymentPayload) => {
-            // Step 1: Create the new payment record
             await createStudentPayment(paymentPayload);
-            // Step 2: Update the original request status
             await updatePaymentRequestStatus(request.id, 'Approved');
         },
         onSuccess: () => {
@@ -337,7 +337,7 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
                 title: 'Request Approved!',
                 description: `Payment for #${request.unique_number} has been recorded and the request is now approved.`,
             });
-            setIsDialogOpen(false);
+            onOpenChange(false);
         },
         onError: (error: Error) => {
             toast({
@@ -356,7 +356,7 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
                 title: 'Request Rejected',
                 description: `Payment request #${request.unique_number} has been marked as rejected.`,
             });
-            setIsDialogOpen(false);
+            onOpenChange(false);
         },
         onError: (error: Error) => {
             toast({
@@ -455,6 +455,7 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
                     studentNumber={request.unique_number}
                     allCourses={courses}
                     currentEnrollments={enrollments || []}
+                    onEnrollmentsChange={() => refetchEnrollments()}
                 />
             </div>
         </div>
@@ -588,10 +589,7 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
     };
 
     return (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-                <Button variant="outline" size="sm" disabled={request.payment_status !== 'Pending'}>Manage</Button>
-            </DialogTrigger>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className={cn(
                 "max-w-4xl p-0 flex flex-col",
                 isMobileView ? "h-screen w-screen max-w-full rounded-none" : "h-[90vh]"
@@ -603,7 +601,7 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
                 
                 <div className="flex-1 overflow-y-auto px-6 pt-2 pb-6">
                     <div className="mt-4 space-y-4">
-                        {isDialogOpen && <DuplicateSlipCheck hashValue={request.hash_value} currentRequestId={request.id} />}
+                        {isOpen && <DuplicateSlipCheck hashValue={request.hash_value} currentRequestId={request.id} />}
                         
                         {isMobileView ? (
                             <Tabs defaultValue="details" className="w-full">
@@ -647,6 +645,26 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+    );
+};
+
+const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, courses: Course[] }) => {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    return (
+        <>
+            <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(true)} disabled={request.payment_status !== 'Pending'}>
+                Manage
+            </Button>
+            {isDialogOpen && (
+                <ManageRequestDialog
+                    isOpen={isDialogOpen}
+                    onOpenChange={setIsDialogOpen}
+                    request={request}
+                    courses={courses}
+                />
+            )}
+        </>
     );
 };
 
