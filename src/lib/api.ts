@@ -5,6 +5,7 @@ import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessa
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
 const QA_API_BASE_URL = 'https://qa-api.pharmacollege.lk';
+const PAYMENT_API_BASE_URL = 'https://api.pharmacollege.lk';
 
 
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -602,9 +603,22 @@ export const getDeliverySettingsForCourse = async (courseCode: string): Promise<
 
 // Payment Requests
 export const getPaymentRequests = async (): Promise<PaymentRequest[]> => {
-    const response = await fetch(`https://api.pharmacollege.lk/payment-portal-requests`);
+    const response = await fetch(`${PAYMENT_API_BASE_URL}/payment-portal-requests`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch payment requests' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
+export const checkDuplicateSlips = async (hashValue: string): Promise<PaymentRequest[]> => {
+    if (!hashValue) return [];
+    const response = await fetch(`${PAYMENT_API_BASE_URL}/payment-portal-requests/check-hash?hashValue=${hashValue}`);
+     if (response.status === 404) {
+        return []; // Not found means no records, which is a valid response (no duplicates)
+    }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to check for duplicate slips' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
