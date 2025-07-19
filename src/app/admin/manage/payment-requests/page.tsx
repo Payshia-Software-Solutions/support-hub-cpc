@@ -441,7 +441,7 @@ export default function PaymentRequestsPage() {
         if (!requests) return [];
         const lowercasedFilter = searchTerm.toLowerCase();
         
-        return requests.filter(req => {
+        const filtered = requests.filter(req => {
             const matchesSearch = lowercasedFilter ? 
                 (req.id?.toLowerCase() || '').includes(lowercasedFilter) ||
                 (req.unique_number?.toLowerCase() || '').includes(lowercasedFilter) ||
@@ -453,6 +453,10 @@ export default function PaymentRequestsPage() {
 
             return matchesSearch && matchesStatus && matchesReason;
         });
+
+        // Sort by created_at date, newest first
+        return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
     }, [requests, searchTerm, statusFilter, reasonFilter]);
 
 
