@@ -35,8 +35,8 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
     const queryClient = useQueryClient();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isZoomed, setIsZoomed] = useState(false);
-    const [paymentAmount, setPaymentAmount] = useState(request.paid_amount);
-    const [paymentType, setPaymentType] = useState(request.payment_reson || '');
+    const [paymentAmount, setPaymentAmount] = useState('');
+    const [paymentType, setPaymentType] = useState('');
     
     const contentProviderUrl = 'https://content-provider.pharmacollege.lk';
     const fullSlipUrl = `${contentProviderUrl}${request.slip_path}`;
@@ -46,10 +46,10 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
     useEffect(() => {
         if (isDialogOpen) {
             setIsZoomed(false);
-            setPaymentAmount(request.paid_amount);
-            setPaymentType(request.payment_reson || '');
+            setPaymentAmount('');
+            setPaymentType('');
         }
-    }, [isDialogOpen, request.paid_amount, request.payment_reson]);
+    }, [isDialogOpen]);
 
     // Mock mutation for approving/rejecting.
     const mutation = useMutation({
@@ -102,11 +102,22 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                 </DialogHeader>
                 <div className="grid md:grid-cols-2 gap-x-8 gap-y-6 mt-4">
                     <div className="space-y-4">
-                         <h3 className="font-semibold text-lg">Details & Actions</h3>
-                         <div className="space-y-4">
+                         <div className="space-y-3 rounded-md border p-4 bg-muted/50">
+                            <h3 className="font-semibold text-base">Submitted Information</h3>
+                            <div className="text-sm space-y-2 text-muted-foreground">
+                                <p><strong className="text-card-foreground">Original Reason:</strong> {request.payment_reson}</p>
+                                <p><strong className="text-card-foreground">Original Amount:</strong> LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                <p><strong className="text-card-foreground">Paid Date:</strong> {format(new Date(request.paid_date), 'PPP')}</p>
+                                <p><strong className="text-card-foreground">Bank:</strong> {request.bank}</p>
+                                <p><strong className="text-card-foreground">Branch:</strong> {request.branch}</p>
+                            </div>
+                         </div>
+                         <div className="space-y-4 pt-4 border-t">
+                             <h3 className="font-semibold text-base">Verification &amp; Approval</h3>
                              <div className="space-y-2">
-                                <Label htmlFor="payment-amount">Payment Amount (LKR)</Label>
-                                <Input id="payment-amount" type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder="e.g. 6000.00" />
+                                <Label htmlFor="payment-amount">Verified Payment Amount (LKR)</Label>
+                                <Input id="payment-amount" type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder="Enter verified amount" />
+                                <p className="text-xs text-muted-foreground">Suggested amount: LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="payment-type">Payment Type</Label>
@@ -123,12 +134,6 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                                     </SelectContent>
                                 </Select>
                             </div>
-                         </div>
-                         <div className="text-sm space-y-2 text-muted-foreground pt-4 border-t">
-                            <p><strong className="text-card-foreground">Original Reason:</strong> {request.payment_reson}</p>
-                            <p><strong className="text-card-foreground">Paid Date:</strong> {format(new Date(request.paid_date), 'PPP')}</p>
-                            <p><strong className="text-card-foreground">Bank:</strong> {request.bank}</p>
-                            <p><strong className="text-card-foreground">Branch:</strong> {request.branch}</p>
                          </div>
                     </div>
                     <div className="space-y-2">
