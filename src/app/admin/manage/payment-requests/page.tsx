@@ -358,26 +358,25 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                     </div>
                 </div>
 
-                 <DialogFooter className="mt-auto p-6 bg-card border-t flex-shrink-0 flex justify-end space-x-2">
-                    <DialogClose asChild>
-                        <Button variant="outline" disabled={mutation.isPending}>Cancel</Button>
-                    </DialogClose>
-                     <Button 
-                        variant="destructive" 
-                        onClick={() => mutation.mutate({ action: 'reject' })}
-                        disabled={mutation.isPending}
-                    >
-                        {mutation.isPending && mutation.variables?.action === 'reject' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4"/>}
-                        Reject
-                    </Button>
-                    <Button 
-                        variant="default" 
-                        onClick={handleApprove}
-                        disabled={mutation.isPending}
-                    >
-                         {mutation.isPending && mutation.variables?.action === 'approve' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
-                        Approve
-                    </Button>
+                 <DialogFooter className="mt-auto p-6 bg-card border-t flex-shrink-0">
+                    <div className="flex justify-end gap-2 w-full">
+                         <Button 
+                            variant="destructive" 
+                            onClick={() => mutation.mutate({ action: 'reject' })}
+                            disabled={mutation.isPending}
+                        >
+                            {mutation.isPending && mutation.variables?.action === 'reject' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4"/>}
+                            Reject
+                        </Button>
+                        <Button 
+                            variant="default" 
+                            onClick={handleApprove}
+                            disabled={mutation.isPending}
+                        >
+                             {mutation.isPending && mutation.variables?.action === 'approve' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                            Approve
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
