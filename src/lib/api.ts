@@ -635,3 +635,35 @@ export const getStudentEnrollments = async (studentNumber: string): Promise<Stud
     }
     return response.json();
 };
+
+export const addStudentEnrollment = async (data: { student_id: string; course_code: string }): Promise<any> => {
+    const payload = {
+        student_id: data.student_id,
+        course_code: data.course_code,
+        enrollment_key: 'ForceAdmin',
+        created_at: new Date().toISOString(),
+    };
+    const response = await fetch(`${QA_API_BASE_URL}/student-courses-new`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to add enrollment' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
+export const removeStudentEnrollment = async (studentCourseId: string): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/student-courses-new/${studentCourseId}`, {
+        method: 'DELETE',
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to remove enrollment' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};

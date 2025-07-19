@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package, RotateCw, FlipHorizontal, FlipVertical, ArrowLeft, Briefcase, Trash2, PlusCircle, Tag } from 'lucide-react';
-import { getPaymentRequests, checkDuplicateSlips, getStudentEnrollments, getCourses } from '@/lib/api';
+import { getPaymentRequests, checkDuplicateSlips, getStudentEnrollments, getCourses, addStudentEnrollment, removeStudentEnrollment } from '@/lib/api';
 import type { PaymentRequest, StudentEnrollmentInfo, Course } from '@/lib/types';
 import { format } from 'date-fns';
 import Image from 'next/image';
@@ -171,43 +171,55 @@ const ManageEnrollmentsDialog = ({
     studentNumber,
     allCourses,
     currentEnrollments,
-    onEnrollmentsChange,
 }: {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     studentNumber: string;
     allCourses: Course[];
     currentEnrollments: StudentEnrollmentInfo[];
-    onEnrollmentsChange: (newEnrollments: StudentEnrollmentInfo[]) => void;
 }) => {
+    const queryClient = useQueryClient();
     const [newCourseCode, setNewCourseCode] = useState('');
+
+    const addMutation = useMutation({
+        mutationFn: addStudentEnrollment,
+        onSuccess: () => {
+            toast({ title: 'Enrollment Added' });
+            queryClient.invalidateQueries({ queryKey: ['studentEnrollments', studentNumber] });
+            setNewCourseCode('');
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Failed to Add Enrollment', description: error.message });
+        }
+    });
+
+    const removeMutation = useMutation({
+        mutationFn: removeStudentEnrollment,
+        onSuccess: (data, studentCourseId) => {
+            toast({ title: 'Enrollment Removed' });
+            queryClient.invalidateQueries({ queryKey: ['studentEnrollments', studentNumber] });
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Failed to Remove Enrollment', description: error.message });
+        }
+    });
 
     const handleAddEnrollment = () => {
         if (!newCourseCode) return;
-        const courseToAdd = allCourses.find(c => c.courseCode === newCourseCode);
-        if (!courseToAdd) return;
-        if (currentEnrollments.some(e => e.course_code === newCourseCode)) {
-            toast({ variant: 'destructive', title: 'Already Enrolled' });
+        const studentId = currentEnrollments?.[0]?.student_id; // Get student_id from any existing enrollment
+        if (!studentId) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Cannot determine student ID.' });
             return;
         }
-        
-        const newEnrollment: StudentEnrollmentInfo = {
-            student_course_id: `new-${Date.now()}`,
-            course_code: courseToAdd.courseCode,
-            student_id: studentNumber,
-            username: studentNumber,
-            full_name: '', // Not needed for this display
-            name_on_certificate: '', // Not needed
-        };
-        onEnrollmentsChange([...currentEnrollments, newEnrollment]);
-        toast({ title: 'Enrollment Added (Locally)' });
-        setNewCourseCode('');
+
+        addMutation.mutate({
+            course_code: newCourseCode,
+            student_id: studentId,
+        });
     };
 
-    const handleRemoveEnrollment = (courseCode: string) => {
-        const updatedEnrollments = currentEnrollments.filter(e => e.course_code !== courseCode);
-        onEnrollmentsChange(updatedEnrollments);
-        toast({ title: 'Enrollment Removed (Locally)' });
+    const handleRemoveEnrollment = (studentCourseId: string) => {
+        removeMutation.mutate(studentCourseId);
     };
 
     const availableCourses = allCourses.filter(
@@ -230,8 +242,18 @@ const ManageEnrollmentsDialog = ({
                                         {allCourses.find(c => c.courseCode === e.course_code)?.name || e.course_code}
                                         <span className="text-muted-foreground"> ({e.course_code})</span>
                                     </p>
-                                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleRemoveEnrollment(e.course_code)}>
-                                        <Trash2 className="h-4 w-4" />
+                                    <Button 
+                                        size="icon" 
+                                        variant="ghost" 
+                                        className="h-7 w-7 text-destructive" 
+                                        onClick={() => handleRemoveEnrollment(e.student_course_id)}
+                                        disabled={removeMutation.isPending && removeMutation.variables === e.student_course_id}
+                                    >
+                                        {removeMutation.isPending && removeMutation.variables === e.student_course_id ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Trash2 className="h-4 w-4" />
+                                        )}
                                     </Button>
                                 </div>
                             ))}
@@ -248,7 +270,10 @@ const ManageEnrollmentsDialog = ({
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Button onClick={handleAddEnrollment}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+                            <Button onClick={handleAddEnrollment} disabled={addMutation.isPending || !newCourseCode}>
+                                {addMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />} 
+                                Add
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -272,20 +297,12 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
     const [isMobileView, setIsMobileView] = useState(false);
     const [isEnrollmentDialogOpen, setIsEnrollmentDialogOpen] = useState(false);
     
-    const { data, isLoading: isLoadingEnrollments } = useQuery({
+    const { data: enrollments, isLoading: isLoadingEnrollments } = useQuery({
         queryKey: ['studentEnrollments', request.unique_number],
         queryFn: () => getStudentEnrollments(request.unique_number),
         enabled: isDialogOpen,
     });
     
-    // Manage enrollments locally for immediate UI updates
-    const [localEnrollments, setLocalEnrollments] = useState<StudentEnrollmentInfo[]>([]);
-    useEffect(() => {
-        if (data) {
-            setLocalEnrollments(data);
-        }
-    }, [data]);
-
     // Reset state when dialog opens or category changes
     useEffect(() => {
         if (isDialogOpen) {
@@ -384,12 +401,12 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
             <div className="space-y-2">
                 <div className="flex items-center justify-between">
                     <Label htmlFor="course-select">Associated Batch</Label>
-                    <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => setIsEnrollmentDialogOpen(true)}>Manage</Button>
+                    <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => setIsEnrollmentDialogOpen(true)} disabled={isLoadingEnrollments}>Manage</Button>
                 </div>
                 <Select value={selectedCourseCode} onValueChange={setSelectedCourseCode} disabled={isLoadingEnrollments}>
                     <SelectTrigger id="course-select"><SelectValue placeholder={isLoadingEnrollments ? "Loading batches..." : "Select an enrolled batch..."} /></SelectTrigger>
                     <SelectContent>
-                        {localEnrollments.map(enrollment => {
+                        {enrollments?.map(enrollment => {
                             const courseInfo = courses.find(c => c.courseCode === enrollment.course_code);
                             const courseName = courseInfo ? courseInfo.name : 'Unknown Course';
                             return (
@@ -405,8 +422,7 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
                     onOpenChange={setIsEnrollmentDialogOpen}
                     studentNumber={request.unique_number}
                     allCourses={courses}
-                    currentEnrollments={localEnrollments}
-                    onEnrollmentsChange={setLocalEnrollments}
+                    currentEnrollments={enrollments || []}
                 />
             </div>
         </div>
@@ -916,3 +932,4 @@ export default function PaymentRequestsPage() {
         </div>
     );
 }
+
