@@ -90,7 +90,6 @@ const DuplicateSlipCheck = ({ hashValue, currentRequestId }: { hashValue: string
     
     useEffect(() => {
         if (!isLoading && !isError && duplicateRecords) {
-            // Only show success if there's exactly 1 record (the current one) or 0 (shouldn't happen)
             if (duplicateRecords.length <= 1) {
                 setShowSuccess(true);
                 const timer = setTimeout(() => setShowSuccess(false), 3000);
@@ -388,7 +387,7 @@ const CategorySelection = ({ setSelectedCategory }: { setSelectedCategory: (cate
     </div>
 );
 
-const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpen: boolean, onOpenChange: (open: boolean) => void, request: PaymentRequest, courses: Course[] }) => {
+const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpen: boolean, onOpenChange: (open: boolean) => void, request: PaymentRequest | null, courses: Course[] }) => {
     const queryClient = useQueryClient();
     const { user: adminUser } = useAuth();
     const [selectedCategory, setSelectedCategory] = useState<'course' | 'convocation' | 'other' | null>(null);
@@ -401,13 +400,13 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
     const [isEnrollmentDialogOpen, setIsEnrollmentDialogOpen] = useState(false);
     
     const { data: enrollments, isLoading: isLoadingEnrollments, refetch: refetchEnrollments } = useQuery({
-        queryKey: ['studentEnrollments', request.unique_number],
-        queryFn: () => getStudentEnrollments(request.unique_number),
-        enabled: isOpen,
+        queryKey: ['studentEnrollments', request?.unique_number],
+        queryFn: () => getStudentEnrollments(request!.unique_number),
+        enabled: !!request,
     });
     
     useEffect(() => {
-        if (isOpen) {
+        if (request) {
             setPaymentAmount('');
             setSelectedCourseCode('');
             setPaymentMethod('');
@@ -421,18 +420,18 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
                 window.removeEventListener('resize', checkMobile);
             }
         }
-    }, [isOpen]);
+    }, [request]);
     
     const recordAndApproveMutation = useMutation({
         mutationFn: async (paymentPayload: CreatePaymentPayload) => {
             await createStudentPayment(paymentPayload);
-            await updatePaymentRequestStatus(request, 'Approved');
+            await updatePaymentRequestStatus(request!, 'Approved');
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['paymentRequests'] });
             toast({
                 title: 'Request Approved!',
-                description: `Payment for #${request.unique_number} has been recorded and the request is now approved.`,
+                description: `Payment for #${request!.unique_number} has been recorded and the request is now approved.`,
             });
             onOpenChange(false);
         },
@@ -451,7 +450,7 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
             queryClient.invalidateQueries({ queryKey: ['paymentRequests'] });
             toast({
                 title: 'Request Marked as Approved',
-                description: `Request #${request.id} status has been updated.`,
+                description: `Request #${request!.id} status has been updated.`,
             });
             onOpenChange(false);
         },
@@ -466,7 +465,7 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
             queryClient.invalidateQueries({ queryKey: ['paymentRequests'] });
             toast({
                 title: 'Request Rejected',
-                description: `Payment request #${request.unique_number} has been marked as rejected.`,
+                description: `Payment request #${request!.unique_number} has been marked as rejected.`,
             });
             onOpenChange(false);
         },
@@ -501,13 +500,15 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
             discount_amount: discountAmount || '0',
             payment_status: 'Paid', 
             payment_type: paymentMethod,
-            paid_date: format(new Date(request.paid_date), 'yyyy-MM-dd'),
+            paid_date: format(new Date(request!.paid_date), 'yyyy-MM-dd'),
             created_by: adminUser.username
         };
         
         recordAndApproveMutation.mutate(paymentPayload);
     }
     
+    if (!isOpen || !request) return null;
+
     const isMutating = recordAndApproveMutation.isPending || rejectionMutation.isPending || markApprovedMutation.isPending;
 
     const FormContent = () => {
@@ -649,7 +650,7 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
                 
                 <div className="flex-1 overflow-y-auto px-6 pt-2 pb-6">
                     <div className="mt-4 space-y-4">
-                        {isOpen && <DuplicateSlipCheck hashValue={request.hash_value} currentRequestId={request.id} />}
+                        <DuplicateSlipCheck hashValue={request.hash_value} currentRequestId={request.id} />
                         
                         {isMobileView ? (
                             <Tabs defaultValue="details" className="w-full">
@@ -705,32 +706,12 @@ const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpe
     );
 };
 
-const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, courses: Course[] }) => {
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-    return (
-        <>
-            <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(true)} disabled={request.payment_status !== 'Pending'}>
-                Manage
-            </Button>
-            {isDialogOpen && (
-                <ManageRequestDialog
-                    isOpen={isDialogOpen}
-                    onOpenChange={setIsDialogOpen}
-                    request={request}
-                    courses={courses}
-                />
-            )}
-        </>
-    );
-};
-
 export default function PaymentRequestsPage() {
-    const queryClient = useQueryClient();
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [reasonFilter, setReasonFilter] = useState('all');
+    const [selectedRequest, setSelectedRequest] = useState<PaymentRequest | null>(null);
 
     const { data: requests, isLoading, isError, error, refetch, isFetching } = useQuery<PaymentRequest[]>({
         queryKey: ['paymentRequests'],
@@ -980,7 +961,9 @@ export default function PaymentRequestsPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <SlipManagerCell request={req} courses={courses || []} />
+                                            <Button variant="outline" size="sm" onClick={() => setSelectedRequest(req)} disabled={req.payment_status !== 'Pending'}>
+                                                Manage
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -1012,7 +995,9 @@ export default function PaymentRequestsPage() {
                                     </div>
                                 </div>
                                  <div className="flex items-center justify-end pt-2 border-t mt-2">
-                                    <SlipManagerCell request={req} courses={courses || []} />
+                                    <Button variant="outline" size="sm" onClick={() => setSelectedRequest(req)} disabled={req.payment_status !== 'Pending'}>
+                                        Manage
+                                    </Button>
                                  </div>
                             </div>
                         ))}
@@ -1032,6 +1017,13 @@ export default function PaymentRequestsPage() {
                     </CardFooter>
                 )}
             </Card>
+
+            <ManageRequestDialog 
+                isOpen={!!selectedRequest}
+                onOpenChange={(open) => { if (!open) setSelectedRequest(null); }}
+                request={selectedRequest}
+                courses={courses || []}
+            />
         </div>
     );
 }
