@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react';
+import { AlertTriangle, ExternalLink, RefreshCw, Check, X, Loader2 } from 'lucide-react';
 import { getPaymentRequests } from '@/lib/api';
 import type { PaymentRequest } from '@/lib/types';
 import { format } from 'date-fns';
@@ -19,48 +19,119 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
+  DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog"
+import { toast } from '@/hooks/use-toast';
 
 const ITEMS_PER_PAGE = 25;
 
-const SlipViewerCell = ({ slipPath }: { slipPath: string }) => {
+const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
+    const queryClient = useQueryClient();
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const contentProviderUrl = 'https://content-provider.pharmacollege.lk';
-    const fullSlipUrl = `${contentProviderUrl}${slipPath}`;
+    const fullSlipUrl = `${contentProviderUrl}${request.slip_path}`;
+    const isImage = /\.(jpg|jpeg|png|gif)$/i.test(request.slip_path);
 
-    // Simple check for image extension
-    const isImage = /\.(jpg|jpeg|png|gif)$/i.test(slipPath);
+    // Mock mutation for approving/rejecting. Replace with real API calls.
+    const mutation = useMutation({
+        mutationFn: async (action: 'approve' | 'reject') => {
+            // Placeholder: Replace with actual API call
+            console.log(`Performing action: ${action} for request ${request.id}`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            if (action === 'approve') {
+                return { ...request, payment_status: 'Approved' };
+            }
+            return { ...request, payment_status: 'Rejected' };
+        },
+        onSuccess: (updatedRequest) => {
+            queryClient.setQueryData(['paymentRequests'], (oldData: PaymentRequest[] | undefined) => {
+                return oldData?.map(r => r.id === updatedRequest.id ? updatedRequest : r) ?? [];
+            });
+            toast({
+                title: `Request ${updatedRequest.payment_status}`,
+                description: `Payment request #${request.unique_number} has been updated.`,
+            });
+            setIsDialogOpen(false);
+        },
+        onError: (error: Error) => {
+            toast({
+                variant: 'destructive',
+                title: 'Action Failed',
+                description: error.message,
+            });
+        }
+    });
 
     return (
-        <Dialog>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm">View Slip</Button>
+                <Button variant="outline" size="sm">Manage</Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle>Payment Slip</DialogTitle>
+                    <DialogTitle>Manage Payment Request</DialogTitle>
+                    <DialogDescription>Review the slip and approve or reject the payment for reference #{request.unique_number}.</DialogDescription>
                 </DialogHeader>
-                <div className="mt-4 max-h-[70vh] overflow-auto">
-                    {isImage ? (
-                        <Image
-                            src={fullSlipUrl}
-                            alt="Payment Slip"
-                            width={800}
-                            height={1200}
-                            className="w-full h-auto object-contain"
-                            data-ai-hint="payment slip"
-                        />
-                    ) : (
-                        <div className="flex flex-col items-center justify-center p-8 text-center bg-muted rounded-lg">
-                            <p className="mb-4">This file is not an image and cannot be previewed directly.</p>
-                            <a href={fullSlipUrl} target="_blank" rel="noopener noreferrer">
-                                <Button>
-                                    <ExternalLink className="mr-2 h-4 w-4"/>
-                                    Open Slip in New Tab
-                                </Button>
-                            </a>
+                <div className="grid md:grid-cols-2 gap-6 mt-4">
+                    <div className="space-y-4">
+                         <h3 className="font-semibold text-lg">Details</h3>
+                         <div className="text-sm space-y-2 text-muted-foreground">
+                            <p><strong className="text-card-foreground">Amount:</strong> LKR {parseFloat(request.paid_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                            <p><strong className="text-card-foreground">Reason:</strong> {request.payment_reson}</p>
+                            <p><strong className="text-card-foreground">Paid Date:</strong> {format(new Date(request.paid_date), 'PPP')}</p>
+                            <p><strong className="text-card-foreground">Bank:</strong> {request.bank}</p>
+                            <p><strong className="text-card-foreground">Branch:</strong> {request.branch}</p>
+                         </div>
+                    </div>
+                    <div className="space-y-4">
+                        <h3 className="font-semibold text-lg">Payment Slip</h3>
+                        <div className="max-h-[50vh] overflow-auto border rounded-lg p-2 bg-muted">
+                            {isImage ? (
+                                <Image
+                                    src={fullSlipUrl}
+                                    alt="Payment Slip"
+                                    width={800}
+                                    height={1200}
+                                    className="w-full h-auto object-contain"
+                                    data-ai-hint="payment slip"
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center p-8 text-center bg-background rounded-lg">
+                                    <p className="mb-4">This file is not an image and cannot be previewed directly.</p>
+                                    <a href={fullSlipUrl} target="_blank" rel="noopener noreferrer">
+                                        <Button>
+                                            <ExternalLink className="mr-2 h-4 w-4"/>
+                                            Open Slip in New Tab
+                                        </Button>
+                                    </a>
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
+                 <DialogFooter className="mt-6">
+                    <DialogClose asChild>
+                        <Button variant="outline" disabled={mutation.isPending}>Cancel</Button>
+                    </DialogClose>
+                     <Button 
+                        variant="destructive" 
+                        onClick={() => mutation.mutate('reject')}
+                        disabled={mutation.isPending}
+                    >
+                        {mutation.isPending && mutation.variables === 'reject' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4"/>}
+                        Reject
+                    </Button>
+                    <Button 
+                        variant="default" 
+                        onClick={() => mutation.mutate('approve')}
+                        disabled={mutation.isPending}
+                    >
+                         {mutation.isPending && mutation.variables === 'approve' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                        Approve
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
@@ -115,6 +186,17 @@ export default function PaymentRequestsPage() {
         );
     }
 
+    const getStatusVariant = (status: string) => {
+        switch (status.toLowerCase()) {
+            case 'pending':
+                return 'destructive';
+            case 'approved':
+                return 'default';
+            default:
+                return 'secondary';
+        }
+    }
+
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
@@ -159,12 +241,12 @@ export default function PaymentRequestsPage() {
                                         <TableCell className="font-semibold">{parseFloat(req.paid_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</TableCell>
                                         <TableCell>{format(new Date(req.paid_date), 'yyyy-MM-dd')}</TableCell>
                                         <TableCell>
-                                            <Badge variant={req.payment_status.toLowerCase() === 'pending' ? 'destructive' : 'default'}>
+                                            <Badge variant={getStatusVariant(req.payment_status)}>
                                                 {req.payment_status}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <SlipViewerCell slipPath={req.slip_path} />
+                                            <SlipManagerCell request={req} />
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -181,7 +263,7 @@ export default function PaymentRequestsPage() {
                                         <p className="font-bold">{req.unique_number}</p>
                                         <p className="text-sm text-muted-foreground">{req.payment_reson}</p>
                                     </div>
-                                    <Badge variant={req.payment_status.toLowerCase() === 'pending' ? 'destructive' : 'default'}>
+                                     <Badge variant={getStatusVariant(req.payment_status)}>
                                         {req.payment_status}
                                     </Badge>
                                 </div>
@@ -196,7 +278,7 @@ export default function PaymentRequestsPage() {
                                     </div>
                                 </div>
                                  <div className="flex items-center justify-end pt-2 border-t mt-2">
-                                    <SlipViewerCell slipPath={req.slip_path} />
+                                    <SlipManagerCell request={req} />
                                 </div>
                             </div>
                         ))}
