@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -358,7 +358,7 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                     </div>
                 </div>
 
-                 <DialogFooter className="mt-auto p-6 bg-card border-t flex-shrink-0">
+                 <DialogFooter className="mt-auto p-6 bg-card border-t flex-shrink-0 sm:justify-end flex-col-reverse sm:flex-row sm:space-x-2">
                     <DialogClose asChild>
                         <Button variant="outline" disabled={mutation.isPending}>Cancel</Button>
                     </DialogClose>
