@@ -170,6 +170,104 @@ const DuplicateSlipCheck = ({ hashValue, currentRequestId }: { hashValue: string
     return null; 
 };
 
+const CoursePaymentForm = ({
+  request,
+  paymentAmount, setPaymentAmount,
+  discountAmount, setDiscountAmount,
+  paymentMethod, setPaymentMethod,
+  selectedCourseCode, setSelectedCourseCode,
+  setIsEnrollmentDialogOpen,
+  enrollments, isLoadingEnrollments, courses
+}: {
+    request: PaymentRequest;
+    paymentAmount: string; setPaymentAmount: Dispatch<SetStateAction<string>>;
+    discountAmount: string; setDiscountAmount: Dispatch<SetStateAction<string>>;
+    paymentMethod: string; setPaymentMethod: Dispatch<SetStateAction<string>>;
+    selectedCourseCode: string; setSelectedCourseCode: Dispatch<SetStateAction<string>>;
+    setIsEnrollmentDialogOpen: Dispatch<SetStateAction<boolean>>;
+    enrollments: StudentEnrollmentInfo[] | undefined;
+    isLoadingEnrollments: boolean;
+    courses: Course[];
+}) => {
+    return (
+        <div className="space-y-4">
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="payment-amount">Verified Amount (LKR)</Label>
+                    <Input id="payment-amount" type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder="e.g., 5000" />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="discount-amount">Discount (LKR)</Label>
+                    <Input id="discount-amount" type="number" value={discountAmount} onChange={(e) => setDiscountAmount(e.target.value)} placeholder="e.g., 500" />
+                </div>
+            </div>
+             <p className="text-xs text-muted-foreground -mt-2">
+                Suggested amount:{" "}
+                <button type="button" className="text-primary hover:underline font-medium" onClick={() => setPaymentAmount(request.paid_amount)} >
+                    LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </button>
+            </p>
+
+            <div className="space-y-2">
+                <Label htmlFor="payment-method">Payment Method</Label>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <SelectTrigger id="payment-method"><SelectValue placeholder="Select a payment method..." /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Cash">Cash</SelectItem>
+                        <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                        <SelectItem value="Card Payment">Card Payment</SelectItem>
+                        <SelectItem value="Online Gateway">Online Gateway</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="course-select">Associated Batch</Label>
+                    <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => setIsEnrollmentDialogOpen(true)} disabled={isLoadingEnrollments}>Manage</Button>
+                </div>
+                <Select value={selectedCourseCode} onValueChange={setSelectedCourseCode} disabled={isLoadingEnrollments}>
+                    <SelectTrigger id="course-select"><SelectValue placeholder={isLoadingEnrollments ? "Loading batches..." : "Select an enrolled batch..."} /></SelectTrigger>
+                    <SelectContent>
+                        {enrollments?.map((enrollment) => {
+                            const courseInfo = courses.find((c) => c.courseCode === enrollment.course_code);
+                            const courseName = courseInfo ? courseInfo.name : 'Unknown Course';
+                            return (
+                                <SelectItem key={enrollment.student_course_id} value={enrollment.course_code}>
+                                    {courseName} ({enrollment.course_code})
+                                </SelectItem>
+                            )
+                        })}
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+    );
+};
+    
+const CategorySelection = ({ setSelectedCategory }: { setSelectedCategory: (category: 'course' | 'convocation' | 'other') => void }) => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
+        <Card onClick={() => setSelectedCategory('course')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer">
+            <CardHeader className="items-center text-center p-4">
+                <BookOpen className="w-8 h-8 text-primary mb-2"/>
+                <CardTitle className="text-sm">Course Fee</CardTitle>
+            </CardHeader>
+        </Card>
+        <Card onClick={() => setSelectedCategory('convocation')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer">
+             <CardHeader className="items-center text-center p-4">
+                <GraduationCap className="w-8 h-8 text-primary mb-2"/>
+                <CardTitle className="text-sm">Convocation</CardTitle>
+            </CardHeader>
+        </Card>
+        <Card onClick={() => setSelectedCategory('other')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer">
+             <CardHeader className="items-center text-center p-4">
+                <Briefcase className="w-8 h-8 text-primary mb-2"/>
+                <CardTitle className="text-sm">Other</CardTitle>
+            </CardHeader>
+        </Card>
+    </div>
+);
+
 
 const ManageEnrollmentsDialog = ({
     isOpen,
@@ -292,104 +390,6 @@ const ManageEnrollmentsDialog = ({
         </Dialog>
     );
 };
-
-const CoursePaymentForm = ({
-  request,
-  paymentAmount, setPaymentAmount,
-  discountAmount, setDiscountAmount,
-  paymentMethod, setPaymentMethod,
-  selectedCourseCode, setSelectedCourseCode,
-  setIsEnrollmentDialogOpen,
-  enrollments, isLoadingEnrollments, courses
-}: {
-    request: PaymentRequest;
-    paymentAmount: string; setPaymentAmount: Dispatch<SetStateAction<string>>;
-    discountAmount: string; setDiscountAmount: Dispatch<SetStateAction<string>>;
-    paymentMethod: string; setPaymentMethod: Dispatch<SetStateAction<string>>;
-    selectedCourseCode: string; setSelectedCourseCode: Dispatch<SetStateAction<string>>;
-    setIsEnrollmentDialogOpen: Dispatch<SetStateAction<boolean>>;
-    enrollments: StudentEnrollmentInfo[] | undefined;
-    isLoadingEnrollments: boolean;
-    courses: Course[];
-}) => {
-    return (
-        <div className="space-y-4">
-             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="payment-amount">Verified Amount (LKR)</Label>
-                    <Input id="payment-amount" type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder="e.g., 5000" />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="discount-amount">Discount (LKR)</Label>
-                    <Input id="discount-amount" type="number" value={discountAmount} onChange={(e) => setDiscountAmount(e.target.value)} placeholder="e.g., 500" />
-                </div>
-            </div>
-             <p className="text-xs text-muted-foreground -mt-2">
-                Suggested amount:{" "}
-                <button type="button" className="text-primary hover:underline font-medium" onClick={() => setPaymentAmount(request.paid_amount)} >
-                    LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </button>
-            </p>
-
-            <div className="space-y-2">
-                <Label htmlFor="payment-method">Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                    <SelectTrigger id="payment-method"><SelectValue placeholder="Select a payment method..." /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="Cash">Cash</SelectItem>
-                        <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                        <SelectItem value="Card Payment">Card Payment</SelectItem>
-                        <SelectItem value="Online Gateway">Online Gateway</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                    <Label htmlFor="course-select">Associated Batch</Label>
-                    <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => setIsEnrollmentDialogOpen(true)} disabled={isLoadingEnrollments}>Manage</Button>
-                </div>
-                <Select value={selectedCourseCode} onValueChange={setSelectedCourseCode} disabled={isLoadingEnrollments}>
-                    <SelectTrigger id="course-select"><SelectValue placeholder={isLoadingEnrollments ? "Loading batches..." : "Select an enrolled batch..."} /></SelectTrigger>
-                    <SelectContent>
-                        {enrollments?.map((enrollment) => {
-                            const courseInfo = courses.find((c) => c.courseCode === enrollment.course_code);
-                            const courseName = courseInfo ? courseInfo.name : 'Unknown Course';
-                            return (
-                                <SelectItem key={enrollment.student_course_id} value={enrollment.course_code}>
-                                    {courseName} ({enrollment.course_code})
-                                </SelectItem>
-                            )
-                        })}
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
-    );
-};
-    
-const CategorySelection = ({ setSelectedCategory }: { setSelectedCategory: (category: 'course' | 'convocation' | 'other') => void }) => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
-        <Card onClick={() => setSelectedCategory('course')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer">
-            <CardHeader className="items-center text-center p-4">
-                <BookOpen className="w-8 h-8 text-primary mb-2"/>
-                <CardTitle className="text-base">Course Fee</CardTitle>
-            </CardHeader>
-        </Card>
-        <Card onClick={() => setSelectedCategory('convocation')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer">
-             <CardHeader className="items-center text-center p-4">
-                <GraduationCap className="w-8 h-8 text-primary mb-2"/>
-                <CardTitle className="text-base">Convocation</CardTitle>
-            </CardHeader>
-        </Card>
-        <Card onClick={() => setSelectedCategory('other')} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer">
-             <CardHeader className="items-center text-center p-4">
-                <Briefcase className="w-8 h-8 text-primary mb-2"/>
-                <CardTitle className="text-base">Other</CardTitle>
-            </CardHeader>
-        </Card>
-    </div>
-);
 
 
 const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpen: boolean, onOpenChange: (open: boolean) => void, request: PaymentRequest, courses: Course[] }) => {
