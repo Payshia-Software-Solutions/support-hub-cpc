@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo, useEffect, Dispatch, SetStateAction } from 'react';
@@ -726,7 +725,6 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
     );
 };
 
-
 export default function PaymentRequestsPage() {
     const queryClient = useQueryClient();
     const [currentPage, setCurrentPage] = useState(1);
@@ -1015,7 +1013,7 @@ export default function PaymentRequestsPage() {
                                 </div>
                                  <div className="flex items-center justify-end pt-2 border-t mt-2">
                                     <SlipManagerCell request={req} courses={courses || []} />
-                                </div>
+                                 </div>
                             </div>
                         ))}
                     </div>
