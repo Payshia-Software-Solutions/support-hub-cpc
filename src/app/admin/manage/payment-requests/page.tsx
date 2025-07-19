@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package } from 'lucide-react';
+import { ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package, RotateCw, FlipHorizontal, FlipVertical } from 'lucide-react';
 import { getPaymentRequests, checkDuplicateSlips } from '@/lib/api';
 import type { PaymentRequest } from '@/lib/types';
 import { format } from 'date-fns';
@@ -167,18 +167,13 @@ const DuplicateSlipCheck = ({ hashValue, currentRequestId }: { hashValue: string
 const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
     const queryClient = useQueryClient();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isZoomed, setIsZoomed] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentType, setPaymentType] = useState('');
     const [isMobileView, setIsMobileView] = useState(false);
     
-    const fullSlipUrl = `${CONTENT_PROVIDER_URL}${request.slip_path}`;
-    const isImage = /\.(jpg|jpeg|png|gif)$/i.test(request.slip_path);
-
     // Reset state when dialog opens
     useEffect(() => {
         if (isDialogOpen) {
-            setIsZoomed(false);
             setPaymentAmount('');
             setPaymentType('');
             
@@ -277,53 +272,63 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
         </div>
     );
     
-    const SlipSection = () => (
-         <div className="space-y-2">
-            <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-lg">Payment Slip</h3>
-                {isImage && (
-                    <Button variant="ghost" size="sm" onClick={() => setIsZoomed(!isZoomed)}>
-                        {isZoomed ? <ZoomOut className="mr-2 h-4 w-4" /> : <ZoomIn className="mr-2 h-4 w-4" />}
-                        {isZoomed ? 'Zoom Out' : 'Zoom In'}
-                    </Button>
-                )}
-            </div>
-            <div className="max-h-[60vh] overflow-auto border rounded-lg p-2 bg-muted">
-                {isImage ? (
-                    <div 
-                        className={cn(
-                            "w-full h-full overflow-auto transition-transform duration-300",
-                            isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
-                        )}
-                        onClick={() => setIsZoomed(!isZoomed)}
-                    >
-                        <Image
-                            src={fullSlipUrl}
-                            alt="Payment Slip"
-                            width={800}
-                            height={1200}
-                            className={cn(
-                                "w-full h-auto object-contain transition-transform duration-300",
-                                isZoomed && "scale-[1.75]"
-                            )}
-                            data-ai-hint="payment slip"
-                        />
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center p-8 text-center bg-background rounded-lg">
-                        <p className="mb-4">This file is not an image and cannot be previewed directly.</p>
-                        <a href={fullSlipUrl} target="_blank" rel="noopener noreferrer">
-                            <Button>
-                                <ExternalLink className="mr-2 h-4 w-4"/>
-                                Open Slip in New Tab
-                            </Button>
-                        </a>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+    const SlipSection = () => {
+        const [isZoomed, setIsZoomed] = useState(false);
+        const [rotation, setRotation] = useState(0);
+        const [scaleX, setScaleX] = useState(1);
+        const [scaleY, setScaleY] = useState(1);
 
+        const fullSlipUrl = `${CONTENT_PROVIDER_URL}${request.slip_path}`;
+        const isImage = /\.(jpg|jpeg|png|gif)$/i.test(request.slip_path);
+        
+        const handleRotate = () => setRotation(prev => (prev + 90) % 360);
+        const handleFlipHorizontal = () => setScaleX(prev => prev * -1);
+        const handleFlipVertical = () => setScaleY(prev => prev * -1);
+
+        return (
+             <div className="space-y-2">
+                <div className="flex justify-between items-center flex-wrap gap-2">
+                    <h3 className="font-semibold text-lg">Payment Slip</h3>
+                    {isImage && (
+                         <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsZoomed(!isZoomed)}><span className="sr-only">Zoom</span>{isZoomed ? <ZoomOut /> : <ZoomIn />}</Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRotate}><span className="sr-only">Rotate</span><RotateCw /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleFlipHorizontal}><span className="sr-only">Flip Horizontal</span><FlipHorizontal /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleFlipVertical}><span className="sr-only">Flip Vertical</span><FlipVertical /></Button>
+                        </div>
+                    )}
+                </div>
+                <div className="max-h-[60vh] overflow-auto border rounded-lg p-2 bg-muted">
+                    {isImage ? (
+                        <div 
+                            className={cn( "w-full h-full overflow-auto transition-transform duration-300", isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in' )}
+                            onClick={() => setIsZoomed(!isZoomed)}
+                        >
+                            <Image
+                                src={fullSlipUrl}
+                                alt="Payment Slip"
+                                width={800}
+                                height={1200}
+                                className={cn( "w-full h-auto object-contain transition-transform duration-300" )}
+                                style={{ transform: `rotate(${rotation}deg) scaleX(${scaleX}) scaleY(${scaleY})` }}
+                                data-ai-hint="payment slip"
+                            />
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center p-8 text-center bg-background rounded-lg">
+                            <p className="mb-4">This file is not an image and cannot be previewed directly.</p>
+                            <a href={fullSlipUrl} target="_blank" rel="noopener noreferrer">
+                                <Button>
+                                    <ExternalLink className="mr-2 h-4 w-4"/>
+                                    Open Slip in New Tab
+                                </Button>
+                            </a>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
 
     return (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
