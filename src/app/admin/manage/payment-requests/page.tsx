@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, Link as LinkIcon } from 'lucide-react';
+import { AlertTriangle, ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, Link as LinkIcon, FileText } from 'lucide-react';
 import { getPaymentRequests, checkDuplicateSlips } from '@/lib/api';
 import type { PaymentRequest } from '@/lib/types';
 import { format } from 'date-fns';
@@ -31,8 +31,50 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const ITEMS_PER_PAGE = 25;
+const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk';
 
-const DuplicateSlipCheck = ({ hashValue, currentRequestId, onManageDuplicate }: { hashValue: string, currentRequestId: string, onManageDuplicate: (requestId: string) => void }) => {
+const ViewSlipDialog = ({ slipPath, isOpen, onOpenChange }: { slipPath: string, isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
+    if (!isOpen) return null;
+    const fullSlipUrl = `${CONTENT_PROVIDER_URL}${slipPath}`;
+    const isImage = /\.(jpg|jpeg|png|gif)$/i.test(slipPath);
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Duplicate Slip Viewer</DialogTitle>
+                </DialogHeader>
+                <div className="mt-4 max-h-[70vh] overflow-auto border rounded-lg p-2 bg-muted">
+                     {isImage ? (
+                        <Image
+                            src={fullSlipUrl}
+                            alt="Duplicate Payment Slip"
+                            width={800}
+                            height={1200}
+                            className="w-full h-auto object-contain"
+                            data-ai-hint="payment slip"
+                        />
+                    ) : (
+                         <div className="flex flex-col items-center justify-center p-8 text-center bg-background rounded-lg">
+                            <p className="mb-4">This file is not an image and cannot be previewed directly.</p>
+                            <a href={fullSlipUrl} target="_blank" rel="noopener noreferrer">
+                                <Button>
+                                    <ExternalLink className="mr-2 h-4 w-4"/>
+                                    Open Slip in New Tab
+                                </Button>
+                            </a>
+                        </div>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+
+const DuplicateSlipCheck = ({ hashValue, currentRequestId }: { hashValue: string, currentRequestId: string }) => {
+    const [viewingSlipPath, setViewingSlipPath] = useState<string | null>(null);
+
     const { data: duplicateRecords, isLoading, isError } = useQuery<PaymentRequest[]>({
         queryKey: ['duplicateCheck', hashValue],
         queryFn: () => checkDuplicateSlips(hashValue),
@@ -60,45 +102,51 @@ const DuplicateSlipCheck = ({ hashValue, currentRequestId, onManageDuplicate }: 
     if (duplicateRecords && duplicateRecords.length > 1) {
         const otherRecords = duplicateRecords.filter(r => r.id !== currentRequestId);
         return (
-            <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Duplicate Slip Warning</AlertTitle>
-                <AlertDescription asChild>
-                    <div>
-                        <p className="mb-2">This payment slip has been submitted multiple times. Please verify before approving.</p>
-                        <ul className="space-y-2 text-xs">
-                            {otherRecords.map(record => (
-                                <li key={record.id} className="flex items-center justify-between p-2 rounded-md bg-destructive/10">
-                                    <div className="space-y-0.5">
-                                        <p><strong>Ref:</strong> {record.unique_number} ({record.payment_reson})</p>
-                                        <p><strong>Status:</strong> {record.payment_status}</p>
-                                        <p><strong>Submitted:</strong> {format(new Date(record.created_at), 'Pp')}</p>
-                                    </div>
-                                    <Button size="sm" variant="ghost" className="h-auto px-2 py-1" onClick={() => onManageDuplicate(record.id)}>
-                                        Manage
-                                        <LinkIcon className="ml-1.5 h-3 w-3"/>
-                                    </Button>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </AlertDescription>
-            </Alert>
+            <>
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Duplicate Slip Warning</AlertTitle>
+                    <AlertDescription asChild>
+                        <div>
+                            <p className="mb-2">This payment slip has been submitted multiple times. Please verify before approving.</p>
+                            <ul className="space-y-2 text-xs">
+                                {otherRecords.map(record => (
+                                    <li key={record.id} className="flex items-center justify-between p-2 rounded-md bg-destructive/10">
+                                        <div className="space-y-0.5">
+                                            <p><strong>Ref:</strong> {record.unique_number} ({record.payment_reson})</p>
+                                            <p><strong>Status:</strong> {record.payment_status}</p>
+                                            <p><strong>Submitted:</strong> {format(new Date(record.created_at), 'Pp')}</p>
+                                        </div>
+                                        <Button size="sm" variant="ghost" className="h-auto px-2 py-1" onClick={() => setViewingSlipPath(record.slip_path)}>
+                                            View Slip
+                                            <FileText className="ml-1.5 h-3 w-3"/>
+                                        </Button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </AlertDescription>
+                </Alert>
+                <ViewSlipDialog
+                    isOpen={!!viewingSlipPath}
+                    onOpenChange={(open) => !open && setViewingSlipPath(null)}
+                    slipPath={viewingSlipPath || ''}
+                />
+            </>
         );
     }
 
     return null; // No duplicates found or only the current one exists
 };
 
-const SlipManagerCell = ({ request, onManageRequest }: { request: PaymentRequest, onManageRequest: (requestId: string) => void }) => {
+const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
     const queryClient = useQueryClient();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isZoomed, setIsZoomed] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentType, setPaymentType] = useState('');
     
-    const contentProviderUrl = 'https://content-provider.pharmacollege.lk';
-    const fullSlipUrl = `${contentProviderUrl}${request.slip_path}`;
+    const fullSlipUrl = `${CONTENT_PROVIDER_URL}${request.slip_path}`;
     const isImage = /\.(jpg|jpeg|png|gif)$/i.test(request.slip_path);
 
     // Reset state when dialog opens
@@ -141,12 +189,6 @@ const SlipManagerCell = ({ request, onManageRequest }: { request: PaymentRequest
         }
     });
     
-    const handleManageDuplicate = (requestId: string) => {
-        setIsDialogOpen(false);
-        // This slight delay ensures the first dialog is closed before the next opens
-        setTimeout(() => onManageRequest(requestId), 100);
-    };
-
     const handleApprove = () => {
         if (!paymentAmount || !paymentType) {
             toast({ variant: 'destructive', title: 'Missing Information', description: 'Please provide both amount and payment type.' });
@@ -158,15 +200,15 @@ const SlipManagerCell = ({ request, onManageRequest }: { request: PaymentRequest
     return (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(true)}>Manage</Button>
+                <Button variant="outline" size="sm">Manage</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Manage Payment Request</DialogTitle>
                     <DialogDescription>Review the slip and approve or reject the payment for reference #{request.unique_number}.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 mt-4">
-                     {isDialogOpen && <DuplicateSlipCheck hashValue={request.hash_value} currentRequestId={request.id} onManageDuplicate={handleManageDuplicate} />}
+                     {isDialogOpen && <DuplicateSlipCheck hashValue={request.hash_value} currentRequestId={request.id} />}
                     <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
                         <div className="space-y-4">
                              <div className="space-y-3 rounded-md border p-4 bg-muted/50">
@@ -288,30 +330,12 @@ const SlipManagerCell = ({ request, onManageRequest }: { request: PaymentRequest
 export default function PaymentRequestsPage() {
     const queryClient = useQueryClient();
     const [currentPage, setCurrentPage] = useState(1);
-    const [activeRequest, setActiveRequest] = useState<PaymentRequest | null>(null);
 
     const { data: requests, isLoading, isError, error, refetch, isFetching } = useQuery<PaymentRequest[]>({
         queryKey: ['paymentRequests'],
         queryFn: getPaymentRequests,
         staleTime: 1000 * 60, // 1 minute stale time
     });
-    
-    const handleManageRequest = (requestId: string) => {
-        const requestToOpen = requests?.find(r => r.id === requestId);
-        if (requestToOpen) {
-            setActiveRequest(requestToOpen);
-        }
-    };
-    
-    // Effect to open the dialog when activeRequest is set
-    useEffect(() => {
-        if (activeRequest) {
-            const trigger = document.getElementById(`manage-btn-${activeRequest.id}`);
-            if(trigger) {
-                trigger.click();
-            }
-        }
-    }, [activeRequest]);
 
     const totalPages = Math.ceil((requests?.length || 0) / ITEMS_PER_PAGE);
     const paginatedRequests = useMemo(() => {
@@ -411,9 +435,7 @@ export default function PaymentRequestsPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <SlipManagerCell request={req} onManageRequest={handleManageRequest} />
-                                            {/* Hidden trigger for programmatic opening */}
-                                            <button id={`manage-btn-${req.id}`} style={{ display: 'none' }}></button>
+                                            <SlipManagerCell request={req} />
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -445,9 +467,7 @@ export default function PaymentRequestsPage() {
                                     </div>
                                 </div>
                                  <div className="flex items-center justify-end pt-2 border-t mt-2">
-                                    <SlipManagerCell request={req} onManageRequest={handleManageRequest} />
-                                     {/* Hidden trigger for programmatic opening */}
-                                    <button id={`manage-btn-mobile-${req.id}`} style={{ display: 'none' }}></button>
+                                    <SlipManagerCell request={req} />
                                 </div>
                             </div>
                         ))}
@@ -470,5 +490,3 @@ export default function PaymentRequestsPage() {
         </div>
     );
 }
-
-    
