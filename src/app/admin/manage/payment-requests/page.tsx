@@ -117,7 +117,16 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                              <div className="space-y-2">
                                 <Label htmlFor="payment-amount">Verified Payment Amount (LKR)</Label>
                                 <Input id="payment-amount" type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder="Enter verified amount" />
-                                <p className="text-xs text-muted-foreground">Suggested amount: LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    Suggested amount:{" "}
+                                    <button
+                                        type="button"
+                                        className="text-primary hover:underline font-medium"
+                                        onClick={() => setPaymentAmount(request.paid_amount)}
+                                    >
+                                        LKR {parseFloat(request.paid_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                    </button>
+                                </p>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="payment-type">Payment Type</Label>
