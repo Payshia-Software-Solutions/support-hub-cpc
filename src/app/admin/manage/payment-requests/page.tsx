@@ -388,7 +388,6 @@ const CategorySelection = ({ setSelectedCategory }: { setSelectedCategory: (cate
 );
 
 
-// --- DIALOG COMPONENT ---
 const ManageRequestDialog = ({ isOpen, onOpenChange, request, courses }: { isOpen: boolean, onOpenChange: (open: boolean) => void, request: PaymentRequest, courses: Course[] }) => {
     const queryClient = useQueryClient();
     const { user: adminUser } = useAuth();
@@ -1007,3 +1006,5 @@ export default function PaymentRequestsPage() {
         </div>
     );
 }
+
+    
