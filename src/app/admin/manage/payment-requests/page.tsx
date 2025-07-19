@@ -358,7 +358,7 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                     </div>
                 </div>
 
-                 <DialogFooter className="mt-auto p-6 bg-card border-t flex-shrink-0 sm:justify-end flex-col-reverse sm:flex-row sm:space-x-2">
+                 <DialogFooter className="mt-auto p-6 bg-card border-t flex-shrink-0 flex justify-end space-x-2">
                     <DialogClose asChild>
                         <Button variant="outline" disabled={mutation.isPending}>Cancel</Button>
                     </DialogClose>
