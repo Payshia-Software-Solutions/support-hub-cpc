@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, ExternalLink, RefreshCw, Check, X, Loader2 } from 'lucide-react';
+import { AlertTriangle, ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut } from 'lucide-react';
 import { getPaymentRequests } from '@/lib/api';
 import type { PaymentRequest } from '@/lib/types';
 import { format } from 'date-fns';
@@ -24,15 +24,24 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { toast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const ITEMS_PER_PAGE = 25;
 
 const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
     const queryClient = useQueryClient();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isZoomed, setIsZoomed] = useState(false);
     const contentProviderUrl = 'https://content-provider.pharmacollege.lk';
     const fullSlipUrl = `${contentProviderUrl}${request.slip_path}`;
     const isImage = /\.(jpg|jpeg|png|gif)$/i.test(request.slip_path);
+
+    // Reset zoom state when dialog closes
+    useEffect(() => {
+        if (!isDialogOpen) {
+            setIsZoomed(false);
+        }
+    }, [isDialogOpen]);
 
     // Mock mutation for approving/rejecting. Replace with real API calls.
     const mutation = useMutation({
@@ -85,18 +94,37 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                             <p><strong className="text-card-foreground">Branch:</strong> {request.branch}</p>
                          </div>
                     </div>
-                    <div className="space-y-4">
-                        <h3 className="font-semibold text-lg">Payment Slip</h3>
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <h3 className="font-semibold text-lg">Payment Slip</h3>
+                            {isImage && (
+                                <Button variant="ghost" size="sm" onClick={() => setIsZoomed(!isZoomed)}>
+                                    {isZoomed ? <ZoomOut className="mr-2 h-4 w-4" /> : <ZoomIn className="mr-2 h-4 w-4" />}
+                                    {isZoomed ? 'Zoom Out' : 'Zoom In'}
+                                </Button>
+                            )}
+                        </div>
                         <div className="max-h-[50vh] overflow-auto border rounded-lg p-2 bg-muted">
                             {isImage ? (
-                                <Image
-                                    src={fullSlipUrl}
-                                    alt="Payment Slip"
-                                    width={800}
-                                    height={1200}
-                                    className="w-full h-auto object-contain"
-                                    data-ai-hint="payment slip"
-                                />
+                                <div 
+                                    className={cn(
+                                        "w-full h-full overflow-auto transition-transform duration-300",
+                                        isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
+                                    )}
+                                    onClick={() => setIsZoomed(!isZoomed)}
+                                >
+                                    <Image
+                                        src={fullSlipUrl}
+                                        alt="Payment Slip"
+                                        width={800}
+                                        height={1200}
+                                        className={cn(
+                                            "w-full h-auto object-contain transition-transform duration-300",
+                                            isZoomed && "scale-[1.75]"
+                                        )}
+                                        data-ai-hint="payment slip"
+                                    />
+                                </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center p-8 text-center bg-background rounded-lg">
                                     <p className="mb-4">This file is not an image and cannot be previewed directly.</p>
