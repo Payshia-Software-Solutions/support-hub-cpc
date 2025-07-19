@@ -10,8 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package, RotateCw, FlipHorizontal, FlipVertical } from 'lucide-react';
-import { getPaymentRequests, checkDuplicateSlips, getStudentEnrollments } from '@/lib/api';
-import type { PaymentRequest, StudentEnrollmentInfo } from '@/lib/types';
+import { getPaymentRequests, checkDuplicateSlips, getStudentEnrollments, getCourses } from '@/lib/api';
+import type { PaymentRequest, StudentEnrollmentInfo, Course } from '@/lib/types';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import {
@@ -163,7 +163,7 @@ const DuplicateSlipCheck = ({ hashValue, currentRequestId }: { hashValue: string
     return null; 
 };
 
-const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
+const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, courses: Course[] }) => {
     const queryClient = useQueryClient();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState('');
@@ -304,11 +304,15 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                     <Select value={selectedCourseCode} onValueChange={setSelectedCourseCode} disabled={isLoadingEnrollments}>
                         <SelectTrigger id="course-select"><SelectValue placeholder={isLoadingEnrollments ? "Loading batches..." : "Select an enrolled batch..."} /></SelectTrigger>
                         <SelectContent>
-                            {enrollments?.map(enrollment => (
-                                <SelectItem key={enrollment.student_course_id} value={enrollment.course_code}>
-                                    {enrollment.full_name} ({enrollment.course_code})
-                                </SelectItem>
-                            ))}
+                            {enrollments?.map(enrollment => {
+                                const courseInfo = courses.find(c => c.courseCode === enrollment.course_code);
+                                const courseName = courseInfo ? courseInfo.name : 'Unknown Course';
+                                return (
+                                    <SelectItem key={enrollment.student_course_id} value={enrollment.course_code}>
+                                        {courseName} ({enrollment.course_code})
+                                    </SelectItem>
+                                )
+                            })}
                         </SelectContent>
                     </Select>
                 </div>
@@ -452,6 +456,12 @@ export default function PaymentRequestsPage() {
         queryFn: getPaymentRequests,
         staleTime: 1000 * 60, // 1 minute stale time
     });
+
+    const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[]>({
+        queryKey: ['allCoursesForPayment'],
+        queryFn: getCourses,
+        staleTime: Infinity, // Courses don't change often, cache indefinitely
+    });
     
     useEffect(() => {
         setCurrentPage(1);
@@ -512,7 +522,7 @@ export default function PaymentRequestsPage() {
         );
     }, [filteredRequests, currentPage]);
 
-    if (isLoading) {
+    if (isLoading || isLoadingCourses) {
         return (
             <div className="p-4 md:p-8 space-y-6">
                 <header>
@@ -691,7 +701,7 @@ export default function PaymentRequestsPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <SlipManagerCell request={req} />
+                                            <SlipManagerCell request={req} courses={courses || []} />
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -724,7 +734,7 @@ export default function PaymentRequestsPage() {
                                     </div>
                                 </div>
                                  <div className="flex items-center justify-end pt-2 border-t mt-2">
-                                    <SlipManagerCell request={req} />
+                                    <SlipManagerCell request={req} courses={courses || []} />
                                 </div>
                             </div>
                         ))}
