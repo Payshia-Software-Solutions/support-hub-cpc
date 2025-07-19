@@ -1,6 +1,6 @@
 
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting, PaymentRequest, StudentEnrollmentInfo } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -16,22 +16,19 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
         'Content-Type': 'application/json',
         ...options.headers,
       },
-      credentials: 'omit', // Explicitly set credentials to omit
+      credentials: 'omit', 
     });
 
     if (!response.ok) {
-      // Try to parse error response, but fallback to status text
       let errorData;
       try {
         errorData = await response.json();
       } catch (e) {
         errorData = { message: response.statusText };
       }
-       // Include status in the error message for easier debugging
       throw new Error(errorData.message ? `${errorData.message} (Status: ${response.status})` : `Request failed with status ${response.status}`);
     }
 
-    // Handle cases with no content in response
     if (response.status === 204) {
       return null as T;
     }
@@ -45,11 +42,10 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
   }
 }
 
-// Define the shape of the message object from the API
 interface ApiMessage {
   id: string;
-  ticket_id?: string; // Add ticket_id for ticket messages
-  from_role: 'student' | 'staff'; // This is the key from the API
+  ticket_id?: string; 
+  from_role: 'student' | 'staff'; 
   text: string;
   time: string;
   avatar?: string;
@@ -58,11 +54,10 @@ interface ApiMessage {
   attachment_name?: string | null;
 }
 
-// Mapper function to transform API message to internal message format
 function mapApiMessageToMessage(apiMsg: ApiMessage): Message {
   return {
     id: apiMsg.id,
-    from: apiMsg.from_role, // Map from_role to from
+    from: apiMsg.from_role, 
     text: apiMsg.text,
     time: apiMsg.time,
     avatar: apiMsg.avatar,
@@ -76,7 +71,6 @@ function mapApiMessageToMessage(apiMsg: ApiMessage): Message {
   };
 }
 
-// Define the shape of the chat object from the API
 interface ApiChat {
     id: string;
     user_name: string;
@@ -87,7 +81,6 @@ interface ApiChat {
     unread_count?: number | string;
 }
 
-// Mapper function to transform API chat to internal chat format
 function mapApiChatToChat(apiChat: ApiChat): Chat {
     return {
         id: apiChat.id,
@@ -102,7 +95,6 @@ function mapApiChatToChat(apiChat: ApiChat): Chat {
     };
 }
 
-// Mapper for Ticket response (API -> App)
 function mapApiTicketToTicket(apiTicket: any): Ticket {
     return {
         id: apiTicket.id,
@@ -113,8 +105,8 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
         status: apiTicket.status,
         createdAt: apiTicket.created_at,
         updatedAt: apiTicket.updated_at,
-        studentNumber: apiTicket.student_name, // Use student_name from API as the identifier
-        studentName: apiTicket.student_name, // Also use for display name as per API
+        studentNumber: apiTicket.student_name, 
+        studentName: apiTicket.student_name, 
         studentAvatar: apiTicket.student_avatar,
         assignedTo: apiTicket.assigned_to,
         assigneeAvatar: apiTicket.assignee_avatar,
@@ -123,7 +115,6 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
     };
 }
 
-// Mapper for Ticket request (App -> API)
 function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
     const apiPayload: { [key: string]: any } = {};
     if (ticketData.subject !== undefined) apiPayload.subject = ticketData.subject;
@@ -156,10 +147,8 @@ export const createAnnouncement = (announcementData: CreateAnnouncementPayload):
     });
 };
 export const markAnnouncementAsRead = (announcementId: string, studentId: string): Promise<void> => {
-    // This is a mock of what would be a POST request to an endpoint
-    // that tracks which user has seen which announcement.
     console.log(`Student ${studentId} has read announcement ${announcementId}`);
-    return Promise.resolve(); // Simulate successful API call
+    return Promise.resolve(); 
 };
 
 
@@ -169,7 +158,6 @@ export const getTickets = async (studentNumber: string): Promise<Ticket[]> => {
     const apiResult = await apiFetch<any>(endpoint);
     if (!apiResult) return [];
 
-    // Handle both single object and array responses from the API
     const apiTickets = Array.isArray(apiResult) ? apiResult : [apiResult];
     
     return apiTickets.map(mapApiTicketToTicket);
@@ -192,7 +180,7 @@ export const getTicketMessages = async (ticketId: string): Promise<Message[]> =>
 export const createTicket = async (ticketData: CreateTicketPayload): Promise<Ticket> => {
     const apiPayload = mapTicketToApiPayload({
         ...ticketData,
-        studentName: ticketData.studentNumber, // Set student_name to student_number
+        studentName: ticketData.studentNumber, 
     });
     const newApiTicket = await apiFetch<any>('/tickets', { method: 'POST', body: JSON.stringify(apiPayload) });
     return mapApiTicketToTicket(newApiTicket);
@@ -206,7 +194,7 @@ export const assignTicket = async (ticketId: string, assignedTo: string, assigne
   const apiPayload = {
     assigned_to: assignedTo,
     assignee_avatar: assigneeAvatar,
-    is_locked: 1, // Assignment always locks
+    is_locked: 1, 
     locked_by_staff_id: lockedByStaffId,
   };
   const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketId}/assign`, {
@@ -245,19 +233,15 @@ export const getChats = async (studentNumber: string): Promise<Chat[]> => {
         if (!apiResult) {
             return [];
         }
-        // If the API returns a single object, wrap it in an array to handle it consistently.
         const apiChats = Array.isArray(apiResult) ? apiResult : [apiResult];
         
-        // Defensive check: ensure only the correct student's chat is returned
         const studentChat = apiChats.filter(chat => chat.student_number === studentNumber || chat.user_name === studentNumber);
         return studentChat.map(mapApiChatToChat);
 
     } catch (error) {
-        // If a 404 error occurs, it means no chat exists for this student yet.
         if (error instanceof Error && error.message.includes('404')) {
             return [];
         }
-        // Re-throw other errors to be handled by the UI.
         throw error;
     }
 };
@@ -295,7 +279,6 @@ export const getChatMessages = async (chatId: string): Promise<Message[]> => {
 };
 
 export const createChatMessage = (messageData: CreateChatMessageClientPayload): Promise<Message> => {
-  // We transform the client-side payload to match the API's expected format
   const apiPayload = {
     chat_id: messageData.chatId,
     from_role: messageData.from,
@@ -303,8 +286,6 @@ export const createChatMessage = (messageData: CreateChatMessageClientPayload): 
     time: new Date().toISOString(),
     attachment_type: messageData.attachment?.type || null,
     attachment_name: messageData.attachment?.name || null,
-    // The API should handle file uploads and URL generation, so we send null.
-    // The API should also handle timestamping and associating the user's avatar.
     attachment_url: null, 
   };
   return apiFetch('/chat-messages', { method: 'POST', body: JSON.stringify(apiPayload) });
@@ -323,9 +304,6 @@ export const searchStudents = (query: string): Promise<StudentSearchResult[]> =>
     return apiFetch(`/students/search?query=${encodeURIComponent(query)}`);
 };
 
-// --- Bulk Name Update ---
-
-// Note: Using native fetch for different API base URL
 export const getAllUserFullDetails = async (): Promise<UserFullDetails[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/userFullDetails`);
     if (!response.ok) {
@@ -418,7 +396,6 @@ export const getStudentFullInfo = async (studentNumber: string): Promise<FullStu
     return data as FullStudentData;
 };
 
-// Function to update convocation courses
 export const updateConvocationCourses = async (payload: UpdateConvocationCoursesPayload): Promise<{ status: string; message: string; registration_id: string; }> => {
     const { registrationId, courseIds } = payload;
     const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/update-courses/${registrationId}`, {
@@ -438,7 +415,6 @@ export const updateConvocationCourses = async (payload: UpdateConvocationCourses
 
 export const updateCertificateOrderCourses = async (payload: UpdateCertificateOrderCoursesPayload): Promise<{ status: string; message: string; id: string; }> => {
     const { orderId, courseCodes } = payload;
-    // NOTE: This endpoint is assumed. The actual endpoint may differ.
     const response = await fetch(`${QA_API_BASE_URL}/certificate-orders/update-courses/${orderId}`, {
         method: 'PUT',
         headers: {
@@ -459,7 +435,6 @@ export const updateCertificateOrderCourses = async (payload: UpdateCertificateOr
 export const getUserCertificatePrintStatus = async (studentNumber: string): Promise<UserCertificatePrintStatus[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/user_certificate_print_status?studentNumber=${studentNumber}`);
     
-    // If not found, it's not a server error, just no records. Return empty array.
     if (response.status === 404) {
         return [];
     }
@@ -469,7 +444,7 @@ export const getUserCertificatePrintStatus = async (studentNumber: string): Prom
         throw new Error(errorData.error || 'Failed to fetch certificate status');
     }
     const data = await response.json();
-    return data.certificateStatus || []; // Ensure it returns an array
+    return data.certificateStatus || []; 
 };
 
 export const generateCertificate = async (payload: GenerateCertificatePayload): Promise<any> => {
@@ -491,7 +466,7 @@ export const generateCertificate = async (payload: GenerateCertificatePayload): 
 export const getDeliveryOrdersForStudent = async (studentNumber: string): Promise<DeliveryOrder[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/delivery_orders?indexNumber=${studentNumber.trim().toUpperCase()}`);
     if (response.status === 404) {
-        return []; // No orders found is not an error
+        return []; 
     }
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch delivery orders' }));
@@ -532,8 +507,6 @@ export const createDeliveryOrder = async (payload: DeliveryOrderPayload): Promis
 export const createDeliveryOrderForStudent = async (payload: CreateDeliveryOrderPayload): Promise<any> => {
     const { studentNumber, courseCode, deliverySetting, notes, address, fullName, phone, currentStatus, trackingNumber } = payload;
     
-    // Note: The 'notes' field is not part of the DB schema, so it's not included in the payload.
-    // We could potentially log it separately or decide where it should go.
     const fullPayload: Omit<DeliveryOrderPayload, 'delivery_title' | 'notes'> = {
         delivery_id: deliverySetting.id,
         tracking_number: trackingNumber || 'PENDING',
@@ -550,8 +523,8 @@ export const createDeliveryOrderForStudent = async (payload: CreateDeliveryOrder
         estimate_delivery: null,
         full_name: fullName,
         street_address: address,
-        city: '', // This data is not available in StudentInBatch, needs to be handled
-        district: '', // This data is not available in StudentInBatch
+        city: '', 
+        district: '', 
         phone_1: phone,
         phone_2: '',
         is_active: '1',
@@ -581,10 +554,9 @@ export const getCourses = async (): Promise<Course[]> => {
     }
     const apiResponse: ApiCourseResponse = await response.json();
 
-    // Transform the object of objects into an array of Course objects
     return Object.entries(apiResponse).map(([courseCode, courseDetails]) => ({
         id: courseDetails.id,
-        courseCode: courseCode, // Use the key as the courseCode
+        courseCode: courseCode, 
         name: courseDetails.course_name,
     }));
 };
@@ -592,7 +564,7 @@ export const getCourses = async (): Promise<Course[]> => {
 export const getDeliverySettingsForCourse = async (courseCode: string): Promise<DeliverySetting[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/delivery-settings/by-course/${courseCode}`);
     if (response.status === 404) {
-        return []; // No settings found is not an error
+        return []; 
     }
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch delivery settings' }));
@@ -615,7 +587,7 @@ export const checkDuplicateSlips = async (hashValue: string): Promise<PaymentReq
     if (!hashValue) return [];
     const response = await fetch(`${PAYMENT_API_BASE_URL}/payment-portal-requests/check-hash?hashValue=${hashValue}`);
      if (response.status === 404) {
-        return []; // Not found means no records, which is a valid response (no duplicates)
+        return []; 
     }
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to check for duplicate slips' }));
@@ -663,6 +635,34 @@ export const removeStudentEnrollment = async (studentCourseId: string): Promise<
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to remove enrollment' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
+export const createStudentPayment = async (payload: CreatePaymentPayload): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/student-payments-new`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create student payment record.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
+export const updatePaymentRequestStatus = async (requestId: string, status: 'Approved' | 'Rejected'): Promise<any> => {
+    const response = await fetch(`${PAYMENT_API_BASE_URL}/payment-portal-requests/update-status/${requestId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_status: status })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update payment request status.' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();

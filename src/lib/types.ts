@@ -11,7 +11,7 @@ export interface Message {
   id: string;
   from: 'student' | 'staff';
   text: string;
-  time: string; // Should be an ISO 8601 date string from the API
+  time: string; 
   avatar?: string;
   attachment?: Attachment;
 }
@@ -21,7 +21,6 @@ export interface Chat {
   userName: string;
   userAvatar: string;
   studentNumber?: string;
-  // messages are now fetched separately
   lastMessagePreview?: string;
   lastMessageTime?: string; 
   unreadCount?: number;
@@ -38,12 +37,11 @@ export interface Ticket {
   priority: TicketPriority;
   category: TicketCategory;
   status: TicketStatus;
-  createdAt: string; // ISO 8601 date string
-  updatedAt?: string; // ISO 8601 date string
+  createdAt: string; 
+  updatedAt?: string; 
   studentNumber: string;
   studentName: string;
   studentAvatar: string;
-  // messages are now fetched separately
   assignedTo?: string; 
   assigneeAvatar?: string;
   isLocked?: boolean;
@@ -54,14 +52,13 @@ export interface Announcement {
   id: string;
   title: string;
   content: string;
-  date: string; // ISO 8601 date string
+  date: string; 
   author?: string;
   category?: 'General' | 'Academic' | 'Events' | 'Urgent';
-  isNew?: boolean; // This will be handled client-side
+  isNew?: boolean; 
   seenCount?: number;
 }
 
-// Basic User type for admin placeholder
 export interface UserProfile {
   id: string;
   username?: string;
@@ -73,7 +70,6 @@ export interface UserProfile {
   lastLogin?: string;
 }
 
-// Basic Payment type for admin placeholder
 export interface PaymentRecord {
   id: string;
   userId: string;
@@ -99,7 +95,6 @@ export interface Course {
   name: string;
 }
 
-// Client-side payloads for API calls
 export type CreateTicketPayload = Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>;
 export type UpdateTicketPayload = Partial<Ticket> & { id: string };
 
@@ -245,7 +240,6 @@ export interface FilteredConvocationRegistration {
   advanced_id: string;
 }
 
-// Game Information Types from FullStudentData
 export interface CeylonPharmacyInfo {
     title: string;
     userName: string;
@@ -282,7 +276,6 @@ export interface PharmaHunterProInfo {
 }
 
 
-// Types for Student Full Info API
 interface StudentInfo {
     id: string;
     student_id: string;
@@ -315,7 +308,6 @@ export interface StudentEnrollment {
     parent_course_name: string;
     certificate_eligibility: boolean;
     criteria_details: CriteriaDetail[];
-    // Add optional game properties
     ceylon_pharmacy?: CeylonPharmacyInfo;
     pharma_hunter?: PharmaHunterInfo;
     pharma_hunter_pro?: PharmaHunterProInfo;
@@ -369,9 +361,9 @@ export interface DeliveryOrder {
   order_date: string;
   packed_date: string | null;
   send_date: string | null;
-  current_status: string; // This seems to be a number code
+  current_status: string; 
   course_code: string;
-  order_recived_status: string; // The display status
+  order_recived_status: string; 
 }
 
 export interface StudentInBatch {
@@ -407,16 +399,13 @@ export interface CreateDeliveryOrderPayload {
     trackingNumber?: string;
 }
 
-// Type for the raw API response for a single course object
 export interface ApiCourse {
     id: string;
     course_name: string;
     parent_course_id: string;
     course_code: string;
-    // ... other fields that we don't need for the dropdown
 }
 
-// Type for the entire API response (object of objects)
 export interface ApiCourseResponse {
     [courseCode: string]: ApiCourse;
 }
@@ -445,7 +434,6 @@ export interface DeliveryOrderPayload {
     received_date: string | null;
     cod_amount: string;
     package_weight: string;
-    // These are custom fields for our form, not part of the direct API payload
     delivery_title: string; 
     notes?: string;
 }
@@ -460,8 +448,8 @@ export interface PaymentRequest {
     bank: string;
     branch: string;
     slip_path: string;
-    paid_date: string; // "2025-05-23"
-    created_at: string; // "2025-05-23 18:59:16.000000"
+    paid_date: string; 
+    created_at: string; 
     is_active: "1" | "0";
     hash_value: string;
     payment_status: "Pending" | "Approved" | "Rejected";
@@ -474,4 +462,15 @@ export interface StudentEnrollmentInfo {
   username: string;
   full_name: string;
   name_on_certificate: string;
+}
+
+export interface CreatePaymentPayload {
+  course_code: string;
+  student_id: string;
+  paid_amount: string;
+  discount_amount: string;
+  payment_status: 'Paid' | 'Pending' | 'Failed';
+  payment_type: string;
+  paid_date: string; // "YYYY-MM-DD"
+  created_by: string;
 }

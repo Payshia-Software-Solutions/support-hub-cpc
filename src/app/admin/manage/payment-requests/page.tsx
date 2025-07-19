@@ -10,8 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package, RotateCw, FlipHorizontal, FlipVertical, ArrowLeft, Briefcase, Trash2, PlusCircle, Tag } from 'lucide-react';
-import { getPaymentRequests, checkDuplicateSlips, getStudentEnrollments, getCourses, addStudentEnrollment, removeStudentEnrollment } from '@/lib/api';
-import type { PaymentRequest, StudentEnrollmentInfo, Course } from '@/lib/types';
+import { getPaymentRequests, checkDuplicateSlips, getStudentEnrollments, getCourses, addStudentEnrollment, removeStudentEnrollment, createStudentPayment, updatePaymentRequestStatus } from '@/lib/api';
+import type { PaymentRequest, StudentEnrollmentInfo, Course, CreatePaymentPayload } from '@/lib/types';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import {
@@ -32,6 +32,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
+
 
 const ITEMS_PER_PAGE = 25;
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk';
@@ -206,7 +208,7 @@ const ManageEnrollmentsDialog = ({
 
     const handleAddEnrollment = () => {
         if (!newCourseCode) return;
-        const studentId = currentEnrollments?.[0]?.student_id; // Get student_id from any existing enrollment
+        const studentId = currentEnrollments?.[0]?.student_id; 
         if (!studentId) {
             toast({ variant: 'destructive', title: 'Error', description: 'Cannot determine student ID.' });
             return;
@@ -257,6 +259,7 @@ const ManageEnrollmentsDialog = ({
                                     </Button>
                                 </div>
                             ))}
+                             {currentEnrollments.length === 0 && <p className="text-sm text-muted-foreground text-center p-4">No enrollments found.</p>}
                         </div>
                     </div>
                     <div className="pt-4 border-t">
@@ -287,6 +290,7 @@ const ManageEnrollmentsDialog = ({
 
 const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, courses: Course[] }) => {
     const queryClient = useQueryClient();
+    const { user: adminUser } = useAuth();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<'course' | 'convocation' | 'other' | null>(null);
 
@@ -303,7 +307,6 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
         enabled: isDialogOpen,
     });
     
-    // Reset state when dialog opens or category changes
     useEffect(() => {
         if (isDialogOpen) {
             setPaymentAmount('');
@@ -316,55 +319,84 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
             window.addEventListener('resize', checkMobile);
             return () => {
                 window.removeEventListener('resize', checkMobile);
-                setSelectedCategory(null); // Reset category on dialog close
+                setSelectedCategory(null);
             }
         }
     }, [isDialogOpen]);
-
-    // Mock mutation for approving/rejecting.
-    const mutation = useMutation({
-        mutationFn: async ({ action, amount, type }: { action: 'approve' | 'reject', amount?: string, type?: string }) => {
-            // Placeholder: Replace with actual API call
-            console.log(`Performing action: ${action} for request ${request.id} with payload:`, {
-                amount,
-                type: selectedCategory,
-                method: paymentMethod,
-                courseCode: selectedCourseCode,
-                discount: discountAmount
-            });
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            if (action === 'approve') {
-                // Here you would also post to create the payment record
-                return { ...request, payment_status: 'Approved' };
-            }
-            return { ...request, payment_status: 'Rejected' };
+    
+    const approvalMutation = useMutation({
+        mutationFn: async (paymentPayload: CreatePaymentPayload) => {
+            // Step 1: Create the new payment record
+            await createStudentPayment(paymentPayload);
+            // Step 2: Update the original request status
+            await updatePaymentRequestStatus(request.id, 'Approved');
         },
-        onSuccess: (updatedRequest) => {
-            queryClient.setQueryData(['paymentRequests'], (oldData: PaymentRequest[] | undefined) => {
-                return oldData?.map(r => r.id === updatedRequest.id ? updatedRequest : r) ?? [];
-            });
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['paymentRequests'] });
             toast({
-                title: `Request ${updatedRequest.payment_status}`,
-                description: `Payment request #${request.unique_number} has been updated.`,
+                title: 'Request Approved!',
+                description: `Payment for #${request.unique_number} has been recorded and the request is now approved.`,
             });
             setIsDialogOpen(false);
         },
         onError: (error: Error) => {
             toast({
                 variant: 'destructive',
-                title: 'Action Failed',
+                title: 'Approval Failed',
                 description: error.message,
             });
         }
     });
-    
+
+    const rejectionMutation = useMutation({
+        mutationFn: (requestId: string) => updatePaymentRequestStatus(requestId, 'Rejected'),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['paymentRequests'] });
+            toast({
+                title: 'Request Rejected',
+                description: `Payment request #${request.unique_number} has been marked as rejected.`,
+            });
+            setIsDialogOpen(false);
+        },
+        onError: (error: Error) => {
+            toast({
+                variant: 'destructive',
+                title: 'Rejection Failed',
+                description: error.message,
+            });
+        }
+    });
+
     const handleApprove = () => {
         if (!paymentAmount || !paymentMethod || !selectedCourseCode) {
             toast({ variant: 'destructive', title: 'Missing Information', description: 'Amount, method, and batch are required.' });
             return;
         }
-        mutation.mutate({ action: 'approve', amount: paymentAmount });
+        if (!adminUser?.username) {
+             toast({ variant: 'destructive', title: 'Authentication Error', description: 'Could not identify the admin user.' });
+            return;
+        }
+         const studentId = enrollments?.[0]?.student_id;
+        if (!studentId) {
+            toast({ variant: 'destructive', title: 'Student ID Error', description: 'Could not determine the student ID for this transaction.' });
+            return;
+        }
+
+        const paymentPayload: CreatePaymentPayload = {
+            course_code: selectedCourseCode,
+            student_id: studentId,
+            paid_amount: paymentAmount,
+            discount_amount: discountAmount || '0',
+            payment_status: 'Paid', 
+            payment_type: paymentMethod,
+            paid_date: format(new Date(request.paid_date), 'yyyy-MM-dd'),
+            created_by: adminUser.username
+        };
+        
+        approvalMutation.mutate(paymentPayload);
     }
+    
+    const isMutating = approvalMutation.isPending || rejectionMutation.isPending;
 
     const CoursePaymentForm = () => (
         <div className="space-y-4">
@@ -558,7 +590,7 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
     return (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm">Manage</Button>
+                <Button variant="outline" size="sm" disabled={request.payment_status !== 'Pending'}>Manage</Button>
             </DialogTrigger>
             <DialogContent className={cn(
                 "max-w-4xl p-0 flex flex-col",
@@ -595,20 +627,20 @@ const SlipManagerCell = ({ request, courses }: { request: PaymentRequest, course
                     <div className="flex justify-end gap-2 w-full">
                          <Button 
                             variant="destructive" 
-                            onClick={() => mutation.mutate({ action: 'reject' })}
-                            disabled={mutation.isPending}
+                            onClick={() => rejectionMutation.mutate(request.id)}
+                            disabled={isMutating}
                             size="sm"
                         >
-                            {mutation.isPending && mutation.variables?.action === 'reject' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4"/>}
+                            {rejectionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4"/>}
                             Reject
                         </Button>
                         <Button 
                             variant="default" 
                             onClick={handleApprove}
-                            disabled={mutation.isPending || isLoadingEnrollments || !selectedCategory}
+                            disabled={isMutating || isLoadingEnrollments || !selectedCategory}
                              size="sm"
                         >
-                             {(mutation.isPending && mutation.variables?.action === 'approve') || isLoadingEnrollments ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                             {approvalMutation.isPending || isLoadingEnrollments ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
                             Approve
                         </Button>
                     </div>
@@ -629,13 +661,13 @@ export default function PaymentRequestsPage() {
     const { data: requests, isLoading, isError, error, refetch, isFetching } = useQuery<PaymentRequest[]>({
         queryKey: ['paymentRequests'],
         queryFn: getPaymentRequests,
-        staleTime: 1000 * 60, // 1 minute stale time
+        staleTime: 1000 * 60, 
     });
 
     const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[]>({
         queryKey: ['allCoursesForPayment'],
         queryFn: getCourses,
-        staleTime: Infinity, // Courses don't change often, cache indefinitely
+        staleTime: Infinity, 
     });
     
     useEffect(() => {
@@ -683,7 +715,6 @@ export default function PaymentRequestsPage() {
             return matchesSearch && matchesStatus && matchesReason;
         });
 
-        // Sort by created_at date, newest first
         return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     }, [requests, searchTerm, statusFilter, reasonFilter]);
@@ -848,7 +879,6 @@ export default function PaymentRequestsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {/* Desktop Table */}
                     <div className="relative w-full overflow-auto border rounded-lg hidden md:block">
                         <Table>
                             <TableHeader>
@@ -884,7 +914,6 @@ export default function PaymentRequestsPage() {
                         </Table>
                     </div>
 
-                    {/* Mobile List */}
                     <div className="md:hidden space-y-4">
                         {paginatedRequests.map(req => (
                             <div key={req.id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
@@ -932,4 +961,3 @@ export default function PaymentRequestsPage() {
         </div>
     );
 }
-
