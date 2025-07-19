@@ -466,3 +466,12 @@ export interface PaymentRequest {
     hash_value: string;
     payment_status: "Pending" | "Approved" | "Rejected";
 }
+
+export interface StudentEnrollmentInfo {
+  student_course_id: string;
+  course_code: string;
+  student_id: string;
+  username: string;
+  full_name: string;
+  name_on_certificate: string;
+}

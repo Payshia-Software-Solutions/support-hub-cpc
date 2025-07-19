@@ -10,8 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, RefreshCw, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package, RotateCw, FlipHorizontal, FlipVertical } from 'lucide-react';
-import { getPaymentRequests, checkDuplicateSlips, getStudentFullInfo } from '@/lib/api';
-import type { PaymentRequest, FullStudentData } from '@/lib/types';
+import { getPaymentRequests, checkDuplicateSlips, getStudentEnrollments } from '@/lib/api';
+import type { PaymentRequest, StudentEnrollmentInfo } from '@/lib/types';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import {
@@ -173,13 +173,11 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
     const [discountAmount, setDiscountAmount] = useState('');
     const [isMobileView, setIsMobileView] = useState(false);
     
-    // Fetch student full info for enrollments
-    const { data: studentData, isLoading: isLoadingStudentInfo } = useQuery<FullStudentData>({
-        queryKey: ['studentFullInfo', request.unique_number],
-        queryFn: () => getStudentFullInfo(request.unique_number),
-        enabled: isDialogOpen, // Only fetch when dialog is open
+    const { data: enrollments, isLoading: isLoadingEnrollments } = useQuery<StudentEnrollmentInfo[]>({
+        queryKey: ['studentEnrollments', request.unique_number],
+        queryFn: () => getStudentEnrollments(request.unique_number),
+        enabled: isDialogOpen,
     });
-    const enrollmentsArray = studentData ? Object.values(studentData.studentEnrollments) : [];
     
     // Reset state when dialog opens
     useEffect(() => {
@@ -303,12 +301,12 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="course-select">Associated Batch</Label>
-                    <Select value={selectedCourseCode} onValueChange={setSelectedCourseCode} disabled={isLoadingStudentInfo}>
-                        <SelectTrigger id="course-select"><SelectValue placeholder={isLoadingStudentInfo ? "Loading batches..." : "Select an enrolled batch..."} /></SelectTrigger>
+                    <Select value={selectedCourseCode} onValueChange={setSelectedCourseCode} disabled={isLoadingEnrollments}>
+                        <SelectTrigger id="course-select"><SelectValue placeholder={isLoadingEnrollments ? "Loading batches..." : "Select an enrolled batch..."} /></SelectTrigger>
                         <SelectContent>
-                            {enrollmentsArray.map(enrollment => (
-                                <SelectItem key={enrollment.id} value={enrollment.course_code}>
-                                    {enrollment.parent_course_name} ({enrollment.course_code})
+                            {enrollments?.map(enrollment => (
+                                <SelectItem key={enrollment.student_course_id} value={enrollment.course_code}>
+                                    {enrollment.full_name} ({enrollment.course_code})
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -428,10 +426,10 @@ const SlipManagerCell = ({ request }: { request: PaymentRequest }) => {
                         <Button 
                             variant="default" 
                             onClick={handleApprove}
-                            disabled={mutation.isPending || isLoadingStudentInfo}
+                            disabled={mutation.isPending || isLoadingEnrollments}
                              size="sm"
                         >
-                             {(mutation.isPending && mutation.variables?.action === 'approve') || isLoadingStudentInfo ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                             {(mutation.isPending && mutation.variables?.action === 'approve') || isLoadingEnrollments ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
                             Approve
                         </Button>
                     </div>
