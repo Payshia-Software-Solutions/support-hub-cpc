@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAnnouncements } from "@/contexts/AnnouncementsContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { ThemeSwitcher } from "../ui/ThemeSwitcher";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -79,16 +80,21 @@ export function SidebarNav() {
       </SidebarContent>
       <SidebarFooter className="p-2 border-t">
         <SidebarMenu>
-           <SidebarMenuItem>
-             <SidebarMenuButton
-                onClick={logout}
-                tooltip={{children: "Logout", side: "right"}}
-                className="justify-start"
-              >
-                  <LogOut className="h-5 w-5" />
-                  <span className="group-data-[collapsible=icon]:hidden">Logout</span>
-              </SidebarMenuButton>
-           </SidebarMenuItem>
+          <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center">
+            <div className="group-data-[collapsible=icon]:hidden">
+              <ThemeSwitcher />
+            </div>
+             <SidebarMenuItem>
+               <SidebarMenuButton
+                  onClick={logout}
+                  tooltip={{children: "Logout", side: "right"}}
+                  className="justify-center"
+                >
+                    <LogOut className="h-5 w-5" />
+                    <span className="sr-only group-data-[collapsible=icon]:not-sr-only group-data-[collapsible=expanded]:sr-only">Logout</span>
+                </SidebarMenuButton>
+             </SidebarMenuItem>
+           </div>
            {user && (
             <SidebarMenuItem>
                 <div className="flex items-center gap-3 p-2 group-data-[collapsible=icon]:justify-center">

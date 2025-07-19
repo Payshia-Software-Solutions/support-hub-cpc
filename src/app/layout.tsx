@@ -6,6 +6,7 @@ import { PWAProvider } from '@/components/providers/PWAProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Suspense } from 'react';
 import { Preloader } from '@/components/ui/preloader';
+import { ThemeProvider } from '@/components/providers/ThemeProvider';
 
 export const metadata: Metadata = {
   title: 'Student Support Hub',
@@ -19,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -36,16 +37,23 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body className="font-body antialiased">
-        <QueryProvider>
-          <AuthProvider>
-            <PWAProvider>
-              <Suspense fallback={<Preloader />}>
-                {children}
-              </Suspense>
-              <Toaster />
-            </PWAProvider>
-          </AuthProvider>
-        </QueryProvider>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+        >
+          <QueryProvider>
+            <AuthProvider>
+              <PWAProvider>
+                <Suspense fallback={<Preloader />}>
+                  {children}
+                </Suspense>
+                <Toaster />
+              </PWAProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
