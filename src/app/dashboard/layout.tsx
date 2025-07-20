@@ -21,25 +21,27 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       <MobileHeader />
       <div className="flex flex-1 overflow-hidden w-screen">
         <SidebarNav />
-        <main 
-          className={cn(
-            "flex flex-col flex-1 overflow-y-auto bg-background",
-            // Apply pb-16 for bottom dock space only if mobile and not in detail view
-            // Otherwise, pb-0 for mobile detail view or desktop
-            isMobile ? (isMobileDetailActive ? "pb-0" : "pb-16") : "pb-0",
-            "md:pb-0" // Ensure desktop has no bottom padding from this rule
-          )}
-        >
-          <SidebarInset className="flex-1">
-            {children}
-          </SidebarInset>
-          <footer className="text-center text-xs text-muted-foreground p-4 mt-auto shrink-0">
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <main 
+            className={cn(
+              "flex flex-col flex-1 overflow-y-auto bg-background",
+              // Apply pb-16 for bottom dock space only if mobile and not in detail view
+              // Otherwise, pb-0 for mobile detail view or desktop
+              isMobile ? (isMobileDetailActive ? "pb-0" : "pb-16") : "pb-0",
+              "md:pb-0" // Ensure desktop has no bottom padding from this rule
+            )}
+          >
+            <SidebarInset className="flex-1">
+              {children}
+            </SidebarInset>
+          </main>
+          <footer className="text-center text-xs text-muted-foreground p-4 shrink-0 bg-background border-t">
             <p>
               Powered by <a href="https://payshia.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">Payshia Software Solutions</a>
             </p>
             <p className="mt-1">&copy; {new Date().getFullYear()} Student Support Hub. All rights reserved.</p>
           </footer>
-        </main>
+        </div>
       </div>
       <BottomDock />
     </div>
