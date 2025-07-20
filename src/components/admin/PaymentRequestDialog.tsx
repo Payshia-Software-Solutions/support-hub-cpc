@@ -256,9 +256,9 @@ function ManageEnrollmentsDialog({ isOpen, onOpenChange, studentNumber, allCours
     );
 };
 
-const UserDetailsSection = ({ request }: { request: PaymentRequest }) => {
+function UserDetailsSection({ request }: { request: PaymentRequest }) {
     const { data: userData, isLoading, isError, error } = useQuery({
-        queryKey: ['paymentRequestUser', request.id],
+        queryKey: ['paymentRequestUser', request.unique_number],
         queryFn: () => {
             if (request.number_type === 'student_number') {
                 return getStudentDetailsByUsername(request.unique_number);
