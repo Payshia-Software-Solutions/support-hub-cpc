@@ -27,7 +27,7 @@ export default function AdminRecordingsPage() {
   const [recordings, setRecordings] = useState<Recording[]>(dummyRecordings);
 
   const handleDelete = (recordingId: string) => {
-    // In a real app, this would be a useMutation call
+    // In a real app, this would be a useMutation call to an API
     setRecordings(prev => prev.filter(rec => rec.id !== recordingId));
     toast({
       title: "Recording Deleted",
