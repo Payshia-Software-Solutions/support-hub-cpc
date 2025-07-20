@@ -5,240 +5,207 @@ import { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
+import {
+    RecordingsIcon,
+    AssignmentsIcon,
+    QuizIcon,
+    ExamIcon,
+    PaymentsIcon,
+    TicketsIcon,
+    WinPharmaIcon,
+    DPadIcon,
+    CeylonPharmacyIcon,
+    PharmaHunterIcon,
+    HunterProIcon,
+    PharmaReaderIcon,
+    WordPalletIcon
+} from "@/components/icons/module-icons";
 import { 
-    User, 
-    LogOut, 
-    ArrowRight, 
-    GraduationCap, 
-    MessageSquare,
-    Ticket,
-    Video,
+    ChevronRight,
+    User,
+    LogOut,
+    Briefcase,
     FileText,
-    ClipboardCheck,
-    Trophy,
-    Gem,
-    Coins,
+    Truck,
+    ArrowRight
 } from "lucide-react";
 
-
-const CircularProgress = ({ value, size = 60, strokeWidth = 5 }: { value: number; size?: number; strokeWidth?: number; }) => {
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const offset = circumference - (value / 100) * circumference;
-
-    return (
-        <div className="relative" style={{ width: size, height: size }}>
-            <svg className="absolute top-0 left-0 w-full h-full -rotate-90" width={size} height={size}>
-                <circle
-                    className="text-muted/30"
-                    stroke="currentColor"
-                    strokeWidth={strokeWidth}
-                    fill="transparent"
-                    r={radius}
-                    cx={size / 2}
-                    cy={size / 2}
-                />
-                <circle
-                    className="text-primary"
-                    stroke="currentColor"
-                    strokeWidth={strokeWidth}
-                    fill="transparent"
-                    r={radius}
-                    cx={size / 2}
-                    cy={size / 2}
-                    strokeDasharray={circumference}
-                    strokeDashoffset={offset}
-                    strokeLinecap="round"
-                    style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
-                />
-            </svg>
-            <div className="absolute top-0 left-0 flex items-center justify-center w-full h-full">
-                <span className="text-sm font-semibold text-foreground">{`${Math.round(value)}%`}</span>
-            </div>
-        </div>
-    );
-};
-
-
-const dummyCoursesData = [
-    { id: "cpcc", name: "Certificate in Pharmacy Practice", progress: 78, thumbnail: "/images/course-pharmacy.jpg", dataAiHint: "pharmacy lab" },
-    { id: "acpp", name: "Advanced Pharmacy Practice", progress: 45, thumbnail: "/images/course-advanced.jpg", dataAiHint: "modern classroom" },
-    { id: "dn", name: "Diploma in Nutrition", progress: 15, thumbnail: "/images/course-nutrition.jpg", dataAiHint: "healthy food" },
+// --- Mock Data ---
+const dummyCourses = [
+    { id: "cpcc", name: "Certificate in Pharmacy Practice" },
+    { id: "acpp", name: "Advanced Pharmacy Practice" },
+    { id: "dn", name: "Diploma in Nutrition" },
 ];
 
-const dummyGameStats = [
-    { name: "Pharma Hunter", icon: Trophy, value: "Level 12", color: "text-amber-500" },
-    { name: "Gems", icon: Gem, value: "1,992", color: "text-blue-500" },
-    { name: "Coins", icon: Coins, value: "8", color: "text-yellow-500" },
+const gradeData = [
+  { title: "Pharma Hunter", value: 85, color: "bg-blue-500" },
+  { title: "Pharma Hunter Pro", value: 62, color: "bg-purple-500" },
+  { title: "Ceylon Pharmacy", value: 91, color: "bg-green-500" },
 ];
 
-const supportServices = [
-    { title: "Live Chat", description: "Get instant help from our support team.", icon: MessageSquare, href: "/dashboard/chat" },
-    { title: "Support Tickets", description: "Create and track support requests.", icon: Ticket, href: "/dashboard/tickets" },
+const moduleData = [
+  { title: "Recordings", icon: RecordingsIcon, href: "/dashboard/recordings" },
+  { title: "Assignments", icon: AssignmentsIcon, href: "/dashboard/assignments" },
+  { title: "Quiz", icon: QuizIcon, href: "/dashboard/quiz" },
+  { title: "Exam", icon: ExamIcon, href: "/dashboard/exam" },
+  { title: "Payments", icon: PaymentsIcon, href: "/dashboard/payments" },
+  { title: "Tickets", icon: TicketsIcon, href: "/dashboard/tickets" },
 ];
 
-const learningModules = [
-    { title: "Recordings", icon: Video, href: "/dashboard/recordings" },
-    { title: "Assignments", icon: FileText, href: "/dashboard/assignments" },
-    { title: "Quizzes", icon: ClipboardCheck, href: "/dashboard/quiz" },
+const gameData = [
+  { title: "WinPharma", icon: WinPharmaIcon, score: 1250, href: "#" },
+  { title: "D-Pad", icon: DPadIcon, score: 850, href: "#" },
+  { title: "Ceylon Pharmacy", icon: CeylonPharmacyIcon, score: 2400, href: "#" },
+  { title: "Pharma Hunter", icon: PharmaHunterIcon, score: 3100, href: "#" },
+  { title: "Hunter Pro", icon: HunterProIcon, score: 1800, href: "#" },
+  { title: "Pharma Reader", icon: PharmaReaderIcon, score: 950, href: "#" },
+  { title: "Word Pallet", icon: WordPalletIcon, score: 1500, href: "#" },
+];
+
+const otherTasks = [
+    { title: "Profile", icon: User, href: "/dashboard/profile"},
+    { title: "Request CV", icon: FileText, href: "/dashboard/request-cv"},
+    { title: "Apply Jobs", icon: Briefcase, href: "/dashboard/apply-jobs"},
+    { title: "Delivery", icon: Truck, href: "/dashboard/delivery"},
 ]
 
-
+// --- Main Page Component ---
 export default function StudentDashboardPage() {
     const { user, logout } = useAuth();
-    
+    const [defaultCourse, setDefaultCourse] = useState(dummyCourses[0].name);
+
     return (
-        <div className="min-h-screen bg-muted/30">
-            <div className="p-4 md:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start pb-20">
-                
-                {/* Main Content */}
-                <main className="lg:col-span-2 space-y-8">
-                    <header>
-                        <h1 className="text-3xl md:text-4xl font-headline font-bold text-foreground">
-                            Welcome back, {user?.name?.split(' ')[0] || 'Student'}!
-                        </h1>
-                        <p className="text-muted-foreground mt-1">Let's continue your learning journey.</p>
-                    </header>
+        <div className="min-h-screen bg-muted/30 p-4 sm:p-6 lg:p-8 space-y-8 pb-20">
 
-                    <section>
-                        <h2 className="text-2xl font-semibold font-headline mb-4">My Courses</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {dummyCoursesData.map((course) => (
-                                <Card key={course.id} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
-                                    <CardHeader className="flex flex-row items-center justify-between gap-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-3 bg-primary/10 rounded-lg">
-                                                <GraduationCap className="w-6 h-6 text-primary" />
-                                            </div>
-                                            <div>
-                                                <CardTitle className="text-base font-bold leading-tight">{course.name}</CardTitle>
-                                            </div>
-                                        </div>
-                                         <div className="flex-shrink-0">
-                                            <CircularProgress value={course.progress} />
-                                        </div>
-                                    </CardHeader>
-                                    <CardFooter className="mt-auto">
-                                        <Button asChild className="w-full">
-                                            <Link href="#">
-                                                Continue Learning <ArrowRight className="ml-2 h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            ))}
-                        </div>
-                    </section>
-
-                    <section>
-                         <h2 className="text-2xl font-semibold font-headline mb-4">Learning Modules</h2>
-                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            {learningModules.map((service) => (
-                                <Card key={service.title} className="shadow-lg hover:shadow-xl transition-shadow text-center">
-                                    <CardContent className="p-6">
-                                        <div className="w-16 h-16 bg-primary/10 rounded-full mx-auto flex items-center justify-center mb-4">
-                                            <service.icon className="w-8 h-8 text-primary" />
-                                        </div>
-                                        <h3 className="font-semibold">{service.title}</h3>
-                                        <Button variant="link" asChild className="mt-2">
-                                            <Link href={service.href}>Go to section</Link>
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    </section>
-
-                     <section>
-                         <h2 className="text-2xl font-semibold font-headline mb-4">Support & Services</h2>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {supportServices.map((service) => (
-                                <Card key={service.title} className="shadow-lg hover:shadow-xl transition-shadow">
-                                     <CardContent className="p-6 flex items-center gap-4">
-                                        <div className="p-3 bg-primary/10 rounded-lg">
-                                            <service.icon className="w-6 h-6 text-primary" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold">{service.title}</h3>
-                                            <p className="text-sm text-muted-foreground">{service.description}</p>
-                                        </div>
-                                        <ArrowRight className="h-5 w-5 text-muted-foreground ml-auto group-hover:text-primary transition-colors"/>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    </section>
-                </main>
-
-                {/* Right Sidebar */}
-                <aside className="lg:col-span-1 space-y-6 lg:sticky lg:top-8">
-                    <Card className="shadow-lg">
-                        <CardContent className="p-4 text-center">
-                            <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-primary/50" data-ai-hint="student avatar">
-                                <AvatarImage src={user?.avatar} alt={user?.name} />
-                                <AvatarFallback className="text-3xl">{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <h3 className="text-xl font-bold font-headline">{user?.name}</h3>
-                            <p className="text-sm text-muted-foreground">{user?.username}</p>
-                            <div className="mt-4 flex justify-center gap-2">
-                                <Button variant="secondary" size="sm">
-                                    <Link href="/dashboard/profile">View Profile</Link>
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={logout}>
-                                    <LogOut className="mr-2 h-4 w-4" /> Sign Out
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="shadow-lg">
-                        <CardHeader>
-                            <CardTitle className="text-base font-semibold">Overall Progress</CardTitle>
-                        </CardHeader>
-                         <CardContent>
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-muted-foreground">Course Completion</span>
-                                    <span className="font-semibold">62%</span>
+            {/* --- Profile Header --- */}
+            <Card className="shadow-lg overflow-hidden">
+                <div className="bg-card p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4">
+                    <Avatar className="w-20 h-20 text-3xl border-4 border-primary/50" data-ai-hint="student avatar">
+                        <AvatarImage src={user?.avatar} alt={user?.name} />
+                        <AvatarFallback>{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="text-center sm:text-left flex-grow">
+                        <h1 className="text-2xl font-bold font-headline">{user?.name}</h1>
+                        <p className="text-muted-foreground">{user?.username}</p>
+                    </div>
+                    <div className="text-center sm:text-right">
+                        <p className="text-xs text-muted-foreground">Default Course</p>
+                        <p className="font-semibold">{defaultCourse}</p>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="link" className="h-auto p-0 text-sm">Change</Button>
+                            </DialogTrigger>
+                             <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Change Default Course</DialogTitle>
+                                    <DialogDescription>Select one of your enrolled courses to be your default.</DialogDescription>
+                                </DialogHeader>
+                                <div className="py-4 space-y-2">
+                                    {dummyCourses.map((course) => (
+                                        <DialogClose asChild key={course.id}>
+                                            <Button
+                                                variant={defaultCourse === course.name ? "default" : "outline"}
+                                                onClick={() => setDefaultCourse(course.name)}
+                                                className="w-full justify-start"
+                                            >
+                                                {course.name}
+                                            </Button>
+                                        </DialogClose>
+                                    ))}
                                 </div>
-                                <Progress value={62} className="h-2"/>
-                            </div>
-                             <div className="space-y-4 mt-4">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-muted-foreground">Average Grade</span>
-                                    <span className="font-semibold">A- (91%)</span>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                </div>
+            </Card>
+
+            {/* --- My Grading --- */}
+            <section>
+                <h2 className="text-2xl font-semibold font-headline mb-4">My Grading</h2>
+                <Card className="shadow-lg">
+                    <CardContent className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {gradeData.map((grade) => (
+                            <div key={grade.title}>
+                                <div className="flex justify-between items-baseline mb-1">
+                                    <span className="text-base font-medium text-card-foreground">{grade.title}</span>
+                                    <span className="text-lg font-bold text-primary">{grade.value}%</span>
                                 </div>
-                                <Progress value={91} indicatorClassName="bg-green-500" className="h-2" />
+                                <Progress value={grade.value} indicatorClassName={grade.color} className="h-2" />
                             </div>
-                        </CardContent>
-                    </Card>
-                    
-                    <Card className="shadow-lg">
-                        <CardHeader>
-                            <CardTitle className="text-base font-semibold">Game Stats</CardTitle>
-                        </CardHeader>
-                         <CardContent className="space-y-3">
-                            {dummyGameStats.map(stat => (
-                                <div key={stat.name} className="flex items-center justify-between text-sm">
-                                    <div className="flex items-center gap-2 text-muted-foreground">
-                                        <stat.icon className={cn("w-4 h-4", stat.color)} />
-                                        <span>{stat.name}</span>
+                        ))}
+                    </CardContent>
+                </Card>
+            </section>
+
+            {/* --- Common Modules --- */}
+            <section>
+                <h2 className="text-2xl font-semibold font-headline mb-4">Common Modules</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    {moduleData.map((mod) => (
+                        <Link href={mod.href} key={mod.title} className="group">
+                           <Card className="text-center p-4 h-full flex flex-col items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all">
+                               <mod.icon className="w-12 h-12 text-primary mb-2 transition-transform group-hover:scale-110" />
+                               <p className="font-semibold text-sm text-card-foreground mt-1">{mod.title}</p>
+                           </Card>
+                        </Link>
+                    ))}
+                </div>
+            </section>
+
+             {/* --- Let's Play --- */}
+            <section>
+                <h2 className="text-2xl font-semibold font-headline mb-4">Let's Play!</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                    {gameData.map((game) => (
+                        <Link href={game.href} key={game.title} className="group">
+                            <Card className="relative p-3 h-full flex flex-col items-center justify-center shadow-lg hover:shadow-xl hover:border-primary/50 transition-all text-center">
+                                <game.icon className="w-16 h-16 transition-transform group-hover:scale-110" />
+                                <p className="font-bold text-lg text-card-foreground mt-2">{game.score}</p>
+                                <p className="text-xs text-muted-foreground">{game.title}</p>
+                            </Card>
+                        </Link>
+                    ))}
+                </div>
+            </section>
+
+
+            {/* --- Other Tasks --- */}
+            <section>
+                 <h2 className="text-2xl font-semibold font-headline mb-4">Other Tasks</h2>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     {otherTasks.map((task) => (
+                         <Link href={task.href} key={task.title} className="group">
+                            <Card className="shadow-lg hover:shadow-xl hover:bg-muted/50 transition-all">
+                                <CardContent className="p-4 flex items-center gap-4">
+                                    <div className="p-3 bg-primary/10 rounded-lg">
+                                        <task.icon className="w-6 h-6 text-primary" />
                                     </div>
-                                    <span className="font-semibold text-foreground">{stat.value}</span>
-                                </div>
-                            ))}
+                                    <div className="flex-grow">
+                                        <h3 className="font-semibold text-card-foreground group-hover:text-primary">{task.title}</h3>
+                                    </div>
+                                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
+                                </CardContent>
+                            </Card>
+                         </Link>
+                     ))}
+                     <Card className="shadow-lg hover:shadow-xl hover:bg-muted/50 transition-all group cursor-pointer" onClick={logout}>
+                        <CardContent className="p-4 flex items-center gap-4">
+                            <div className="p-3 bg-destructive/10 rounded-lg">
+                                <LogOut className="w-6 h-6 text-destructive" />
+                            </div>
+                            <div className="flex-grow">
+                                <h3 className="font-semibold text-card-foreground group-hover:text-destructive">Sign Out</h3>
+                            </div>
+                            <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-destructive group-hover:translate-x-1 transition-transform" />
                         </CardContent>
-                    </Card>
-                </aside>
-            </div>
+                     </Card>
+                 </div>
+            </section>
         </div>
     );
 }
-

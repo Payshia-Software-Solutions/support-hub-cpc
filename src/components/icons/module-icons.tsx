@@ -374,4 +374,3 @@ export const WordPalletIcon = (props: SVGProps<SVGSVGElement>) => (
         <path className="pulse-element" d="M34 11.5L32 15.5L36 15.5L34 19.5" stroke="#1F2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
 );
-
