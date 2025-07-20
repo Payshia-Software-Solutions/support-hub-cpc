@@ -19,7 +19,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col h-screen">
       <MobileHeader />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden w-screen">
         <SidebarNav />
         <SidebarInset 
           className={cn(
