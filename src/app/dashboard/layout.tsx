@@ -29,13 +29,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <div className="flex flex-1 flex-col overflow-hidden">
           <main 
             className={cn(
-              "flex flex-col flex-1 overflow-y-auto bg-background pb-6", // Added pb-6 for consistent bottom padding
+              "flex flex-col flex-1 overflow-y-auto bg-background",
               // Apply pb-16 for bottom dock space only if mobile and not in detail view
-              isMobile ? (isMobileDetailActive ? "pb-0" : "pb-16") : "", // Kept mobile padding logic but removed desktop pb-0
-              "md:pb-6" // Ensure desktop has the consistent bottom padding
+              isMobile ? (isMobileDetailActive ? "" : "pb-16") : "",
+              !hideFooter && "pb-6"
             )}
           >
-            <SidebarInset className="flex-1 p-4">
+            <SidebarInset className="flex-1">
               {children}
             </SidebarInset>
           </main>

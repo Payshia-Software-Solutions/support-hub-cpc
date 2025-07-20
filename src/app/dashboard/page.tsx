@@ -81,7 +81,7 @@ export default function StudentDashboardPage() {
     const [defaultCourse, setDefaultCourse] = useState(dummyCourses[0].name);
 
     return (
-        <div className="min-h-screen bg-background space-y-8 pb-20">
+        <div className="min-h-screen bg-background space-y-8 p-4 md:p-8 pb-20">
 
             {/* --- Profile Header --- */}
             <Card className="shadow-lg overflow-hidden md:sticky top-0 z-20">
