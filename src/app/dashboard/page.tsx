@@ -203,6 +203,15 @@ export default function StudentDashboardPage() {
                     ))}
                 </div>
             </section>
+            
+            <section>
+                <h1 className="text-2xl font-headline font-semibold">Common Modules</h1>
+                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-4">
+                    {modules.map((mod) => (
+                        <ModuleCard key={mod.title} {...mod} />
+                    ))}
+                </div>
+            </section>
 
              <section>
                 <h1 className="text-2xl font-headline font-semibold">Let's Play</h1>
@@ -213,14 +222,6 @@ export default function StudentDashboardPage() {
                 </div>
             </section>
 
-            <section>
-                <h1 className="text-2xl font-headline font-semibold">Common Modules</h1>
-                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-4">
-                    {modules.map((mod) => (
-                        <ModuleCard key={mod.title} {...mod} />
-                    ))}
-                </div>
-            </section>
         </div>
     );
 }
