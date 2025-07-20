@@ -181,11 +181,30 @@ export default function PaymentRequestsPage() {
 
     const BulkActions = () => (
         <div className="flex flex-col sm:flex-row items-center gap-2 border border-primary/20 bg-primary/5 p-2 rounded-lg mb-4">
-            <p className="text-sm font-medium flex-grow">{selectedRows.size} item(s) selected</p>
-            <div className="flex gap-2">
+             <div className="flex items-center gap-3 w-full sm:w-auto">
+                 <div className="md:hidden flex items-center space-x-2">
+                    <Checkbox
+                        id="select-all-mobile"
+                        checked={paginatedRequests.length > 0 && paginatedRequests.every(req => selectedRows.has(req.id))}
+                        onCheckedChange={(checked) => {
+                            const newSelectedRows = new Set(selectedRows);
+                            if (checked) {
+                                paginatedRequests.forEach(req => newSelectedRows.add(req.id));
+                            } else {
+                                paginatedRequests.forEach(req => newSelectedRows.delete(req.id));
+                            }
+                            setSelectedRows(newSelectedRows);
+                        }}
+                        aria-label="Select all on page"
+                    />
+                    <Label htmlFor="select-all-mobile" className="text-sm font-medium">Select All</Label>
+                </div>
+                <p className="text-sm font-medium sm:flex-grow">{selectedRows.size} item(s) selected</p>
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
-                         <Button size="sm" variant="outline" disabled={bulkUpdateMutation.isPending}><Check className="mr-2 h-4 w-4"/>Approve Selected</Button>
+                         <Button size="sm" variant="outline" className="flex-1 sm:flex-grow-0" disabled={bulkUpdateMutation.isPending}><Check className="mr-2 h-4 w-4"/>Approve</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader><AlertDialogTitle>Approve {selectedRows.size} Requests?</AlertDialogTitle><AlertDialogDescription>This will mark all selected requests as "Approved". This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
@@ -194,7 +213,7 @@ export default function PaymentRequestsPage() {
                 </AlertDialog>
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
-                         <Button size="sm" variant="destructive" disabled={bulkUpdateMutation.isPending}><X className="mr-2 h-4 w-4"/>Reject Selected</Button>
+                         <Button size="sm" variant="destructive" className="flex-1 sm:flex-grow-0" disabled={bulkUpdateMutation.isPending}><X className="mr-2 h-4 w-4"/>Reject</Button>
                     </AlertDialogTrigger>
                      <AlertDialogContent>
                         <AlertDialogHeader><AlertDialogTitle>Reject {selectedRows.size} Requests?</AlertDialogTitle><AlertDialogDescription>This will mark all selected requests as "Rejected". This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
@@ -331,8 +350,8 @@ export default function PaymentRequestsPage() {
                         <div className="text-sm text-muted-foreground">
                             {selectedRows.size} of {filteredRequests.length} row(s) selected.
                         </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="flex items-center space-x-2">
+                        <div className="flex items-center justify-center space-x-2">
+                            <div className="hidden sm:flex items-center space-x-2">
                                 <Label htmlFor="rows-per-page" className="whitespace-nowrap text-sm font-normal">Rows per page</Label>
                                 <Select
                                     value={`${itemsPerPage}`}
@@ -363,22 +382,24 @@ export default function PaymentRequestsPage() {
                                 />
                                 of {totalPages}
                             </div>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentPage === 1}
-                            >
-                                Previous
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                disabled={currentPage === totalPages || totalPages === 0}
-                            >
-                                Next
-                            </Button>
+                            <div className="flex items-center space-x-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    Previous
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages || totalPages === 0}
+                                >
+                                    Next
+                                </Button>
+                            </div>
                         </div>
                     </CardFooter>
                 )}
@@ -394,5 +415,3 @@ export default function PaymentRequestsPage() {
         </div>
     );
 }
-
-    
