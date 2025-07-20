@@ -284,63 +284,39 @@ function UserDetailsSection({ request }: { request: PaymentRequest }) {
     const isTempUser = 'first_name' in userData;
     const isFullUser = 'full_name' in userData;
 
+    const name = isFullUser ? userData.full_name : `${userData.first_name} ${userData.last_name}`;
+    const email = isFullUser ? userData.e_mail : userData.email_address;
+    const phone1 = isFullUser ? userData.telephone_1 : userData.phone_number;
+    const phone2 = isFullUser ? userData.telephone_2 : userData.whatsapp_number;
+    const phone1Label = isFullUser ? "Telephone 1" : "Phone";
+    const phone2Label = isFullUser ? "Telephone 2" : "WhatsApp";
+
     return (
         <div className="space-y-3 rounded-md border p-4 bg-muted/50">
             <h3 className="font-semibold text-base">User Information</h3>
             <div className="text-sm space-y-2 text-muted-foreground">
-                {isFullUser && (
-                    <>
-                        <p className="flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary shrink-0" /><strong className="text-card-foreground">{userData.full_name}</strong></p>
-                        <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{userData.e_mail}</span></p>
-                        {userData.telephone_1 && (
-                             <div className="flex items-center gap-2">
-                                <Phone className="h-4 w-4 text-primary shrink-0" />
-                                <span className="font-medium text-card-foreground">{userData.telephone_1}</span>
-                                <div className="ml-auto flex gap-1">
-                                    <a href={`https://wa.me/${userData.telephone_1.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
-                                    <a href={`tel:${userData.telephone_1}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
-                                </div>
-                            </div>
-                        )}
-                        {userData.telephone_2 && userData.telephone_1 !== userData.telephone_2 && (
-                            <div className="flex items-center gap-2">
-                                <Phone className="h-4 w-4 text-primary shrink-0" />
-                                <span className="font-medium text-card-foreground">{userData.telephone_2}</span>
-                                <div className="ml-auto flex gap-1">
-                                    <a href={`https://wa.me/${userData.telephone_2.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
-                                    <a href={`tel:${userData.telephone_2}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
-                                </div>
-                            </div>
-                        )}
-                    </>
-                )}
-                 
-                {isTempUser && (
-                    <>
-                        <p className="flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary shrink-0" /><strong className="text-card-foreground">{`${userData.first_name} ${userData.last_name}`}</strong></p>
-                        <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{userData.email_address}</span></p>
+                 <p className="flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary shrink-0" /><strong className="text-card-foreground">{name}</strong></p>
+                <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{email}</span></p>
 
-                        {userData.phone_number && (
-                             <div className="flex items-center gap-2">
-                                <Phone className="h-4 w-4 text-primary shrink-0" />
-                                <span className="font-medium text-card-foreground">{userData.phone_number} (Phone)</span>
-                                <div className="ml-auto flex gap-1">
-                                    <a href={`https://wa.me/${userData.phone_number.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
-                                    <a href={`tel:${userData.phone_number}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
-                                </div>
-                            </div>
-                        )}
-                         {userData.whatsapp_number && userData.phone_number !== userData.whatsapp_number && (
-                             <div className="flex items-center gap-2">
-                                <Phone className="h-4 w-4 text-primary shrink-0" />
-                                <span className="font-medium text-card-foreground">{userData.whatsapp_number} (WhatsApp)</span>
-                                <div className="ml-auto flex gap-1">
-                                    <a href={`https://wa.me/${userData.whatsapp_number.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
-                                    <a href={`tel:${userData.whatsapp_number}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
-                                </div>
-                            </div>
-                        )}
-                    </>
+                {phone1 && (
+                     <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-primary shrink-0" />
+                        <span className="font-medium text-card-foreground">{phone1} ({phone1Label})</span>
+                        <div className="ml-auto flex gap-1">
+                            <a href={`https://wa.me/${phone1.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
+                            <a href={`tel:${phone1}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
+                        </div>
+                    </div>
+                )}
+                {phone2 && phone1 !== phone2 && (
+                     <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-primary shrink-0" />
+                        <span className="font-medium text-card-foreground">{phone2} ({phone2Label})</span>
+                        <div className="ml-auto flex gap-1">
+                            <a href={`https://wa.me/${phone2.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
+                            <a href={`tel:${phone2}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>
