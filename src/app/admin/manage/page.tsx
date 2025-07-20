@@ -32,7 +32,7 @@ const managementTasks = [
   },
   {
     title: "Delivery Orders",
-    description: "Track and manage study material deliveries.",
+    description: "Create and track study material deliveries.",
     icon: <Truck className="w-6 h-6 text-primary" />,
     href: "/admin/manage/delivery-orders",
   },
@@ -100,10 +100,10 @@ export default function AdminManagePage() {
         <p className="text-muted-foreground">Access various administrative tools and actions.</p>
       </header>
       <section>
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {managementTasks.sort((a, b) => a.title.localeCompare(b.title)).map((task) => (
             <Link key={task.title} href={task.href} className="group block">
-              <Card className="hover:shadow-lg hover:border-primary/50 transition-all duration-200">
+              <Card className="hover:shadow-lg hover:border-primary/50 transition-all duration-200 h-full">
                 <CardContent className="p-4 flex items-center gap-4">
                   <div className="bg-primary/10 p-3 rounded-lg">
                     {task.icon}

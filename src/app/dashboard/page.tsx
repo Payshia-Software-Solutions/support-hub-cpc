@@ -20,7 +20,8 @@ import {
 } from "@/components/icons/module-icons";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Gem, Coins } from "lucide-react";
+import { Gem, Coins, User, FileText, Briefcase, Truck, LogOut, ArrowRight } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 const gradingData = [
@@ -137,6 +138,45 @@ const games = [
     },
 ]
 
+const otherTasks = [
+  {
+    title: "Profile",
+    description: "Edit Profile, Reset Password, Etc",
+    icon: <User className="w-6 h-6 text-primary" />,
+    href: "/dashboard/profile",
+    action: 'link'
+  },
+  {
+    title: "Request CV",
+    description: "Create, Edit your Professional CV",
+    icon: <FileText className="w-6 h-6 text-primary" />,
+    href: "/dashboard/request-cv",
+    action: 'link'
+  },
+  {
+    title: "Apply Jobs",
+    description: "Find the Jobs using this Portal",
+    icon: <Briefcase className="w-6 h-6 text-primary" />,
+    href: "/dashboard/apply-jobs",
+    action: 'link'
+  },
+  {
+    title: "Delivery",
+    description: "Check the Courier Status",
+    icon: <Truck className="w-6 h-6 text-primary" />,
+    href: "/dashboard/delivery",
+    action: 'link'
+  },
+  {
+    title: "Sign Out",
+    description: "End the current session",
+    icon: <LogOut className="w-6 h-6 text-primary" />,
+    href: "#",
+    action: 'logout'
+  },
+];
+
+
 const ModuleCard = ({ title, icon, href, progress }: { title: string, icon: React.ReactNode, href: string, progress: number | null }) => (
   <Link href={href}>
     <Card className="shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center justify-center text-center p-4 h-full">
@@ -191,8 +231,36 @@ const GameCard = ({ title, icon, href, progress, scoreText, gems, coins }: { tit
   </Link>
 );
 
+const OtherTaskCard = ({ title, description, icon, href, action, onAction }: { title: string, description: string, icon: React.ReactNode, href: string, action: string, onAction?: () => void }) => {
+    const content = (
+      <Card className="hover:shadow-lg hover:border-primary/50 transition-all duration-200">
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className="bg-primary/10 p-3 rounded-lg">
+            {icon}
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{title}</h3>
+            <p className="text-sm text-muted-foreground">{description}</p>
+          </div>
+          <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
+        </CardContent>
+      </Card>
+    );
+
+    if (action === 'logout') {
+        return <button onClick={onAction} className="w-full text-left group">{content}</button>
+    }
+
+    return (
+        <Link href={href} className="group block">
+            {content}
+        </Link>
+    );
+};
+
 
 export default function StudentDashboardPage() {
+    const { logout } = useAuth();
     return (
         <div className="p-4 md:p-6 space-y-8 pb-20">
              <section>
@@ -218,6 +286,15 @@ export default function StudentDashboardPage() {
                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-4">
                     {games.map((game) => (
                         <GameCard key={game.title} {...game} />
+                    ))}
+                </div>
+            </section>
+
+             <section>
+                <h1 className="text-2xl font-headline font-semibold">Other</h1>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    {otherTasks.map((task) => (
+                        <OtherTaskCard key={task.title} {...task} onAction={task.action === 'logout' ? logout : undefined} />
                     ))}
                 </div>
             </section>
