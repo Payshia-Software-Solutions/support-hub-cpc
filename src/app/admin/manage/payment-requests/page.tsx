@@ -29,14 +29,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Label } from '@/components/ui/label';
 
-
-const ITEMS_PER_PAGE = 25;
 
 // --- MAIN PAGE COMPONENT ---
 export default function PaymentRequestsPage() {
     const queryClient = useQueryClient();
     const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [reasonFilter, setReasonFilter] = useState('all');
@@ -58,12 +58,12 @@ export default function PaymentRequestsPage() {
     
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, statusFilter, reasonFilter]);
+    }, [searchTerm, statusFilter, reasonFilter, itemsPerPage]);
     
     // Clear selection when filters change
     useEffect(() => {
         setSelectedRows(new Set());
-    }, [searchTerm, statusFilter, reasonFilter, currentPage]);
+    }, [searchTerm, statusFilter, reasonFilter, currentPage, itemsPerPage]);
 
     const requestStats = useMemo(() => {
         if (!requests) return { status: { total: 0, pending: 0, approved: 0, rejected: 0 }, reasons: {} };
@@ -94,10 +94,10 @@ export default function PaymentRequestsPage() {
 
     }, [requests, searchTerm, statusFilter, reasonFilter]);
 
-    const totalPages = Math.ceil((filteredRequests.length) / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil((filteredRequests.length) / itemsPerPage);
     const paginatedRequests = useMemo(() => {
-        return filteredRequests.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-    }, [filteredRequests, currentPage]);
+        return filteredRequests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    }, [filteredRequests, currentPage, itemsPerPage]);
 
     const bulkUpdateMutation = useMutation({
         mutationFn: ({ ids, status }: { ids: string[], status: 'Approved' | 'Rejected' }) => {
@@ -130,6 +130,21 @@ export default function PaymentRequestsPage() {
     
     const handleBulkUpdate = (status: 'Approved' | 'Rejected') => {
         bulkUpdateMutation.mutate({ ids: Array.from(selectedRows), status });
+    };
+
+    const handlePageInputChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            const pageNum = parseInt(e.currentTarget.value, 10);
+            if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+                setCurrentPage(pageNum);
+            } else {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Invalid Page Number',
+                    description: `Please enter a number between 1 and ${totalPages}.`
+                });
+            }
+        }
     };
 
     if (isLoading || isLoadingCourses) {
@@ -311,22 +326,73 @@ export default function PaymentRequestsPage() {
                     </div>
                     {paginatedRequests.length === 0 && (<div className="text-center py-10"><p className="text-muted-foreground">No payment requests found matching your filters.</p></div>)}
                 </CardContent>
-                {totalPages > 1 && (
-                    <CardFooter className="flex items-center justify-center space-x-2 pt-6">
-                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>Previous</Button>
-                        <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</span>
-                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>Next</Button>
+                {totalPages > 0 && (
+                     <CardFooter className="flex flex-col-reverse items-center gap-y-4 gap-x-6 sm:flex-row sm:justify-between pt-6">
+                        <div className="text-sm text-muted-foreground">
+                            {selectedRows.size} of {filteredRequests.length} row(s) selected.
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2">
+                                <Label htmlFor="rows-per-page" className="whitespace-nowrap text-sm font-normal">Rows per page</Label>
+                                <Select
+                                    value={`${itemsPerPage}`}
+                                    onValueChange={(value) => {
+                                        setItemsPerPage(Number(value));
+                                        setCurrentPage(1);
+                                    }}
+                                >
+                                    <SelectTrigger className="h-8 w-[70px]">
+                                        <SelectValue placeholder={itemsPerPage} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {[10, 25, 50, 100].map((pageSize) => (
+                                            <SelectItem key={pageSize} value={`${pageSize}`}>
+                                                {pageSize}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex items-center justify-center text-sm font-medium">
+                                Page 
+                                <Input
+                                    type="number"
+                                    defaultValue={currentPage}
+                                    onKeyDown={handlePageInputChange}
+                                    className="h-8 w-12 mx-2 text-center"
+                                />
+                                of {totalPages}
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages || totalPages === 0}
+                            >
+                                Next
+                            </Button>
+                        </div>
                     </CardFooter>
                 )}
             </Card>
 
-            <PaymentRequestDialog
+            {courses && <PaymentRequestDialog
                 isOpen={!!selectedRequest}
                 onOpenChange={(open) => !open && setSelectedRequest(null)}
                 request={selectedRequest}
-                courses={courses || []}
+                courses={courses}
                 onSuccess={() => refetch()}
-            />
+            />}
         </div>
     );
 }
+
+    
