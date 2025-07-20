@@ -35,11 +35,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               {children}
             </SidebarInset>
           </main>
-          <footer className="text-center text-xs text-muted-foreground p-4 shrink-0 bg-background border-t">
+          <footer className="flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground p-4 gap-2 sm:gap-4 shrink-0 bg-background border-t">
+            <p>&copy; {new Date().getFullYear()} Student Support Hub. All rights reserved.</p>
             <p>
               Powered by <a href="https://payshia.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">Payshia Software Solutions</a>
             </p>
-            <p className="mt-1">&copy; {new Date().getFullYear()} Student Support Hub. All rights reserved.</p>
           </footer>
         </div>
       </div>
