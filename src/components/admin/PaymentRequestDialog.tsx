@@ -317,7 +317,27 @@ const StudentPaymentInfo = ({ studentNumber }: { studentNumber: string }) => {
                     <CardTitle className="text-base">Payment History</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="relative w-full overflow-auto max-h-64">
+                    {/* Mobile View */}
+                    <div className="md:hidden space-y-3">
+                        {paymentRecordsArray.length > 0 ? (
+                            paymentRecordsArray.map(rec => (
+                                <div key={rec.id} className="p-3 border rounded-md text-sm space-y-1 bg-muted/50">
+                                    <div className="flex justify-between items-start">
+                                        <p className="font-semibold text-card-foreground break-all">{rec.receipt_number}</p>
+                                        <p className="font-bold text-card-foreground">LKR {parseFloat(rec.paid_amount).toLocaleString()}</p>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        <p>{rec.course_code} - {rec.payment_type}</p>
+                                        <p>Paid on: {format(new Date(rec.paid_date), 'yyyy-MM-dd')}</p>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                             <p className="text-muted-foreground text-center text-sm py-4">No payment records found.</p>
+                        )}
+                    </div>
+                     {/* Desktop View */}
+                    <div className="hidden md:block relative w-full overflow-auto max-h-64">
                          <Table>
                             <TableHeader>
                                 <TableRow>
@@ -338,8 +358,10 @@ const StudentPaymentInfo = ({ studentNumber }: { studentNumber: string }) => {
                                 ))}
                             </TableBody>
                         </Table>
+                         {paymentRecordsArray.length === 0 && !isLoading && (
+                            <p className="text-muted-foreground text-center text-sm py-4">No payment records found.</p>
+                         )}
                     </div>
-                     {paymentRecordsArray.length === 0 && <p className="text-muted-foreground text-center text-sm py-4">No payment records found.</p>}
                 </CardContent>
             </Card>
         </div>
@@ -382,35 +404,37 @@ const RegisteredStudentInfo = ({ user, studentNumber }: { user: UserFullDetails,
     </Tabs>
 );
 
-
-const TempUserInfo = ({ user }: { user: TempUser }) => (
-    <div className="space-y-2 text-muted-foreground text-sm">
-        <p className="flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary shrink-0" /><strong className="text-card-foreground">{user.first_name} {user.last_name}</strong></p>
-        <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{user.email_address}</span></p>
-        
-        {user.phone_number && (
-            <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-primary shrink-0" />
-                <span className="font-medium text-card-foreground">{user.phone_number} (Phone)</span>
-                <div className="ml-auto flex gap-1">
-                    <a href={`https://wa.me/${user.phone_number.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
+const TempUserInfo = ({ user }: { user: TempUser }) => {
+    const showTwoNumbers = user.phone_number && user.whatsapp_number && user.phone_number !== user.whatsapp_number;
+    return (
+        <div className="space-y-2 text-muted-foreground text-sm">
+            <p className="flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary shrink-0" /><strong className="text-card-foreground">{user.first_name} {user.last_name}</strong></p>
+            <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{user.email_address}</span></p>
+            
+            {user.phone_number && (
+                <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-primary shrink-0" />
+                    <span className="font-medium text-card-foreground">{user.phone_number} (Phone{showTwoNumbers ? '' : ' & WA'})</span>
+                    <div className="ml-auto flex gap-1">
+                        <a href={`https://wa.me/${user.phone_number.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
                     <a href={`tel:${user.phone_number}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
                 </div>
             </div>
         )}
         
-        {user.whatsapp_number && user.whatsapp_number !== user.phone_number && (
+        {showTwoNumbers && (
              <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-primary shrink-0" />
                 <span className="font-medium text-card-foreground">{user.whatsapp_number} (WhatsApp)</span>
                  <div className="ml-auto flex gap-1">
-                    <a href={`https://wa.me/${user.whatsapp_number.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
+                    <a href={`https://wa.me/${user.whatsapp_number!.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
                     <a href={`tel:${user.whatsapp_number}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
                 </div>
             </div>
         )}
     </div>
-);
+    )
+};
 
 
 function UserDetailsSection({ request }: { request: PaymentRequest }) {
