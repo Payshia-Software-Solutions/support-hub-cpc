@@ -256,7 +256,7 @@ export default function PaymentRequestsPage() {
                              <div><CardTitle>All Requests</CardTitle><CardDescription>Showing {paginatedRequests.length} of {filteredRequests.length} records.</CardDescription></div>
                             <Button onClick={() => refetch()} disabled={isFetching} className="w-full sm:w-auto"><RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />Refresh</Button>
                         </div>
-                        <div className="flex flex-col md:flex-row gap-2">
+                        <div className="flex flex-col lg:flex-row gap-2">
                             <div className="relative flex-grow"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by ID, Ref #..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 w-full"/></div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger><SelectValue placeholder="Filter by status"/></SelectTrigger><SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="Pending">Pending</SelectItem><SelectItem value="Approved">Approved</SelectItem><SelectItem value="Rejected">Rejected</SelectItem></SelectContent></Select>
@@ -418,5 +418,3 @@ export default function PaymentRequestsPage() {
         </div>
     );
 }
-
-    
