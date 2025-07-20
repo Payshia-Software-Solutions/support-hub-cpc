@@ -95,6 +95,16 @@ export interface Course {
   name: string;
 }
 
+export interface Recording {
+  id: string;
+  courseId: string;
+  title: string;
+  description: string;
+  youtubeUrl: string;
+  thumbnailUrl: string;
+  dataAiHint?: string;
+}
+
 export type CreateTicketPayload = Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>;
 export type UpdateTicketPayload = Partial<Ticket> & { id: string };
 

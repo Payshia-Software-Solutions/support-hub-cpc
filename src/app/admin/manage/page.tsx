@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video } from "lucide-react";
 import Link from "next/link";
 
 const managementTasks = [
@@ -77,6 +77,12 @@ const managementTasks = [
     description: "View convocation orders by course and session.",
     icon: <ClipboardList className="w-6 h-6 text-primary" />,
     href: "/admin/manage/convocation-orders",
+  },
+  {
+    title: "Manage Recordings",
+    description: "Add, edit, or remove course video recordings.",
+    icon: <Video className="w-6 h-6 text-primary" />,
+    href: "/admin/recordings",
   },
   {
     title: "Password Reset",
