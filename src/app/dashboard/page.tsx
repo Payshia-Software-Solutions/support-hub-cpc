@@ -292,7 +292,7 @@ export default function StudentDashboardPage() {
                     </div>
                     <div className="w-full sm:w-auto text-center sm:text-right">
                         <p className="text-xs text-muted-foreground">Default Course</p>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center justify-center sm:justify-end gap-2 mt-1">
                             <p className="font-semibold">{defaultCourse?.name}</p>
                             <Dialog open={isChangeCourseOpen} onOpenChange={setIsChangeCourseOpen}>
                                 <DialogTrigger asChild>
