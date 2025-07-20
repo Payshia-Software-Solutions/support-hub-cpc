@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -20,10 +21,13 @@ import {
 } from "@/components/icons/module-icons";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Gem, Coins, User, FileText, Briefcase, Truck, LogOut, ArrowRight, Edit } from "lucide-react";
+import { Gem, Coins, User, FileText, Briefcase, Truck, LogOut, ArrowRight, Edit, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { dummyCourses } from "@/lib/dummy-data";
+import type { Course } from "@/lib/types";
 
 
 const gradingData = [
@@ -261,29 +265,80 @@ const OtherTaskCard = ({ title, description, icon, href, action, onAction }: { t
 
 export default function StudentDashboardPage() {
     const { user, logout } = useAuth();
-    const defaultCourse = "Certificate Course in Pharmacy Practice"; // Placeholder
+    const [defaultCourse, setDefaultCourse] = useState<Course | null>(dummyCourses[0] || null);
+    const [selectedCourse, setSelectedCourse] = useState<Course | null>(defaultCourse);
+    const [isChangeCourseOpen, setIsChangeCourseOpen] = useState(false);
+
+    const handleChangeCourse = () => {
+        if (selectedCourse) {
+            setDefaultCourse(selectedCourse);
+        }
+        setIsChangeCourseOpen(false);
+    };
 
     return (
         <div className="p-4 md:p-6 space-y-8 pb-20">
-             <section className="flex flex-col sm:flex-row items-center gap-4">
-                {user && (
-                    <Avatar className="w-16 h-16 text-2xl border-2 border-primary" data-ai-hint="student avatar">
-                        <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback>{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                )}
-                <div className="flex-1 text-center sm:text-left">
-                    <h1 className="text-xl font-bold font-headline">Welcome, {user?.name || 'Student'}!</h1>
-                    <p className="text-sm text-muted-foreground">{user?.username || 'Student ID'}</p>
-                </div>
-                <div className="w-full sm:w-auto text-center sm:text-right">
-                    <p className="text-xs text-muted-foreground">Default Course</p>
-                    <div className="flex items-center gap-2 mt-1">
-                        <p className="font-semibold">{defaultCourse}</p>
-                        <Button variant="outline" size="sm" className="h-7">
-                            <Edit className="h-3 w-3 mr-1" />
-                            Change
-                        </Button>
+             <section className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm -mx-4 -mt-4 md:-mx-6 md:-mt-6 px-4 py-4 md:px-6 md:py-4 border-b">
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                    {user && (
+                        <Avatar className="w-16 h-16 text-2xl border-2 border-primary" data-ai-hint="student avatar">
+                            <AvatarImage src={user.avatar} alt={user.name} />
+                            <AvatarFallback>{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                    )}
+                    <div className="flex-1 text-center sm:text-left">
+                        <h1 className="text-xl font-bold font-headline">Welcome, {user?.name || 'Student'}!</h1>
+                        <p className="text-sm text-muted-foreground">{user?.username || 'Student ID'}</p>
+                    </div>
+                    <div className="w-full sm:w-auto text-center sm:text-right">
+                        <p className="text-xs text-muted-foreground">Default Course</p>
+                        <div className="flex items-center gap-2 mt-1">
+                            <p className="font-semibold">{defaultCourse?.name}</p>
+                            <Dialog open={isChangeCourseOpen} onOpenChange={setIsChangeCourseOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-7">
+                                        <Edit className="h-3 w-3 mr-1" />
+                                        Change
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Change Default Course</DialogTitle>
+                                        <DialogDescription>
+                                            Select one of your enrolled courses to set as your default view.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="py-4 space-y-2">
+                                        {dummyCourses.map(course => (
+                                            <button
+                                                key={course.id}
+                                                onClick={() => setSelectedCourse(course)}
+                                                className={cn(
+                                                    "w-full text-left p-3 rounded-lg border flex items-center justify-between transition-colors",
+                                                    selectedCourse?.id === course.id
+                                                        ? "border-primary bg-primary/10"
+                                                        : "hover:bg-muted/50"
+                                                )}
+                                            >
+                                                <div>
+                                                    <p className="font-semibold">{course.name}</p>
+                                                    <p className="text-sm text-muted-foreground">{course.courseCode}</p>
+                                                </div>
+                                                {selectedCourse?.id === course.id && (
+                                                    <CheckCircle className="h-5 w-5 text-primary" />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <DialogFooter>
+                                        <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+                                        <Button onClick={handleChangeCourse} disabled={!selectedCourse || selectedCourse.id === defaultCourse?.id}>
+                                            Set as Default
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
                     </div>
                 </div>
             </section>
