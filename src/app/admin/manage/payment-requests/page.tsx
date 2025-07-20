@@ -40,6 +40,7 @@ export default function PaymentRequestsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [reasonFilter, setReasonFilter] = useState('all');
+    const [numberTypeFilter, setNumberTypeFilter] = useState('all');
     const [selectedRequest, setSelectedRequest] = useState<PaymentRequest | null>(null);
     const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
@@ -58,12 +59,12 @@ export default function PaymentRequestsPage() {
     
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, statusFilter, reasonFilter, itemsPerPage]);
+    }, [searchTerm, statusFilter, reasonFilter, numberTypeFilter, itemsPerPage]);
     
     // Clear selection when filters change
     useEffect(() => {
         setSelectedRows(new Set());
-    }, [searchTerm, statusFilter, reasonFilter, currentPage, itemsPerPage]);
+    }, [searchTerm, statusFilter, reasonFilter, numberTypeFilter, currentPage, itemsPerPage]);
 
     const requestStats = useMemo(() => {
         if (!requests) return { status: { total: 0, pending: 0, approved: 0, rejected: 0 }, reasons: {} };
@@ -89,10 +90,11 @@ export default function PaymentRequestsPage() {
             const matchesSearch = lowercasedFilter ? (req.id?.toLowerCase() || '').includes(lowercasedFilter) || (req.unique_number?.toLowerCase() || '').includes(lowercasedFilter) || (req.payment_reson?.toLowerCase() || '').includes(lowercasedFilter) : true;
             const matchesStatus = statusFilter === 'all' || req.payment_status === statusFilter;
             const matchesReason = reasonFilter === 'all' || req.payment_reson === reasonFilter;
-            return matchesSearch && matchesStatus && matchesReason;
+            const matchesNumberType = numberTypeFilter === 'all' || req.number_type === numberTypeFilter;
+            return matchesSearch && matchesStatus && matchesReason && matchesNumberType;
         }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-    }, [requests, searchTerm, statusFilter, reasonFilter]);
+    }, [requests, searchTerm, statusFilter, reasonFilter, numberTypeFilter]);
 
     const totalPages = Math.ceil((filteredRequests.length) / itemsPerPage);
     const paginatedRequests = useMemo(() => {
@@ -256,9 +258,10 @@ export default function PaymentRequestsPage() {
                         </div>
                         <div className="flex flex-col md:flex-row gap-2">
                             <div className="relative flex-grow"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by ID, Ref #..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 w-full"/></div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger><SelectValue placeholder="Filter by status"/></SelectTrigger><SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="Pending">Pending</SelectItem><SelectItem value="Approved">Approved</SelectItem><SelectItem value="Rejected">Rejected</SelectItem></SelectContent></Select>
                                 <Select value={reasonFilter} onValueChange={setReasonFilter}><SelectTrigger><SelectValue placeholder="Filter by reason"/></SelectTrigger><SelectContent><SelectItem value="all">All Reasons</SelectItem>{Object.keys(requestStats.reasons).map(reason => (<SelectItem key={reason} value={reason} className="capitalize">{reason.replace('_', ' ')}</SelectItem>))}</SelectContent></Select>
+                                <Select value={numberTypeFilter} onValueChange={setNumberTypeFilter}><SelectTrigger><SelectValue placeholder="Filter by type"/></SelectTrigger><SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="ref_number">Reference #</SelectItem><SelectItem value="student_id">Student ID</SelectItem></SelectContent></Select>
                             </div>
                         </div>
                     </div>
@@ -415,3 +418,5 @@ export default function PaymentRequestsPage() {
         </div>
     );
 }
+
+    
