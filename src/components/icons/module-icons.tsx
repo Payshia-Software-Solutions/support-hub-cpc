@@ -162,3 +162,13 @@ export const PharmaReaderIcon = (props: SVGProps<SVGSVGElement>) => (
         <path d="M33 8L37 4" stroke="#A78BFA" strokeWidth="4" strokeLinecap="round"/>
     </svg>
 );
+
+export const WordPalletIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="1em" height="1em" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path d="M42 28C42 32.4183 34.8366 36 26 36C17.1634 36 10 32.4183 10 28C10 23.5817 17.1634 20 26 20C34.8366 20 42 23.5817 42 28Z" fill="#F472B6"/>
+        <path d="M26 38C20.4772 38 16 40.2386 16 43C16 43.5523 16.4477 44 17 44H35C35.5523 44 36 43.5523 36 43C36 40.2386 31.5228 38 26 38Z" fill="#EC4899"/>
+        <path d="M26 20C26 19.4477 25.5523 19 25 19H14C11.7909 19 10 17.2091 10 15V13C10 9.13401 13.134 6 17 6H19C22.866 6 26 9.13401 26 13V20Z" fill="#60A5FA"/>
+        <path d="M26 13L26 20C26 20.5523 26.4477 21 27 21H38C40.2091 21 42 19.2091 42 17V15C42 11.134 38.866 8 35 8H33C29.134 8 26 11.134 26 15V13Z" fill="#FBBF24"/>
+        <path d="M34 11.5L32 15.5L36 15.5L34 19.5" stroke="#1F2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);

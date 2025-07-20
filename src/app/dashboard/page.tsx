@@ -16,6 +16,7 @@ import {
   PharmaHunterIcon,
   HunterProIcon,
   PharmaReaderIcon,
+  WordPalletIcon,
 } from "@/components/icons/module-icons";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -123,6 +124,13 @@ const games = [
     {
       title: "Pharma Reader",
       icon: <PharmaReaderIcon className="h-12 w-12" />,
+      href: "#",
+      progress: 0,
+      scoreText: "0%",
+    },
+    {
+      title: "Word Pallet",
+      icon: <WordPalletIcon className="h-12 w-12" />,
       href: "#",
       progress: 0,
       scoreText: "0%",
