@@ -231,7 +231,7 @@ const GameCard = ({ title, icon, href, progress, scoreText, gems, coins }: { tit
 
 const OtherTaskCard = ({ title, description, icon, href, action, onAction }: { title: string, description: string, icon: React.ReactNode, href: string, action: string, onAction?: () => void }) => {
     const content = (
-      <Card className="hover:shadow-lg hover:border-primary/50 transition-all duration-200">
+      <Card className="hover:shadow-lg hover:border-primary/50 transition-all duration-200 h-full">
         <CardContent className="p-4 flex items-center gap-4">
           <div className="bg-primary/10 p-3 rounded-lg">
             {icon}
