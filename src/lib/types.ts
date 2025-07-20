@@ -441,7 +441,7 @@ export interface DeliveryOrderPayload {
 export interface PaymentRequest {
     id: string;
     unique_number: string;
-    number_type: "ref_number" | "student_id";
+    number_type: "student_number" | "ref_number";
     payment_reson: string;
     paid_amount: string;
     payment_reference: string;

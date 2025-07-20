@@ -260,7 +260,7 @@ export default function PaymentRequestsPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger><SelectValue placeholder="Filter by status"/></SelectTrigger><SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="Pending">Pending</SelectItem><SelectItem value="Approved">Approved</SelectItem><SelectItem value="Rejected">Rejected</SelectItem></SelectContent></Select>
                                 <Select value={reasonFilter} onValueChange={setReasonFilter}><SelectTrigger><SelectValue placeholder="Filter by reason"/></SelectTrigger><SelectContent><SelectItem value="all">All Reasons</SelectItem>{Object.keys(requestStats.reasons).map(reason => (<SelectItem key={reason} value={reason} className="capitalize">{reason.replace('_', ' ')}</SelectItem>))}</SelectContent></Select>
-                                <Select value={numberTypeFilter} onValueChange={setNumberTypeFilter}><SelectTrigger><SelectValue placeholder="Filter by type"/></SelectTrigger><SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="ref_number">Reference #</SelectItem><SelectItem value="student_id">Student ID</SelectItem></SelectContent></Select>
+                                <Select value={numberTypeFilter} onValueChange={setNumberTypeFilter}><SelectTrigger><SelectValue placeholder="Filter by type"/></SelectTrigger><SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="ref_number">Reference #</SelectItem><SelectItem value="student_number">Student Number</SelectItem></SelectContent></Select>
                             </div>
                         </div>
                     </div>
@@ -417,3 +417,4 @@ export default function PaymentRequestsPage() {
         </div>
     );
 }
+
