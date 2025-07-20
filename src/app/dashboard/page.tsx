@@ -11,12 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
     RecordingsIcon,
     AssignmentsIcon,
@@ -171,7 +166,7 @@ export default function StudentDashboardPage() {
     const [defaultCourse, setDefaultCourse] = useState(dummyCourses[0].name);
 
     return (
-        <div className="space-y-8 p-4 md:p-8 pb-20 bg-background">
+        <div className="space-y-8 p-4 md:p-8 bg-background">
 
             {/* --- Profile Header --- */}
             <Card className="shadow-lg overflow-hidden">
@@ -226,10 +221,10 @@ export default function StudentDashboardPage() {
             <section>
                 <h2 className="text-2xl font-semibold font-headline mb-4">My Grading</h2>
                 <Card className="shadow-lg">
-                    <CardContent className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <CardContent className="p-4 sm:p-6 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                         {gradeData.map((grade) => (
                             <div key={grade.title} className="bg-muted/50 p-4 rounded-lg text-center">
-                                <p className="text-3xl font-bold text-primary">{grade.value}%</p>
+                                <p className="text-2xl md:text-3xl font-bold text-primary">{grade.value}%</p>
                                 <p className="text-sm font-medium text-card-foreground mt-1">{grade.title}</p>
                             </div>
                         ))}
