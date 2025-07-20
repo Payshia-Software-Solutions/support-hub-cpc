@@ -84,7 +84,7 @@ export default function StudentDashboardPage() {
         <div className="min-h-screen bg-background space-y-8 pb-20">
 
             {/* --- Profile Header --- */}
-            <Card className="shadow-lg overflow-hidden">
+            <Card className="shadow-lg overflow-hidden md:sticky top-0 z-20">
                 <div className="bg-card p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
                     <Avatar className="w-20 h-20 text-3xl border-4 border-primary/50 shrink-0" data-ai-hint="student avatar">
                         <AvatarImage src={user?.avatar} alt={user?.name} />
@@ -131,12 +131,9 @@ export default function StudentDashboardPage() {
                 <Card className="shadow-lg">
                     <CardContent className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
                         {gradeData.map((grade) => (
-                            <div key={grade.title}>
-                                <div className="flex justify-between items-baseline mb-1">
-                                    <span className="text-base font-medium text-card-foreground">{grade.title}</span>
-                                    <span className="text-lg font-bold text-primary">{grade.value}%</span>
-                                </div>
-                                <Progress value={grade.value} indicatorClassName={grade.color} className="h-2" />
+                            <div key={grade.title} className="bg-muted/50 p-4 rounded-lg text-center">
+                                <p className="text-3xl font-bold text-primary">{grade.value}%</p>
+                                <p className="text-sm font-medium text-card-foreground mt-1">{grade.title}</p>
                             </div>
                         ))}
                     </CardContent>
