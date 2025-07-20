@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import {
     RecordingsIcon,
     AssignmentsIcon,
@@ -23,7 +22,10 @@ import {
     PharmaHunterIcon,
     HunterProIcon,
     PharmaReaderIcon,
-    WordPalletIcon
+    WordPalletIcon,
+    GoldMedalIcon,
+    SilverMedalIcon,
+    TopMedalIcon
 } from "@/components/icons/module-icons";
 import { 
     ChevronRight,
@@ -73,7 +75,14 @@ const otherTasks = [
     { title: "Request CV", icon: FileText, href: "/dashboard/request-cv"},
     { title: "Apply Jobs", icon: Briefcase, href: "/dashboard/apply-jobs"},
     { title: "Delivery", icon: Truck, href: "/dashboard/delivery"},
-]
+];
+
+const achievementData = [
+    { title: "Gold Medals", icon: GoldMedalIcon, count: 5, color: "bg-amber-400/10 border-amber-500/20" },
+    { title: "Silver Medals", icon: SilverMedalIcon, count: 12, color: "bg-slate-400/10 border-slate-500/20" },
+    { title: "Top Medals", icon: TopMedalIcon, count: 2, color: "bg-violet-500/10 border-violet-500/20" },
+];
+
 
 // --- Main Page Component ---
 export default function StudentDashboardPage() {
@@ -124,6 +133,24 @@ export default function StudentDashboardPage() {
                     </div>
                 </div>
             </Card>
+
+             {/* --- My Achievements --- */}
+            <section>
+                <h2 className="text-2xl font-semibold font-headline mb-4">My Achievements</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     {achievementData.map((ach) => (
+                        <Card key={ach.title} className={cn("shadow-lg hover:shadow-xl transition-all border-2", ach.color)}>
+                            <CardContent className="p-4 flex items-center gap-4">
+                                <ach.icon className="w-16 h-16 shrink-0" />
+                                <div className="flex-grow">
+                                    <p className="text-4xl font-bold text-card-foreground">{ach.count}</p>
+                                    <p className="text-sm font-medium text-muted-foreground">{ach.title}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                     ))}
+                </div>
+            </section>
 
             {/* --- My Grading --- */}
             <section>

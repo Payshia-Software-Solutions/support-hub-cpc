@@ -374,3 +374,61 @@ export const WordPalletIcon = (props: SVGProps<SVGSVGElement>) => (
         <path className="pulse-element" d="M34 11.5L32 15.5L36 15.5L34 19.5" stroke="#1F2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
 );
+
+
+// Achievement Icons
+export const GoldMedalIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="1em" height="1em" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" {...props} className={cn("module-icon-group", props.className)}>
+        <style>{`
+            .shine-gold { animation: shine 3s ease-in-out infinite; }
+            @keyframes shine {
+                0%, 100% { transform: translateX(-100%); }
+                50% { transform: translateX(100%); }
+            }
+        `}</style>
+        <path d="M20 4L12 20H52L44 4H20Z" fill="#4338CA"/>
+        <path d="M44 4L52 20H60L52 4H44Z" fill="#312E81"/>
+        <circle cx="32" cy="40" r="20" fill="#FBBF24"/>
+        <circle cx="32" cy="40" r="16" fill="#F59E0B"/>
+        <path d="M32 30L34.6942 35.5279L40.806 36.3167L36.4029 40.5833L37.3884 46.6833L32 43.7279L26.6116 46.6833L27.5971 40.5833L23.194 36.3167L29.3058 35.5279L32 30Z" fill="#FFFFFF"/>
+        <rect x="10" y="38" width="44" height="4" fill="white" fillOpacity="0.3" className="shine-gold" style={{transform: "translateX(-100%)"}}/>
+    </svg>
+);
+
+export const SilverMedalIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="1em" height="1em" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" {...props} className={cn("module-icon-group", props.className)}>
+        <style>{`
+            .shine-silver { animation: shine 3s ease-in-out infinite; animation-delay: 0.5s; }
+            @keyframes shine {
+                0%, 100% { transform: translateX(-100%); }
+                50% { transform: translateX(100%); }
+            }
+        `}</style>
+        <path d="M20 4L12 20H52L44 4H20Z" fill="#4B5563"/>
+        <path d="M44 4L52 20H60L52 4H44Z" fill="#374151"/>
+        <circle cx="32" cy="40" r="20" fill="#D1D5DB"/>
+        <circle cx="32" cy="40" r="16" fill="#9CA3AF"/>
+        <path d="M32 30L34.6942 35.5279L40.806 36.3167L36.4029 40.5833L37.3884 46.6833L32 43.7279L26.6116 46.6833L27.5971 40.5833L23.194 36.3167L29.3058 35.5279L32 30Z" fill="#FFFFFF"/>
+        <rect x="10" y="38" width="44" height="4" fill="white" fillOpacity="0.3" className="shine-silver" style={{transform: "translateX(-100%)"}}/>
+    </svg>
+);
+
+export const TopMedalIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="1em" height="1em" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" {...props} className={cn("module-icon-group", props.className)}>
+        <style>{`
+            .pulse-top { animation: pulse-top-glow 2s ease-in-out infinite; }
+            @keyframes pulse-top-glow {
+                0%, 100% { fill: #A78BFA; }
+                50% { fill: #C4B5FD; }
+            }
+        `}</style>
+        <path d="M20 4L12 20H52L44 4H20Z" fill="#7C3AED"/>
+        <path d="M44 4L52 20H60L52 4H44Z" fill="#6D28D9"/>
+        <circle cx="32" cy="40" r="20" fill="#C4B5FD"/>
+        <circle cx="32" cy="40" r="16" fill="#A78BFA"/>
+        <path d="M32 28L28 36H36L32 28Z" fill="white"/>
+        <path d="M32 38L26.1244 48H37.8756L32 38Z" fill="white"/>
+        <path d="M24 38L32 42L40 38L38 34H26L24 38Z" fill="white"/>
+        <circle cx="32" cy="18" r="4" className="pulse-top" fill="#A78BFA"/>
+    </svg>
+);
