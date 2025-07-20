@@ -2,46 +2,68 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package, AlertTriangle } from 'lucide-react';
-import { getPaymentRequests, getCourses } from '@/lib/api';
+import { RefreshCw, Search, Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package, AlertTriangle, Check, X } from 'lucide-react';
+import { getPaymentRequests, getCourses, updatePaymentRequestStatus } from '@/lib/api';
 import type { PaymentRequest, Course } from '@/lib/types';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
-import { PaymentRequestDialog } from '@/components/admin/PaymentRequestDialog'; // Import the new component
+import { PaymentRequestDialog } from '@/components/admin/PaymentRequestDialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 const ITEMS_PER_PAGE = 25;
 
 // --- MAIN PAGE COMPONENT ---
 export default function PaymentRequestsPage() {
+    const queryClient = useQueryClient();
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [reasonFilter, setReasonFilter] = useState('all');
     const [selectedRequest, setSelectedRequest] = useState<PaymentRequest | null>(null);
+    const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+
 
     const { data: requests, isLoading, isError, error, refetch, isFetching } = useQuery<PaymentRequest[]>({
         queryKey: ['paymentRequests'],
         queryFn: getPaymentRequests,
-        staleTime: 1000 * 60, 
+        staleTime: 1000 * 60,
     });
 
     const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[]>({
         queryKey: ['allCoursesForPayment'],
         queryFn: getCourses,
-        staleTime: Infinity, 
+        staleTime: Infinity,
     });
     
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, statusFilter, reasonFilter]);
+    
+    // Clear selection when filters change
+    useEffect(() => {
+        setSelectedRows(new Set());
+    }, [searchTerm, statusFilter, reasonFilter, currentPage]);
 
     const requestStats = useMemo(() => {
         if (!requests) return { status: { total: 0, pending: 0, approved: 0, rejected: 0 }, reasons: {} };
@@ -58,11 +80,11 @@ export default function PaymentRequestsPage() {
         }, {} as Record<string, number>);
         return { status, reasons };
     }, [requests]);
-    
+
     const filteredRequests = useMemo(() => {
         if (!requests) return [];
         const lowercasedFilter = searchTerm.toLowerCase();
-        
+
         return requests.filter(req => {
             const matchesSearch = lowercasedFilter ? (req.id?.toLowerCase() || '').includes(lowercasedFilter) || (req.unique_number?.toLowerCase() || '').includes(lowercasedFilter) || (req.payment_reson?.toLowerCase() || '').includes(lowercasedFilter) : true;
             const matchesStatus = statusFilter === 'all' || req.payment_status === statusFilter;
@@ -76,6 +98,39 @@ export default function PaymentRequestsPage() {
     const paginatedRequests = useMemo(() => {
         return filteredRequests.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     }, [filteredRequests, currentPage]);
+
+    const bulkUpdateMutation = useMutation({
+        mutationFn: ({ ids, status }: { ids: string[], status: 'Approved' | 'Rejected' }) => {
+            const updatePromises = ids.map(id => {
+                const requestToUpdate = requests?.find(r => r.id === id);
+                if (!requestToUpdate) return Promise.reject(`Request with ID ${id} not found`);
+                return updatePaymentRequestStatus(requestToUpdate, status);
+            });
+            return Promise.allSettled(updatePromises);
+        },
+        onSuccess: (results, { status }) => {
+            const successfulCount = results.filter(r => r.status === 'fulfilled').length;
+            const failedCount = results.length - successfulCount;
+            
+            toast({
+                title: 'Bulk Update Complete',
+                description: `${successfulCount} request(s) were successfully marked as ${status}. ${failedCount > 0 ? `${failedCount} failed.` : ''}`,
+            });
+            refetch();
+            setSelectedRows(new Set());
+        },
+        onError: (error: Error) => {
+            toast({
+                variant: 'destructive',
+                title: 'Bulk Update Failed',
+                description: error.message,
+            });
+        },
+    });
+    
+    const handleBulkUpdate = (status: 'Approved' | 'Rejected') => {
+        bulkUpdateMutation.mutate({ ids: Array.from(selectedRows), status });
+    };
 
     if (isLoading || isLoadingCourses) {
         return (
@@ -102,12 +157,38 @@ export default function PaymentRequestsPage() {
             default: return 'secondary';
         }
     }
-    
+
     const reasonIcons: Record<string, React.ReactNode> = {
         course: <BookOpen className="w-6 h-6 text-primary" />,
         convocation: <GraduationCap className="w-6 h-6 text-primary" />,
         default: <Package className="w-6 h-6 text-primary" />,
     }
+
+    const BulkActions = () => (
+        <div className="flex flex-col sm:flex-row items-center gap-2 border border-primary/20 bg-primary/5 p-2 rounded-lg mb-4">
+            <p className="text-sm font-medium flex-grow">{selectedRows.size} item(s) selected</p>
+            <div className="flex gap-2">
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                         <Button size="sm" variant="outline" disabled={bulkUpdateMutation.isPending}><Check className="mr-2 h-4 w-4"/>Approve Selected</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>Approve {selectedRows.size} Requests?</AlertDialogTitle><AlertDialogDescription>This will mark all selected requests as "Approved". This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleBulkUpdate('Approved')}>Confirm</AlertDialogAction></AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                         <Button size="sm" variant="destructive" disabled={bulkUpdateMutation.isPending}><X className="mr-2 h-4 w-4"/>Reject Selected</Button>
+                    </AlertDialogTrigger>
+                     <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>Reject {selectedRows.size} Requests?</AlertDialogTitle><AlertDialogDescription>This will mark all selected requests as "Rejected". This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleBulkUpdate('Rejected')}>Confirm</AlertDialogAction></AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+        </div>
+    );
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -122,7 +203,7 @@ export default function PaymentRequestsPage() {
                     <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total</CardTitle><Package className="w-4 h-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={requestStats.status.total} /></div></CardContent></Card>
                 </div>
             </section>
-            
+
             <section className="space-y-4">
                  <h2 className="text-xl font-semibold font-headline">Overview by Reason</h2>
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -149,12 +230,47 @@ export default function PaymentRequestsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
+                    {selectedRows.size > 0 && <BulkActions />}
                     <div className="relative w-full overflow-auto border rounded-lg hidden md:block">
                         <Table>
-                            <TableHeader><TableRow><TableHead>Request ID</TableHead><TableHead>Reference #</TableHead><TableHead>Reason</TableHead><TableHead>Amount (LKR)</TableHead><TableHead>Paid Date</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead padding="checkbox" className="w-12">
+                                        <Checkbox
+                                            checked={paginatedRequests.length > 0 && paginatedRequests.every(req => selectedRows.has(req.id))}
+                                            onCheckedChange={(checked) => {
+                                                const newSelectedRows = new Set(selectedRows);
+                                                if (checked) {
+                                                    paginatedRequests.forEach(req => newSelectedRows.add(req.id));
+                                                } else {
+                                                    paginatedRequests.forEach(req => newSelectedRows.delete(req.id));
+                                                }
+                                                setSelectedRows(newSelectedRows);
+                                            }}
+                                            aria-label="Select all"
+                                        />
+                                    </TableHead>
+                                    <TableHead>Request ID</TableHead><TableHead>Reference #</TableHead><TableHead>Reason</TableHead><TableHead>Amount (LKR)</TableHead><TableHead>Paid Date</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
                             <TableBody>
                                 {paginatedRequests.map(req => (
-                                    <TableRow key={req.id}>
+                                    <TableRow key={req.id} data-state={selectedRows.has(req.id) && "selected"}>
+                                        <TableCell padding="checkbox">
+                                            <Checkbox
+                                                checked={selectedRows.has(req.id)}
+                                                onCheckedChange={(checked) => {
+                                                    const newSelectedRows = new Set(selectedRows);
+                                                    if (checked) {
+                                                        newSelectedRows.add(req.id);
+                                                    } else {
+                                                        newSelectedRows.delete(req.id);
+                                                    }
+                                                    setSelectedRows(newSelectedRows);
+                                                }}
+                                                aria-label="Select row"
+                                            />
+                                        </TableCell>
                                         <TableCell className="font-mono text-xs">{req.id}</TableCell>
                                         <TableCell className="font-medium">{req.unique_number}</TableCell>
                                         <TableCell>{req.payment_reson}</TableCell>
@@ -169,10 +285,21 @@ export default function PaymentRequestsPage() {
                     </div>
                     <div className="md:hidden space-y-4">
                         {paginatedRequests.map(req => (
-                            <div key={req.id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
+                            <div key={req.id} className="p-4 border rounded-lg space-y-3 bg-muted/30 relative">
+                                <div className="absolute top-3 right-3">
+                                      <Checkbox
+                                        checked={selectedRows.has(req.id)}
+                                        onCheckedChange={(checked) => {
+                                            const newSelectedRows = new Set(selectedRows);
+                                            if (checked) newSelectedRows.add(req.id); else newSelectedRows.delete(req.id);
+                                            setSelectedRows(newSelectedRows);
+                                        }}
+                                        aria-label="Select row"
+                                    />
+                                </div>
                                 <div className="flex justify-between items-start">
                                     <div><p className="font-bold">{req.unique_number}</p><p className="text-xs text-muted-foreground">ID: {req.id}</p><p className="text-sm text-muted-foreground">{req.payment_reson}</p></div>
-                                    <Badge variant={getStatusVariant(req.payment_status)}>{req.payment_status}</Badge>
+                                    <Badge variant={getStatusVariant(req.payment_status)} className="mr-10">{req.payment_status}</Badge>
                                 </div>
                                 <div className="text-sm space-y-2 pt-2 border-t">
                                      <div className="flex items-center justify-between"><p className="text-muted-foreground font-medium">Amount</p><p className="font-semibold">LKR {parseFloat(req.paid_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</p></div>
@@ -193,7 +320,7 @@ export default function PaymentRequestsPage() {
                 )}
             </Card>
 
-            <PaymentRequestDialog 
+            <PaymentRequestDialog
                 isOpen={!!selectedRequest}
                 onOpenChange={(open) => !open && setSelectedRequest(null)}
                 request={selectedRequest}
