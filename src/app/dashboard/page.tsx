@@ -43,9 +43,10 @@ const dummyCourses = [
 ];
 
 const gradeData = [
-  { title: "Pharma Hunter", value: 85, color: "bg-blue-500" },
-  { title: "Pharma Hunter Pro", value: 62, color: "bg-purple-500" },
-  { title: "Ceylon Pharmacy", value: 91, color: "bg-green-500" },
+  { title: "Test 1", value: 85, color: "bg-blue-500" },
+  { title: "Test 2", value: 62, color: "bg-purple-500" },
+  { title: "Test 3", value: 91, color: "bg-green-500" },
+  { title: "Average Mark", value: 79, color: "bg-orange-500" },
 ];
 
 const moduleData = [
@@ -84,16 +85,16 @@ export default function StudentDashboardPage() {
 
             {/* --- Profile Header --- */}
             <Card className="shadow-lg overflow-hidden">
-                <div className="bg-card p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4">
-                    <Avatar className="w-20 h-20 text-3xl border-4 border-primary/50" data-ai-hint="student avatar">
+                <div className="bg-card p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                    <Avatar className="w-20 h-20 text-3xl border-4 border-primary/50 shrink-0" data-ai-hint="student avatar">
                         <AvatarImage src={user?.avatar} alt={user?.name} />
                         <AvatarFallback>{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <div className="text-center sm:text-left flex-grow">
+                    <div className="flex-grow">
                         <h1 className="text-2xl font-bold font-headline">{user?.name}</h1>
                         <p className="text-muted-foreground">{user?.username}</p>
                     </div>
-                    <div className="text-center sm:text-right">
+                    <div className="sm:text-right shrink-0">
                         <p className="text-xs text-muted-foreground">Default Course</p>
                         <p className="font-semibold">{defaultCourse}</p>
                         <Dialog>
@@ -128,7 +129,7 @@ export default function StudentDashboardPage() {
             <section>
                 <h2 className="text-2xl font-semibold font-headline mb-4">My Grading</h2>
                 <Card className="shadow-lg">
-                    <CardContent className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <CardContent className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
                         {gradeData.map((grade) => (
                             <div key={grade.title}>
                                 <div className="flex justify-between items-baseline mb-1">
