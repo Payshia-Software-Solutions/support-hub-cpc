@@ -26,6 +26,8 @@ import {
     PharmaReaderIcon,
     WordPalletIcon,
     GoldMedalIcon,
+    SilverMedalIcon,
+    TopMedalIcon,
 } from "@/components/icons/module-icons";
 import { 
     ChevronRight,
@@ -35,7 +37,8 @@ import {
     FileText,
     Truck,
     ArrowRight,
-    Target
+    Target,
+    Award
 } from "lucide-react";
 
 // --- Mock Data ---
@@ -46,10 +49,10 @@ const dummyCourses = [
 ];
 
 const gradeData = [
-  { title: "Test 1", value: 85, color: "bg-blue-500" },
+  { title: "Test 1", value: 87, color: "bg-blue-500" },
   { title: "Test 2", value: 62, color: "bg-purple-500" },
   { title: "Test 3", value: 91, color: "bg-green-500" },
-  { title: "Average Mark", value: 79, color: "bg-orange-500" },
+  { title: "Average Mark", value: 80, color: "bg-orange-500" },
 ];
 
 const moduleData = [
@@ -78,30 +81,94 @@ const otherTasks = [
     { title: "Delivery", icon: Truck, href: "/dashboard/delivery"},
 ];
 
-const TARGET_GRADE_FOR_MEDAL = 85;
+const medals = [
+  { name: "Silver", grade: 75, icon: SilverMedalIcon },
+  { name: "Gold", grade: 85, icon: GoldMedalIcon },
+  { name: "Top", grade: 90, icon: TopMedalIcon },
+];
+
+
+// --- Sub Components ---
+const AchievementTracker = () => {
+    const averageGrade = useMemo(() => {
+        const averageItem = gradeData.find(g => g.title === "Average Mark");
+        return averageItem ? averageItem.value : 0;
+    }, []);
+
+    const currentMedal = useMemo(() => {
+        return [...medals].reverse().find(medal => averageGrade >= medal.grade);
+    }, [averageGrade]);
+
+    const nextMedal = useMemo(() => {
+        return medals.find(medal => averageGrade < medal.grade);
+    }, [averageGrade]);
+
+    return (
+        <Card className="shadow-lg hover:shadow-xl transition-all border-2 bg-gradient-to-br from-card to-muted/30">
+            <CardContent className="p-4 sm:p-6">
+                 <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                     <div className="shrink-0">
+                        {currentMedal ? (
+                            <currentMedal.icon className="w-20 h-20" />
+                        ) : (
+                            <div className="w-20 h-20 flex items-center justify-center bg-muted rounded-full">
+                                <Award className="w-10 h-10 text-muted-foreground" />
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-lg font-bold text-card-foreground">
+                            {currentMedal ? `You've earned the ${currentMedal.name} Medal!` : "Your Next Achievement"}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-3">
+                            {nextMedal
+                                ? `Reach an average of ${nextMedal.grade}% to unlock the ${nextMedal.name} Medal.`
+                                : "Congratulations! You've unlocked all medals!"}
+                        </p>
+                    </div>
+                    <div className="w-full sm:w-auto text-center sm:text-right">
+                        <p className="text-xs text-muted-foreground">Current Average</p>
+                        <p className="text-2xl font-bold text-primary">{averageGrade}%</p>
+                    </div>
+                </div>
+
+                <div className="relative w-full h-10 mt-6">
+                    <Progress value={averageGrade} className="h-3 absolute top-1/2 -translate-y-1/2 w-full bg-card" indicatorClassName="bg-blue-progress" />
+                    {medals.map(medal => (
+                        <div key={medal.name} className="absolute top-1/2 -translate-y-1/2" style={{ left: `${medal.grade}%`, transform: 'translateX(-50%)' }}>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                         <div className={cn("h-6 w-6 rounded-full flex items-center justify-center transition-all duration-300",
+                                            averageGrade >= medal.grade ? "bg-primary" : "bg-muted-foreground/30"
+                                         )}>
+                                            <medal.icon className={cn("w-4 h-4 text-white transition-all", averageGrade >= medal.grade ? "opacity-100" : "opacity-50 grayscale")}/>
+                                         </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{medal.name} Medal ({medal.grade}%)</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
+
 
 // --- Main Page Component ---
 export default function StudentDashboardPage() {
     const { user, logout } = useAuth();
     const [defaultCourse, setDefaultCourse] = useState(dummyCourses[0].name);
 
-    const averageGrade = useMemo(() => {
-        const averageItem = gradeData.find(g => g.title === "Average Mark");
-        return averageItem ? averageItem.value : 0;
-    }, []);
-
-    const achievementProgress = useMemo(() => {
-        return Math.min((averageGrade / TARGET_GRADE_FOR_MEDAL) * 100, 100);
-    }, [averageGrade]);
-
-    const hasAchievedMedal = averageGrade >= TARGET_GRADE_FOR_MEDAL;
-
-
     return (
         <div className="space-y-8 p-4 md:p-8 pb-20 bg-background">
 
             {/* --- Profile Header --- */}
-            <Card className="shadow-lg overflow-hidden md:sticky top-0 z-20">
+            <Card className="shadow-lg overflow-hidden">
                 <div className="bg-card p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
                     <Avatar className="w-20 h-20 text-3xl border-4 border-primary/50 shrink-0" data-ai-hint="student avatar">
                         <AvatarImage src={user?.avatar} alt={user?.name} />
@@ -141,33 +208,13 @@ export default function StudentDashboardPage() {
                     </div>
                 </div>
             </Card>
-
-             {/* --- My Achievements --- */}
+            
+            {/* --- My Achievements --- */}
             <section>
                 <h2 className="text-2xl font-semibold font-headline mb-4">My Achievements</h2>
-                 <Card className="shadow-lg hover:shadow-xl transition-all border-2 bg-amber-400/10 border-amber-500/20">
-                    <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-6">
-                        <GoldMedalIcon className={cn("w-24 h-24 shrink-0 transition-all", hasAchievedMedal ? "opacity-100" : "opacity-30 grayscale")}/>
-                        <div className="flex-grow w-full">
-                            <h3 className="text-lg font-bold text-card-foreground">Top Achiever Medal</h3>
-                            <p className="text-sm text-muted-foreground mb-3">
-                                {hasAchievedMedal 
-                                    ? "Congratulations! You've earned the Top Achiever Medal!"
-                                    : `Maintain an average of ${TARGET_GRADE_FOR_MEDAL}% or higher to earn this medal.`
-                                }
-                            </p>
-                            <Progress value={achievementProgress} className="h-3 bg-card" indicatorClassName="bg-blue-progress" />
-                            <div className="flex justify-between items-center text-xs font-medium text-muted-foreground mt-1.5">
-                                <span>Current Avg: <span className="text-card-foreground font-bold">{averageGrade}%</span></span>
-                                <span className="flex items-center gap-1">
-                                    <Target className="w-3 h-3" />
-                                    <span>Target: <span className="text-card-foreground font-bold">{TARGET_GRADE_FOR_MEDAL}%</span></span>
-                                </span>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <AchievementTracker />
             </section>
+            
 
             {/* --- My Grading --- */}
             <section>
