@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -25,6 +26,7 @@ import { toast } from "@/hooks/use-toast";
 
 export default function AdminRecordingsPage() {
   const [recordings, setRecordings] = useState<Recording[]>(dummyRecordings);
+  const router = useRouter();
 
   const handleDelete = (recordingId: string) => {
     // In a real app, this would be a useMutation call to an API
@@ -82,8 +84,10 @@ export default function AdminRecordingsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="icon" disabled>
-                          <Edit className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" asChild>
+                           <Link href={`/admin/recordings/edit/${rec.id}`}>
+                             <Edit className="h-4 w-4" />
+                           </Link>
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
