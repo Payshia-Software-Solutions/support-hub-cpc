@@ -182,9 +182,9 @@ export default function PaymentRequestsPage() {
     const BulkActions = () => (
         <div className="flex flex-col sm:flex-row items-center gap-2 border border-primary/20 bg-primary/5 p-2 rounded-lg mb-4">
              <div className="flex items-center gap-3 w-full sm:w-auto">
-                 <div className="md:hidden flex items-center space-x-2">
+                 <div className="flex items-center space-x-2">
                     <Checkbox
-                        id="select-all-mobile"
+                        id="select-all-current-page"
                         checked={paginatedRequests.length > 0 && paginatedRequests.every(req => selectedRows.has(req.id))}
                         onCheckedChange={(checked) => {
                             const newSelectedRows = new Set(selectedRows);
@@ -197,7 +197,7 @@ export default function PaymentRequestsPage() {
                         }}
                         aria-label="Select all on page"
                     />
-                    <Label htmlFor="select-all-mobile" className="text-sm font-medium">Select All</Label>
+                    <Label htmlFor="select-all-current-page" className="text-sm font-medium">Select All</Label>
                 </div>
                 <p className="text-sm font-medium sm:flex-grow">{selectedRows.size} item(s) selected</p>
             </div>
@@ -350,17 +350,16 @@ export default function PaymentRequestsPage() {
                         <div className="text-sm text-muted-foreground">
                             {selectedRows.size} of {filteredRequests.length} row(s) selected.
                         </div>
-                        <div className="flex items-center justify-center space-x-2">
-                            <div className="hidden sm:flex items-center space-x-2">
-                                <Label htmlFor="rows-per-page" className="whitespace-nowrap text-sm font-normal">Rows per page</Label>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <div className="flex items-center space-x-2">
+                                <Label htmlFor="rows-per-page" className="whitespace-nowrap text-sm font-normal">Rows</Label>
                                 <Select
                                     value={`${itemsPerPage}`}
                                     onValueChange={(value) => {
                                         setItemsPerPage(Number(value));
-                                        setCurrentPage(1);
                                     }}
                                 >
-                                    <SelectTrigger className="h-8 w-[70px]">
+                                    <SelectTrigger id="rows-per-page" className="h-8 w-[70px]">
                                         <SelectValue placeholder={itemsPerPage} />
                                     </SelectTrigger>
                                     <SelectContent>
