@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Ticket } from "@/lib/types";
-import { ArrowRight, MessageSquare, Ticket as TicketIcon, Megaphone } from "lucide-react";
+import { ArrowRight, MessageSquare, Ticket as TicketIcon, Megaphone, Video } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -80,6 +80,7 @@ export default function StudentDashboardPage() {
         { title: "Open Tickets", value: openTickets.length, icon: <TicketIcon className="w-5 h-5 text-muted-foreground" />, description: "View your active tickets", href: "/dashboard/tickets" },
         { title: "Unread Messages", value: unreadMessagesCount, icon: <MessageSquare className="w-5 h-5 text-muted-foreground" />, description: "Go to your support chat", href: "/dashboard/chat" },
         { title: "New Announcements", value: unreadAnnouncementsCount, icon: <Megaphone className="w-5 h-5 text-muted-foreground" />, description: "See the latest updates", href: "/dashboard/announcements" },
+        { title: "Course Recordings", value: "View", icon: <Video className="w-5 h-5 text-muted-foreground" />, description: "Access your class recordings", href: "/dashboard/recordings" },
     ];
 
     return (
@@ -89,7 +90,7 @@ export default function StudentDashboardPage() {
                 <p className="text-muted-foreground">Here's a quick overview of your support activity.</p>
             </header>
 
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {dashboardStats.map((stat, index) => (
                     <StatCard 
                         key={index}
@@ -98,7 +99,7 @@ export default function StudentDashboardPage() {
                         icon={stat.icon}
                         description={stat.description}
                         href={stat.href}
-                        isLoading={isLoading}
+                        isLoading={isLoading && stat.title !== 'Course Recordings'}
                     />
                 ))}
             </section>

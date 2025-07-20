@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Ticket, PlusCircle, Megaphone, LogOut, Shield, LayoutDashboard } from "lucide-react";
+import { MessageSquare, Ticket, PlusCircle, Megaphone, LogOut, Shield, LayoutDashboard, Video } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
@@ -25,6 +25,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
+  { href: "/dashboard/recordings", label: "Recordings", icon: Video },
   { href: "/dashboard/create-ticket", label: "Create Ticket", icon: PlusCircle },
   { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
 ];
