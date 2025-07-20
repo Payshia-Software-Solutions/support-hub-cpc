@@ -35,13 +35,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               "md:pb-6" // Ensure desktop has the consistent bottom padding
             )}
           >
-            <SidebarInset className="flex-1">
+            <SidebarInset className="flex-1 p-4">
               {children}
             </SidebarInset>
           </main>
           {!hideFooter && (
               <footer className="flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground p-2 gap-2 sm:gap-4 shrink-0 bg-background border-t">
-                <p>&copy; {new Date().getFullYear()} Student Support Hub. All rights reserved.</p>
+                <p>&copy; 2025 Student Support Hub. All rights reserved.</p>
                 <p>
                   Powered by <a href="https://payshia.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">Payshia Software Solutions</a>
                 </p>
