@@ -3,7 +3,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Ticket, PlusCircle, Megaphone, Shield, LayoutDashboard } from "lucide-react";
+import { 
+  MessageSquare, 
+  Ticket, 
+  LayoutDashboard, 
+  Megaphone, 
+  Shield,
+  FileText,
+  ClipboardCheck,
+  Award,
+  CreditCard,
+  Video
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useAnnouncements } from "@/contexts/AnnouncementsContext";
@@ -13,10 +24,10 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const baseNavItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/dashboard/recordings", label: "Recordings", icon: Video },
+  { href: "/dashboard/assignments", label: "Assignments", icon: FileText },
   { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
-  { href: "/dashboard/announcements", label: "Alerts", icon: Megaphone },
-  { href: "/dashboard/create-ticket", label: "New", icon: PlusCircle },
 ];
 
 const adminNavItem = { href: "/admin/dashboard", label: "Admin", icon: Shield };
@@ -35,7 +46,6 @@ export function BottomDock() {
   
   const navItems = user?.role === 'staff' ? [...baseNavItems, adminNavItem] : baseNavItems;
 
-
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-[0_-2px_10px_-3px_rgba(0,0,0,0.1)]">
       <div className="flex justify-around items-stretch h-16">
@@ -43,14 +53,9 @@ export function BottomDock() {
           let currentItemIsActive = false;
           if (item.href === "/dashboard") {
             currentItemIsActive = pathname === item.href;
-          } else if (item.href === "/dashboard/chat") {
-            // Make chat active only on its page, not on the main dashboard
-            currentItemIsActive = pathname === item.href;
           } else {
-             // For tickets and announcements, active if path starts with their href
             currentItemIsActive = pathname.startsWith(item.href);
           }
-
 
           return (
             <Link
