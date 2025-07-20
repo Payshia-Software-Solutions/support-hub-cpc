@@ -4,8 +4,25 @@
 import { useState, useEffect, Dispatch, SetStateAction, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getStudentEnrollments, getCourses, addStudentEnrollment, removeStudentEnrollment, createStudentPayment, updatePaymentRequestStatus, checkDuplicateSlips } from '@/lib/api';
-import type { PaymentRequest, StudentEnrollmentInfo, Course, CreatePaymentPayload } from '@/lib/types';
+import { 
+    getStudentEnrollments, 
+    getCourses, 
+    addStudentEnrollment, 
+    removeStudentEnrollment, 
+    createStudentPayment, 
+    updatePaymentRequestStatus, 
+    checkDuplicateSlips,
+    getStudentDetailsByUsername,
+    getTempUserDetailsById,
+} from '@/lib/api';
+import type { 
+    PaymentRequest, 
+    StudentEnrollmentInfo, 
+    Course, 
+    CreatePaymentPayload,
+    UserFullDetails,
+    TempUser
+} from '@/lib/types';
 import { format } from 'date-fns';
 import Image from 'next/image';
 
@@ -22,8 +39,10 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ExternalLink, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText,
   Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package,
-  RotateCw, FlipHorizontal, FlipVertical, ArrowLeft, Briefcase, Trash2, PlusCircle
+  RotateCw, FlipHorizontal, FlipVertical, ArrowLeft, Briefcase, Trash2, PlusCircle,
+  Mail, Phone, User as UserIcon
 } from 'lucide-react';
+import { Skeleton } from '../ui/skeleton';
 
 
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk';
@@ -237,6 +256,73 @@ function ManageEnrollmentsDialog({ isOpen, onOpenChange, studentNumber, allCours
     );
 };
 
+const UserDetailsSection = ({ request }: { request: PaymentRequest }) => {
+    const { data: userData, isLoading, isError, error } = useQuery({
+        queryKey: ['paymentRequestUser', request.id],
+        queryFn: () => {
+            if (request.number_type === 'student_number') {
+                return getStudentDetailsByUsername(request.unique_number);
+            } else if (request.number_type === 'ref_number') {
+                return getTempUserDetailsById(request.unique_number);
+            }
+            return Promise.resolve(null);
+        },
+        enabled: !!request,
+        retry: false,
+    });
+
+    if (isLoading) {
+        return <div className="p-4 border rounded-lg space-y-2"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-8 w-full mt-2" /></div>;
+    }
+    if (isError) {
+        return <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error Fetching User</AlertTitle><AlertDescription>{error.message}</AlertDescription></Alert>;
+    }
+    if (!userData) {
+        return <Alert><AlertDescription>No user details available for this request type.</AlertDescription></Alert>;
+    }
+
+    let userInfo: { name: string, email: string, phone1?: string, phone2?: string } | null = null;
+    
+    if ('full_name' in userData) { // Type guard for UserFullDetails
+        userInfo = { name: userData.full_name, email: userData.e_mail, phone1: userData.telephone_1, phone2: userData.telephone_2 };
+    } else if ('first_name' in userData) { // Type guard for TempUser
+        userInfo = { name: `${userData.first_name} ${userData.last_name}`, email: userData.email_address, phone1: userData.phone_number, phone2: userData.whatsapp_number };
+    }
+    
+    if (!userInfo) return null;
+
+    return (
+        <div className="space-y-3 rounded-md border p-4 bg-muted/50">
+            <h3 className="font-semibold text-base">User Information</h3>
+            <div className="text-sm space-y-2 text-muted-foreground">
+                <p className="flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary shrink-0" /><strong className="text-card-foreground">{userInfo.name}</strong></p>
+                <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{userInfo.email}</span></p>
+                {userInfo.phone1 && (
+                     <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-primary shrink-0" />
+                        <span className="font-medium text-card-foreground">{userInfo.phone1}</span>
+                        <div className="ml-auto flex gap-1">
+                            <a href={`https://wa.me/${userInfo.phone1.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
+                            <a href={`tel:${userInfo.phone1}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
+                        </div>
+                    </div>
+                )}
+                 {userInfo.phone2 && userInfo.phone1 !== userInfo.phone2 && (
+                    <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-primary shrink-0" />
+                        <span className="font-medium text-card-foreground">{userInfo.phone2}</span>
+                        <div className="ml-auto flex gap-1">
+                            <a href={`https://wa.me/${userInfo.phone2.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
+                            <a href={`tel:${userInfo.phone2}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+
 function CoursePaymentForm({ request, paymentAmount, setPaymentAmount, discountAmount, setDiscountAmount, paymentMethod, setPaymentMethod, selectedCourseCode, setSelectedCourseCode, setIsEnrollmentDialogOpen, enrollments, isLoadingEnrollments, courses }: {
     request: PaymentRequest;
     paymentAmount: string; setPaymentAmount: Dispatch<SetStateAction<string>>;
@@ -324,16 +410,8 @@ function DetailsSection({ request, selectedCategory, setSelectedCategory, paymen
     
     return (
         <div className="space-y-4">
-            <div className="space-y-3 rounded-md border p-4 bg-muted/50">
-                <h3 className="font-semibold text-base">Submitted Information</h3>
-                <div className="text-sm space-y-2 text-muted-foreground">
-                    <p><strong className="text-card-foreground">Request ID:</strong> {request.id}</p>
-                    <p><strong className="text-card-foreground">Student / Ref #:</strong> {request.unique_number}</p>
-                    <p><strong className="text-card-foreground">Reason:</strong> {request.payment_reson}</p>
-                    <p><strong className="text-card-foreground">Amount:</strong> LKR {parseFloat(request.paid_amount).toLocaleString()}</p>
-                    <p><strong className="text-card-foreground">Paid Date:</strong> {format(new Date(request.paid_date), 'PPP')}</p>
-                </div>
-            </div>
+            <UserDetailsSection request={request} />
+
             <div className="space-y-4 pt-4 border-t">
                 <div className="flex items-center gap-2">
                     {selectedCategory && <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)} className="pl-1"><ArrowLeft className="h-4 w-4 mr-1"/>Back</Button>}
@@ -376,7 +454,17 @@ function SlipSection({ request }: { request: PaymentRequest }) {
 
     return (
          <div className="space-y-2">
-            <div className="flex justify-between items-center flex-wrap gap-2">
+            <div className="space-y-3 rounded-md border p-4 bg-muted/50">
+                <h3 className="font-semibold text-base">Submitted Information</h3>
+                <div className="text-sm space-y-2 text-muted-foreground">
+                    <p><strong className="text-card-foreground">Request ID:</strong> {request.id}</p>
+                    <p><strong className="text-card-foreground">Student / Ref #:</strong> {request.unique_number}</p>
+                    <p><strong className="text-card-foreground">Reason:</strong> {request.payment_reson}</p>
+                    <p><strong className="text-card-foreground">Amount:</strong> LKR {parseFloat(request.paid_amount).toLocaleString()}</p>
+                    <p><strong className="text-card-foreground">Paid Date:</strong> {format(new Date(request.paid_date), 'PPP')}</p>
+                </div>
+            </div>
+            <div className="flex justify-between items-center flex-wrap gap-2 pt-4">
                 <h3 className="font-semibold text-lg">Payment Slip</h3>
                 {isImage && <div className="flex items-center gap-1"><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsZoomed(!isZoomed)}><span className="sr-only">Zoom</span>{isZoomed ? <ZoomOut /> : <ZoomIn />}</Button><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRotation(p => (p + 90) % 360)}><span className="sr-only">Rotate</span><RotateCw /></Button></div>}
             </div>
@@ -410,7 +498,7 @@ export function PaymentRequestDialog({ isOpen, onOpenChange, request, courses, o
     const { data: enrollments, isLoading: isLoadingEnrollments, refetch: refetchEnrollments } = useQuery({
         queryKey: ['studentEnrollments', request?.unique_number],
         queryFn: () => getStudentEnrollments(request!.unique_number),
-        enabled: !!request,
+        enabled: !!request && request.number_type === 'student_number',
     });
     
     useEffect(() => {

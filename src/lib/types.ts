@@ -143,6 +143,23 @@ export interface UserFullDetails {
   name_on_certificate: string;
 }
 
+export interface TempUser {
+  id: string;
+  email_address: string;
+  civil_status: string;
+  first_name: string;
+  last_name: string;
+  nic_number: string;
+  phone_number: string;
+  whatsapp_number: string;
+  address_l1: string;
+  address_l2: string;
+  city: string;
+  district: string;
+  postal_code: string;
+}
+
+
 export interface UpdateCertificateNamePayload {
   student_number: string;
   name_on_certificate: string;

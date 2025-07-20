@@ -1,6 +1,6 @@
 
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -664,6 +664,24 @@ export const updatePaymentRequestStatus = async (request: PaymentRequest, status
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to update payment request status.' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
+export const getStudentDetailsByUsername = async (username: string): Promise<UserFullDetails> => {
+    const response = await fetch(`${QA_API_BASE_URL}/userFullDetails/username/${username}`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to fetch student details for ${username}` }));
+        throw new Error(errorData.message || 'Failed to fetch student details');
+    }
+    return response.json();
+};
+
+export const getTempUserDetailsById = async (id: string): Promise<TempUser> => {
+    const response = await fetch(`${QA_API_BASE_URL}/temp-users/${id}`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to fetch temp user details for ID ${id}` }));
+        throw new Error(errorData.message || 'Failed to fetch temp user details');
     }
     return response.json();
 };
