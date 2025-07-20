@@ -185,13 +185,11 @@ const ModuleCard = ({ title, icon, href, progress }: { title: string, icon: Reac
           {icon}
         </div>
         <h3 className="text-base font-semibold text-card-foreground">{title}</h3>
-        {progress !== null ? (
+        {progress !== null && (
           <div className="w-full px-2">
             <Progress value={progress} className="h-2" />
             <p className="text-xs font-medium text-primary mt-1.5">{progress}%</p>
           </div>
-        ) : (
-           <div className="h-[22px]" /> // Placeholder for consistent height
         )}
       </CardContent>
     </Card>
