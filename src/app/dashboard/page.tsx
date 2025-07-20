@@ -59,13 +59,13 @@ const moduleData = [
 ];
 
 const gameData = [
-  { title: "WinPharma", icon: WinPharmaIcon, score: 1250, href: "#" },
-  { title: "D-Pad", icon: DPadIcon, score: 850, href: "#" },
-  { title: "Ceylon Pharmacy", icon: CeylonPharmacyIcon, score: 2400, href: "#" },
-  { title: "Pharma Hunter", icon: PharmaHunterIcon, score: 3100, href: "#" },
-  { title: "Hunter Pro", icon: HunterProIcon, score: 1800, href: "#" },
-  { title: "Pharma Reader", icon: PharmaReaderIcon, score: 950, href: "#" },
-  { title: "Word Pallet", icon: WordPalletIcon, score: 1500, href: "#" },
+  { title: "WinPharma", icon: WinPharmaIcon, score: 1250, href: "/dashboard/winpharma" },
+  { title: "D-Pad", icon: DPadIcon, score: 850, href: "/dashboard/d-pad" },
+  { title: "Ceylon Pharmacy", icon: CeylonPharmacyIcon, score: 2400, href: "/dashboard/ceylon-pharmacy" },
+  { title: "Pharma Hunter", icon: PharmaHunterIcon, score: 3100, href: "/dashboard/pharma-hunter" },
+  { title: "Hunter Pro", icon: HunterProIcon, score: 1800, href: "/dashboard/hunter-pro" },
+  { title: "Pharma Reader", icon: PharmaReaderIcon, score: 950, href: "/dashboard/pharma-reader" },
+  { title: "Word Pallet", icon: WordPalletIcon, score: 1500, href: "/dashboard/word-pallet" },
 ];
 
 const otherTasks = [
