@@ -33,16 +33,17 @@ const gradingData = [
 
 
 const GradeCard = ({ title, score, color }: { title: string, score: number, color: string }) => (
-  <Card className="shadow-lg p-4">
-    <CardContent className="p-0 flex flex-col items-center justify-center text-center gap-2">
-      <h3 className="text-muted-foreground font-medium">{title}</h3>
-      <p className="text-3xl font-bold">{score.toFixed(2)}%</p>
-      <div className="w-full px-2">
-        <Progress value={score} className="h-2 [&>div]:rounded-full" indicatorClassName={color} />
-        <p className="text-xs font-medium text-muted-foreground mt-1.5">{score.toFixed(2)}%</p>
-      </div>
-    </CardContent>
-  </Card>
+    <Card className="shadow-lg p-4">
+        <CardContent className="p-0 flex flex-col items-center justify-center text-center gap-2 h-full">
+            <div className="flex-grow flex flex-col items-center justify-center gap-1">
+                <p className="text-4xl font-bold text-card-foreground">{score.toFixed(2)}%</p>
+                <h3 className="text-sm text-muted-foreground font-medium">{title}</h3>
+            </div>
+            <div className="w-full pt-2">
+                <Progress value={score} className="h-2 [&>div]:rounded-full" indicatorClassName={color} />
+            </div>
+        </CardContent>
+    </Card>
 );
 
 const modules = [
