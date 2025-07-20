@@ -16,37 +16,37 @@ import Link from "next/link";
 const modules = [
   {
     title: "Recordings",
-    icon: <RecordingsIcon className="h-12 w-12" />,
+    icon: <RecordingsIcon className="h-10 w-10" />,
     href: "/dashboard/recordings",
     progress: null,
   },
   {
     title: "Assignments",
-    icon: <AssignmentsIcon className="h-12 w-12" />,
+    icon: <AssignmentsIcon className="h-10 w-10" />,
     href: "/dashboard/assignments",
     progress: null,
   },
   {
     title: "Quiz",
-    icon: <QuizIcon className="h-12 w-12" />,
+    icon: <QuizIcon className="h-10 w-10" />,
     href: "/dashboard/quiz",
     progress: 79,
   },
   {
     title: "Exam",
-    icon: <ExamIcon className="h-12 w-12" />,
+    icon: <ExamIcon className="h-10 w-10" />,
     href: "/dashboard/exam",
     progress: null,
   },
   {
     title: "Payments",
-    icon: <PaymentsIcon className="h-12 w-12" />,
+    icon: <PaymentsIcon className="h-10 w-10" />,
     href: "/dashboard/payments",
     progress: null,
   },
   {
     title: "Tickets",
-    icon: <TicketsIcon className="h-12 w-12" />,
+    icon: <TicketsIcon className="h-10 w-10" />,
     href: "/dashboard/tickets",
     progress: null,
   },
@@ -54,12 +54,12 @@ const modules = [
 
 const ModuleCard = ({ title, icon, href, progress }: { title: string, icon: React.ReactNode, href: string, progress: number | null }) => (
   <Link href={href}>
-    <Card className="shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center justify-center text-center p-6 h-full aspect-square sm:aspect-auto">
-      <CardContent className="p-0 flex flex-col items-center justify-center gap-4 flex-grow">
+    <Card className="shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center justify-center text-center p-4 h-full aspect-square sm:aspect-auto">
+      <CardContent className="p-0 flex flex-col items-center justify-center gap-3 flex-grow">
         <div className="flex-shrink-0">
           {icon}
         </div>
-        <h3 className="text-lg font-semibold text-card-foreground">{title}</h3>
+        <h3 className="text-base font-semibold text-card-foreground">{title}</h3>
         {progress !== null ? (
           <div className="w-full px-2">
             <Progress value={progress} className="h-2" />
