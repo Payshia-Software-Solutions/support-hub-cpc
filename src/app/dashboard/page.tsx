@@ -278,7 +278,7 @@ export default function StudentDashboardPage() {
 
     return (
         <div className="p-4 md:p-6 space-y-8 pb-20">
-             <section className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm -mx-4 -mt-4 md:-mx-6 md:-mt-6 px-4 py-4 md:px-6 md:py-4 border-b">
+             <section className="md:sticky top-0 z-10 bg-background/95 backdrop-blur-sm -mx-4 -mt-4 md:-mx-6 md:-mt-6 px-4 py-4 md:px-6 md:py-4 border-b">
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                     {user && (
                         <Avatar className="w-16 h-16 text-2xl border-2 border-primary" data-ai-hint="student avatar">
