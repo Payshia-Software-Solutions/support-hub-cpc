@@ -1,5 +1,6 @@
 
 import { SVGProps } from 'react';
+import { cn } from "@/lib/utils";
 
 // To add animations, we can add CSS classes to SVG elements and define the animations in a style tag
 // or in globals.css. Here, we'll add some inline styles and classes for hover effects.
@@ -97,4 +98,67 @@ export const TicketsIcon = (props: SVGProps<SVGSVGElement>) => (
     <path fill="none" stroke="#25D366" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18.5a2.5 2.5 0 1 0 0-5a2.5 2.5 0 0 0 0 5Zm7.5 0a2.5 2.5 0 1 0 0-5a2.5 2.5 0 0 0 0 5ZM4.5 18.5a2.5 2.5 0 1 0 0-5a2.5 2.5 0 0 0 0 5Z" />
     <path className="slide-line" fill="#25D366" d="M17.5 11.5c.333.667.5 1.417.5 2.25h-5c0-.833.167-1.583.5-2.25a3.5 3.5 0 0 1 4 0ZM7 11.5a3.5 3.5 0 0 1 4 0c.333.667.5 1.417.5 2.25H6.5c0-.833.167-1.583.5-2.25Z" opacity={0.3} />
   </svg>
+);
+
+
+// Game Icons
+export const WinPharmaIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="1em" height="1em" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <rect x="13" y="4" width="26" height="8" rx="2" fill="#FDBA74"/>
+        <rect x="10" y="12" width="32" height="36" rx="4" fill="#60A5FA"/>
+        <rect x="16" y="24" width="20" height="4" rx="1" fill="#EFF6FF"/>
+        <path d="M22 34C22 31.7909 23.7909 30 26 30C28.2091 30 30 31.7909 30 34V48H22V34Z" fill="#3B82F6"/>
+        <rect x="16" y="18" width="20" height="4" rx="2" fill="#93C5FD"/>
+    </svg>
+);
+
+export const DPadIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="1em" height="1em" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path d="M17.8571 18.2857C17.8571 11.913 22.8427 6.85714 29.1429 6.85714H37.8571C44.1573 6.85714 49.1429 11.913 49.1429 18.2857C49.1429 24.6584 44.1573 29.7143 37.8571 29.7143H22.2857L17.8571 18.2857Z" fill="#818CF8"/>
+        <path d="M34.1429 18.2857C34.1429 24.6584 29.1573 29.7143 22.8571 29.7143H14.1429C7.84267 29.7143 2.85714 24.6584 2.85714 18.2857C2.85714 11.913 7.84267 6.85714 14.1429 6.85714H29.7143L34.1429 18.2857Z" fill="#F472B6"/>
+        <path d="M26 45.1429C29.8279 45.1429 32.9624 43.1408 34.7143 40.2857H17.2857C19.0376 43.1408 22.1721 45.1429 26 45.1429Z" fill="#FDBA74"/>
+        <circle cx="20.5714" cy="34.2857" r="2.14286" fill="#FDBA74"/>
+        <circle cx="26" cy="35.7143" r="2.14286" fill="#FDBA74"/>
+        <circle cx="31.4286" cy="34.2857" r="2.14286" fill="#FDBA74"/>
+    </svg>
+);
+
+export const CeylonPharmacyIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="1em" height="1em" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <rect x="4" y="24" width="44" height="24" rx="2" fill="#93C5FD"/>
+        <path d="M4 28H48V24C48 22.8954 47.1046 22 46 22H6C4.89543 22 4 22.8954 4 24V28Z" fill="#3B82F6"/>
+        <rect x="12" y="32" width="8" height="16" rx="1" fill="#EFF6FF"/>
+        <rect x="32" y="32" width="8" height="16" rx="1" fill="#EFF6FF"/>
+        <rect x="4" y="10" width="44" height="12" rx="2" fill="#3B82F6"/>
+        <path d="M22 4H30V10H22V4Z" fill="#93C5FD"/>
+        <path d="M26 2V8" stroke="#EF4444" strokeWidth="3" strokeLinecap="round"/>
+        <path d="M23 5H29" stroke="#EF4444" strokeWidth="3" strokeLinecap="round"/>
+    </svg>
+);
+
+export const PharmaHunterIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="1em" height="1em" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path d="M26 48V20M26 20C21.5817 20 18 16.4183 18 12C18 7.58172 21.5817 4 26 4C30.4183 4 34 7.58172 34 12C34 16.4183 30.4183 20 26 20Z" stroke="#34D399" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M34 40C34 44.4183 30.4183 48 26 48C21.5817 48 18 44.4183 18 40C18 35.5817 21.5817 32 26 32" stroke="#34D399" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M18 24C18 19.5817 21.5817 16 26 16C30.4183 16 34 19.5817 34 24C34 28.4183 30.4183 32 26 32" stroke="#34D399" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
+export const HunterProIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="1em" height="1em" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path d="M26 48V32" stroke="#2DD4BF" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M38 16L34.2792 19.7208C32.0317 21.9683 28.4231 21.9683 26.1756 19.7208L25.8244 19.3696C23.5769 17.1221 19.9683 17.1221 17.7208 19.3696L14 23" stroke="#2DD4BF" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M44 23H34.4142C33.6332 23 33.0586 22.3668 33.0586 21.5858V21.5858C33.0586 20.3824 32.1216 19.4454 30.9181 19.4454H21.0819C19.8784 19.4454 18.9414 20.3824 18.9414 21.5858V21.5858C18.9414 22.3668 18.3668 23 17.5858 23H8" stroke="#2DD4BF" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M34 10V4H18V10" stroke="#2DD4BF" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M26 32C33.732 32 40 25.732 40 18C40 10.268 33.732 4 26 4C18.268 4 12 10.268 12 18C12 25.732 18.268 32 26 32Z" stroke="#2DD4BF" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
+export const PharmaReaderIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="1em" height="1em" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path d="M8 26C8 26 13.5 16 26 16C38.5 16 44 26 44 26C44 26 38.5 36 26 36C13.5 36 8 26 8 26Z" stroke="#A78BFA" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M26 30C28.2091 30 30 28.2091 30 26C30 23.7909 28.2091 22 26 22C23.7909 22 22 23.7909 22 26C22 28.2091 23.7909 30 26 30Z" stroke="#A78BFA" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M19 8L15 4" stroke="#A78BFA" strokeWidth="4" strokeLinecap="round"/>
+        <path d="M33 8L37 4" stroke="#A78BFA" strokeWidth="4" strokeLinecap="round"/>
+    </svg>
 );
