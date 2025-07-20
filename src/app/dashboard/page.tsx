@@ -62,7 +62,7 @@ const modules = [
     title: "Quiz",
     icon: <QuizIcon className="h-10 w-10" />,
     href: "/dashboard/quiz",
-    progress: 79,
+    progress: null,
   },
   {
     title: "Exam",
