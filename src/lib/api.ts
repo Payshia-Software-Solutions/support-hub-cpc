@@ -655,10 +655,10 @@ export const createStudentPayment = async (payload: CreatePaymentPayload): Promi
 };
 
 export const updatePaymentRequestStatus = async (request: PaymentRequest, status: 'Approved' | 'Rejected'): Promise<any> => {
-    const response = await fetch(`${PAYMENT_API_BASE_URL}/payment-portal-requests/${request.id}`, {
-        method: 'PUT',
+    const response = await fetch(`${PAYMENT_API_BASE_URL}/payment-portal-requests/update-status/${request.id}`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...request, payment_status: status })
+        body: JSON.stringify({ payment_status: status })
     });
 
     if (!response.ok) {
