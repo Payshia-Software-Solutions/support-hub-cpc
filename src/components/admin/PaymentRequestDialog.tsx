@@ -14,6 +14,7 @@ import {
     checkDuplicateSlips,
     getStudentDetailsByUsername,
     getTempUserDetailsById,
+    getStudentBalance,
 } from '@/lib/api';
 import type { 
     PaymentRequest, 
@@ -21,7 +22,8 @@ import type {
     Course, 
     CreatePaymentPayload,
     UserFullDetails,
-    TempUser
+    TempUser,
+    StudentBalanceData
 } from '@/lib/types';
 import { format } from 'date-fns';
 import Image from 'next/image';
@@ -35,12 +37,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+
 import {
   ExternalLink, Check, X, Loader2, ZoomIn, ZoomOut, AlertCircle, FileText,
   Hourglass, CheckCircle, XCircle, BookOpen, GraduationCap, Package,
   RotateCw, FlipHorizontal, FlipVertical, ArrowLeft, Briefcase, Trash2, PlusCircle,
-  Mail, Phone, User as UserIcon
+  Mail, Phone, User as UserIcon, Wallet
 } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 
@@ -256,37 +261,133 @@ function ManageEnrollmentsDialog({ isOpen, onOpenChange, studentNumber, allCours
     );
 };
 
-const RegisteredStudentInfo = ({ user }: { user: UserFullDetails }) => (
-    <div className="text-sm space-y-2 text-muted-foreground">
-        <p className="flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary shrink-0" /><strong className="text-card-foreground">{user.full_name}</strong></p>
-        <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{user.e_mail}</span></p>
-        {user.telephone_1 && (
-            <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-primary shrink-0" />
-                <span className="font-medium text-card-foreground">{user.telephone_1} (Telephone 1)</span>
-                <div className="ml-auto flex gap-1">
-                    <a href={`https://wa.me/${user.telephone_1.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
-                    <a href={`tel:${user.telephone_1}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
+const StudentPaymentInfo = ({ studentNumber }: { studentNumber: string }) => {
+    const { data: balanceData, isLoading, isError, error } = useQuery<StudentBalanceData>({
+        queryKey: ['studentBalance', studentNumber],
+        queryFn: () => getStudentBalance(studentNumber),
+        enabled: !!studentNumber,
+    });
+    
+    if (isLoading) {
+        return (
+            <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
                 </div>
+                <Skeleton className="h-40 w-full" />
             </div>
-        )}
-        {user.telephone_2 && user.telephone_1 !== user.telephone_2 && (
-             <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-primary shrink-0" />
-                <span className="font-medium text-card-foreground">{user.telephone_2} (Telephone 2)</span>
-                <div className="ml-auto flex gap-1">
-                    <a href={`https://wa.me/${user.telephone_2.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
-                    <a href={`tel:${user.telephone_2}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
+        );
+    }
+    
+    if (isError) {
+        return <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error.message}</AlertDescription></Alert>
+    }
+
+    if (!balanceData) {
+        return <Alert><AlertDescription>No payment data found for this student.</AlertDescription></Alert>
+    }
+
+    const paymentRecordsArray = Object.values(balanceData.paymentRecords || {}).sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    return (
+        <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
+                        <Wallet className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">LKR {balanceData.totalPaymentAmount.toLocaleString()}</div>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Outstanding Balance</CardTitle>
+                         <Wallet className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-destructive">LKR {balanceData.studentBalance.toLocaleString()}</div>
+                    </CardContent>
+                </Card>
+            </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">Payment History</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="relative w-full overflow-auto max-h-64">
+                         <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Receipt #</TableHead>
+                                    <TableHead>Amount</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Type</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {paymentRecordsArray.map(rec => (
+                                    <TableRow key={rec.id}>
+                                        <TableCell className="font-mono text-xs">{rec.receipt_number}</TableCell>
+                                        <TableCell className="font-medium">LKR {parseFloat(rec.paid_amount).toLocaleString()}</TableCell>
+                                        <TableCell>{format(new Date(rec.paid_date), 'yyyy-MM-dd')}</TableCell>
+                                        <TableCell>{rec.payment_type}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                     {paymentRecordsArray.length === 0 && <p className="text-muted-foreground text-center text-sm py-4">No payment records found.</p>}
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
+const RegisteredStudentInfo = ({ user, studentNumber }: { user: UserFullDetails, studentNumber: string }) => (
+    <Tabs defaultValue="details" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="details">Student Details</TabsTrigger>
+            <TabsTrigger value="payment">Payment History</TabsTrigger>
+        </TabsList>
+        <TabsContent value="details" className="pt-4 space-y-2 text-muted-foreground text-sm">
+            <p className="flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary shrink-0" /><strong className="text-card-foreground">{user.full_name}</strong></p>
+            <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{user.e_mail}</span></p>
+            {user.telephone_1 && (
+                <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-primary shrink-0" />
+                    <span className="font-medium text-card-foreground">{user.telephone_1} (Tel 1)</span>
+                    <div className="ml-auto flex gap-1">
+                        <a href={`https://wa.me/${user.telephone_1.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
+                        <a href={`tel:${user.telephone_1}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
+                    </div>
                 </div>
-            </div>
-        )}
-    </div>
+            )}
+            {user.telephone_2 && user.telephone_1 !== user.telephone_2 && (
+                 <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-primary shrink-0" />
+                    <span className="font-medium text-card-foreground">{user.telephone_2} (Tel 2)</span>
+                    <div className="ml-auto flex gap-1">
+                        <a href={`https://wa.me/${user.telephone_2.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
+                        <a href={`tel:${user.telephone_2}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
+                    </div>
+                </div>
+            )}
+        </TabsContent>
+        <TabsContent value="payment">
+            <StudentPaymentInfo studentNumber={studentNumber} />
+        </TabsContent>
+    </Tabs>
 );
 
+
 const TempUserInfo = ({ user }: { user: TempUser }) => (
-     <div className="text-sm space-y-2 text-muted-foreground">
+    <div className="space-y-2 text-muted-foreground text-sm">
         <p className="flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary shrink-0" /><strong className="text-card-foreground">{user.first_name} {user.last_name}</strong></p>
         <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{user.email_address}</span></p>
+        
         {user.phone_number && (
             <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-primary shrink-0" />
@@ -297,6 +398,7 @@ const TempUserInfo = ({ user }: { user: TempUser }) => (
                 </div>
             </div>
         )}
+        
         {user.whatsapp_number && user.whatsapp_number !== user.phone_number && (
              <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-primary shrink-0" />
@@ -341,7 +443,11 @@ function UserDetailsSection({ request }: { request: PaymentRequest }) {
     return (
         <div className="space-y-3 rounded-md border p-4 bg-muted/50">
             <h3 className="font-semibold text-base">User Information</h3>
-            {isTempUser ? <TempUserInfo user={userData as TempUser} /> : <RegisteredStudentInfo user={userData as UserFullDetails} />}
+            {isTempUser ? (
+                <TempUserInfo user={userData as TempUser} />
+            ) : (
+                <RegisteredStudentInfo user={userData as UserFullDetails} studentNumber={request.unique_number} />
+            )}
         </div>
     );
 };

@@ -491,3 +491,27 @@ export interface CreatePaymentPayload {
   paid_date: string; // "YYYY-MM-DD"
   created_by: string;
 }
+
+interface ApiPaymentRecord {
+  id: string;
+  receipt_number: string;
+  course_code: string;
+  student_id: string;
+  paid_amount: string;
+  discount_amount: string;
+  payment_status: string;
+  payment_type: string;
+  paid_date: string;
+  created_at: string;
+  created_by: string;
+}
+
+export interface StudentBalanceData {
+  title: string;
+  userName: string;
+  totalPaymentAmount: number;
+  TotalStudentPaymentRecords: number;
+  studentBalance: number;
+  TotalRegistrationFee: number;
+  paymentRecords: Record<string, ApiPaymentRecord>;
+}
