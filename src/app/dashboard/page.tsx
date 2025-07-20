@@ -2,383 +2,243 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { 
-  RecordingsIcon, 
-  AssignmentsIcon, 
-  QuizIcon, 
-  ExamIcon, 
-  PaymentsIcon, 
-  TicketsIcon,
-  WinPharmaIcon,
-  DPadIcon,
-  CeylonPharmacyIcon,
-  PharmaHunterIcon,
-  HunterProIcon,
-  PharmaReaderIcon,
-  WordPalletIcon,
-} from "@/components/icons/module-icons";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Gem, Coins, User, FileText, Briefcase, Truck, LogOut, ArrowRight, Edit, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
-import { dummyCourses } from "@/lib/dummy-data";
-import type { Course } from "@/lib/types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+import { 
+    User, 
+    LogOut, 
+    ArrowRight, 
+    GraduationCap, 
+    MessageSquare,
+    Ticket,
+    Video,
+    FileText,
+    ClipboardCheck,
+    Trophy,
+    Gem,
+    Coins,
+} from "lucide-react";
 
 
-const gradingData = [
-  { title: "Test 01", score: 96.10, color: "bg-primary" },
-  { title: "Test 02", score: 95.97, color: "bg-primary" },
-  { title: "Test 03", score: 98.25, color: "bg-primary" },
-  { title: "Average", score: 96.77, color: "bg-blue-progress" },
-];
-
-
-const GradeCard = ({ title, score, color }: { title: string, score: number, color: string }) => (
-    <Card className="shadow-lg p-4">
-        <CardContent className="p-0 flex flex-col items-center justify-center text-center gap-2 h-full">
-            <div className="flex-grow flex flex-col items-center justify-center gap-1">
-                <p className="text-4xl font-bold text-card-foreground">{score.toFixed(2)}%</p>
-                <h3 className="text-sm text-muted-foreground font-medium">{title}</h3>
-            </div>
-            <div className="w-full pt-2">
-                <Progress value={score} className="h-2 [&>div]:rounded-full" indicatorClassName={color} />
-            </div>
-        </CardContent>
-    </Card>
-);
-
-const modules = [
-  {
-    title: "Recordings",
-    icon: <RecordingsIcon className="h-10 w-10" />,
-    href: "/dashboard/recordings",
-    progress: null,
-  },
-  {
-    title: "Assignments",
-    icon: <AssignmentsIcon className="h-10 w-10" />,
-    href: "/dashboard/assignments",
-    progress: null,
-  },
-  {
-    title: "Quiz",
-    icon: <QuizIcon className="h-10 w-10" />,
-    href: "/dashboard/quiz",
-    progress: null,
-  },
-  {
-    title: "Exam",
-    icon: <ExamIcon className="h-10 w-10" />,
-    href: "/dashboard/exam",
-    progress: null,
-  },
-  {
-    title: "Payments",
-    icon: <PaymentsIcon className="h-10 w-10" />,
-    href: "/dashboard/payments",
-    progress: null,
-  },
-  {
-    title: "Tickets",
-    icon: <TicketsIcon className="h-10 w-10" />,
-    href: "/dashboard/tickets",
-    progress: null,
-  },
-];
-
-const games = [
-    {
-      title: "Win Pharma",
-      icon: <WinPharmaIcon className="h-12 w-12" />,
-      href: "#",
-      progress: 100,
-      scoreText: "100.00%",
-    },
-    {
-      title: "D Pad",
-      icon: <DPadIcon className="h-12 w-12" />,
-      href: "#",
-      progress: 97,
-      scoreText: "97%",
-    },
-    {
-      title: "Ceylon Pharmacy",
-      icon: <CeylonPharmacyIcon className="h-12 w-12" />,
-      href: "#",
-      progress: 100,
-      scoreText: "50 out of 50",
-    },
-    {
-      title: "Pharma Hunter",
-      icon: <PharmaHunterIcon className="h-12 w-12" />,
-      href: "#",
-      progress: 100,
-      gems: 1992,
-      coins: 8,
-    },
-    {
-      title: "Hunter Pro",
-      icon: <HunterProIcon className="h-12 w-12" />,
-      href: "#",
-      progress: 0,
-      gems: 0,
-      coins: 0,
-    },
-    {
-      title: "Pharma Reader",
-      icon: <PharmaReaderIcon className="h-12 w-12" />,
-      href: "#",
-      progress: 0,
-      scoreText: "0%",
-    },
-    {
-      title: "Word Pallet",
-      icon: <WordPalletIcon className="h-12 w-12" />,
-      href: "#",
-      progress: 0,
-      scoreText: "0%",
-    },
-]
-
-const otherTasks = [
-  {
-    title: "Profile",
-    description: "Edit Profile, Reset Password, Etc",
-    icon: <User className="w-6 h-6 text-primary" />,
-    href: "/dashboard/profile",
-    action: 'link'
-  },
-  {
-    title: "Request CV",
-    description: "Create, Edit your Professional CV",
-    icon: <FileText className="w-6 h-6 text-primary" />,
-    href: "/dashboard/request-cv",
-    action: 'link'
-  },
-  {
-    title: "Apply Jobs",
-    description: "Find the Jobs using this Portal",
-    icon: <Briefcase className="w-6 h-6 text-primary" />,
-    href: "/dashboard/apply-jobs",
-    action: 'link'
-  },
-  {
-    title: "Delivery",
-    description: "Check the Courier Status",
-    icon: <Truck className="w-6 h-6 text-primary" />,
-    href: "/dashboard/delivery",
-    action: 'link'
-  },
-  {
-    title: "Sign Out",
-    description: "End the current session",
-    icon: <LogOut className="w-6 h-6 text-primary" />,
-    href: "#",
-    action: 'logout'
-  },
-];
-
-
-const ModuleCard = ({ title, icon, href, progress }: { title: string, icon: React.ReactNode, href: string, progress: number | null }) => (
-  <Link href={href} className="group">
-    <Card className="shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center text-center p-4 h-full">
-      <CardContent className="p-0 flex flex-col items-center justify-center gap-3 flex-grow">
-        <div className="flex-shrink-0">
-          {icon}
-        </div>
-        <h3 className="text-base font-semibold text-card-foreground">{title}</h3>
-        {progress !== null && (
-          <div className="w-full px-2">
-            <Progress value={progress} className="h-2" />
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  </Link>
-);
-
-const GameCard = ({ title, icon, href, progress, scoreText, gems, coins }: { title: string, icon: React.ReactNode, href: string, progress: number, scoreText?: string, gems?: number, coins?: number }) => (
-  <Link href={href}>
-    <Card className="shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center justify-center text-center p-4 h-full">
-        <CardContent className="p-0 flex flex-col items-center justify-center gap-3 flex-grow w-full">
-            <div className="flex-shrink-0 mb-2">
-              {icon}
-            </div>
-            <h3 className="text-lg font-bold text-card-foreground">{title}</h3>
-            {scoreText && (
-                <p className="text-sm text-muted-foreground font-medium">{scoreText}</p>
-            )}
-            {(gems !== undefined || coins !== undefined) ? (
-                <div className="flex items-center justify-center gap-4 w-full">
-                    {gems !== undefined && (
-                        <div className="flex items-center gap-1 bg-muted/60 px-3 py-1 rounded-full text-sm font-medium text-foreground">
-                            <Gem className="w-4 h-4 text-primary" /> {gems}
-                        </div>
-                    )}
-                     {coins !== undefined && (
-                        <div className="flex items-center gap-1 bg-muted/60 px-3 py-1 rounded-full text-sm font-medium text-foreground">
-                            <Coins className="w-4 h-4 text-yellow-500" /> {coins}
-                        </div>
-                    )}
-                </div>
-            ) : null }
-             <div className="w-full px-2 pt-1">
-                <Progress value={progress} className="h-2 [&>div]:rounded-full" indicatorClassName="bg-blue-progress" />
-            </div>
-        </CardContent>
-    </Card>
-  </Link>
-);
-
-const OtherTaskCard = ({ title, description, icon, href, action, onAction }: { title: string, description: string, icon: React.ReactNode, href: string, action: string, onAction?: () => void }) => {
-    const content = (
-      <Card className="hover:shadow-lg hover:border-primary/50 transition-all duration-200 h-full">
-        <CardContent className="p-4 flex items-center gap-4">
-          <div className="bg-primary/10 p-3 rounded-lg">
-            {icon}
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{title}</h3>
-            <p className="text-sm text-muted-foreground">{description}</p>
-          </div>
-          <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
-        </CardContent>
-      </Card>
-    );
-
-    if (action === 'logout') {
-        return <button onClick={onAction} className="w-full text-left group">{content}</button>
-    }
+const CircularProgress = ({ value, size = 60, strokeWidth = 5 }: { value: number; size?: number; strokeWidth?: number; }) => {
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (value / 100) * circumference;
 
     return (
-        <Link href={href} className="group block">
-            {content}
-        </Link>
+        <div className="relative" style={{ width: size, height: size }}>
+            <svg className="absolute top-0 left-0 w-full h-full -rotate-90" width={size} height={size}>
+                <circle
+                    className="text-muted/30"
+                    stroke="currentColor"
+                    strokeWidth={strokeWidth}
+                    fill="transparent"
+                    r={radius}
+                    cx={size / 2}
+                    cy={size / 2}
+                />
+                <circle
+                    className="text-primary"
+                    stroke="currentColor"
+                    strokeWidth={strokeWidth}
+                    fill="transparent"
+                    r={radius}
+                    cx={size / 2}
+                    cy={size / 2}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                    strokeLinecap="round"
+                    style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
+                />
+            </svg>
+            <div className="absolute top-0 left-0 flex items-center justify-center w-full h-full">
+                <span className="text-sm font-semibold text-foreground">{`${Math.round(value)}%`}</span>
+            </div>
+        </div>
     );
 };
 
 
+const dummyCoursesData = [
+    { id: "cpcc", name: "Certificate in Pharmacy Practice", progress: 78, thumbnail: "/images/course-pharmacy.jpg", dataAiHint: "pharmacy lab" },
+    { id: "acpp", name: "Advanced Pharmacy Practice", progress: 45, thumbnail: "/images/course-advanced.jpg", dataAiHint: "modern classroom" },
+    { id: "dn", name: "Diploma in Nutrition", progress: 15, thumbnail: "/images/course-nutrition.jpg", dataAiHint: "healthy food" },
+];
+
+const dummyGameStats = [
+    { name: "Pharma Hunter", icon: Trophy, value: "Level 12", color: "text-amber-500" },
+    { name: "Gems", icon: Gem, value: "1,992", color: "text-blue-500" },
+    { name: "Coins", icon: Coins, value: "8", color: "text-yellow-500" },
+];
+
+const supportServices = [
+    { title: "Live Chat", description: "Get instant help from our support team.", icon: MessageSquare, href: "/dashboard/chat" },
+    { title: "Support Tickets", description: "Create and track support requests.", icon: Ticket, href: "/dashboard/tickets" },
+];
+
+const learningModules = [
+    { title: "Recordings", icon: Video, href: "/dashboard/recordings" },
+    { title: "Assignments", icon: FileText, href: "/dashboard/assignments" },
+    { title: "Quizzes", icon: ClipboardCheck, href: "/dashboard/quiz" },
+]
+
+
 export default function StudentDashboardPage() {
     const { user, logout } = useAuth();
-    const [defaultCourse, setDefaultCourse] = useState<Course | null>(dummyCourses[0] || null);
-    const [selectedCourse, setSelectedCourse] = useState<Course | null>(defaultCourse);
-    const [isChangeCourseOpen, setIsChangeCourseOpen] = useState(false);
-
-    const handleChangeCourse = () => {
-        if (selectedCourse) {
-            setDefaultCourse(selectedCourse);
-        }
-        setIsChangeCourseOpen(false);
-    };
-
+    
     return (
-        <div className="p-4 md:p-6 space-y-8 pb-20">
-             <section className="md:sticky top-0 z-10 bg-background/95 backdrop-blur-sm -mx-4 -mt-4 md:-mx-6 md:-mt-6 px-4 py-4 md:px-6 md:py-4 border-b">
-                <div className="flex flex-col sm:flex-row items-center gap-4">
-                    {user && (
-                        <Avatar className="w-16 h-16 text-2xl border-2 border-primary" data-ai-hint="student avatar">
-                            <AvatarImage src={user.avatar} alt={user.name} />
-                            <AvatarFallback>{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                    )}
-                    <div className="flex-1 text-center sm:text-left">
-                        <h1 className="text-xl font-bold font-headline">Welcome, {user?.name || 'Student'}!</h1>
-                        <p className="text-sm text-muted-foreground">{user?.username || 'Student ID'}</p>
-                    </div>
-                    <div className="w-full sm:w-auto text-center sm:text-right">
-                        <p className="text-xs text-muted-foreground">Default Course</p>
-                        <div className="flex items-center justify-center sm:justify-end gap-2 mt-1">
-                            <p className="font-semibold">{defaultCourse?.name}</p>
-                            <Dialog open={isChangeCourseOpen} onOpenChange={setIsChangeCourseOpen}>
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" size="sm" className="h-7">
-                                        <Edit className="h-3 w-3 mr-1" />
-                                        Change
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Change Default Course</DialogTitle>
-                                        <DialogDescription>
-                                            Select one of your enrolled courses to set as your default view.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="py-4 space-y-2">
-                                        {dummyCourses.map(course => (
-                                            <button
-                                                key={course.id}
-                                                onClick={() => setSelectedCourse(course)}
-                                                className={cn(
-                                                    "w-full text-left p-3 rounded-lg border flex items-center justify-between transition-colors",
-                                                    selectedCourse?.id === course.id
-                                                        ? "border-primary bg-primary/10"
-                                                        : "hover:bg-muted/50"
-                                                )}
-                                            >
-                                                <div>
-                                                    <p className="font-semibold">{course.name}</p>
-                                                    <p className="text-sm text-muted-foreground">{course.courseCode}</p>
-                                                </div>
-                                                {selectedCourse?.id === course.id && (
-                                                    <CheckCircle className="h-5 w-5 text-primary" />
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <DialogFooter>
-                                        <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                                        <Button onClick={handleChangeCourse} disabled={!selectedCourse || selectedCourse.id === defaultCourse?.id}>
-                                            Set as Default
+        <div className="min-h-screen bg-muted/30">
+            <div className="p-4 md:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start pb-20">
+                
+                {/* Main Content */}
+                <main className="lg:col-span-2 space-y-8">
+                    <header>
+                        <h1 className="text-3xl md:text-4xl font-headline font-bold text-foreground">
+                            Welcome back, {user?.name?.split(' ')[0] || 'Student'}!
+                        </h1>
+                        <p className="text-muted-foreground mt-1">Let's continue your learning journey.</p>
+                    </header>
+
+                    <section>
+                        <h2 className="text-2xl font-semibold font-headline mb-4">My Courses</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {dummyCoursesData.map((course) => (
+                                <Card key={course.id} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
+                                    <CardHeader className="flex flex-row items-center justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-3 bg-primary/10 rounded-lg">
+                                                <GraduationCap className="w-6 h-6 text-primary" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-base font-bold leading-tight">{course.name}</CardTitle>
+                                            </div>
+                                        </div>
+                                         <div className="flex-shrink-0">
+                                            <CircularProgress value={course.progress} />
+                                        </div>
+                                    </CardHeader>
+                                    <CardFooter className="mt-auto">
+                                        <Button asChild className="w-full">
+                                            <Link href="#">
+                                                Continue Learning <ArrowRight className="ml-2 h-4 w-4" />
+                                            </Link>
                                         </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
+                                    </CardFooter>
+                                </Card>
+                            ))}
                         </div>
-                    </div>
-                </div>
-            </section>
-            
-             <section>
-                <h2 className="text-2xl md:text-3xl font-headline font-semibold mb-4">My Grading</h2>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                    {gradingData.map((grade) => (
-                        <GradeCard key={grade.title} {...grade} />
-                    ))}
-                </div>
-            </section>
-            
-            <section>
-                <h2 className="text-2xl md:text-3xl font-headline font-semibold">Common Modules</h2>
-                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6 mt-4">
-                    {modules.map((mod) => (
-                        <ModuleCard key={mod.title} {...mod} />
-                    ))}
-                </div>
-            </section>
+                    </section>
 
-             <section>
-                <h2 className="text-2xl md:text-3xl font-headline font-semibold">Let's Play</h2>
-                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-4">
-                    {games.map((game) => (
-                        <GameCard key={game.title} {...game} />
-                    ))}
-                </div>
-            </section>
+                    <section>
+                         <h2 className="text-2xl font-semibold font-headline mb-4">Learning Modules</h2>
+                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {learningModules.map((service) => (
+                                <Card key={service.title} className="shadow-lg hover:shadow-xl transition-shadow text-center">
+                                    <CardContent className="p-6">
+                                        <div className="w-16 h-16 bg-primary/10 rounded-full mx-auto flex items-center justify-center mb-4">
+                                            <service.icon className="w-8 h-8 text-primary" />
+                                        </div>
+                                        <h3 className="font-semibold">{service.title}</h3>
+                                        <Button variant="link" asChild className="mt-2">
+                                            <Link href={service.href}>Go to section</Link>
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </section>
 
-             <section>
-                <h2 className="text-2xl md:text-3xl font-headline font-semibold">Other</h2>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    {otherTasks.map((task) => (
-                        <OtherTaskCard key={task.title} {...task} onAction={task.action === 'logout' ? logout : undefined} />
-                    ))}
-                </div>
-            </section>
+                     <section>
+                         <h2 className="text-2xl font-semibold font-headline mb-4">Support & Services</h2>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {supportServices.map((service) => (
+                                <Card key={service.title} className="shadow-lg hover:shadow-xl transition-shadow">
+                                     <CardContent className="p-6 flex items-center gap-4">
+                                        <div className="p-3 bg-primary/10 rounded-lg">
+                                            <service.icon className="w-6 h-6 text-primary" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold">{service.title}</h3>
+                                            <p className="text-sm text-muted-foreground">{service.description}</p>
+                                        </div>
+                                        <ArrowRight className="h-5 w-5 text-muted-foreground ml-auto group-hover:text-primary transition-colors"/>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </section>
+                </main>
 
+                {/* Right Sidebar */}
+                <aside className="lg:col-span-1 space-y-6 lg:sticky lg:top-8">
+                    <Card className="shadow-lg">
+                        <CardContent className="p-4 text-center">
+                            <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-primary/50" data-ai-hint="student avatar">
+                                <AvatarImage src={user?.avatar} alt={user?.name} />
+                                <AvatarFallback className="text-3xl">{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <h3 className="text-xl font-bold font-headline">{user?.name}</h3>
+                            <p className="text-sm text-muted-foreground">{user?.username}</p>
+                            <div className="mt-4 flex justify-center gap-2">
+                                <Button variant="secondary" size="sm">
+                                    <Link href="/dashboard/profile">View Profile</Link>
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={logout}>
+                                    <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="text-base font-semibold">Overall Progress</CardTitle>
+                        </CardHeader>
+                         <CardContent>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-muted-foreground">Course Completion</span>
+                                    <span className="font-semibold">62%</span>
+                                </div>
+                                <Progress value={62} className="h-2"/>
+                            </div>
+                             <div className="space-y-4 mt-4">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-muted-foreground">Average Grade</span>
+                                    <span className="font-semibold">A- (91%)</span>
+                                </div>
+                                <Progress value={91} indicatorClassName="bg-green-500" className="h-2" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card className="shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="text-base font-semibold">Game Stats</CardTitle>
+                        </CardHeader>
+                         <CardContent className="space-y-3">
+                            {dummyGameStats.map(stat => (
+                                <div key={stat.name} className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                        <stat.icon className={cn("w-4 h-4", stat.color)} />
+                                        <span>{stat.name}</span>
+                                    </div>
+                                    <span className="font-semibold text-foreground">{stat.value}</span>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </aside>
+            </div>
         </div>
     );
 }
+
