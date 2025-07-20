@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Ticket, LayoutDashboard, LogOut, Search, Wrench, Megaphone, Video } from "lucide-react";
+import { MessageSquare, Ticket, LayoutDashboard, LogOut, Search, Wrench, Megaphone, Video, Home } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
@@ -28,6 +28,8 @@ const navItems = [
   { href: "/admin/quick-links", label: "Find", icon: Search },
   { href: "/admin/manage", label: "Manage", icon: Wrench },
 ];
+
+const studentViewItem = { href: "/dashboard", label: "Student View", icon: Home };
 
 export function AdminSidebarNav() {
   const pathname = usePathname();
@@ -63,6 +65,19 @@ export function AdminSidebarNav() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+            <SidebarMenuItem>
+                 <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(studentViewItem.href)}
+                    tooltip={{ children: studentViewItem.label, side: "right" }}
+                    className="justify-start"
+                >
+                    <Link href={studentViewItem.href}>
+                        <studentViewItem.icon className="h-5 w-5" />
+                        <span className="group-data-[collapsible=icon]:hidden">{studentViewItem.label}</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-2 border-t">
