@@ -1,6 +1,7 @@
 
 "use client";
 
+import { usePathname } from "next/navigation";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { SidebarNav } from "@/components/dashboard/SidebarNav";
 import { MobileHeader } from "@/components/dashboard/MobileHeader";
@@ -15,6 +16,10 @@ import { ProtectedRoute } from "@/contexts/AuthContext";
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const { isMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
+  const pathname = usePathname();
+
+  // Hide footer on specific pages
+  const hideFooter = pathname === '/dashboard/chat' || pathname.startsWith('/dashboard/tickets');
 
   return (
     <div className="flex flex-col h-screen">
@@ -24,23 +29,24 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <div className="flex flex-1 flex-col overflow-hidden">
           <main 
             className={cn(
-              "flex flex-col flex-1 overflow-y-auto bg-background",
+              "flex flex-col flex-1 overflow-y-auto bg-background pb-6", // Added pb-6 for consistent bottom padding
               // Apply pb-16 for bottom dock space only if mobile and not in detail view
-              // Otherwise, pb-0 for mobile detail view or desktop
-              isMobile ? (isMobileDetailActive ? "pb-0" : "pb-16") : "pb-0",
-              "md:pb-0" // Ensure desktop has no bottom padding from this rule
+              isMobile ? (isMobileDetailActive ? "pb-0" : "pb-16") : "", // Kept mobile padding logic but removed desktop pb-0
+              "md:pb-6" // Ensure desktop has the consistent bottom padding
             )}
           >
             <SidebarInset className="flex-1">
               {children}
             </SidebarInset>
           </main>
-          <footer className="flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground p-2 gap-2 sm:gap-4 shrink-0 bg-background border-t">
-            <p>&copy; {new Date().getFullYear()} Student Support Hub. All rights reserved.</p>
-            <p>
-              Powered by <a href="https://payshia.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">Payshia Software Solutions</a>
-            </p>
-          </footer>
+          {!hideFooter && (
+              <footer className="flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground p-2 gap-2 sm:gap-4 shrink-0 bg-background border-t">
+                <p>&copy; {new Date().getFullYear()} Student Support Hub. All rights reserved.</p>
+                <p>
+                  Powered by <a href="https://payshia.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">Payshia Software Solutions</a>
+                </p>
+              </footer>
+          )}
         </div>
       </div>
       <BottomDock />
