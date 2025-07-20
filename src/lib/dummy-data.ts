@@ -1,5 +1,5 @@
 
-import type { UserProfile, PaymentRecord, StaffMember, Course } from './types';
+import type { UserProfile, PaymentRecord, StaffMember, Course, Recording } from './types';
 
 // Note: Most dummy data is now obsolete and replaced by API calls.
 // This file is kept for data that might not come from the API in the prototype,
@@ -30,4 +30,10 @@ export const dummyCourses: Course[] = [
   { id: 'course2', courseCode: 'CPCC16', name: 'Advanced Course in Pharmacy Practice' },
   { id: 'course3', courseCode: 'NUTR01', name: 'Diploma in Nutrition' },
   { id: 'course4', courseCode: 'COUNS01', name: 'Advanced Certificate in Counseling' },
+];
+
+export const dummyRecordings: Recording[] = [
+  { id: 'rec1', courseId: 'course1', title: 'Introduction to Pharmacy', description: 'Session 1: A basic overview of the field.', youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://placehold.co/600x400.png', dataAiHint: "lecture presentation" },
+  { id: 'rec2', courseId: 'course1', title: 'Pharmacokinetics', description: 'Session 2: Understanding how drugs move through the body.', youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://placehold.co/600x400.png', dataAiHint: "science lesson" },
+  { id: 'rec3', courseId: 'course2', title: 'Advanced Compounding', description: 'Session 1: Techniques for complex preparations.', youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://placehold.co/600x400.png', dataAiHint: "lab work" },
 ];

@@ -20,14 +20,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { Recording } from "@/lib/types";
-import { dummyCourses } from "@/lib/dummy-data";
+import { dummyCourses, dummyRecordings } from "@/lib/dummy-data";
 import { toast } from "@/hooks/use-toast";
-
-const dummyRecordings: Recording[] = [
-  { id: 'rec1', courseId: 'course1', title: 'Introduction to Pharmacy', description: 'Session 1: A basic overview of the field.', youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://placehold.co/600x400.png' },
-  { id: 'rec2', courseId: 'course1', title: 'Pharmacokinetics', description: 'Session 2: Understanding how drugs move through the body.', youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://placehold.co/600x400.png' },
-  { id: 'rec3', courseId: 'course2', title: 'Advanced Compounding', description: 'Session 1: Techniques for complex preparations.', youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://placehold.co/600x400.png' },
-];
 
 export default function AdminRecordingsPage() {
   const [recordings, setRecordings] = useState<Recording[]>(dummyRecordings);
