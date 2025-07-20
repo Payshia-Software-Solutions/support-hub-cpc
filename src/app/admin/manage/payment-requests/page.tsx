@@ -360,7 +360,7 @@ export default function PaymentRequestsPage() {
                                     }}
                                 >
                                     <SelectTrigger id="rows-per-page" className="h-8 w-[70px]">
-                                        <SelectValue placeholder={itemsPerPage} />
+                                        <SelectValue placeholder={`${itemsPerPage}`} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {[10, 25, 50, 100].map((pageSize) => (
@@ -374,6 +374,7 @@ export default function PaymentRequestsPage() {
                             <div className="flex items-center justify-center text-sm font-medium">
                                 Page 
                                 <Input
+                                    key={currentPage}
                                     type="number"
                                     defaultValue={currentPage}
                                     onKeyDown={handlePageInputChange}
