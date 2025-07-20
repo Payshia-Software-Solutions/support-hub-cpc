@@ -30,6 +30,7 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    --blue-progress: 217 91% 60%;        /* Added for the average grade card */
 
     /* Sidebar specific theme variables */
     --sidebar-background: 174 88% 23%;   /* Darker Teal for sidebar background #0F4A42 */
@@ -67,6 +68,7 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --blue-progress: 217 91% 60%;
 
     /* Sidebar specific theme variables for dark mode */
     --sidebar-background: 174 88% 18%;   /* Even darker Teal for dark sidebar */
@@ -102,4 +104,9 @@
 
 .animate-typing-dot-bounce {
   animation: typing-dot-bounce 1.4s infinite ease-in-out both;
+}
+
+/* Custom class for the blue progress bar */
+.bg-blue-progress {
+  background-color: hsl(var(--blue-progress));
 }

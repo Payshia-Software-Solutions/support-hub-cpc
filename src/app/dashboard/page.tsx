@@ -12,6 +12,29 @@ import {
   TicketsIcon 
 } from "@/components/icons/module-icons";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+
+
+const gradingData = [
+  { title: "Test 01", score: 96.10, color: "bg-primary" },
+  { title: "Test 02", score: 95.97, color: "bg-primary" },
+  { title: "Test 03", score: 98.25, color: "bg-primary" },
+  { title: "Average", score: 96.77, color: "bg-blue-progress" },
+];
+
+
+const GradeCard = ({ title, score, color }: { title: string, score: number, color: string }) => (
+  <Card className="shadow-lg p-4">
+    <CardContent className="p-0 flex flex-col items-center justify-center text-center gap-2">
+      <h3 className="text-muted-foreground font-medium">{title}</h3>
+      <p className="text-3xl font-bold">{score.toFixed(2)}%</p>
+      <div className="w-full px-2">
+        <Progress value={score} className="h-2 [&>div]:rounded-full" indicatorClassName={color} />
+        <p className="text-xs font-medium text-muted-foreground mt-1.5">{score.toFixed(2)}%</p>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 const modules = [
   {
@@ -76,15 +99,23 @@ const ModuleCard = ({ title, icon, href, progress }: { title: string, icon: Reac
 
 export default function StudentDashboardPage() {
     return (
-        <div className="p-4 md:p-6 space-y-6 pb-20">
-            <header>
-                <h1 className="text-2xl font-headline font-semibold">Common Modules</h1>
-            </header>
+        <div className="p-4 md:p-6 space-y-8 pb-20">
+             <section>
+                <h1 className="text-2xl font-headline font-semibold mb-4">My Grading</h1>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {gradingData.map((grade) => (
+                        <GradeCard key={grade.title} {...grade} />
+                    ))}
+                </div>
+            </section>
 
-            <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {modules.map((mod) => (
-                    <ModuleCard key={mod.title} {...mod} />
-                ))}
+            <section>
+                <h1 className="text-2xl font-headline font-semibold">Common Modules</h1>
+                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-4">
+                    {modules.map((mod) => (
+                        <ModuleCard key={mod.title} {...mod} />
+                    ))}
+                </div>
             </section>
         </div>
     );
