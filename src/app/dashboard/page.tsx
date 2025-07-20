@@ -20,8 +20,10 @@ import {
 } from "@/components/icons/module-icons";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Gem, Coins, User, FileText, Briefcase, Truck, LogOut, ArrowRight } from "lucide-react";
+import { Gem, Coins, User, FileText, Briefcase, Truck, LogOut, ArrowRight, Edit } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 
 const gradingData = [
@@ -189,7 +191,6 @@ const ModuleCard = ({ title, icon, href, progress }: { title: string, icon: Reac
         {progress !== null && (
           <div className="w-full px-2">
             <Progress value={progress} className="h-2" />
-            <p className="text-xs font-medium text-primary mt-1.5">{progress}%</p>
           </div>
         )}
       </CardContent>
@@ -259,11 +260,36 @@ const OtherTaskCard = ({ title, description, icon, href, action, onAction }: { t
 
 
 export default function StudentDashboardPage() {
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
+    const defaultCourse = "Certificate Course in Pharmacy Practice"; // Placeholder
+
     return (
         <div className="p-4 md:p-6 space-y-8 pb-20">
+             <section className="flex flex-col sm:flex-row items-center gap-4">
+                {user && (
+                    <Avatar className="w-16 h-16 text-2xl border-2 border-primary" data-ai-hint="student avatar">
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarFallback>{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                )}
+                <div className="flex-1 text-center sm:text-left">
+                    <h1 className="text-xl font-bold font-headline">Welcome, {user?.name || 'Student'}!</h1>
+                    <p className="text-sm text-muted-foreground">{user?.username || 'Student ID'}</p>
+                </div>
+                <div className="w-full sm:w-auto text-center sm:text-right">
+                    <p className="text-xs text-muted-foreground">Default Course</p>
+                    <div className="flex items-center gap-2 mt-1">
+                        <p className="font-semibold">{defaultCourse}</p>
+                        <Button variant="outline" size="sm" className="h-7">
+                            <Edit className="h-3 w-3 mr-1" />
+                            Change
+                        </Button>
+                    </div>
+                </div>
+            </section>
+            
              <section>
-                <h1 className="text-2xl md:text-3xl font-headline font-semibold mb-4">My Grading</h1>
+                <h2 className="text-2xl md:text-3xl font-headline font-semibold mb-4">My Grading</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                     {gradingData.map((grade) => (
                         <GradeCard key={grade.title} {...grade} />
@@ -272,7 +298,7 @@ export default function StudentDashboardPage() {
             </section>
             
             <section>
-                <h1 className="text-2xl md:text-3xl font-headline font-semibold">Common Modules</h1>
+                <h2 className="text-2xl md:text-3xl font-headline font-semibold">Common Modules</h2>
                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6 mt-4">
                     {modules.map((mod) => (
                         <ModuleCard key={mod.title} {...mod} />
@@ -281,7 +307,7 @@ export default function StudentDashboardPage() {
             </section>
 
              <section>
-                <h1 className="text-2xl md:text-3xl font-headline font-semibold">Let's Play</h1>
+                <h2 className="text-2xl md:text-3xl font-headline font-semibold">Let's Play</h2>
                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-4">
                     {games.map((game) => (
                         <GameCard key={game.title} {...game} />
@@ -290,7 +316,7 @@ export default function StudentDashboardPage() {
             </section>
 
              <section>
-                <h1 className="text-2xl md:text-3xl font-headline font-semibold">Other</h1>
+                <h2 className="text-2xl md:text-3xl font-headline font-semibold">Other</h2>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     {otherTasks.map((task) => (
                         <OtherTaskCard key={task.title} {...task} onAction={task.action === 'logout' ? logout : undefined} />
