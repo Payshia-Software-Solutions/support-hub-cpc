@@ -1,7 +1,8 @@
 
+
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
 import {
     RecordingsIcon,
     AssignmentsIcon,
@@ -24,8 +26,6 @@ import {
     PharmaReaderIcon,
     WordPalletIcon,
     GoldMedalIcon,
-    SilverMedalIcon,
-    TopMedalIcon
 } from "@/components/icons/module-icons";
 import { 
     ChevronRight,
@@ -34,7 +34,8 @@ import {
     Briefcase,
     FileText,
     Truck,
-    ArrowRight
+    ArrowRight,
+    Target
 } from "lucide-react";
 
 // --- Mock Data ---
@@ -77,20 +78,27 @@ const otherTasks = [
     { title: "Delivery", icon: Truck, href: "/dashboard/delivery"},
 ];
 
-const achievementData = [
-    { title: "Gold Medals", icon: GoldMedalIcon, count: 5, color: "bg-amber-400/10 border-amber-500/20" },
-    { title: "Silver Medals", icon: SilverMedalIcon, count: 12, color: "bg-slate-400/10 border-slate-500/20" },
-    { title: "Top Medals", icon: TopMedalIcon, count: 2, color: "bg-violet-500/10 border-violet-500/20" },
-];
-
+const TARGET_GRADE_FOR_MEDAL = 85;
 
 // --- Main Page Component ---
 export default function StudentDashboardPage() {
     const { user, logout } = useAuth();
     const [defaultCourse, setDefaultCourse] = useState(dummyCourses[0].name);
 
+    const averageGrade = useMemo(() => {
+        const averageItem = gradeData.find(g => g.title === "Average Mark");
+        return averageItem ? averageItem.value : 0;
+    }, []);
+
+    const achievementProgress = useMemo(() => {
+        return Math.min((averageGrade / TARGET_GRADE_FOR_MEDAL) * 100, 100);
+    }, [averageGrade]);
+
+    const hasAchievedMedal = averageGrade >= TARGET_GRADE_FOR_MEDAL;
+
+
     return (
-        <div className="min-h-screen bg-background space-y-8 p-4 md:p-8 pb-20">
+        <div className="space-y-8 p-4 md:p-8 pb-20 bg-background">
 
             {/* --- Profile Header --- */}
             <Card className="shadow-lg overflow-hidden md:sticky top-0 z-20">
@@ -137,19 +145,28 @@ export default function StudentDashboardPage() {
              {/* --- My Achievements --- */}
             <section>
                 <h2 className="text-2xl font-semibold font-headline mb-4">My Achievements</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     {achievementData.map((ach) => (
-                        <Card key={ach.title} className={cn("shadow-lg hover:shadow-xl transition-all border-2", ach.color)}>
-                            <CardContent className="p-4 flex items-center gap-4">
-                                <ach.icon className="w-16 h-16 shrink-0" />
-                                <div className="flex-grow">
-                                    <p className="text-4xl font-bold text-card-foreground">{ach.count}</p>
-                                    <p className="text-sm font-medium text-muted-foreground">{ach.title}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                     ))}
-                </div>
+                 <Card className="shadow-lg hover:shadow-xl transition-all border-2 bg-amber-400/10 border-amber-500/20">
+                    <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-6">
+                        <GoldMedalIcon className={cn("w-24 h-24 shrink-0 transition-all", hasAchievedMedal ? "opacity-100" : "opacity-30 grayscale")}/>
+                        <div className="flex-grow w-full">
+                            <h3 className="text-lg font-bold text-card-foreground">Top Achiever Medal</h3>
+                            <p className="text-sm text-muted-foreground mb-3">
+                                {hasAchievedMedal 
+                                    ? "Congratulations! You've earned the Top Achiever Medal!"
+                                    : `Maintain an average of ${TARGET_GRADE_FOR_MEDAL}% or higher to earn this medal.`
+                                }
+                            </p>
+                            <Progress value={achievementProgress} className="h-3 bg-card" indicatorClassName="bg-blue-progress" />
+                            <div className="flex justify-between items-center text-xs font-medium text-muted-foreground mt-1.5">
+                                <span>Current Avg: <span className="text-card-foreground font-bold">{averageGrade}%</span></span>
+                                <span className="flex items-center gap-1">
+                                    <Target className="w-3 h-3" />
+                                    <span>Target: <span className="text-card-foreground font-bold">{TARGET_GRADE_FOR_MEDAL}%</span></span>
+                                </span>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
             </section>
 
             {/* --- My Grading --- */}
