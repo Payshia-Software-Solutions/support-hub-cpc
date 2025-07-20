@@ -54,7 +54,7 @@ const modules = [
 
 const ModuleCard = ({ title, icon, href, progress }: { title: string, icon: React.ReactNode, href: string, progress: number | null }) => (
   <Link href={href}>
-    <Card className="shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center justify-center text-center p-4 h-full aspect-square sm:aspect-auto">
+    <Card className="shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center justify-center text-center p-4 h-full">
       <CardContent className="p-0 flex flex-col items-center justify-center gap-3 flex-grow">
         <div className="flex-shrink-0">
           {icon}
@@ -76,12 +76,12 @@ const ModuleCard = ({ title, icon, href, progress }: { title: string, icon: Reac
 
 export default function StudentDashboardPage() {
     return (
-        <div className="p-4 md:p-8 space-y-6 pb-20">
+        <div className="p-4 md:p-6 space-y-6 pb-20">
             <header>
                 <h1 className="text-2xl font-headline font-semibold">Common Modules</h1>
             </header>
 
-            <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {modules.map((mod) => (
                     <ModuleCard key={mod.title} {...mod} />
                 ))}
