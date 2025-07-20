@@ -38,11 +38,6 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
-  { href: "/dashboard/recordings", label: "Recordings", icon: Video },
-  { href: "/dashboard/assignments", label: "Assignments", icon: FileText },
-  { href: "/dashboard/quiz", label: "Quiz", icon: ClipboardCheck },
-  { href: "/dashboard/exam", label: "Exams", icon: Award },
-  { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
   { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
 ];
 

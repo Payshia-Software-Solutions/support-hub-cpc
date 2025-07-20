@@ -178,8 +178,8 @@ const otherTasks = [
 
 
 const ModuleCard = ({ title, icon, href, progress }: { title: string, icon: React.ReactNode, href: string, progress: number | null }) => (
-  <Link href={href}>
-    <Card className="shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center justify-center text-center p-4 h-full">
+  <Link href={href} className="group">
+    <Card className="shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center text-center p-4 h-full">
       <CardContent className="p-0 flex flex-col items-center justify-center gap-3 flex-grow">
         <div className="flex-shrink-0">
           {icon}
@@ -191,7 +191,7 @@ const ModuleCard = ({ title, icon, href, progress }: { title: string, icon: Reac
             <p className="text-xs font-medium text-primary mt-1.5">{progress}%</p>
           </div>
         ) : (
-           <div className="w-3/4 h-2 bg-muted rounded-full mt-1.5" />
+           <div className="h-[22px]" /> // Placeholder for consistent height
         )}
       </CardContent>
     </Card>
@@ -264,8 +264,8 @@ export default function StudentDashboardPage() {
     return (
         <div className="p-4 md:p-6 space-y-8 pb-20">
              <section>
-                <h1 className="text-2xl font-headline font-semibold mb-4">My Grading</h1>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <h1 className="text-2xl md:text-3xl font-headline font-semibold mb-4">My Grading</h1>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                     {gradingData.map((grade) => (
                         <GradeCard key={grade.title} {...grade} />
                     ))}
@@ -273,8 +273,8 @@ export default function StudentDashboardPage() {
             </section>
             
             <section>
-                <h1 className="text-2xl font-headline font-semibold">Common Modules</h1>
-                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-4">
+                <h1 className="text-2xl md:text-3xl font-headline font-semibold">Common Modules</h1>
+                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6 mt-4">
                     {modules.map((mod) => (
                         <ModuleCard key={mod.title} {...mod} />
                     ))}
@@ -282,7 +282,7 @@ export default function StudentDashboardPage() {
             </section>
 
              <section>
-                <h1 className="text-2xl font-headline font-semibold">Let's Play</h1>
+                <h1 className="text-2xl md:text-3xl font-headline font-semibold">Let's Play</h1>
                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-4">
                     {games.map((game) => (
                         <GameCard key={game.title} {...game} />
@@ -291,7 +291,7 @@ export default function StudentDashboardPage() {
             </section>
 
              <section>
-                <h1 className="text-2xl font-headline font-semibold">Other</h1>
+                <h1 className="text-2xl md:text-3xl font-headline font-semibold">Other</h1>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     {otherTasks.map((task) => (
                         <OtherTaskCard key={task.title} {...task} onAction={task.action === 'logout' ? logout : undefined} />
