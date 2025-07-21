@@ -19,11 +19,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TicketCategory } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Book, CreditCard, Gamepad2, Truck, MoreHorizontal, ArrowLeft } from "lucide-react";
+import { Book, CreditCard, Gamepad2, Truck, MoreHorizontal, ArrowLeft, Video, ClipboardList, ClipboardCheck, Award } from "lucide-react";
 
 const ticketFormSchema = z.object({
   subject: z.string().min(5, "Topic must be at least 5 characters.").max(20, "Topic must be 20 characters or less."),
-  category: z.enum(["Course", "Payment", "Games", "Delivery Packs", "Other"], {
+  category: z.enum(["Course", "Payment", "Games", "Delivery Packs", "Recordings", "Assignments", "Quiz", "Exam", "Other"], {
     required_error: "You need to select a ticket category.",
   }),
   description: z.string().min(1, "Description cannot be empty.").max(1000, "Description must be at most 1000 characters."),
@@ -41,6 +41,10 @@ const categoryOptions: { name: TicketCategory; icon: React.ElementType }[] = [
     { name: "Payment", icon: CreditCard },
     { name: "Games", icon: Gamepad2 },
     { name: "Delivery Packs", icon: Truck },
+    { name: "Recordings", icon: Video },
+    { name: "Assignments", icon: ClipboardList },
+    { name: "Quiz", icon: ClipboardCheck },
+    { name: "Exam", icon: Award },
     { name: "Other", icon: MoreHorizontal },
 ];
 
@@ -73,10 +77,10 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   }
 
   return (
-    <Card className="w-full border-0 rounded-none mb-20 bg-transparent">
+    <Card className="w-full border-0 rounded-none bg-transparent">
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
-                <CardHeader>
+                <CardHeader className="p-4 md:p-6">
                     {!selectedCategory ? (
                         <>
                             <CardTitle className="text-2xl font-headline">Create New Support Ticket</CardTitle>
@@ -84,7 +88,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                         </>
                     ) : (
                          <>
-                            <Button variant="ghost" onClick={handleGoBack} className="w-fit h-auto mb-2 text-sm text-muted-foreground hover:text-foreground">
+                            <Button variant="ghost" onClick={handleGoBack} className="w-fit h-auto mb-2 text-sm text-muted-foreground hover:text-foreground p-0">
                                 <ArrowLeft className="mr-2 h-4 w-4" /> Change Category
                             </Button>
                             <CardTitle className="text-2xl font-headline">Describe Your Issue</CardTitle>
@@ -92,7 +96,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                          </>
                     )}
                 </CardHeader>
-                <CardContent className="pt-0">
+                <CardContent className="p-4 md:p-6 pt-0">
                     {!selectedCategory ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {categoryOptions.map((cat) => (
@@ -143,7 +147,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                     )}
                 </CardContent>
                 {selectedCategory && (
-                     <CardFooter className="pt-0">
+                     <CardFooter className="p-4 md:p-6 pt-0">
                         <Button type="submit" disabled={isSubmitting}>
                         {isSubmitting ? "Submitting..." : "Submit Ticket"}
                         </Button>

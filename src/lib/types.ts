@@ -28,7 +28,7 @@ export interface Chat {
 
 export type TicketStatus = 'Open' | 'In Progress' | 'Closed';
 export type TicketPriority = 'Low' | 'Medium' | 'High';
-export type TicketCategory = 'Course' | 'Payment' | 'Games' | 'Delivery Packs' | 'Other';
+export type TicketCategory = 'Course' | 'Payment' | 'Games' | 'Delivery Packs' | 'Recordings' | 'Assignments' | 'Quiz' | 'Exam' | 'Other';
 
 export interface Ticket {
   id: string;
