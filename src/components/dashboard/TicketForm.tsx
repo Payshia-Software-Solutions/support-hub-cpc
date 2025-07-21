@@ -64,7 +64,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="space-y-6">
-            <FormField
+             <FormField
               control={form.control}
               name="subject"
               render={({ field }) => (
@@ -73,9 +73,6 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                   <FormControl>
                     <Input placeholder="e.g., Issue with course registration" {...field} />
                   </FormControl>
-                  <FormDescription>
-                    A brief summary of your issue.
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -101,9 +98,6 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                         <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormDescription>
-                      This helps us route your ticket.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -126,9 +120,6 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                         <SelectItem value="High">High</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormDescription>
-                      How urgent is this issue?
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -147,7 +138,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>
+                   <FormDescription>
                     Provide as much detail as possible to help us understand and resolve your issue quickly.
                   </FormDescription>
                   <FormMessage />
@@ -156,7 +147,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
             />
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Submitting..." : "Submit Ticket"}
             </Button>
           </CardFooter>
