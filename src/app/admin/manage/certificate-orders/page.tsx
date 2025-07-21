@@ -3,14 +3,14 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCertificateOrders, getStudentFullInfo, updateCertificateOrderCourses, getUserCertificatePrintStatus, generateCertificate } from '@/lib/api';
-import type { CertificateOrder, FullStudentData, UpdateCertificateOrderCoursesPayload, UserCertificatePrintStatus, GenerateCertificatePayload } from '@/lib/types';
+import { getCertificateOrders, getStudentFullInfo, updateCertificateOrderCourses, getUserCertificatePrintStatus, generateCertificate, getStudentBalance } from '@/lib/api';
+import type { CertificateOrder, FullStudentData, UpdateCertificateOrderCoursesPayload, UserCertificatePrintStatus, GenerateCertificatePayload, StudentBalanceData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet, FileDown, Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -168,6 +168,13 @@ const OrderActionsCell = ({ order, onEligibilityStatusChange }: { order: Certifi
         staleTime: 5 * 60 * 1000,
         retry: 1,
     });
+    
+     const { data: studentBalance } = useQuery<StudentBalanceData>({
+        queryKey: ['studentBalance', order.created_by],
+        queryFn: () => getStudentBalance(order.created_by),
+        enabled: !!order.created_by,
+        staleTime: 5 * 60 * 1000,
+    });
 
     const { newEligibleEnrollments, isUpdateAvailable } = useMemo(() => {
         if (!fullStudentData) {
@@ -271,7 +278,7 @@ const OrderActionsCell = ({ order, onEligibilityStatusChange }: { order: Certifi
         return <Badge variant="destructive">Check Failed</Badge>;
     }
     
-    const balance = fullStudentData?.studentBalance?.studentBalance;
+    const balance = studentBalance?.studentBalance;
 
     return (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
@@ -319,6 +326,7 @@ export default function CertificateOrdersListPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [updatableOrders, setUpdatableOrders] = useState<Record<string, boolean>>({});
+    const [isExporting, setIsExporting] = useState(false);
 
     const { data: orders, isLoading: isLoadingOrders, isError, error } = useQuery<CertificateOrder[]>({
         queryKey: ['allCertificateOrders'],
@@ -356,6 +364,65 @@ export default function CertificateOrdersListPage() {
             currentPage * ITEMS_PER_PAGE
         );
     }, [filteredOrders, currentPage]);
+    
+    const handleExport = async () => {
+        if (!orders) return;
+        
+        setIsExporting(true);
+        toast({ title: 'Exporting...', description: 'Fetching student balances. This may take a moment.' });
+        
+        try {
+            const studentNumbers = [...new Set(filteredOrders.map(order => order.created_by))];
+            const balancePromises = studentNumbers.map(sn => getStudentBalance(sn).catch(() => null));
+            const balanceResults = await Promise.all(balancePromises);
+            
+            const balanceMap = new Map<string, number>();
+            balanceResults.forEach((res, index) => {
+                if (res) {
+                    balanceMap.set(studentNumbers[index], res.studentBalance);
+                }
+            });
+
+            const csvRows = [
+                ['Order ID', 'Student Number', 'Name on Certificate', 'Course Code(s)', 'Mobile', 'Order Date', 'Status', 'Due Balance (LKR)'].join(',')
+            ];
+
+            filteredOrders.forEach(order => {
+                const balance = balanceMap.get(order.created_by) ?? 0;
+                const row = [
+                    order.id,
+                    order.created_by,
+                    `"${order.name_on_certificate.replace(/"/g, '""')}"`,
+                    order.course_code,
+                    order.mobile,
+                    order.created_at,
+                    order.certificate_status,
+                    balance.toString()
+                ];
+                csvRows.push(row.join(','));
+            });
+
+            const csvString = csvRows.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'certificate_orders_with_balance.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            toast({ title: 'Export Successful', description: 'Your CSV file has been downloaded.' });
+
+        } catch (err) {
+            toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not generate the export file.' });
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
 
     if (isLoadingOrders) {
         return (
@@ -402,14 +469,20 @@ export default function CertificateOrdersListPage() {
                                 {filteredOrders.length} orders found. {updatableCount > 0 && `(${updatableCount} need updates)`}
                             </CardDescription>
                         </div>
-                        <div className="relative w-full sm:w-auto sm:max-w-xs">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search student or name..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10"
-                            />
+                        <div className="flex items-center gap-2">
+                             <div className="relative w-full sm:w-auto sm:max-w-xs">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search student or name..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10"
+                                />
+                            </div>
+                            <Button onClick={handleExport} disabled={isExporting}>
+                                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                                Export
+                            </Button>
                         </div>
                     </div>
                 </CardHeader>
@@ -421,8 +494,9 @@ export default function CertificateOrdersListPage() {
                                 <TableRow>
                                     <TableHead>Student</TableHead>
                                     <TableHead>Name on Certificate</TableHead>
-                                    <TableHead>Course Code(s)</TableHead>
-                                    <TableHead>Generated Certificates</TableHead>
+                                    <TableHead>Mobile</TableHead>
+                                    <TableHead>Course(s)</TableHead>
+                                    <TableHead>Generated Certs</TableHead>
                                     <TableHead>Order Date</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Actions</TableHead>
@@ -433,6 +507,7 @@ export default function CertificateOrdersListPage() {
                                     <TableRow key={order.id}>
                                         <TableCell className="font-medium">{order.created_by}</TableCell>
                                         <TableCell>{order.name_on_certificate}</TableCell>
+                                        <TableCell>{order.mobile}</TableCell>
                                         <TableCell>{order.course_code}</TableCell>
                                         <TableCell>
                                             <CertificateStatusCell order={order} studentNumber={order.created_by} orderCourseCodes={order.course_code} />
@@ -467,7 +542,11 @@ export default function CertificateOrdersListPage() {
                                         <Badge variant="secondary">{order.certificate_status}</Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <p className="text-muted-foreground font-medium">Course Code(s)</p>
+                                        <p className="text-muted-foreground font-medium">Mobile</p>
+                                        <p className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5"/>{order.mobile}</p>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-muted-foreground font-medium">Course(s)</p>
                                         <p>{order.course_code}</p>
                                     </div>
                                     <div className="flex items-start justify-between">
