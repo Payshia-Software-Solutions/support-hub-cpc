@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 
 // --- Mock Data Structure for the Game ---
@@ -211,5 +212,3 @@ export default function WinPharmaPage() {
     </div>
   );
 }
-
-    
