@@ -6,8 +6,9 @@ import { TicketListItem } from "./TicketListItem";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { PlusCircle, Search } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -56,9 +57,12 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
   return (
     <div className="space-y-6 p-0 md:p-6">
       <div className="flex flex-col md:flex-row gap-4 justify-between md:items-center sticky top-0 bg-background py-4 z-10 border-b px-4 md:px-6">
-        <h1 className="text-2xl font-headline font-semibold">Support Tickets</h1>
+        <div>
+          <h1 className="text-2xl font-headline font-semibold">Support Tickets</h1>
+          {currentStaffId && <p className="text-muted-foreground text-sm">Create or manage support tickets.</p>}
+        </div>
         <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
-          <div className="relative w-full md:w-auto">
+           <div className="relative w-full md:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by ID, subject, user..."
@@ -90,6 +94,13 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
                 <SelectItem value="High">High</SelectItem>
               </SelectContent>
             </Select>
+            {currentStaffId && (
+                 <Button asChild>
+                    <Link href="/dashboard/create-ticket">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Create New
+                    </Link>
+                </Button>
+            )}
           </div>
         </div>
       </div>
