@@ -17,11 +17,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import type { TicketCategory, Attachment } from "@/lib/types";
+import type { TicketCategory, Attachment as ApiAttachment } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Book, CreditCard, Gamepad2, Truck, MoreHorizontal, ArrowLeft, Video, ClipboardList, ClipboardCheck, Award, Paperclip, FileText, XCircle } from "lucide-react";
 import Image from "next/image";
+
+// Local attachment type with a unique ID for state management
+interface Attachment extends ApiAttachment {
+  id: string; 
+}
+
 
 const ticketFormSchema = z.object({
   subject: z.string().min(5, "Topic must be at least 5 characters.").max(20, "Topic must be 20 characters or less."),
@@ -34,7 +40,7 @@ const ticketFormSchema = z.object({
 type TicketFormValues = z.infer<typeof ticketFormSchema>;
 
 interface TicketFormProps {
-  onSubmitTicket: (data: Omit<TicketFormValues, "priority">, attachments?: Attachment[]) => void;
+  onSubmitTicket: (data: Omit<TicketFormValues, "priority">, attachments?: ApiAttachment[]) => void;
   isSubmitting: boolean;
 }
 
@@ -64,7 +70,8 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   });
 
   function onSubmit(data: TicketFormValues) {
-    onSubmitTicket(data, stagedAttachments);
+    const apiAttachments: ApiAttachment[] = stagedAttachments.map(({ id, ...rest }) => rest);
+    onSubmitTicket(data, apiAttachments);
     form.reset();
     setStagedAttachments([]);
     setSelectedCategory(null);
@@ -88,17 +95,16 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      let newAttachments: Attachment[] = [...stagedAttachments];
-      let errors = false;
-
-      Array.from(files).forEach(file => {
+      let newAttachments: Attachment[] = [];
+      let currentAttachments = [...stagedAttachments];
+      
+      Array.from(files).forEach((file, index) => {
         if (file.size > 5 * 1024 * 1024) { // 5MB limit per file
           toast({
             variant: "destructive",
             title: "File too large",
             description: `"${file.name}" is larger than 5MB and was not added.`,
           });
-          errors = true;
           return;
         }
 
@@ -106,31 +112,34 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
         const reader = new FileReader();
         reader.onloadend = () => {
           newAttachments.push({
+            id: `${Date.now()}-${index}-${Math.random()}`, // Create a unique ID
             type: fileType,
             url: reader.result as string,
             name: file.name,
             file: file,
           });
-          // Update state after each file is read
-          setStagedAttachments([...newAttachments]);
+
+          // When the last file is read, update the state
+          if (index === files.length - 1) {
+            setStagedAttachments(prev => [...prev, ...newAttachments]);
+          }
         };
         reader.readAsDataURL(file);
       });
 
-      // Clear the input value to allow selecting the same file again if needed
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const removeStagedAttachment = (fileName: string) => {
-    setStagedAttachments(prev => prev.filter(att => att.name !== fileName));
+  const removeStagedAttachment = (attachmentId: string) => {
+    setStagedAttachments(prev => prev.filter(att => att.id !== attachmentId));
   };
 
   return (
     <Card className="w-full border-0 md:border-y-0 rounded-none bg-transparent mb-16">
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
-                <CardHeader className="p-4 md:p-6">
+                <CardHeader className="p-6">
                     {!selectedCategory ? (
                         <>
                             <CardTitle className="text-2xl font-headline">Create New Support Ticket</CardTitle>
@@ -146,7 +155,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                          </>
                     )}
                 </CardHeader>
-                <CardContent className="px-4 md:px-6">
+                <CardContent className="px-6">
                     {!selectedCategory ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {categoryOptions.map((cat) => (
@@ -199,7 +208,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                                
                                <div className="mt-2 space-y-2">
                                   {stagedAttachments.map(att => (
-                                    <div key={att.name} className="p-2 border rounded-md flex items-center justify-between bg-muted/50">
+                                    <div key={att.id} className="p-2 border rounded-md flex items-center justify-between bg-muted/50">
                                       <div className="flex items-center gap-2 truncate">
                                         {att.type === 'image' ? (
                                           <Image src={att.url} alt={att.name} width={32} height={32} className="rounded object-cover" data-ai-hint="image preview"/>
@@ -208,7 +217,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                                         )}
                                         <span className="text-sm text-muted-foreground truncate">{att.name}</span>
                                       </div>
-                                      <Button type="button" variant="ghost" size="icon" onClick={() => removeStagedAttachment(att.name)} className="text-destructive hover:text-destructive h-6 w-6">
+                                      <Button type="button" variant="ghost" size="icon" onClick={() => removeStagedAttachment(att.id)} className="text-destructive hover:text-destructive h-6 w-6">
                                         <XCircle className="h-5 w-5" />
                                       </Button>
                                     </div>
@@ -222,7 +231,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                     )}
                 </CardContent>
                 {selectedCategory && (
-                     <CardFooter className="px-4 md:px-6">
+                     <CardFooter className="px-6">
                         <Button type="submit" disabled={isSubmitting}>
                         {isSubmitting ? "Submitting..." : "Submit Ticket"}
                         </Button>
