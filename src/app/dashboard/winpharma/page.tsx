@@ -2,16 +2,18 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { WinPharmaIcon } from "@/components/icons/module-icons";
-import { CheckCircle, Lock, Video, FileQuestion, Upload, Timer, Trophy } from "lucide-react";
+import { CheckCircle, Lock, Video, FileQuestion, Upload, Timer, Trophy, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 
 // --- Mock Data Structure for the Game ---
@@ -20,6 +22,9 @@ interface Task {
   title: string;
   type: 'video' | 'quiz';
   duration?: string; // For quiz, e.g., "30 Minutes"
+  youtubeUrl?: string; // For video tasks
+  imageUrl?: string; // For quiz tasks
+  description?: string; // For quiz tasks
 }
 
 interface Level {
@@ -28,10 +33,31 @@ interface Level {
   tasks: Task[];
 }
 
+// Helper to get YouTube embed URL
+const getYouTubeEmbedUrl = (url?: string): string | null => {
+  if (!url) return null;
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname === 'youtu.be') {
+      return `https://www.youtube.com/embed/${urlObj.pathname.slice(1)}`;
+    }
+    if (urlObj.hostname.includes('youtube.com')) {
+      const videoId = urlObj.searchParams.get('v');
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+  } catch (error) {
+    console.error("Invalid URL for YouTube video", error);
+  }
+  return null;
+};
+
+
 const generateLevels = (): Level[] => {
   const levels = [];
   for (let i = 1; i <= 20; i++) {
-    const taskCount = Math.floor(Math.random() * 3) + 2; // 2 to 4 tasks per level
+    const taskCount = Math.floor(Math.random() * 2) + 2; // 2 to 3 tasks per level
     const tasks: Task[] = [];
     for (let j = 1; j <= taskCount; j++) {
       if (j === taskCount) {
@@ -40,12 +66,15 @@ const generateLevels = (): Level[] => {
           title: `Level ${i} Assessment`,
           type: 'quiz',
           duration: `${Math.floor(Math.random() * 30) + 15} Minutes`,
+          imageUrl: `https://placehold.co/800x450.png`,
+          description: `This is the final assessment for Level ${i}. Please review the attached image carefully and upload your completed answer sheet within the time limit.`
         });
       } else {
         tasks.push({
           id: `l${i}t${j}`,
           title: `Watch Topic ${i}.${j}`,
           type: 'video',
+          youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', // Placeholder URL
         });
       }
     }
@@ -162,44 +191,44 @@ export default function WinPharmaPage() {
                                 {level.tasks.map((task) => {
                                     const taskUnlocked = isTaskUnlocked(level.id, task.id);
                                     const taskCompleted = completedTasks.has(task.id);
+                                    const embedUrl = getYouTubeEmbedUrl(task.youtubeUrl);
 
                                     return (
-                                        <div key={task.id} className={cn(
-                                            "p-4 border rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all",
-                                            !taskUnlocked && "bg-muted/30 opacity-60",
-                                            taskCompleted && "bg-green-500/10 border-green-500/30"
-                                        )}>
-                                            <div className="flex items-center gap-3">
-                                                {taskUnlocked ? (
-                                                    taskCompleted ? (
-                                                        <CheckCircle className="w-6 h-6 text-green-500 shrink-0"/>
-                                                    ) : (
-                                                        task.type === 'video' ? <Video className="w-6 h-6 text-primary shrink-0"/> : <FileQuestion className="w-6 h-6 text-primary shrink-0"/>
-                                                    )
-                                                ) : (
-                                                     <Lock className="w-6 h-6 text-muted-foreground shrink-0"/>
-                                                )}
-                                                 <div className="flex-1">
-                                                    <p className="font-medium text-card-foreground">{task.title}</p>
-                                                    {task.type === 'quiz' && task.duration && (
-                                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Timer className="w-3 h-3"/> {task.duration}</p>
-                                                    )}
+                                      <Collapsible key={task.id} className={cn("p-4 border rounded-lg transition-all", !taskUnlocked && "bg-muted/30 opacity-60", taskCompleted && "bg-green-500/10 border-green-500/30")}>
+                                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                              <div className="flex items-center gap-3 flex-1">
+                                                  {taskUnlocked ? (taskCompleted ? <CheckCircle className="w-6 h-6 text-green-500 shrink-0"/> : (task.type === 'video' ? <Video className="w-6 h-6 text-primary shrink-0"/> : <FileQuestion className="w-6 h-6 text-primary shrink-0"/>)) : <Lock className="w-6 h-6 text-muted-foreground shrink-0"/>}
+                                                  <div className="flex-1">
+                                                      <p className="font-medium text-card-foreground">{task.title}</p>
+                                                      {task.type === 'quiz' && task.duration && (<p className="text-xs text-muted-foreground flex items-center gap-1.5"><Timer className="w-3 h-3"/> {task.duration}</p>)}
+                                                  </div>
+                                              </div>
+                                              <div className="flex items-center gap-2 self-end md:self-center">
+                                                  {task.type === 'video' ? <Button disabled={!taskUnlocked || taskCompleted} onClick={() => handleCompleteTask(task.id, level.id)}>Mark as Watched</Button>
+                                                                         : <><Button variant="outline" disabled={!taskUnlocked || taskCompleted}><Upload className="mr-2 h-4 w-4"/> Upload</Button><Button disabled={!taskUnlocked || taskCompleted} onClick={() => handleCompleteTask(task.id, level.id)}>Start Quiz</Button></>}
+                                                  {!taskUnlocked && <Badge variant="secondary">Locked</Badge>}
+                                                  {taskCompleted && <Badge variant="default" className="bg-green-600 hover:bg-green-700">Completed</Badge>}
+                                                  <CollapsibleTrigger asChild>
+                                                      <Button variant="ghost" size="icon" disabled={!taskUnlocked}><ChevronDown className="h-4 w-4"/></Button>
+                                                  </CollapsibleTrigger>
+                                              </div>
+                                          </div>
+                                          <CollapsibleContent className="mt-4 pt-4 border-t">
+                                              {task.type === 'video' && embedUrl && (
+                                                <div className="aspect-video rounded-md overflow-hidden bg-black">
+                                                    <iframe width="100%" height="100%" src={embedUrl} title={task.title} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
                                                 </div>
-                                            </div>
-                                            <div className="flex items-center gap-2 self-end md:self-center">
-                                                {task.type === 'video' && (
-                                                    <Button disabled={!taskUnlocked || taskCompleted} onClick={() => handleCompleteTask(task.id, level.id)}>Watch Video</Button>
-                                                )}
-                                                 {task.type === 'quiz' && (
-                                                    <>
-                                                        <Button variant="outline" disabled={!taskUnlocked || taskCompleted}><Upload className="mr-2 h-4 w-4"/> Upload</Button>
-                                                        <Button disabled={!taskUnlocked || taskCompleted} onClick={() => handleCompleteTask(task.id, level.id)}>Start Quiz</Button>
-                                                    </>
-                                                )}
-                                                {!taskUnlocked && <Badge variant="secondary">Locked</Badge>}
-                                                {taskCompleted && <Badge variant="default" className="bg-green-600 hover:bg-green-700">Completed</Badge>}
-                                            </div>
-                                        </div>
+                                              )}
+                                              {task.type === 'quiz' && task.imageUrl && (
+                                                <div className="space-y-4">
+                                                    <p className="text-sm text-muted-foreground">{task.description}</p>
+                                                    <div className="relative aspect-video rounded-md overflow-hidden bg-muted">
+                                                        <Image src={task.imageUrl} alt="Quiz visual aid" layout="fill" objectFit="cover" data-ai-hint="diagram instruction" />
+                                                    </div>
+                                                </div>
+                                              )}
+                                          </CollapsibleContent>
+                                      </Collapsible>
                                     )
                                 })}
                            </div>
