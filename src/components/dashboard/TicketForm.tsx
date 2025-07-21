@@ -95,9 +95,6 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      let newAttachments: Attachment[] = [];
-      let currentAttachments = [...stagedAttachments];
-      
       Array.from(files).forEach((file, index) => {
         if (file.size > 5 * 1024 * 1024) { // 5MB limit per file
           toast({
@@ -111,18 +108,14 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
         const fileType = file.type.startsWith("image/") ? "image" : "document";
         const reader = new FileReader();
         reader.onloadend = () => {
-          newAttachments.push({
-            id: `${Date.now()}-${index}-${Math.random()}`, // Create a unique ID
-            type: fileType,
-            url: reader.result as string,
-            name: file.name,
-            file: file,
-          });
-
-          // When the last file is read, update the state
-          if (index === files.length - 1) {
-            setStagedAttachments(prev => [...prev, ...newAttachments]);
-          }
+            const newAttachment: Attachment = {
+                id: `${Date.now()}-${index}-${Math.random()}`,
+                type: fileType,
+                url: reader.result as string,
+                name: file.name,
+                file: file,
+            };
+            setStagedAttachments(prev => [...prev, newAttachment]);
         };
         reader.readAsDataURL(file);
       });
