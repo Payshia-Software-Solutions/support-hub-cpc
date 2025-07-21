@@ -61,8 +61,8 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
           <h1 className="text-2xl font-headline font-semibold">Support Tickets</h1>
           <p className="text-muted-foreground text-sm">Create or manage support tickets.</p>
         </div>
-        <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
-           <div className="relative w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-2">
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by ID, subject, user..."
@@ -71,35 +71,33 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="grid w-full grid-cols-2 gap-2 md:flex md:w-auto">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="Open">Open</SelectItem>
-                <SelectItem value="In Progress">In Progress</SelectItem>
-                <SelectItem value="Closed">Closed</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="Low">Low</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="High">High</SelectItem>
-              </SelectContent>
-            </Select>
-             <Button asChild>
-                <Link href="/dashboard/create-ticket">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Create New
-                </Link>
-            </Button>
-          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="Open">Open</SelectItem>
+              <SelectItem value="In Progress">In Progress</SelectItem>
+              <SelectItem value="Closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              <SelectItem value="Low">Low</SelectItem>
+              <SelectItem value="Medium">Medium</SelectItem>
+              <SelectItem value="High">High</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button asChild className="w-full sm:w-auto">
+              <Link href="/dashboard/create-ticket">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Create New
+              </Link>
+          </Button>
         </div>
       </div>
 
