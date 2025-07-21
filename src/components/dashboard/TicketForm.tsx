@@ -84,7 +84,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                         </>
                     ) : (
                          <>
-                            <Button variant="ghost" onClick={handleGoBack} className="w-fit p-0 h-auto mb-2 text-sm text-muted-foreground hover:text-foreground">
+                            <Button variant="ghost" onClick={handleGoBack} className="w-fit h-auto mb-2 text-sm text-muted-foreground hover:text-foreground -ml-4">
                                 <ArrowLeft className="mr-2 h-4 w-4" /> Change Category
                             </Button>
                             <CardTitle className="text-2xl font-headline">Describe Your Issue</CardTitle>
