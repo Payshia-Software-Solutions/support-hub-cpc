@@ -6,9 +6,15 @@ import { TicketListItem } from "./TicketListItem";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -56,6 +62,22 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
   
   return (
     <div className="space-y-6 p-0 md:p-6">
+       <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button asChild className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 h-14 w-14 rounded-full shadow-lg">
+                <Link href="/dashboard/create-ticket">
+                    <Plus className="h-6 w-6" />
+                    <span className="sr-only">Create New Ticket</span>
+                </Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            <p>Create New Ticket</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
       <div className="flex flex-col md:flex-row gap-4 justify-between md:items-center sticky top-0 bg-background py-4 z-10 border-b px-4 md:px-6">
         <div>
           <h1 className="text-2xl font-headline font-semibold">Support Tickets</h1>
@@ -93,11 +115,6 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
               <SelectItem value="High">High</SelectItem>
             </SelectContent>
           </Select>
-          <Button asChild className="w-full sm:w-auto">
-              <Link href="/dashboard/create-ticket">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Create New
-              </Link>
-          </Button>
         </div>
       </div>
 
