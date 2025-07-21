@@ -384,7 +384,7 @@ export default function CertificateOrdersListPage() {
             });
 
             const csvRows = [
-                ['Order ID', 'Student Number', 'Name on Certificate', 'Course Code(s)', 'Mobile', 'Order Date', 'Status', 'Due Balance (LKR)'].join(',')
+                ['Order ID', 'Student Number', 'Name on Certificate', 'Course Code(s)', 'Phone 1', 'Phone 2', 'Order Date', 'Status', 'Due Balance (LKR)'].join(',')
             ];
 
             filteredOrders.forEach(order => {
@@ -395,6 +395,7 @@ export default function CertificateOrdersListPage() {
                     `"${order.name_on_certificate.replace(/"/g, '""')}"`,
                     `"${order.course_code}"`,
                     order.mobile,
+                    '', // Empty column for Phone 2
                     order.created_at,
                     order.certificate_status,
                     balance.toString()
