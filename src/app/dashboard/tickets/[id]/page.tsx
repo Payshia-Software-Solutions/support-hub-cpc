@@ -49,6 +49,20 @@ export default function TicketDetailPage() {
   });
 
   useEffect(() => {
+    // Intercept the back button press
+    history.pushState(null, '', location.href);
+    const handlePopState = (event: PopStateEvent) => {
+        event.preventDefault();
+        router.push('/dashboard/tickets');
+    };
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+        window.removeEventListener('popstate', handlePopState);
+    };
+  }, [router]);
+
+  useEffect(() => {
     if (isMobile) {
       setIsMobileDetailActive(true);
       return () => setIsMobileDetailActive(false);
