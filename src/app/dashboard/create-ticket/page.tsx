@@ -57,7 +57,7 @@ export default function CreateTicketPage() {
   };
 
   return (
-    <div className="w-full h-full bg-muted/30 overflow-y-auto">
+    <div className="w-full h-full overflow-y-auto">
       <TicketForm onSubmitTicket={handleTicketSubmit} isSubmitting={createTicketMutation.isPending} />
     </div>
   );

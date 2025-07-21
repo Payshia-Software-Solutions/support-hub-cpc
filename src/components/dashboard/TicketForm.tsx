@@ -73,7 +73,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   }
 
   return (
-    <Card className="w-full mx-auto shadow-none border-0 rounded-none mb-20 md:border md:rounded-lg md:shadow-lg md:max-w-4xl md:my-8">
+    <Card className="w-full mx-auto shadow-none border-0 rounded-none mb-20 md:border-y bg-card">
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
                 <CardHeader>
