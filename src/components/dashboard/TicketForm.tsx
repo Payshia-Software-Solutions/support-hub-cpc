@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -17,9 +17,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import type { TicketCategory } from "@/lib/types";
+import type { TicketCategory, Attachment } from "@/lib/types";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Book, CreditCard, Gamepad2, Truck, MoreHorizontal, ArrowLeft, Video, ClipboardList, ClipboardCheck, Award } from "lucide-react";
+import { Book, CreditCard, Gamepad2, Truck, MoreHorizontal, ArrowLeft, Video, ClipboardList, ClipboardCheck, Award, Paperclip, FileText, XCircle } from "lucide-react";
 
 const ticketFormSchema = z.object({
   subject: z.string().min(5, "Topic must be at least 5 characters.").max(20, "Topic must be 20 characters or less."),
@@ -32,7 +33,7 @@ const ticketFormSchema = z.object({
 type TicketFormValues = z.infer<typeof ticketFormSchema>;
 
 interface TicketFormProps {
-  onSubmitTicket: (data: Omit<TicketFormValues, "priority">) => void;
+  onSubmitTicket: (data: Omit<TicketFormValues, "priority">, attachment?: Attachment) => void;
   isSubmitting: boolean;
 }
 
@@ -50,6 +51,8 @@ const categoryOptions: { name: TicketCategory; icon: React.ElementType }[] = [
 
 export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   const [selectedCategory, setSelectedCategory] = useState<TicketCategory | null>(null);
+  const [stagedAttachment, setStagedAttachment] = useState<Attachment | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<TicketFormValues>({
     resolver: zodResolver(ticketFormSchema),
@@ -60,8 +63,9 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   });
 
   function onSubmit(data: TicketFormValues) {
-    onSubmitTicket(data);
+    onSubmitTicket(data, stagedAttachment || undefined);
     form.reset();
+    setStagedAttachment(null);
     setSelectedCategory(null);
   }
 
@@ -72,12 +76,50 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   
   const handleGoBack = () => {
     setSelectedCategory(null);
-    form.resetField("subject");
-    form.resetField("description");
+    setStagedAttachment(null);
+    form.reset();
   }
 
+  const handleAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          variant: "destructive",
+          title: "File too large",
+          description: "Please select a file smaller than 5MB.",
+        });
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+
+      const fileType = file.type.startsWith("image/") ? "image" : "document";
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setStagedAttachment({
+          type: fileType,
+          url: reader.result as string, // For preview
+          name: file.name,
+          file: file,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeStagedAttachment = () => {
+    setStagedAttachment(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
-    <Card className="w-full border-0 rounded-none bg-transparent">
+    <Card className="w-full border-0 md:border-y-0 rounded-none bg-transparent mb-16">
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
                 <CardHeader className="p-4 md:p-6">
@@ -88,7 +130,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                         </>
                     ) : (
                          <>
-                            <Button variant="ghost" onClick={handleGoBack} className="w-fit h-auto mb-2 text-sm text-muted-foreground hover:text-foreground p-0">
+                            <Button variant="ghost" onClick={handleGoBack} className="w-fit h-auto mb-2 text-sm text-muted-foreground hover:text-foreground">
                                 <ArrowLeft className="mr-2 h-4 w-4" /> Change Category
                             </Button>
                             <CardTitle className="text-2xl font-headline">Describe Your Issue</CardTitle>
@@ -96,7 +138,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                          </>
                     )}
                 </CardHeader>
-                <CardContent className="p-4 md:p-6 pt-0">
+                <CardContent className="px-4 md:px-6">
                     {!selectedCategory ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {categoryOptions.map((cat) => (
@@ -143,11 +185,30 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                                 </FormItem>
                                 )}
                             />
+                            <div>
+                              <FormLabel>Attachment (Optional)</FormLabel>
+                               <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
+                                {!stagedAttachment ? (
+                                  <Button type="button" variant="outline" onClick={handleAttachmentClick} className="w-full mt-2">
+                                      <Paperclip className="mr-2 h-4 w-4" /> Attach a file
+                                  </Button>
+                                ) : (
+                                  <div className="mt-2 p-2 border rounded-md flex items-center justify-between bg-muted/50">
+                                      <div className="flex items-center gap-2 truncate">
+                                          <FileText className="h-5 w-5 text-muted-foreground" />
+                                          <span className="text-sm text-muted-foreground truncate">{stagedAttachment.name}</span>
+                                      </div>
+                                      <Button type="button" variant="ghost" size="icon" onClick={removeStagedAttachment} className="text-destructive hover:text-destructive h-6 w-6">
+                                          <XCircle className="h-5 w-5" />
+                                      </Button>
+                                  </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </CardContent>
                 {selectedCategory && (
-                     <CardFooter className="p-4 md:p-6 pt-0">
+                     <CardFooter className="px-4 md:px-6">
                         <Button type="submit" disabled={isSubmitting}>
                         {isSubmitting ? "Submitting..." : "Submit Ticket"}
                         </Button>

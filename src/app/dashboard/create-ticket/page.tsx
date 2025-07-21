@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createTicket } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
-import type { Ticket } from "@/lib/types";
+import type { Ticket, Attachment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function CreateTicketPage() {
@@ -36,7 +36,7 @@ export default function CreateTicketPage() {
     },
   });
 
-  const handleTicketSubmit = (data: Omit<Ticket, 'id' | 'createdAt' | 'status' | 'studentName' | 'studentAvatar' | 'studentNumber' | 'priority' >) => {
+  const handleTicketSubmit = (data: Omit<Ticket, 'id' | 'createdAt' | 'status' | 'studentName' | 'studentAvatar' | 'studentNumber' | 'priority' >, attachment?: Attachment) => {
     if (!user || !user.username) {
         toast({
             variant: "destructive",
@@ -48,11 +48,12 @@ export default function CreateTicketPage() {
     
     createTicketMutation.mutate({
       ...data,
-      priority: 'Medium', // Default priority since it's removed from form
+      priority: 'Medium', // Default priority
       studentNumber: user.username,
       studentName: user.username,
       studentAvatar: user.avatar,
       status: 'Open',
+      attachment: attachment,
     });
   };
 

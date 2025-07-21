@@ -1,5 +1,4 @@
 
-
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -46,6 +45,7 @@ export interface Ticket {
   assigneeAvatar?: string;
   isLocked?: boolean;
   lockedByStaffId?: string;
+  attachment?: Attachment;
 }
 
 export interface Announcement {
@@ -105,7 +105,7 @@ export interface Recording {
   dataAiHint?: string;
 }
 
-export type CreateTicketPayload = Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>;
+export type CreateTicketPayload = Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'> & { attachment?: Attachment };
 export type UpdateTicketPayload = Partial<Ticket> & { id: string };
 
 export type CreateTicketMessageClientPayload = { 

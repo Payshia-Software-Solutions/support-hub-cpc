@@ -112,6 +112,13 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
         assigneeAvatar: apiTicket.assignee_avatar,
         isLocked: apiTicket.is_locked == 1,
         lockedByStaffId: apiTicket.locked_by_staff_id,
+        attachment: (apiTicket.attachment_type && apiTicket.attachment_url && apiTicket.attachment_name)
+          ? {
+              type: apiTicket.attachment_type,
+              url: apiTicket.attachment_url,
+              name: apiTicket.attachment_name,
+            }
+          : undefined,
     };
 }
 
@@ -129,6 +136,15 @@ function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
     if (ticketData.assigneeAvatar !== undefined) apiPayload.assignee_avatar = ticketData.assigneeAvatar;
     if (ticketData.isLocked !== undefined) apiPayload.is_locked = ticketData.isLocked ? 1 : 0;
     if (ticketData.lockedByStaffId !== undefined) apiPayload.locked_by_staff_id = ticketData.lockedByStaffId;
+    
+    if (ticketData.attachment !== undefined) {
+      apiPayload.attachment_type = ticketData.attachment?.type || null;
+      apiPayload.attachment_name = ticketData.attachment?.name || null;
+      // The backend would handle the upload, we just send metadata.
+      // A real implementation would likely use a multipart/form-data request.
+      apiPayload.attachment_url = ticketData.attachment?.url || null;
+    }
+
     return apiPayload;
 }
 
