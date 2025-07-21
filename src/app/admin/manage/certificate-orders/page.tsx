@@ -393,7 +393,7 @@ export default function CertificateOrdersListPage() {
                     order.id,
                     order.created_by,
                     `"${order.name_on_certificate.replace(/"/g, '""')}"`,
-                    order.course_code,
+                    `"${order.course_code}"`,
                     order.mobile,
                     order.created_at,
                     order.certificate_status,
