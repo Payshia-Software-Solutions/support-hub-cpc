@@ -12,7 +12,7 @@ export interface Message {
   text: string;
   time: string; 
   avatar?: string;
-  attachment?: Attachment;
+  attachments?: Attachment[];
 }
 
 export interface Chat {
@@ -45,7 +45,7 @@ export interface Ticket {
   assigneeAvatar?: string;
   isLocked?: boolean;
   lockedByStaffId?: string;
-  attachment?: Attachment;
+  attachments?: Attachment[];
 }
 
 export interface Announcement {
@@ -105,7 +105,7 @@ export interface Recording {
   dataAiHint?: string;
 }
 
-export type CreateTicketPayload = Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'> & { attachment?: Attachment };
+export type CreateTicketPayload = Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>;
 export type UpdateTicketPayload = Partial<Ticket> & { id: string };
 
 export type CreateTicketMessageClientPayload = { 
@@ -118,7 +118,7 @@ export type CreateChatMessageClientPayload = {
   chatId: string;
   from: 'student' | 'staff';
   text: string;
-  attachment?: Attachment;
+  attachments?: Attachment[];
 };
 
 export interface StudentSearchResult {

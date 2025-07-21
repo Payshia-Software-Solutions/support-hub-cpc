@@ -21,6 +21,7 @@ import type { TicketCategory, Attachment } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Book, CreditCard, Gamepad2, Truck, MoreHorizontal, ArrowLeft, Video, ClipboardList, ClipboardCheck, Award, Paperclip, FileText, XCircle } from "lucide-react";
+import Image from "next/image";
 
 const ticketFormSchema = z.object({
   subject: z.string().min(5, "Topic must be at least 5 characters.").max(20, "Topic must be 20 characters or less."),
@@ -33,7 +34,7 @@ const ticketFormSchema = z.object({
 type TicketFormValues = z.infer<typeof ticketFormSchema>;
 
 interface TicketFormProps {
-  onSubmitTicket: (data: Omit<TicketFormValues, "priority">, attachment?: Attachment) => void;
+  onSubmitTicket: (data: Omit<TicketFormValues, "priority">, attachments?: Attachment[]) => void;
   isSubmitting: boolean;
 }
 
@@ -51,7 +52,7 @@ const categoryOptions: { name: TicketCategory; icon: React.ElementType }[] = [
 
 export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   const [selectedCategory, setSelectedCategory] = useState<TicketCategory | null>(null);
-  const [stagedAttachment, setStagedAttachment] = useState<Attachment | null>(null);
+  const [stagedAttachments, setStagedAttachments] = useState<Attachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<TicketFormValues>({
@@ -63,9 +64,9 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   });
 
   function onSubmit(data: TicketFormValues) {
-    onSubmitTicket(data, stagedAttachment || undefined);
+    onSubmitTicket(data, stagedAttachments);
     form.reset();
-    setStagedAttachment(null);
+    setStagedAttachments([]);
     setSelectedCategory(null);
   }
 
@@ -76,7 +77,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   
   const handleGoBack = () => {
     setSelectedCategory(null);
-    setStagedAttachment(null);
+    setStagedAttachments([]);
     form.reset();
   }
 
@@ -85,37 +86,44 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast({
-          variant: "destructive",
-          title: "File too large",
-          description: "Please select a file smaller than 5MB.",
-        });
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        return;
-      }
+    const files = event.target.files;
+    if (files) {
+      let newAttachments: Attachment[] = [...stagedAttachments];
+      let errors = false;
 
-      const fileType = file.type.startsWith("image/") ? "image" : "document";
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setStagedAttachment({
-          type: fileType,
-          url: reader.result as string, // For preview
-          name: file.name,
-          file: file,
-        });
-      };
-      reader.readAsDataURL(file);
+      Array.from(files).forEach(file => {
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit per file
+          toast({
+            variant: "destructive",
+            title: "File too large",
+            description: `"${file.name}" is larger than 5MB and was not added.`,
+          });
+          errors = true;
+          return;
+        }
+
+        const fileType = file.type.startsWith("image/") ? "image" : "document";
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newAttachments.push({
+            type: fileType,
+            url: reader.result as string,
+            name: file.name,
+            file: file,
+          });
+          // Update state after each file is read
+          setStagedAttachments([...newAttachments]);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      // Clear the input value to allow selecting the same file again if needed
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const removeStagedAttachment = () => {
-    setStagedAttachment(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+  const removeStagedAttachment = (fileName: string) => {
+    setStagedAttachments(prev => prev.filter(att => att.name !== fileName));
   };
 
   return (
@@ -130,7 +138,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                         </>
                     ) : (
                          <>
-                            <Button variant="ghost" onClick={handleGoBack} className="w-fit h-auto mb-2 text-sm text-muted-foreground hover:text-foreground">
+                            <Button variant="ghost" onClick={handleGoBack} className="w-fit h-auto mb-2 pl-1 text-sm text-muted-foreground hover:text-foreground">
                                 <ArrowLeft className="mr-2 h-4 w-4" /> Change Category
                             </Button>
                             <CardTitle className="text-2xl font-headline">Describe Your Issue</CardTitle>
@@ -186,23 +194,29 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                                 )}
                             />
                             <div>
-                              <FormLabel>Attachment (Optional)</FormLabel>
-                               <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
-                                {!stagedAttachment ? (
-                                  <Button type="button" variant="outline" onClick={handleAttachmentClick} className="w-full mt-2">
-                                      <Paperclip className="mr-2 h-4 w-4" /> Attach a file
-                                  </Button>
-                                ) : (
-                                  <div className="mt-2 p-2 border rounded-md flex items-center justify-between bg-muted/50">
+                              <FormLabel>Attachments (Optional)</FormLabel>
+                               <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" multiple />
+                               
+                               <div className="mt-2 space-y-2">
+                                  {stagedAttachments.map(att => (
+                                    <div key={att.name} className="p-2 border rounded-md flex items-center justify-between bg-muted/50">
                                       <div className="flex items-center gap-2 truncate">
+                                        {att.type === 'image' ? (
+                                          <Image src={att.url} alt={att.name} width={32} height={32} className="rounded object-cover" data-ai-hint="image preview"/>
+                                        ) : (
                                           <FileText className="h-5 w-5 text-muted-foreground" />
-                                          <span className="text-sm text-muted-foreground truncate">{stagedAttachment.name}</span>
+                                        )}
+                                        <span className="text-sm text-muted-foreground truncate">{att.name}</span>
                                       </div>
-                                      <Button type="button" variant="ghost" size="icon" onClick={removeStagedAttachment} className="text-destructive hover:text-destructive h-6 w-6">
-                                          <XCircle className="h-5 w-5" />
+                                      <Button type="button" variant="ghost" size="icon" onClick={() => removeStagedAttachment(att.name)} className="text-destructive hover:text-destructive h-6 w-6">
+                                        <XCircle className="h-5 w-5" />
                                       </Button>
-                                  </div>
-                                )}
+                                    </div>
+                                  ))}
+                                  <Button type="button" variant="outline" onClick={handleAttachmentClick} className="w-full">
+                                      <Paperclip className="mr-2 h-4 w-4" /> Add attachment(s)
+                                  </Button>
+                               </div>
                             </div>
                         </div>
                     )}

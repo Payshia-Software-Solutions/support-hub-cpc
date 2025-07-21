@@ -36,7 +36,7 @@ export default function CreateTicketPage() {
     },
   });
 
-  const handleTicketSubmit = (data: Omit<Ticket, 'id' | 'createdAt' | 'status' | 'studentName' | 'studentAvatar' | 'studentNumber' | 'priority' >, attachment?: Attachment) => {
+  const handleTicketSubmit = (data: Omit<Ticket, 'id' | 'createdAt' | 'status' | 'studentName' | 'studentAvatar' | 'studentNumber' | 'priority' | 'attachments' >, attachments: Attachment[] = []) => {
     if (!user || !user.username) {
         toast({
             variant: "destructive",
@@ -53,7 +53,7 @@ export default function CreateTicketPage() {
       studentName: user.username,
       studentAvatar: user.avatar,
       status: 'Open',
-      attachment: attachment,
+      attachments: attachments,
     });
   };
 

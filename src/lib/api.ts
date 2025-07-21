@@ -61,13 +61,13 @@ function mapApiMessageToMessage(apiMsg: ApiMessage): Message {
     text: apiMsg.text,
     time: apiMsg.time,
     avatar: apiMsg.avatar,
-    attachment: (apiMsg.attachment_type && apiMsg.attachment_url && apiMsg.attachment_name)
-      ? {
+    attachments: (apiMsg.attachment_type && apiMsg.attachment_url && apiMsg.attachment_name)
+      ? [{
           type: apiMsg.attachment_type,
           url: apiMsg.attachment_url,
           name: apiMsg.attachment_name,
-        }
-      : undefined,
+        }]
+      : [],
   };
 }
 
@@ -96,6 +96,18 @@ function mapApiChatToChat(apiChat: ApiChat): Chat {
 }
 
 function mapApiTicketToTicket(apiTicket: any): Ticket {
+    // This needs to be adapted if the API returns a JSON string for attachments
+    let attachments: Attachment[] = [];
+    if (typeof apiTicket.attachments === 'string') {
+        try {
+            attachments = JSON.parse(apiTicket.attachments);
+        } catch (e) {
+            console.error("Failed to parse attachments JSON from API:", e);
+        }
+    } else if (Array.isArray(apiTicket.attachments)) {
+        attachments = apiTicket.attachments;
+    }
+
     return {
         id: apiTicket.id,
         subject: apiTicket.subject,
@@ -112,13 +124,7 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
         assigneeAvatar: apiTicket.assignee_avatar,
         isLocked: apiTicket.is_locked == 1,
         lockedByStaffId: apiTicket.locked_by_staff_id,
-        attachment: (apiTicket.attachment_type && apiTicket.attachment_url && apiTicket.attachment_name)
-          ? {
-              type: apiTicket.attachment_type,
-              url: apiTicket.attachment_url,
-              name: apiTicket.attachment_name,
-            }
-          : undefined,
+        attachments: attachments,
     };
 }
 
@@ -137,12 +143,15 @@ function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
     if (ticketData.isLocked !== undefined) apiPayload.is_locked = ticketData.isLocked ? 1 : 0;
     if (ticketData.lockedByStaffId !== undefined) apiPayload.locked_by_staff_id = ticketData.lockedByStaffId;
     
-    if (ticketData.attachment !== undefined) {
-      apiPayload.attachment_type = ticketData.attachment?.type || null;
-      apiPayload.attachment_name = ticketData.attachment?.name || null;
-      // The backend would handle the upload, we just send metadata.
-      // A real implementation would likely use a multipart/form-data request.
-      apiPayload.attachment_url = ticketData.attachment?.url || null;
+    // The backend should expect a JSON stringified array of attachment metadata
+    if (ticketData.attachments && ticketData.attachments.length > 0) {
+      apiPayload.attachments = JSON.stringify(ticketData.attachments.map(att => ({
+        type: att.type,
+        name: att.name,
+        // The URL is for client-side preview, the backend will handle the upload
+        // and generate its own URL. We send the data URI for now.
+        url: att.url,
+      })));
     }
 
     return apiPayload;
@@ -300,8 +309,8 @@ export const createChatMessage = (messageData: CreateChatMessageClientPayload): 
     from_role: messageData.from,
     text: messageData.text,
     time: new Date().toISOString(),
-    attachment_type: messageData.attachment?.type || null,
-    attachment_name: messageData.attachment?.name || null,
+    attachment_type: messageData.attachments?.[0]?.type || null,
+    attachment_name: messageData.attachments?.[0]?.name || null,
     attachment_url: null, 
   };
   return apiFetch('/chat-messages', { method: 'POST', body: JSON.stringify(apiPayload) });
