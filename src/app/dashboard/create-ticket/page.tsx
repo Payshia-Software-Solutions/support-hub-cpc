@@ -36,7 +36,7 @@ export default function CreateTicketPage() {
     },
   });
 
-  const handleTicketSubmit = (data: Omit<Ticket, 'id' | 'createdAt' | 'status' | 'studentName' | 'studentAvatar' | 'studentNumber'>) => {
+  const handleTicketSubmit = (data: Omit<Ticket, 'id' | 'createdAt' | 'status' | 'studentName' | 'studentAvatar' | 'studentNumber' | 'priority' >) => {
     if (!user || !user.username) {
         toast({
             variant: "destructive",
@@ -48,6 +48,7 @@ export default function CreateTicketPage() {
     
     createTicketMutation.mutate({
       ...data,
+      priority: 'Medium', // Default priority since it's removed from form
       studentNumber: user.username,
       studentName: user.username,
       studentAvatar: user.avatar,
