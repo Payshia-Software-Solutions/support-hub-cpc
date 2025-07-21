@@ -73,7 +73,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   }
 
   return (
-    <Card className="w-full mx-auto shadow-none border-0 rounded-none mb-20 bg-transparent">
+    <Card className="w-full border-0 rounded-none mb-20 bg-transparent">
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
                 <CardHeader>
@@ -84,15 +84,15 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                         </>
                     ) : (
                          <>
-                            <Button variant="ghost" onClick={handleGoBack} className="w-fit h-auto mb-2 text-sm text-muted-foreground hover:text-foreground -ml-4">
+                            <Button variant="ghost" onClick={handleGoBack} className="w-fit h-auto mb-2 text-sm text-muted-foreground hover:text-foreground">
                                 <ArrowLeft className="mr-2 h-4 w-4" /> Change Category
                             </Button>
                             <CardTitle className="text-2xl font-headline">Describe Your Issue</CardTitle>
                             <CardDescription>Step 2: Provide details about your '{selectedCategory}' issue.</CardDescription>
-                        </>
+                         </>
                     )}
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                     {!selectedCategory ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {categoryOptions.map((cat) => (
@@ -143,7 +143,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                     )}
                 </CardContent>
                 {selectedCategory && (
-                     <CardFooter>
+                     <CardFooter className="pt-0">
                         <Button type="submit" disabled={isSubmitting}>
                         {isSubmitting ? "Submitting..." : "Submit Ticket"}
                         </Button>
