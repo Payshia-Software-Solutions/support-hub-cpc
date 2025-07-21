@@ -49,6 +49,22 @@ export default function ChatPage() {
     }
   }, [isMobile, setIsMobileDetailActive]);
 
+  useEffect(() => {
+    if (isMobile && studentChat) {
+      // Intercept the back button press
+      history.pushState(null, '', location.href);
+      const handlePopState = (event: PopStateEvent) => {
+          event.preventDefault();
+          router.push('/dashboard/tickets'); // Navigate back to a safe list/hub view
+      };
+      window.addEventListener('popstate', handlePopState);
+
+      return () => {
+          window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [router, isMobile, studentChat]);
+
   const createChatMutation = useMutation({
     mutationFn: (studentInfo: { studentNumber: string, studentAvatar: string }) => createChat(studentInfo),
     onSuccess: () => {

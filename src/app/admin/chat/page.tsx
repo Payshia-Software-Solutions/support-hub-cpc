@@ -14,6 +14,7 @@ import { getAdminChats, createChatMessage } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 
 const STAFF_AVATAR = "https://placehold.co/40x40.png?text=Staff";
@@ -24,6 +25,8 @@ export default function AdminChatPage() {
   const { setIsMobileDetailActive } = useMobileDetailActive();
   const { open: isSidebarOpen } = useSidebar(); 
   const queryClient = useQueryClient();
+  const router = useRouter();
+
 
   const { data: chats, isLoading, isError, error } = useQuery<Chat[]>({
     queryKey: ['admin-chats'],
@@ -106,6 +109,22 @@ export default function AdminChatPage() {
       setIsMobileDetailActive(false); 
     }
   }, [isMobile, selectedChatId, setIsMobileDetailActive]);
+  
+  useEffect(() => {
+    if (isMobile && selectedChatId) {
+        history.pushState(null, '', location.href);
+        const handlePopState = (event: PopStateEvent) => {
+            event.preventDefault();
+            setSelectedChatId(null);
+        };
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }
+  }, [isMobile, selectedChatId]);
+
 
   const handleSelectChat = (chatId: string) => {
     setSelectedChatId(chatId);
