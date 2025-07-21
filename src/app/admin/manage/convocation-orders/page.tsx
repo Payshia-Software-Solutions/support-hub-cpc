@@ -669,5 +669,3 @@ export default function ConvocationOrdersPage() {
         </div>
     );
 }
-
-    
