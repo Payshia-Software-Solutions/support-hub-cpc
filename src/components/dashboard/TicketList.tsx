@@ -59,7 +59,7 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
       <div className="flex flex-col md:flex-row gap-4 justify-between md:items-center sticky top-0 bg-background py-4 z-10 border-b px-4 md:px-6">
         <div>
           <h1 className="text-2xl font-headline font-semibold">Support Tickets</h1>
-          {currentStaffId && <p className="text-muted-foreground text-sm">Create or manage support tickets.</p>}
+          <p className="text-muted-foreground text-sm">Create or manage support tickets.</p>
         </div>
         <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
            <div className="relative w-full md:w-auto">
@@ -94,13 +94,11 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
                 <SelectItem value="High">High</SelectItem>
               </SelectContent>
             </Select>
-            {currentStaffId && (
-                 <Button asChild>
-                    <Link href="/dashboard/create-ticket">
-                        <PlusCircle className="mr-2 h-4 w-4" /> Create New
-                    </Link>
-                </Button>
-            )}
+             <Button asChild>
+                <Link href="/dashboard/create-ticket">
+                    <PlusCircle className="mr-2 h-4 w-4" /> Create New
+                </Link>
+            </Button>
           </div>
         </div>
       </div>
