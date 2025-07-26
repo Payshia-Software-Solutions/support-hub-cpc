@@ -157,7 +157,7 @@ const DispensingForm = ({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto pr-2">
+      <div className="flex-1 overflow-y-auto pr-2 pb-24">
         <form id={`dispensing-form-${drug.id}`} onSubmit={handleSubmit(onSubmit)} className="space-y-6">
            <div className="flex justify-end">
               <Button type="button" variant="ghost" size="sm" onClick={handleReset} className="text-xs">
@@ -233,7 +233,7 @@ const DispensingForm = ({
 
         </form>
       </div>
-       <div className="pt-4 mt-auto">
+       <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
           <Button type="submit" form={`dispensing-form-${drug.id}`} className="w-full" size="lg">
               <ClipboardList className="mr-2 h-5 w-5" />
               Check Answers
@@ -323,16 +323,16 @@ export default function DPadDetailPage() {
   const renderDispensingArea = () => {
     if (selectedDrug) {
       return (
-        <>
-           <CardHeader>
+        <div className="h-full flex flex-col">
+           <SheetHeader className="p-6 pb-2 shrink-0">
                 <Button variant="ghost" onClick={() => setSelectedDrug(null)} className="h-auto p-0 mb-4 text-sm font-medium w-fit text-muted-foreground hover:text-foreground">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Item List
                 </Button>
-                <CardTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</CardTitle>
-                <CardDescription>Fill in the fields based on the prescription for this item.</CardDescription>
-            </CardHeader>
-            <CardContent>
+                <SheetTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</SheetTitle>
+                <SheetDescription>Fill in the fields based on the prescription for this item.</SheetDescription>
+            </SheetHeader>
+            <div className="flex-1 overflow-hidden px-6 pb-6">
               <DispensingForm 
                 drug={selectedDrug} 
                 results={allResults[selectedDrug.id] || null} 
@@ -340,18 +340,18 @@ export default function DPadDetailPage() {
                 onReset={() => handleReset(selectedDrug.id)}
                 patientName={currentPrescription.patient.name}
               />
-            </CardContent>
-        </>
+            </div>
+        </div>
       );
     }
     
     return (
        <>
-        <CardHeader>
-            <CardTitle>Dispensing Items</CardTitle>
-            <CardDescription>Select an item to begin filling out the dispensing label.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+        <SheetHeader className="p-6">
+            <SheetTitle>Dispensing Items</SheetTitle>
+            <SheetDescription>Select an item to begin filling out the dispensing label.</SheetDescription>
+        </SheetHeader>
+        <div className="p-6 pt-0 space-y-3">
           {currentPrescription.drugs.map((drug) => {
             const isCompleted = !!allResults[drug.id] && Object.values(allResults[drug.id]).every(r => r === true);
             return (
@@ -378,7 +378,7 @@ export default function DPadDetailPage() {
               </button>
             )
           })}
-        </CardContent>
+        </div>
        </>
     );
   };
@@ -443,7 +443,7 @@ export default function DPadDetailPage() {
                         <Button className="w-full" size="lg"><ClipboardList className="mr-2"/> Start Challenge</Button>
                     </SheetTrigger>
                     <SheetContent side="bottom" className="h-[90%] p-0">
-                       <div className="p-6 h-full flex flex-col">
+                       <div className="h-full flex flex-col relative">
                            {renderDispensingArea()}
                        </div>
                     </SheetContent>
@@ -454,7 +454,9 @@ export default function DPadDetailPage() {
 
         {!isMobile && (
              <Card className="flex flex-col">
-                {renderDispensingArea()}
+                <div className="h-full flex flex-col relative">
+                    {renderDispensingArea()}
+                </div>
             </Card>
         )}
       </div>
