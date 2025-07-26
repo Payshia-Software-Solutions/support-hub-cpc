@@ -239,8 +239,10 @@ export default function CertificateOrderPage() {
   
    const handleAdminSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        if (searchStudentId.trim()) {
-            setActiveStudentId(searchStudentId.trim());
+        const trimmedId = searchStudentId.trim();
+        if (trimmedId) {
+            const finalId = trimmedId.toLowerCase() === 'admin' ? trimmedId : trimmedId.toUpperCase();
+            setActiveStudentId(finalId);
         }
     };
 
@@ -581,7 +583,7 @@ export default function CertificateOrderPage() {
            {user?.role === 'staff' ? (
                 <p className="text-muted-foreground">Search for a student to order a certificate on their behalf.</p>
            ) : (
-                <p className="text-muted-foreground">Follow the steps to order your course certificates.</p>
+                <p className="text-muted-foreground">Follow the steps to order your course certificates. Your student number is {user?.username}.</p>
            )}
         </header>
 
