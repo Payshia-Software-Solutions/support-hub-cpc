@@ -160,7 +160,7 @@ const DispensingForm = ({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 md:overflow-y-auto pr-2 pb-24">
+       <div className="flex-1 overflow-y-auto pr-2">
         <form id={`dispensing-form-${drug.id}`} onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -194,11 +194,11 @@ const DispensingForm = ({
           </div>
         </form>
       </div>
-       <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
-          <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" onClick={handleReset} className="w-auto"> <RotateCw className="mr-2 h-4 w-4" /> Reset </Button>
-              <Button type="submit" form={`dispensing-form-${drug.id}`} className="flex-grow"> <ClipboardList className="mr-2 h-5 w-5" /> Check Answers </Button>
-          </div>
+      <div className="mt-auto p-4 bg-background border-t shrink-0">
+        <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" onClick={handleReset} className="w-auto"> <RotateCw className="mr-2 h-4 w-4" /> Reset </Button>
+            <Button type="submit" form={`dispensing-form-${drug.id}`} className="flex-grow"> <ClipboardList className="mr-2 h-5 w-5" /> Check Answers </Button>
+        </div>
       </div>
     </div>
   );
@@ -376,3 +376,4 @@ export default function DispensePage() {
         </div>
     );
 }
+
