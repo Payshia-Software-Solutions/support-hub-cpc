@@ -375,13 +375,10 @@ export const getCertificateOrders = async (): Promise<CertificateOrder[]> => {
     return response.json();
 }
 
-export const createCertificateOrder = async (payload: CreateCertificateOrderPayload): Promise<{ reference_number: string; id: string; }> => {
+export const createCertificateOrder = async (payload: FormData): Promise<{ reference_number: string; id: string; }> => {
     const response = await fetch(`${QA_API_BASE_URL}/certificate-orders/`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
+        body: payload,
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: `Certificate order creation failed. Status: ${response.status}` }));

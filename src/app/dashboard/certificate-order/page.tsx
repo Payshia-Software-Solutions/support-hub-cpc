@@ -6,11 +6,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getStudentFullInfo, createCertificateOrder } from '@/lib/api';
-import type { FullStudentData, StudentEnrollment, CreateCertificateOrderPayload } from '@/lib/types';
+import type { FullStudentData, StudentEnrollment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -169,7 +168,7 @@ export default function CertificateOrderPage() {
 
 
   const createOrderMutation = useMutation({
-    mutationFn: (payload: CreateCertificateOrderPayload) => createCertificateOrder(payload),
+    mutationFn: (payload: FormData) => createCertificateOrder(payload),
     onSuccess: (data) => {
         setReferenceNumber(data.reference_number || data.id);
         setStep('success');
@@ -203,7 +202,7 @@ export default function CertificateOrderPage() {
   };
 
   const handleConfirmAndSubmit = () => {
-    if (!user || !addressData || selectedEnrollments.length === 0) {
+    if (!user || !user.username || !addressData || selectedEnrollments.length === 0) {
       setErrorMessage("Missing required information to submit the order.");
       setStep('error');
       return;
@@ -211,22 +210,21 @@ export default function CertificateOrderPage() {
     
     const courseCodes = selectedEnrollments.map(e => e.parent_course_id).join(',');
 
-    const payload: CreateCertificateOrderPayload = {
-      created_by: user.username!,
-      mobile: addressData.phone,
-      address_line1: addressData.addressLine1,
-      address_line2: addressData.addressLine2 || '',
-      city_id: addressData.city, 
-      district: addressData.district,
-      type: 'courier',
-      payment_amount: '0.00',
-      package_id: 'default', 
-      course_code: courseCodes,
-      certificate_id: 'pending', 
-      certificate_status: 'Pending',
-    };
+    const submissionData = new FormData();
+    submissionData.append("address_line1", addressData.addressLine1);
+    submissionData.append("address_line2", addressData.addressLine2 || "");
+    submissionData.append("city_id", addressData.city);
+    submissionData.append("district", addressData.district);
+    submissionData.append("mobile", addressData.phone);
+    submissionData.append("created_by", user.username);
+    submissionData.append("type", "1"); // As per user instruction
+    submissionData.append("payment_amount", "0");
+    submissionData.append("package_id", "default"); // Added placeholder
+    submissionData.append("certificate_id", "0");
+    submissionData.append("certificate_status", "Pending");
+    submissionData.append("course_code", courseCodes);
     
-    createOrderMutation.mutate(payload);
+    createOrderMutation.mutate(submissionData);
   };
   
   const copyToClipboard = () => {
@@ -417,7 +415,7 @@ export default function CertificateOrderPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-8 pb-20">
+    <div className="p-4 md:p-8 space-y-8 pb-20 bg-transparent">
        <header>
           <h1 className="text-3xl font-headline font-semibold">Request a Certificate</h1>
           <p className="text-muted-foreground">Follow the steps to order your course certificates.</p>
