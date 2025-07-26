@@ -1,5 +1,45 @@
 
-import type { Prescription } from './d-pad-data';
+export interface PrescriptionFormValues {
+  date: string;
+  patientName: string;
+  drugName: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  quantity: number;
+  dosageForm: string;
+  morningQty: string;
+  afternoonQty: string;
+  eveningQty: string;
+  nightQty: string;
+  mealType: string;
+  usingFrequency: string;
+  bagin: string;
+  payaWarak: string;
+  additionalInstruction: string;
+};
+
+export interface PrescriptionDrug {
+  id: string;
+  lines: string[];
+  correctAnswers: PrescriptionFormValues;
+  acceptedFrequencyAnswers: string[];
+}
+
+export interface Prescription {
+  id: string;
+  doctor: {
+    name: string;
+    specialty: string;
+    regNo: string;
+  };
+  patient: {
+    name: string;
+    age: string;
+  };
+  date: string;
+  drugs: PrescriptionDrug[];
+}
 
 export interface Patient {
   id: string;
