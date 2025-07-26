@@ -209,8 +209,6 @@ export default function CertificateOrderPage() {
       return;
     }
     
-    const courseCodes = selectedEnrollments.map(e => e.parent_course_id).join(',');
-
     const submissionData = new FormData();
     submissionData.append("address_line1", addressData.addressLine1);
     submissionData.append("address_line2", addressData.addressLine2 || "");
@@ -223,7 +221,10 @@ export default function CertificateOrderPage() {
     submissionData.append("package_id", "default");
     submissionData.append("certificate_id", "0");
     submissionData.append("certificate_status", "Pending");
-    submissionData.append("course_code", courseCodes);
+
+    selectedEnrollments.forEach((enrollment, index) => {
+      submissionData.append(`course_id[${index}]`, enrollment.parent_course_id);
+    });
     
     createOrderMutation.mutate(submissionData);
   };
@@ -421,7 +422,7 @@ export default function CertificateOrderPage() {
           <h1 className="text-3xl font-headline font-semibold">Request a Certificate</h1>
           <p className="text-muted-foreground">Follow the steps to order your course certificates.</p>
         </header>
-      <Card className="w-full max-w-2xl mx-auto shadow-lg">
+      <Card className="shadow-lg">
         {renderContent()}
       </Card>
     </div>
