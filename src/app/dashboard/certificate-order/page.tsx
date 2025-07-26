@@ -15,12 +15,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from '@/lib/utils';
 
 
 const addressFormSchema = z.object({
@@ -256,32 +258,60 @@ export default function CertificateOrderPage() {
               <CardDescription>Review your course eligibility and select the certificates you wish to order.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {allEnrollments.map(enrollment => {
-                const isEligible = enrollment.certificate_eligibility;
-                return (
-                    <div key={enrollment.id} className="flex items-center space-x-3 p-4 border rounded-md has-[:disabled]:opacity-60 has-[:disabled]:bg-muted/50">
-                       <Checkbox 
-                         id={enrollment.id} 
-                         checked={selectedEnrollments.some(e => e.id === enrollment.id)}
-                         disabled={!isEligible}
-                         onCheckedChange={(checked) => {
-                             setSelectedEnrollments(prev => 
-                                 checked ? [...prev, enrollment] : prev.filter(e => e.id !== enrollment.id)
-                             );
-                         }}
-                       />
-                       <div className="flex-1">
-                         <Label htmlFor={enrollment.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed">
-                            {enrollment.parent_course_name}
-                         </Label>
-                         <p className="text-xs text-muted-foreground">{enrollment.course_code}</p>
-                       </div>
-                       <Badge variant={isEligible ? 'default' : 'destructive'} className={isEligible ? 'bg-green-600' : ''}>
-                           {isEligible ? "Eligible" : "Not Eligible"}
-                       </Badge>
-                    </div>
-                )
-              })}
+                {allEnrollments.map(enrollment => {
+                    const isEligible = enrollment.certificate_eligibility;
+                    return (
+                        <Collapsible key={enrollment.id} className="p-4 border rounded-md has-[:disabled]:bg-muted/50 has-[:disabled]:opacity-60 transition-all">
+                            <div className="flex items-center space-x-3">
+                                <Checkbox 
+                                    id={enrollment.id} 
+                                    checked={selectedEnrollments.some(e => e.id === enrollment.id)}
+                                    disabled={!isEligible}
+                                    onCheckedChange={(checked) => {
+                                        setSelectedEnrollments(prev => 
+                                            checked ? [...prev, enrollment] : prev.filter(e => e.id !== enrollment.id)
+                                        );
+                                    }}
+                                />
+                                <div className="flex-1">
+                                    <Label htmlFor={enrollment.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed">
+                                        {enrollment.parent_course_name}
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">{enrollment.course_code}</p>
+                                </div>
+                                <Badge variant={isEligible ? 'default' : 'destructive'} className={cn("shrink-0", isEligible ? 'bg-green-600' : '')}>
+                                    {isEligible ? "Eligible" : "Not Eligible"}
+                                </Badge>
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="w-9 p-0">
+                                        <ChevronDown className="h-4 w-4" />
+                                        <span className="sr-only">Toggle details</span>
+                                    </Button>
+                                </CollapsibleTrigger>
+                            </div>
+                            <CollapsibleContent className="space-y-2 mt-4 pt-4 border-t">
+                               <h4 className="text-sm font-semibold mb-2">Eligibility Criteria</h4>
+                               <ul className="space-y-2 text-sm">
+                                    {enrollment.criteria_details.map(criterion => (
+                                        <li key={criterion.id} className="flex items-center justify-between text-xs">
+                                            <div className="flex items-center gap-2">
+                                                {criterion.evaluation.completed ? (
+                                                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                                                ) : (
+                                                    <XCircle className="h-4 w-4 text-destructive shrink-0" />
+                                                )}
+                                                <span className="text-muted-foreground">{criterion.list_name}</span>
+                                            </div>
+                                            <span className="font-mono text-foreground bg-muted px-1.5 py-0.5 rounded-sm">
+                                                {criterion.evaluation.currentValue} / {criterion.evaluation.requiredValue}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </CollapsibleContent>
+                        </Collapsible>
+                    )
+                })}
             </CardContent>
             <CardFooter>
               <Button onClick={handleSelectionSubmit} disabled={selectedEnrollments.length === 0}>
