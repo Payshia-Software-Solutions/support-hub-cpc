@@ -30,6 +30,7 @@ export default function POSPage() {
     const [patient, setPatient] = useState<Patient | null>(null);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [cashReceived, setCashReceived] = useState<string>('');
+    const [discount, setDiscount] = useState<string>('');
     const [isPaid, setIsPaid] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [itemToAdd, setItemToAdd] = useState<PrescriptionDrug | GeneralStoreItem | null>(null);
@@ -46,8 +47,12 @@ export default function POSPage() {
     }, [patientId, router]);
 
     const subtotal = useMemo(() => cart.reduce((acc, item) => acc + item.price * item.quantity, 0), [cart]);
-    const tax = subtotal * 0.05; // 5% tax
-    const total = subtotal + tax;
+    const discountAmount = useMemo(() => {
+        const parsedDiscount = parseFloat(discount);
+        return isNaN(parsedDiscount) ? 0 : parsedDiscount;
+    }, [discount]);
+
+    const total = subtotal - discountAmount;
     const change = useMemo(() => {
         const received = parseFloat(cashReceived);
         if (isNaN(received) || received < total) return 0;
@@ -98,13 +103,17 @@ export default function POSPage() {
     };
     
     const handleQuantityChange = (itemId: string, newQuantityString: string) => {
-        const newQuantity = parseFloat(newQuantityString);
-        if (newQuantityString === '' || isNaN(newQuantity) || newQuantity <= 0) {
-             setCart(prev => prev.map(item => item.id === itemId ? {...item, quantity: 0} : item));
-             return;
+        if (newQuantityString === '') {
+            setCart(prev => prev.map(item => item.id === itemId ? { ...item, quantity: 0 } : item));
+            return;
         }
-        setCart(prev => prev.map(item => item.id === itemId ? {...item, quantity: newQuantity} : item));
-    }
+
+        const newQuantity = parseFloat(newQuantityString);
+        if (!isNaN(newQuantity) && newQuantity >= 0) {
+            setCart(prev => prev.map(item => item.id === itemId ? { ...item, quantity: newQuantity } : item));
+        }
+    };
+    
 
     const handleProcessPayment = () => {
         if (parseFloat(cashReceived) < total) {
@@ -216,11 +225,12 @@ export default function POSPage() {
                                                             <TableCell>
                                                                 <Input 
                                                                     type="number" 
-                                                                    value={item.quantity === 0 ? '' : item.quantity}
+                                                                    value={item.quantity === 0 ? '' : String(item.quantity)}
                                                                     onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                                                                    className="h-8 w-16 text-center"
+                                                                    className="h-8 w-20 text-center"
                                                                     disabled={isPaid}
                                                                     step="any"
+                                                                    min="0"
                                                                 />
                                                             </TableCell>
                                                             <TableCell className="text-right">{item.price.toFixed(2)}</TableCell>
@@ -244,7 +254,18 @@ export default function POSPage() {
                                     <Separator />
                                     <div className="space-y-2 text-sm">
                                         <div className="flex justify-between"><span>Subtotal</span><span>LKR {subtotal.toFixed(2)}</span></div>
-                                        <div className="flex justify-between"><span>Tax (5%)</span><span>LKR {tax.toFixed(2)}</span></div>
+                                        <div className="flex justify-between items-center">
+                                            <Label htmlFor="discount" className="text-sm">Discount</Label>
+                                            <Input
+                                                id="discount"
+                                                type="number"
+                                                placeholder="0.00"
+                                                value={discount}
+                                                onChange={(e) => setDiscount(e.target.value)}
+                                                className="h-8 w-24 text-right"
+                                                disabled={isPaid}
+                                            />
+                                        </div>
                                         <div className="flex justify-between font-bold text-base"><span className="text-primary">Total</span><span className="text-primary">LKR {total.toFixed(2)}</span></div>
                                     </div>
                                     
