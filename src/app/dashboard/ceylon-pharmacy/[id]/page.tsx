@@ -48,8 +48,8 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks }: {
     subtasks?: { id: string; name: string; href: string; completed: boolean; }[]
 }) => {
     const isCompleted = status === 'completed';
-    // The task is clickable if it is not completed.
-    const isParentLinkDisabled = isCompleted;
+    // The task is clickable if it is not completed, even if it has no subtasks.
+    const isParentLinkDisabled = isCompleted && !subtasks;
 
     const content = (
          <Card className={cn("shadow-md transition-shadow", isParentLinkDisabled ? "" : "group-hover:shadow-lg group-hover:border-primary/50", isCompleted ? "bg-green-100 border-green-300" : "")}>
@@ -81,7 +81,7 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks }: {
         </Card>
     );
 
-    if (isParentLinkDisabled && !subtasks) {
+    if (isCompleted && !subtasks?.some(t => !t.completed)) {
         return <div className="block">{content}</div>
     }
 
@@ -203,9 +203,9 @@ export default function CeylonPharmacyPatientPage() {
                                 </div>
                             </div>
 
-                            <div className="text-right mt-8">
-                                <p className="italic font-serif text-xl text-gray-700">{currentPrescription.doctor.name.split(' ').slice(1).join(' ')}</p>
-                                <p className="text-xs text-muted-foreground">Signature</p>
+                            <div className="text-right mt-8 font-serif text-xl text-gray-700">
+                                <p className="italic">{currentPrescription.doctor.name.split(' ').slice(1).join(' ')}</p>
+                                <p className="text-xs text-muted-foreground non-italic">Signature</p>
                             </div>
                         </div>
                     </CardContent>
@@ -221,20 +221,17 @@ export default function CeylonPharmacyPatientPage() {
 
                 <div className="space-y-4">
                     <Card className="shadow-xl">
-                        <CardHeader>
-                            <div className="flex justify-between items-start">
-                                <div className="flex items-center gap-4">
-                                     <Avatar className="h-14 w-14 border-2 border-primary">
-                                        <AvatarImage src={`https://placehold.co/100x100.png`} alt={patient.name} />
-                                        <AvatarFallback>{patient.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <CardTitle className="text-2xl">Treating: {patient.name}</CardTitle>
-                                        <CardDescription>{patient.age} / {currentPrescription.doctor.name}</CardDescription>
-                                    </div>
-                                </div>
+                        <CardContent className="p-4 flex flex-col items-center text-center gap-4">
+                             <Avatar className="h-24 w-24 text-4xl border-4 border-primary">
+                                <AvatarImage src={`https://placehold.co/100x100.png`} alt={patient.name} data-ai-hint="person avatar" />
+                                <AvatarFallback>{patient.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <CardTitle className="text-2xl font-headline">{patient.name}</CardTitle>
+                                <CardDescription className="text-base">{patient.age}</CardDescription>
+                                <p className="text-sm text-muted-foreground mt-1">Under care of {currentPrescription.doctor.name}</p>
                             </div>
-                        </CardHeader>
+                        </CardContent>
                     </Card>
                     
                     {treatmentStarted && (
