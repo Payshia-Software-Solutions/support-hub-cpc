@@ -360,7 +360,7 @@ export default function DPadDetailPage() {
                                 </SheetHeader>
                                 <TabsList className="grid w-full grid-cols-2 mt-4">
                                     {currentPrescription.drugs.map(drug => (
-                                        <TabsTrigger key={drug.id} value={drug.id}>Item {drug.id}</TabsTrigger>
+                                        <TabsTrigger key={drug.id} value={drug.id} className="truncate text-xs">{drug.correctAnswers.drugName}</TabsTrigger>
                                     ))}
                                 </TabsList>
                                 {currentPrescription.drugs.map(drug => (
@@ -394,7 +394,7 @@ export default function DPadDetailPage() {
                     <CardDescription>Fill in the fields based on the prescription.</CardDescription>
                     <TabsList className="grid w-full grid-cols-3 mt-2">
                         {currentPrescription.drugs.map(drug => (
-                            <TabsTrigger key={drug.id} value={drug.id}>Item {drug.id}</TabsTrigger>
+                            <TabsTrigger key={drug.id} value={drug.id} className="truncate text-xs">{drug.correctAnswers.drugName}</TabsTrigger>
                         ))}
                     </TabsList>
                 </CardHeader>
@@ -411,7 +411,7 @@ export default function DPadDetailPage() {
                 <div className="pt-4 mt-auto flex justify-end">
                     <Button type="submit" form={`dispensing-form-${activeTab}`} size="lg">
                          <ClipboardList className="mr-2 h-5 w-5" />
-                         Check Item {activeTab}
+                         Check Item
                     </Button>
                 </div>
             </Tabs>
