@@ -197,6 +197,12 @@ const DispensingForm = ({
           </div>
         </form>
       </div>
+       <div className="pt-4 mt-auto">
+          <Button type="submit" form={`dispensing-form-${drug.id}`} className="w-full" size="lg">
+              <ClipboardList className="mr-2 h-5 w-5" />
+              Check Answers
+          </Button>
+      </div>
     </div>
   );
 };
@@ -353,32 +359,30 @@ export default function DPadDetailPage() {
                     </SheetTrigger>
                     <SheetContent side="bottom" className="h-[90%] p-0">
                        <div className="p-6 h-full flex flex-col">
-                            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+                            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
                                 <SheetHeader>
                                     <SheetTitle>Dispensing Label</SheetTitle>
                                     <SheetDescription>Fill in the fields based on the prescription.</SheetDescription>
                                 </SheetHeader>
-                                <TabsList className="grid w-full grid-cols-2 mt-4">
-                                    {currentPrescription.drugs.map(drug => (
-                                        <TabsTrigger key={drug.id} value={drug.id} className="truncate text-xs">{drug.correctAnswers.drugName}</TabsTrigger>
-                                    ))}
-                                </TabsList>
+                                <div className="w-full overflow-x-auto pb-2 mt-4">
+                                  <TabsList className="inline-flex h-auto p-1">
+                                      {currentPrescription.drugs.map(drug => (
+                                          <TabsTrigger key={drug.id} value={drug.id} className="truncate text-xs h-9">{drug.correctAnswers.drugName}</TabsTrigger>
+                                      ))}
+                                  </TabsList>
+                                </div>
                                 {currentPrescription.drugs.map(drug => (
-                                    <TabsContent key={drug.id} value={drug.id} className="flex-1">
-                                        <DispensingForm 
-                                            drug={drug} 
-                                            results={allResults[drug.id] || null} 
-                                            onSubmit={handleSubmit(drug.id)} 
-                                            onReset={() => handleReset(drug.id)}
-                                        />
+                                    <TabsContent key={drug.id} value={drug.id} className="flex-1 -m-6 pt-6">
+                                       <div className="p-6 h-full">
+                                         <DispensingForm 
+                                              drug={drug} 
+                                              results={allResults[drug.id] || null} 
+                                              onSubmit={handleSubmit(drug.id)} 
+                                              onReset={() => handleReset(drug.id)}
+                                          />
+                                       </div>
                                     </TabsContent>
                                 ))}
-                                 <div className="pt-4 mt-auto">
-                                    <Button type="submit" form={`dispensing-form-${activeTab}`} className="w-full" size="lg">
-                                        <ClipboardList className="mr-2 h-5 w-5" />
-                                        Check Answers
-                                    </Button>
-                                </div>
                             </Tabs>
                        </div>
                     </SheetContent>
@@ -392,11 +396,13 @@ export default function DPadDetailPage() {
                 <CardHeader>
                     <CardTitle>Dispensing Label</CardTitle>
                     <CardDescription>Fill in the fields based on the prescription.</CardDescription>
-                    <TabsList className="grid w-full grid-cols-3 mt-2">
-                        {currentPrescription.drugs.map(drug => (
-                            <TabsTrigger key={drug.id} value={drug.id} className="truncate text-xs">{drug.correctAnswers.drugName}</TabsTrigger>
-                        ))}
-                    </TabsList>
+                     <div className="w-full overflow-x-auto pb-2">
+                        <TabsList className="inline-flex h-auto p-1 mt-2">
+                            {currentPrescription.drugs.map(drug => (
+                                <TabsTrigger key={drug.id} value={drug.id} className="truncate text-xs h-9">{drug.correctAnswers.drugName}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </div>
                 </CardHeader>
                 {currentPrescription.drugs.map(drug => (
                     <TabsContent key={drug.id} value={drug.id} className="flex-1">
@@ -408,12 +414,6 @@ export default function DPadDetailPage() {
                         />
                     </TabsContent>
                 ))}
-                <div className="pt-4 mt-auto flex justify-end">
-                    <Button type="submit" form={`dispensing-form-${activeTab}`} size="lg">
-                         <ClipboardList className="mr-2 h-5 w-5" />
-                         Check Item
-                    </Button>
-                </div>
             </Tabs>
         )}
       </div>
