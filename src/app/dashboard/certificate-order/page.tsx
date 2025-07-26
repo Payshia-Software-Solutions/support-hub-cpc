@@ -324,8 +324,8 @@ export default function CertificateOrderPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 flex justify-center items-center min-h-screen bg-muted/40">
-      <Card className="w-full max-w-2xl shadow-xl">
+    <div className="p-4 md:p-8 bg-transparent">
+      <Card className="w-full shadow-none">
         {renderContent()}
       </Card>
     </div>
