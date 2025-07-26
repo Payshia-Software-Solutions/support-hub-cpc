@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { prescriptions } from "@/lib/d-pad-data";
 import type { PrescriptionFormValues } from "@/lib/d-pad-data";
 import { Check, X, Pill, Repeat, Calendar, Hash, RotateCw, ArrowLeft, ClipboardList, ChevronDown, ArrowRight } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-is-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -400,16 +400,12 @@ export default function DPadDetailPage() {
                 </CardHeader>
                 {currentPrescription.drugs.map(drug => (
                     <TabsContent key={drug.id} value={drug.id} className="flex-1">
-                       <Card className="shadow-lg h-full">
-                           <CardContent className="p-4 h-full">
-                                <DispensingForm 
-                                    drug={drug} 
-                                    results={allResults[drug.id] || null} 
-                                    onSubmit={handleSubmit(drug.id)} 
-                                    onReset={() => handleReset(drug.id)}
-                                />
-                           </CardContent>
-                        </Card>
+                       <DispensingForm 
+                            drug={drug} 
+                            results={allResults[drug.id] || null} 
+                            onSubmit={handleSubmit(drug.id)} 
+                            onReset={() => handleReset(drug.id)}
+                        />
                     </TabsContent>
                 ))}
                 <div className="pt-4 mt-auto flex justify-end">
