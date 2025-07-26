@@ -443,10 +443,9 @@ export default function CertificateOrderPage() {
           <h1 className="text-3xl font-headline font-semibold">Request a Certificate</h1>
           <p className="text-muted-foreground">Follow the steps to order your course certificates.</p>
         </header>
-      <Card className="shadow-lg">
+      <Card className="shadow-lg w-full">
         {renderContent()}
       </Card>
     </div>
   );
 }
-
