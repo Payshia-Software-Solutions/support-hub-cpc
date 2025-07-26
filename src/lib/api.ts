@@ -376,7 +376,7 @@ export const getCertificateOrders = async (): Promise<CertificateOrder[]> => {
 }
 
 export const createCertificateOrder = async (payload: CreateCertificateOrderPayload): Promise<{ reference_number: string; id: string; }> => {
-    const response = await fetch(`${QA_API_BASE_URL}/certificate-orders`, {
+    const response = await fetch(`${QA_API_BASE_URL}/certificate-orders/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

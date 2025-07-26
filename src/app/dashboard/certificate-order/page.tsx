@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -208,23 +209,18 @@ export default function CertificateOrderPage() {
       return;
     }
 
-    const courseCodes = selectedEnrollments.map(e => e.course_code).join(',');
-
     const payload: CreateCertificateOrderPayload = {
       created_by: user.username!,
-      course_code: courseCodes,
       mobile: addressData.phone,
       address_line1: addressData.addressLine1,
       address_line2: addressData.addressLine2 || '',
       city_id: addressData.city, 
       district: addressData.district,
       type: 'courier',
-      payment: 'unpaid',
+      payment_amount: '0.00',
       package_id: 'default', 
       certificate_id: 'pending', 
       certificate_status: 'Pending',
-      cod_amount: '0.00',
-      is_active: '1',
     };
     
     createOrderMutation.mutate(payload);
