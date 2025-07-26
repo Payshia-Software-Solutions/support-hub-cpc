@@ -1,8 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useState, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -54,7 +53,13 @@ export default function DPadPage() {
     let allCorrect = true;
     for (const key in correctAnswers) {
       const formKey = key as keyof PrescriptionFormValues;
-      if (String(data[formKey]).toLowerCase().trim() === String(correctAnswers[formKey]).toLowerCase().trim()) {
+      const dataValue = String(data[formKey]).toLowerCase().trim();
+      const answerValue = String(correctAnswers[formKey]).toLowerCase().trim();
+      
+      // Special check for tds (three times a day)
+      if (formKey === 'frequency' && (dataValue === 'tid' || dataValue === 'tds')) {
+          newResults[formKey] = true;
+      } else if (dataValue === answerValue) {
         newResults[formKey] = true;
       } else {
         newResults[formKey] = false;
@@ -96,15 +101,38 @@ export default function DPadPage() {
           <CardHeader>
             <CardTitle>Prescription</CardTitle>
           </CardHeader>
-          <CardContent className="flex justify-center">
-            <Image
-              src="/images/prescription.png"
-              alt="Prescription for Paracetamol"
-              width={500}
-              height={700}
-              className="rounded-lg border object-contain"
-              data-ai-hint="prescription document"
-            />
+          <CardContent className="flex justify-center p-4">
+             <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
+                <div className="text-center border-b pb-4 mb-4 border-gray-300">
+                    <h2 className="text-xl font-bold">Dr. A. B. C. Perera</h2>
+                    <p className="text-sm text-gray-600">MBBS, MD</p>
+                    <p className="text-sm text-gray-600">Reg. No: 12345</p>
+                </div>
+                
+                <div className="flex justify-between text-sm mb-6">
+                    <div>
+                    <p><span className="font-semibold">Name:</span> John Doe</p>
+                    <p><span className="font-semibold">Age:</span> 34 Years</p>
+                    </div>
+                    <div>
+                    <p><span className="font-semibold">Date:</span> 2024-07-30</p>
+                    </div>
+                </div>
+
+                <div className="min-h-[200px] pl-10 relative mb-6">
+                    <div className="absolute left-0 top-0 text-6xl font-serif text-gray-700 select-none">℞</div>
+                    <div className="space-y-4 font-mono text-lg text-gray-800 pt-2">
+                        <p>Paracetamol 500mg</p>
+                        <p>1 tds</p>
+                        <p>5d</p>
+                    </div>
+                </div>
+
+                <div className="text-right mt-8">
+                    <p className="italic font-serif text-xl text-gray-700">A.B.C. Perera</p>
+                    <p className="text-xs text-gray-500">Signature</p>
+                </div>
+            </div>
           </CardContent>
         </Card>
 
