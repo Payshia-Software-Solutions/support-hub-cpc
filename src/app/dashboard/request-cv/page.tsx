@@ -52,15 +52,22 @@ export default function RequestCvPage() {
   const form = useForm<CvFormValues>({
     resolver: zodResolver(cvSchema),
     defaultValues: {
-      fullName: user?.name || '',
-      email: user?.email || '',
-      phone: '',
-      address: '',
-      linkedin: '',
-      summary: '',
-      experience: [{ title: '', company: '', location: '', startDate: '', endDate: '', description: '' }],
-      education: [{ degree: '', school: '', startDate: '', endDate: '' }],
-      skills: '',
+      fullName: user?.name || 'Jane Doe',
+      email: user?.email || 'jane.doe@example.com',
+      phone: '077 123 4567',
+      address: 'Colombo, Sri Lanka',
+      linkedin: 'https://linkedin.com/in/jane-doe-cv',
+      summary: 'A dedicated and detail-oriented pharmacy professional with 5+ years of experience in retail and clinical settings. Proven ability to manage inventory, dispense medication accurately, and provide exceptional patient counseling. Eager to leverage skills in a challenging new role.',
+      experience: [
+        { title: 'Senior Pharmacy Technician', company: 'Capital Pharmacy', location: 'Colombo', startDate: 'Jan 2021', endDate: 'Present', description: '- Dispensed prescriptions with 99.9% accuracy.\n- Managed inventory and ordering of pharmaceuticals.\n- Trained and supervised junior pharmacy staff.' },
+        { title: 'Pharmacy Technician', company: 'City Dispensary', location: 'Kandy', startDate: 'Jun 2018', endDate: 'Dec 2020', description: '- Assisted pharmacists in dispensing medication.\n- Provided patient counseling on drug usage.\n- Handled billing and insurance claims.' },
+        { title: 'Pharmacy Intern', company: 'General Hospital', location: 'Galle', startDate: 'May 2017', endDate: 'May 2018', description: '- Rotated through various pharmacy departments including IV admixture and outpatient services.\n- Conducted medication reconciliation for newly admitted patients.' },
+      ],
+      education: [
+        { degree: 'Diploma in Pharmacy', school: 'National Institute of Health Sciences', startDate: '2015', endDate: '2017' },
+        { degree: 'Advanced Level', school: 'Hillwood College, Kandy', startDate: '2012', endDate: '2014' }
+      ],
+      skills: 'Pharmacology, Patient Counseling, Inventory Management, Prescription Dispensing, Medical Billing, Team Leadership, Microsoft Office Suite',
     },
   });
 
@@ -89,7 +96,6 @@ export default function RequestCvPage() {
         return;
     }
     
-    // This is where you would call your Genkit flow
     setIsAiLoading(true);
     setTimeout(() => {
         const aiGeneratedSummary = `Highly motivated and skilled professional with experience in ${watchedValues.experience[0]?.title || 'various roles'}. Proficient in ${skillsText.split(',').slice(0, 2).join(' and ')}. Eager to contribute to a dynamic team and leverage expertise to achieve company goals.`;
@@ -119,24 +125,27 @@ export default function RequestCvPage() {
                 width: 210mm;
                 height: 297mm;
                 transform-origin: top center;
-                transform: scale(0.65); /* Adjust scale as needed */
+                transform: scale(0.65);
             }
         }
         @media print {
-            body > *:not(.cv-print-area) {
+            body > *:not(.print-area) {
                 display: none;
             }
-            .cv-print-area {
-                display: block;
+            .print-area {
+                display: block !important;
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 100%;
-                height: 100%;
+            }
+            .cv-preview-container {
+                padding: 0;
+                height: 100vh;
+                overflow: visible;
+                display: block;
             }
             .cv-preview-area {
-                margin: 0;
-                padding: 0;
+                transform: scale(1);
                 box-shadow: none;
                 border: none;
                 width: 100%;
@@ -144,7 +153,7 @@ export default function RequestCvPage() {
             }
             @page {
                 size: A4;
-                margin: 0.5in;
+                margin: 0;
             }
         }
     `}</style>
@@ -228,39 +237,39 @@ export default function RequestCvPage() {
             </CardContent>
         </Card>
 
-        <div className="sticky top-24 cv-print-area">
+        <div className="sticky top-24 print-area">
             <div className="flex justify-end mb-4 print:hidden">
                 <Button onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/> Print / Save as PDF</Button>
             </div>
             <div className="cv-preview-container">
                  <Card className="shadow-2xl cv-preview-area bg-white">
-                    <CardContent className="p-8 font-serif text-black">
+                    <CardContent className="p-12 font-serif text-black">
                         <header className="text-center border-b-2 border-gray-700 pb-4">
                             <h1 className="text-4xl font-bold tracking-wider">{watchedValues.fullName}</h1>
                             <div className="flex justify-center items-center gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
                                 <a href={`mailto:${watchedValues.email}`} className="flex items-center gap-1.5 hover:underline"><Mail className="h-3 w-3"/>{watchedValues.email}</a>
                                 <a href={`tel:${watchedValues.phone}`} className="flex items-center gap-1.5 hover:underline"><Phone className="h-3 w-3"/>{watchedValues.phone}</a>
                                {watchedValues.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3"/>{watchedValues.address}</p>}
-                               {watchedValues.linkedin && <a href={watchedValues.linkedin} className="flex items-center gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{watchedValues.linkedin.replace('https://','').replace('www.','')}</a>}
+                               {watchedValues.linkedin && <a href={watchedValues.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{watchedValues.linkedin.replace('https://','').replace('www.','')}</a>}
                             </div>
                         </header>
                         
                         <section className="mt-6">
                             <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Summary</h2>
-                            <p className="text-sm mt-2">{watchedValues.summary}</p>
+                            <p className="text-sm mt-2 whitespace-pre-wrap">{watchedValues.summary}</p>
                         </section>
 
                         <section className="mt-6">
                             <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Experience</h2>
                             <div className="space-y-4 mt-2">
-                                {watchedValues.experience.map((exp, i) => (
+                                {watchedValues.experience?.map((exp, i) => exp.title && exp.company && (
                                     <div key={i}>
                                         <div className="flex justify-between items-baseline">
                                             <h3 className="text-md font-semibold">{exp.title}</h3>
                                             <p className="text-xs font-mono">{exp.startDate} - {exp.endDate}</p>
                                         </div>
                                         <p className="text-sm italic">{exp.company}</p>
-                                        <p className="text-sm mt-1 whitespace-pre-line">{exp.description}</p>
+                                        <p className="text-sm mt-1 whitespace-pre-wrap">{exp.description}</p>
                                     </div>
                                 ))}
                             </div>
@@ -269,7 +278,7 @@ export default function RequestCvPage() {
                         <section className="mt-6">
                             <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Education</h2>
                              <div className="space-y-4 mt-2">
-                                {watchedValues.education.map((edu, i) => (
+                                {watchedValues.education?.map((edu, i) => edu.degree && edu.school && (
                                     <div key={i}>
                                         <div className="flex justify-between items-baseline">
                                             <h3 className="text-md font-semibold">{edu.degree}</h3>
@@ -298,3 +307,4 @@ export default function RequestCvPage() {
     </>
   );
 }
+
