@@ -112,7 +112,7 @@ export default function RequestCvPage() {
                 display: flex;
                 justify-content: center;
                 align-items: flex-start;
-                background: hsl(var(--muted)/0.5);
+                background: white;
                 padding: 1.5rem;
                 border-radius: var(--radius);
             }
@@ -143,7 +143,7 @@ export default function RequestCvPage() {
             }
             @page {
                 size: A4;
-                margin: 0;
+                margin: 0.5in;
             }
         }
     `}</style>
