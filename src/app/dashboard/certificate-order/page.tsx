@@ -36,6 +36,7 @@ type OrderStep = 'loading' | 'selection' | 'form' | 'confirmation' | 'success' |
 
 interface City {
     id: string;
+    district_id: string;
     name_en: string;
 }
 interface District {
@@ -45,7 +46,7 @@ interface District {
 
 
 const getCityName = async (cityId: string): Promise<City> => {
-    if (!cityId) return { id: '', name_en: 'N/A' };
+    if (!cityId) return { id: '', district_id: '', name_en: 'N/A' };
     const response = await fetch(`https://qa-api.pharmacollege.lk/cities/${cityId}`);
     if (!response.ok) {
         throw new Error('Failed to fetch city data');
@@ -134,21 +135,25 @@ export default function CertificateOrderPage() {
     }
     if (studentData) {
       const cityId = studentData.studentInfo.city || "";
-      const districtId = studentData.studentInfo.district || "";
-
+      
       form.reset({
         addressLine1: studentData.studentInfo.address_line_1 || "",
         addressLine2: studentData.studentInfo.address_line_2 || "",
         city: cityId,
-        district: districtId,
+        district: studentData.studentInfo.district || "",
         phone: studentData.studentInfo.telephone_1 || "",
       });
 
       if (cityId) {
-          getCityName(cityId).then(city => setCityName(city.name_en)).catch(() => setCityName(''));
-      }
-      if (districtId) {
-          getDistrictName(districtId).then(district => setDistrictName(district.name_en)).catch(() => setDistrictName(''));
+          getCityName(cityId).then(city => {
+              setCityName(city.name_en);
+              if (city.district_id) {
+                  form.setValue('district', city.district_id);
+                  getDistrictName(city.district_id).then(district => {
+                      setDistrictName(district.name_en);
+                  }).catch(() => setDistrictName(''));
+              }
+          }).catch(() => setCityName(''));
       }
 
       if (eligibleEnrollments.length > 0) {
