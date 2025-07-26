@@ -159,10 +159,6 @@ export default function CertificateOrderPage() {
           }).catch(() => setCityName(''));
       }
       
-      // Pre-select eligible courses
-      const initiallyEligible = Object.values(studentData.studentEnrollments).filter(e => e.certificate_eligibility);
-      setSelectedEnrollments(initiallyEligible);
-
       if (allEnrollments.length > 0) {
         setStep('selection');
       } else {
