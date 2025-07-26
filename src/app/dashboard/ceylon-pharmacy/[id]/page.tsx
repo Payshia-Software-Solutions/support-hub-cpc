@@ -47,7 +47,8 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks }: {
     subtasks?: { id: string; name: string; href: string; completed: boolean; }[]
 }) => {
     const isCompleted = status === 'completed';
-    const isParentLinkDisabled = isCompleted || !subtasks;
+    // A task is only non-clickable if it's completed.
+    const isParentLinkDisabled = isCompleted;
 
     const content = (
          <Card className={cn("shadow-md transition-shadow", isParentLinkDisabled ? "" : "group-hover:shadow-lg group-hover:border-primary/50", isCompleted ? "bg-green-100 border-green-300" : "")}>
