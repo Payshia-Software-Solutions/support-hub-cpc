@@ -75,9 +75,9 @@ export default function POSPage() {
     const handleAddToCart = () => {
         if (!itemToAdd) return;
 
-        const quantity = parseInt(addQuantity, 10);
-        if (isNaN(quantity) || quantity < 1) {
-            toast({ variant: 'destructive', title: 'Invalid quantity', description: 'Please enter a valid number.' });
+        const quantity = parseFloat(addQuantity);
+        if (isNaN(quantity) || quantity <= 0) {
+            toast({ variant: 'destructive', title: 'Invalid quantity', description: 'Please enter a valid number greater than 0.' });
             return;
         }
 
@@ -97,8 +97,12 @@ export default function POSPage() {
         setCart(prev => prev.filter(item => item.id !== itemId));
     };
     
-    const handleQuantityChange = (itemId: string, newQuantity: number) => {
-        if (newQuantity < 1) return;
+    const handleQuantityChange = (itemId: string, newQuantityString: string) => {
+        const newQuantity = parseFloat(newQuantityString);
+        if (newQuantityString === '' || isNaN(newQuantity) || newQuantity <= 0) {
+             setCart(prev => prev.map(item => item.id === itemId ? {...item, quantity: 0} : item));
+             return;
+        }
         setCart(prev => prev.map(item => item.id === itemId ? {...item, quantity: newQuantity} : item));
     }
 
@@ -212,10 +216,11 @@ export default function POSPage() {
                                                             <TableCell>
                                                                 <Input 
                                                                     type="number" 
-                                                                    value={item.quantity}
-                                                                    onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value, 10))}
+                                                                    value={item.quantity === 0 ? '' : item.quantity}
+                                                                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
                                                                     className="h-8 w-16 text-center"
                                                                     disabled={isPaid}
+                                                                    step="any"
                                                                 />
                                                             </TableCell>
                                                             <TableCell className="text-right">{item.price.toFixed(2)}</TableCell>
@@ -248,7 +253,7 @@ export default function POSPage() {
                                             <Separator />
                                             <div className="space-y-2">
                                                 <Label htmlFor="cash-received">Cash Received</Label>
-                                                <Input id="cash-received" type="number" placeholder="Enter amount..." value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} disabled={cart.length === 0} />
+                                                <Input id="cash-received" type="number" placeholder="Enter amount..." value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} disabled={cart.length === 0} step="any" />
                                             </div>
                                             <Button className="w-full" onClick={handleProcessPayment} disabled={cart.length === 0 || !cashReceived}>Process Payment</Button>
                                         </>
@@ -280,7 +285,8 @@ export default function POSPage() {
                             value={addQuantity} 
                             onChange={(e) => setAddQuantity(e.target.value)} 
                             className="mt-2"
-                            min="1"
+                            min="0"
+                            step="any"
                         />
                     </div>
                     <DialogFooter>
