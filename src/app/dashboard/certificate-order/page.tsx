@@ -96,6 +96,7 @@ export default function CertificateOrderPage() {
   const { user } = useAuth();
   const [step, setStep] = useState<OrderStep>('loading');
   const [selectedEnrollments, setSelectedEnrollments] = useState<StudentEnrollment[]>([]);
+  const [deselectedEligible, setDeselectedEligible] = useState<StudentEnrollment[]>([]);
   const [addressData, setAddressData] = useState<AddressFormValues | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
@@ -160,6 +161,9 @@ export default function CertificateOrderPage() {
       }
       
       if (allEnrollments.length > 0) {
+        const eligibleEnrollments = allEnrollments.filter(e => e.certificate_eligibility);
+        setSelectedEnrollments(eligibleEnrollments);
+        setDeselectedEligible([]);
         setStep('selection');
       } else {
         setErrorMessage("You do not have any courses to request a certificate for at this time.");
@@ -223,8 +227,8 @@ export default function CertificateOrderPage() {
     submissionData.append("certificate_id", "0");
     submissionData.append("certificate_status", "Pending");
 
-    selectedEnrollments.forEach((enrollment, index) => {
-      submissionData.append(`course_id[${index}]`, enrollment.parent_course_id);
+    selectedEnrollments.forEach((enrollment) => {
+      submissionData.append("course_id[]", enrollment.parent_course_id);
     });
     
     createOrderMutation.mutate(submissionData);
@@ -235,6 +239,18 @@ export default function CertificateOrderPage() {
       navigator.clipboard.writeText(referenceNumber);
       toast({ title: 'Copied!', description: 'Reference number copied to clipboard.' });
     }
+  };
+
+  const handleCheckboxChange = (checked: boolean, enrollment: StudentEnrollment) => {
+      setSelectedEnrollments(prev => 
+          checked ? [...prev, enrollment] : prev.filter(e => e.id !== enrollment.id)
+      );
+
+      if(enrollment.certificate_eligibility) {
+          setDeselectedEligible(prev => 
+              !checked ? [...prev, enrollment] : prev.filter(e => e.id !== enrollment.id)
+          );
+      }
   };
 
   const renderContent = () => {
@@ -254,6 +270,15 @@ export default function CertificateOrderPage() {
               <CardDescription>Review your course eligibility and select the certificates you wish to order.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+                {deselectedEligible.length > 0 && (
+                     <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Warning</AlertTitle>
+                        <AlertDescription>
+                            You have deselected {deselectedEligible.length} course(s) for which you are eligible to receive a certificate. Please ensure this is intentional before proceeding.
+                        </AlertDescription>
+                    </Alert>
+                )}
                 {allEnrollments.map(enrollment => {
                     const isEligible = enrollment.certificate_eligibility;
                     return (
@@ -263,13 +288,9 @@ export default function CertificateOrderPage() {
                                     id={enrollment.id} 
                                     checked={selectedEnrollments.some(e => e.id === enrollment.id)}
                                     disabled={!isEligible}
-                                    onCheckedChange={(checked) => {
-                                        setSelectedEnrollments(prev => 
-                                            checked ? [...prev, enrollment] : prev.filter(e => e.id !== enrollment.id)
-                                        );
-                                    }}
+                                    onCheckedChange={(checked) => handleCheckboxChange(Boolean(checked), enrollment)}
                                 />
-                                <div className="flex-1">
+                                 <div className="flex-1">
                                     <Label htmlFor={enrollment.id} className="font-medium leading-none peer-disabled:cursor-not-allowed">
                                         {enrollment.parent_course_name}
                                     </Label>
@@ -489,3 +510,4 @@ export default function CertificateOrderPage() {
     </div>
   );
 }
+
