@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from 'react';
@@ -104,6 +105,24 @@ export default function RequestCvPage() {
   return (
     <>
     <style jsx global>{`
+        @media screen {
+            .cv-preview-container {
+                height: 80vh; 
+                overflow: hidden;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                background: hsl(var(--muted)/0.5);
+                padding: 1.5rem;
+                border-radius: var(--radius);
+            }
+            .cv-preview-area {
+                width: 210mm;
+                height: 297mm;
+                transform-origin: top center;
+                transform: scale(0.65); /* Adjust scale as needed */
+            }
+        }
         @media print {
             body * {
                 visibility: hidden;
@@ -212,64 +231,66 @@ export default function RequestCvPage() {
             <div className="flex justify-end mb-4 print:hidden">
                 <Button onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/> Print / Save as PDF</Button>
             </div>
-             <Card className="shadow-2xl cv-preview-area">
-                <CardContent className="p-8 font-serif bg-white text-black">
-                    <header className="text-center border-b-2 border-gray-700 pb-4">
-                        <h1 className="text-4xl font-bold tracking-wider">{watchedValues.fullName}</h1>
-                        <div className="flex justify-center items-center gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
-                            <a href={`mailto:${watchedValues.email}`} className="flex items-center gap-1.5 hover:underline"><Mail className="h-3 w-3"/>{watchedValues.email}</a>
-                            <a href={`tel:${watchedValues.phone}`} className="flex items-center gap-1.5 hover:underline"><Phone className="h-3 w-3"/>{watchedValues.phone}</a>
-                           {watchedValues.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3"/>{watchedValues.address}</p>}
-                           {watchedValues.linkedin && <a href={watchedValues.linkedin} className="flex items-center gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{watchedValues.linkedin.replace('https://','').replace('www.','')}</a>}
-                        </div>
-                    </header>
-                    
-                    <section className="mt-6">
-                        <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Summary</h2>
-                        <p className="text-sm mt-2">{watchedValues.summary}</p>
-                    </section>
+            <div className="cv-preview-container">
+                 <Card className="shadow-2xl cv-preview-area">
+                    <CardContent className="p-8 font-serif bg-white text-black">
+                        <header className="text-center border-b-2 border-gray-700 pb-4">
+                            <h1 className="text-4xl font-bold tracking-wider">{watchedValues.fullName}</h1>
+                            <div className="flex justify-center items-center gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
+                                <a href={`mailto:${watchedValues.email}`} className="flex items-center gap-1.5 hover:underline"><Mail className="h-3 w-3"/>{watchedValues.email}</a>
+                                <a href={`tel:${watchedValues.phone}`} className="flex items-center gap-1.5 hover:underline"><Phone className="h-3 w-3"/>{watchedValues.phone}</a>
+                               {watchedValues.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3"/>{watchedValues.address}</p>}
+                               {watchedValues.linkedin && <a href={watchedValues.linkedin} className="flex items-center gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{watchedValues.linkedin.replace('https://','').replace('www.','')}</a>}
+                            </div>
+                        </header>
+                        
+                        <section className="mt-6">
+                            <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Summary</h2>
+                            <p className="text-sm mt-2">{watchedValues.summary}</p>
+                        </section>
 
-                    <section className="mt-6">
-                        <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Experience</h2>
-                        <div className="space-y-4 mt-2">
-                            {watchedValues.experience.map((exp, i) => (
-                                <div key={i}>
-                                    <div className="flex justify-between items-baseline">
-                                        <h3 className="text-md font-semibold">{exp.title}</h3>
-                                        <p className="text-xs font-mono">{exp.startDate} - {exp.endDate}</p>
+                        <section className="mt-6">
+                            <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Experience</h2>
+                            <div className="space-y-4 mt-2">
+                                {watchedValues.experience.map((exp, i) => (
+                                    <div key={i}>
+                                        <div className="flex justify-between items-baseline">
+                                            <h3 className="text-md font-semibold">{exp.title}</h3>
+                                            <p className="text-xs font-mono">{exp.startDate} - {exp.endDate}</p>
+                                        </div>
+                                        <p className="text-sm italic">{exp.company}</p>
+                                        <p className="text-sm mt-1 whitespace-pre-line">{exp.description}</p>
                                     </div>
-                                    <p className="text-sm italic">{exp.company}</p>
-                                    <p className="text-sm mt-1 whitespace-pre-line">{exp.description}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                    
-                    <section className="mt-6">
-                        <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Education</h2>
-                         <div className="space-y-4 mt-2">
-                            {watchedValues.education.map((edu, i) => (
-                                <div key={i}>
-                                    <div className="flex justify-between items-baseline">
-                                        <h3 className="text-md font-semibold">{edu.degree}</h3>
-                                         <p className="text-xs font-mono">{edu.startDate} - {edu.endDate}</p>
+                                ))}
+                            </div>
+                        </section>
+                        
+                        <section className="mt-6">
+                            <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Education</h2>
+                             <div className="space-y-4 mt-2">
+                                {watchedValues.education.map((edu, i) => (
+                                    <div key={i}>
+                                        <div className="flex justify-between items-baseline">
+                                            <h3 className="text-md font-semibold">{edu.degree}</h3>
+                                             <p className="text-xs font-mono">{edu.startDate} - {edu.endDate}</p>
+                                        </div>
+                                        <p className="text-sm italic">{edu.school}</p>
                                     </div>
-                                    <p className="text-sm italic">{edu.school}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                    
-                     <section className="mt-6">
-                        <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Skills</h2>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                            {skillList.map((skill, i) => (
-                                <span key={i} className="bg-gray-200 text-gray-800 text-xs font-medium px-2.5 py-1 rounded-full">{skill}</span>
-                            ))}
-                        </div>
-                    </section>
-                </CardContent>
-            </Card>
+                                ))}
+                            </div>
+                        </section>
+                        
+                         <section className="mt-6">
+                            <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Skills</h2>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {skillList.map((skill, i) => (
+                                    <span key={i} className="bg-gray-200 text-gray-800 text-xs font-medium px-2.5 py-1 rounded-full">{skill}</span>
+                                ))}
+                            </div>
+                        </section>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
       </div>
     </div>
