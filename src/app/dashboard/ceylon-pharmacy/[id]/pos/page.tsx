@@ -204,7 +204,7 @@ export default function POSPage() {
                                                                 value={item.quantity}
                                                                 onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value, 10))}
                                                                 className="h-8 w-16 text-center"
-                                                                disabled={isPaid || item.type === 'prescription'}
+                                                                disabled={isPaid}
                                                             />
                                                         </TableCell>
                                                         <TableCell className="text-right">{item.price.toFixed(2)}</TableCell>
@@ -259,4 +259,3 @@ export default function POSPage() {
         </div>
     );
 }
-
