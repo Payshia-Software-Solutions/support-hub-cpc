@@ -13,7 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { prescriptions } from "@/lib/d-pad-data";
 import type { PrescriptionFormValues, PrescriptionDrug } from "@/lib/d-pad-data";
-import { Check, X, Pill, Repeat, Calendar, Hash, RotateCw, ArrowLeft, ClipboardList, ChevronRight, CheckCircle } from "lucide-react";
+import { Check, X, Pill, Repeat, Calendar, Hash, RotateCw, ArrowLeft, ClipboardList, ChevronDown, CheckCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from "@/components/ui/dialog";
@@ -97,7 +97,7 @@ const DispensingForm = ({
   const form = useForm<PrescriptionFormValues>({
     resolver: zodResolver(prescriptionSchema),
     defaultValues: {
-      drugName: drug.correctAnswers.drugName,
+      drugName: "",
       dosage: "",
       frequency: "",
       duration: "",
@@ -120,7 +120,7 @@ const DispensingForm = ({
 
   const handleReset = () => {
     form.reset({
-      drugName: drug.correctAnswers.drugName,
+      drugName: "",
       dosage: "",
       frequency: "",
       duration: "",
@@ -167,19 +167,19 @@ const DispensingForm = ({
           </div>
           
           <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2 md:col-span-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label>Date</Label>
                   <p className="p-3 border rounded-md text-sm">{new Date().toLocaleDateString()}</p>
                 </div>
-                 <div className="space-y-2 md:col-span-1">
+                 <div className="space-y-2">
                   <Label>Name</Label>
                   <p className="p-3 border rounded-md text-sm truncate">{patientName}</p>
                 </div>
-                <div className="space-y-2 md:col-span-1">
-                  <Label>Drug Name</Label>
-                  <p className="p-3 border rounded-md text-sm truncate">{formValues.drugName}</p>
-                </div>
+              </div>
+              <div className="space-y-2">
+                 <Label>Drug Name</Label>
+                  <SelectionDialog triggerText="Select Drug" title="Drug" options={drugOptions} onSelect={(val) => setValue("drugName", val, { shouldValidate: true })} icon={Pill} value={formValues.drugName} resultIcon={getResultIcon("drugName")} />
               </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -243,6 +243,30 @@ const DispensingForm = ({
   );
 };
 
+const renderDispensingArea = (
+  selectedDrug: PrescriptionDrug | null,
+  patientName: string,
+  results: Record<string, ResultState>,
+  handleSubmit: (drugId: string) => (data: PrescriptionFormValues) => void,
+  handleReset: (drugId: string) => void,
+  handleGoBack: () => void,
+) => {
+  return (
+    <>
+      <div className="flex-1 overflow-hidden px-6 pb-6">
+        <DispensingForm
+          drug={selectedDrug!}
+          results={results[selectedDrug!.id] || null}
+          onSubmit={handleSubmit(selectedDrug!.id)}
+          onReset={() => handleReset(selectedDrug!.id)}
+          patientName={patientName}
+        />
+      </div>
+    </>
+  );
+};
+
+
 export default function DPadDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -269,7 +293,6 @@ export default function DPadDetailPage() {
     const newResults: ResultState = {};
     let allCorrect = true;
     
-    // Manual check for all new fields
     const checkField = (fieldName: keyof PrescriptionFormValues, formValue: any, correctValue: any) => {
       const isCorrect = String(formValue).toLowerCase().trim() === String(correctValue).toLowerCase().trim();
       newResults[fieldName] = isCorrect;
@@ -293,7 +316,7 @@ export default function DPadDetailPage() {
         title: "Excellent Work!",
         description: `You've filled out the details for ${drug.correctAnswers.drugName} correctly.`,
       });
-      setSelectedDrug(null); // Go back to the list
+      setSelectedDrug(null);
     } else {
       toast({
         variant: "destructive",
@@ -310,6 +333,8 @@ export default function DPadDetailPage() {
         return newResults;
     });
   }
+
+  const handleGoBack = () => setSelectedDrug(null);
   
   if (!currentPrescription) {
     return (
@@ -344,7 +369,7 @@ export default function DPadDetailPage() {
                   ) : (
                        <span className="text-xs text-muted-foreground">Pending</span>
                   )}
-                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                 <ChevronDown className="h-5 w-5 text-muted-foreground -rotate-90" />
               </div>
             </button>
           )
@@ -352,16 +377,6 @@ export default function DPadDetailPage() {
       </div>
     </>
   );
-
-  const formContent = selectedDrug ? (
-    <DispensingForm 
-      drug={selectedDrug} 
-      results={allResults[selectedDrug.id] || null} 
-      onSubmit={handleSubmit(selectedDrug.id)} 
-      onReset={() => handleReset(selectedDrug.id)}
-      patientName={currentPrescription.patient.name}
-    />
-  ) : null;
 
   return (
     <div className="p-4 md:p-8 space-y-8 pb-20">
@@ -426,16 +441,14 @@ export default function DPadDetailPage() {
                            {selectedDrug ? (
                              <>
                                 <SheetHeader className="p-6 pb-2 shrink-0">
-                                  <Button variant="ghost" onClick={() => setSelectedDrug(null)} className="h-auto p-0 mb-4 text-sm font-medium w-fit text-muted-foreground hover:text-foreground">
+                                  <Button variant="ghost" onClick={handleGoBack} className="h-auto p-0 mb-4 text-sm font-medium w-fit text-muted-foreground hover:text-foreground">
                                       <ArrowLeft className="mr-2 h-4 w-4" />
                                       Back to Item List
                                   </Button>
                                   <SheetTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</SheetTitle>
                                   <SheetDescription>Fill in the fields based on the prescription for this item.</SheetDescription>
                                 </SheetHeader>
-                                <div className="flex-1 overflow-hidden px-6 pb-6">
-                                  {formContent}
-                                </div>
+                                {renderDispensingArea(selectedDrug, currentPrescription.patient.name, allResults, handleSubmit, handleReset, handleGoBack)}
                              </>
                            ) : (
                               <>
@@ -459,7 +472,7 @@ export default function DPadDetailPage() {
                     {selectedDrug ? (
                       <>
                         <CardHeader>
-                          <Button variant="ghost" onClick={() => setSelectedDrug(null)} className="h-auto p-0 mb-4 text-sm font-medium w-fit text-muted-foreground hover:text-foreground">
+                          <Button variant="ghost" onClick={handleGoBack} className="h-auto p-0 mb-4 text-sm font-medium w-fit text-muted-foreground hover:text-foreground">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Item List
                           </Button>
@@ -467,7 +480,7 @@ export default function DPadDetailPage() {
                           <CardDescription>Fill in the fields based on the prescription for this item.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1 overflow-hidden">
-                           {formContent}
+                          {renderDispensingArea(selectedDrug, currentPrescription.patient.name, allResults, handleSubmit, handleReset, handleGoBack)}
                         </CardContent>
                       </>
                     ) : (
