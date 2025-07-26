@@ -9,8 +9,8 @@ import { Preloader } from '@/components/ui/preloader';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 
 export const metadata: Metadata = {
-  title: 'Student Support Hub',
-  description: 'Student Support Chat & Ticket Management System',
+  title: 'SOS App',
+  description: 'Student Online Support App',
   manifest: '/manifest.json',
 };
 
@@ -27,10 +27,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
         
         {/* PWA Meta Tags */}
-        <meta name="application-name" content="Support Hub" />
+        <meta name="application-name" content="SOS App" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Support Hub" />
+        <meta name="apple-mobile-web-app-title" content="SOS App" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#25D366" />

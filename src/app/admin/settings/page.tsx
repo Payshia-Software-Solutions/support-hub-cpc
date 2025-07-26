@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { Save, Bell, Shield, Send } from "lucide-react";
 
 export default function AdminSettingsPage() {
-  const [siteName, setSiteName] = useState("Support Hub Admin");
+  const [siteName, setSiteName] = useState("SOS App");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [browserNotificationPermission, setBrowserNotificationPermission] = useState<NotificationPermission | "not_supported">("default");
@@ -55,7 +55,7 @@ export default function AdminSettingsPage() {
       return;
     }
     new Notification("Test Notification", {
-      body: "This is a test browser notification from Support Hub Admin!",
+      body: "This is a test browser notification from SOS App!",
       icon: "/icon.png", // You'll need an icon in your public folder
     });
      toast({ title: "Test Sent", description: "If permissions are correct, you should see a notification."});
