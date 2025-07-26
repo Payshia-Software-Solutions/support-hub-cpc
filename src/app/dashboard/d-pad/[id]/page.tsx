@@ -16,6 +16,7 @@ import { prescriptions } from "@/lib/d-pad-data";
 import { Check, X, Pill, Repeat, Calendar, Hash, RotateCw, ArrowLeft, ClipboardList, ChevronDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 
 const prescriptionSchema = z.object({
   drugName: z.string().nonempty("Drug name is required."),
@@ -31,6 +32,45 @@ type ResultState = {
   [K in keyof PrescriptionFormValues]?: boolean;
 };
 
+// --- Sub-components ---
+
+interface SelectionDialogProps {
+  triggerText: string;
+  title: string;
+  options: string[];
+  onSelect: (value: string) => void;
+  icon: React.ElementType;
+  value: string;
+  resultIcon: React.ReactNode;
+}
+
+const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, value, resultIcon }: SelectionDialogProps) => (
+  <Dialog>
+    <DialogTrigger asChild>
+      <Button variant="outline" className="w-full justify-start pl-10 relative h-12 text-base">
+        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <span className="truncate">{value || triggerText}</span>
+         <div className="absolute right-3 top-1/2 -translate-y-1/2">{resultIcon}</div>
+      </Button>
+    </DialogTrigger>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Select {title}</DialogTitle>
+      </DialogHeader>
+      <div className="py-4 grid grid-cols-2 gap-2">
+        {options.map((option) => (
+           <DialogClose asChild key={option}>
+              <Button variant="outline" onClick={() => onSelect(option)}>
+                {option}
+              </Button>
+          </DialogClose>
+        ))}
+      </div>
+    </DialogContent>
+  </Dialog>
+);
+
+
 export default function DPadDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -43,7 +83,7 @@ export default function DPadDetailPage() {
     return prescriptions.find(p => p.id === prescriptionId);
   }, [prescriptionId]);
 
-  const { control, handleSubmit, formState: { errors }, reset } = useForm<PrescriptionFormValues>({
+  const { control, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<PrescriptionFormValues>({
     resolver: zodResolver(prescriptionSchema),
     defaultValues: {
       drugName: "",
@@ -53,6 +93,8 @@ export default function DPadDetailPage() {
       quantity: undefined,
     },
   });
+
+  const formValues = watch();
   
   useEffect(() => {
     reset({
@@ -124,6 +166,14 @@ export default function DPadDetailPage() {
     )
   }
 
+  // Options for dialogs - in a real app this might be more dynamic
+  const drugOptions = [currentPrescription.correctAnswers.drugName, "Paracetamol 250mg", "Amoxicillin 500mg", "Metformin 250mg"];
+  const dosageOptions = ["1", "2", "1/2", "3"];
+  const frequencyOptions = ["tds", "bd", "mane", "nocte", "qid", "sos"];
+  const durationOptions = [currentPrescription.correctAnswers.duration, "3d", "7d", "10d", "1m"];
+  const quantityOptions = [String(currentPrescription.correctAnswers.quantity), "10", "20", "30"];
+
+
   const DispensingForm = () => (
     <div className="flex flex-col h-full">
       <SheetHeader>
@@ -138,54 +188,75 @@ export default function DPadDetailPage() {
                 Reset
               </Button>
           </div>
+          
           <div className="space-y-2">
-            <Label htmlFor="drugName">Drug Name & Strength</Label>
-            <div className="relative">
-              <Pill className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Controller name="drugName" control={control} render={({ field }) => ( <Input id="drugName" placeholder="e.g., Amoxicillin 250mg" className="pl-10" {...field} /> )} />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("drugName")}</div>
-            </div>
+            <Label>Drug Name & Strength</Label>
+            <SelectionDialog
+              triggerText="Select Drug Name"
+              title="Drug Name"
+              options={drugOptions}
+              onSelect={(val) => setValue("drugName", val)}
+              icon={Pill}
+              value={formValues.drugName}
+              resultIcon={getResultIcon("drugName")}
+            />
             {errors.drugName && <p className="text-sm text-destructive">{errors.drugName.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="dosage">Dosage</Label>
-              <div className="relative">
-                <Pill className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Controller name="dosage" control={control} render={({ field }) => ( <Input id="dosage" placeholder="e.g., 1" className="pl-10" {...field} /> )} />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("dosage")}</div>
-              </div>
+              <Label>Dosage</Label>
+               <SelectionDialog
+                triggerText="Select Dosage"
+                title="Dosage"
+                options={dosageOptions}
+                onSelect={(val) => setValue("dosage", val)}
+                icon={Pill}
+                value={formValues.dosage}
+                resultIcon={getResultIcon("dosage")}
+              />
               {errors.dosage && <p className="text-sm text-destructive">{errors.dosage.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="frequency">Frequency</Label>
-              <div className="relative">
-                <Repeat className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Controller name="frequency" control={control} render={({ field }) => ( <Input id="frequency" placeholder="e.g., tds" className="pl-10" {...field} /> )} />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("frequency")}</div>
-              </div>
+              <Label>Frequency</Label>
+              <SelectionDialog
+                triggerText="Select Frequency"
+                title="Frequency"
+                options={frequencyOptions}
+                onSelect={(val) => setValue("frequency", val)}
+                icon={Repeat}
+                value={formValues.frequency}
+                resultIcon={getResultIcon("frequency")}
+              />
               {errors.frequency && <p className="text-sm text-destructive">{errors.frequency.message}</p>}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="duration">Duration</Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Controller name="duration" control={control} render={({ field }) => ( <Input id="duration" placeholder="e.g., 5d" className="pl-10" {...field} /> )} />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("duration")}</div>
-              </div>
+              <Label>Duration</Label>
+              <SelectionDialog
+                triggerText="Select Duration"
+                title="Duration"
+                options={durationOptions}
+                onSelect={(val) => setValue("duration", val)}
+                icon={Calendar}
+                value={formValues.duration}
+                resultIcon={getResultIcon("duration")}
+              />
               {errors.duration && <p className="text-sm text-destructive">{errors.duration.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="quantity">Total Quantity</Label>
-              <div className="relative">
-                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Controller name="quantity" control={control} render={({ field }) => ( <Input id="quantity" type="number" placeholder="e.g., 15" className="pl-10" {...field} /> )} />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("quantity")}</div>
-              </div>
+              <Label>Total Quantity</Label>
+               <SelectionDialog
+                triggerText="Select Quantity"
+                title="Total Quantity"
+                options={quantityOptions}
+                onSelect={(val) => setValue("quantity", parseInt(val))}
+                icon={Hash}
+                value={String(formValues.quantity || '')}
+                resultIcon={getResultIcon("quantity")}
+              />
               {errors.quantity && <p className="text-sm text-destructive">{errors.quantity.message}</p>}
             </div>
           </div>
@@ -271,80 +342,8 @@ export default function DPadDetailPage() {
         </Card>
 
         {!isMobile && (
-          <div className="flex flex-col">
-              <CardHeader>
-                  <CardTitle>Dispensing Label</CardTitle>
-                  <CardDescription>Fill in the fields based on the prescription.</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col">
-                  <form id="dispensing-form-desktop" onSubmit={handleSubmit(onSubmit)} className="space-y-4 flex-1 flex flex-col">
-                      <div className="flex-grow space-y-4">
-                        <div className="flex justify-end">
-                            <Button type="button" variant="ghost" size="sm" onClick={() => { setResults(null); reset(); }} className="text-xs">
-                                <RotateCw className="mr-2 h-3.5 w-3.5" />
-                                Reset
-                            </Button>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="drugName-desktop">Drug Name & Strength</Label>
-                            <div className="relative">
-                                <Pill className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Controller name="drugName" control={control} render={({ field }) => ( <Input id="drugName-desktop" placeholder="e.g., Amoxicillin 250mg" className="pl-10" {...field} /> )} />
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("drugName")}</div>
-                            </div>
-                            {errors.drugName && <p className="text-sm text-destructive">{errors.drugName.message}</p>}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="dosage-desktop">Dosage</Label>
-                                <div className="relative">
-                                    <Pill className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Controller name="dosage" control={control} render={({ field }) => ( <Input id="dosage-desktop" placeholder="e.g., 1" className="pl-10" {...field} /> )} />
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("dosage")}</div>
-                                </div>
-                                {errors.dosage && <p className="text-sm text-destructive">{errors.dosage.message}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="frequency-desktop">Frequency</Label>
-                                <div className="relative">
-                                    <Repeat className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Controller name="frequency" control={control} render={({ field }) => ( <Input id="frequency-desktop" placeholder="e.g., tds" className="pl-10" {...field} /> )} />
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("frequency")}</div>
-                                </div>
-                                {errors.frequency && <p className="text-sm text-destructive">{errors.frequency.message}</p>}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="duration-desktop">Duration</Label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Controller name="duration" control={control} render={({ field }) => ( <Input id="duration-desktop" placeholder="e.g., 5d" className="pl-10" {...field} /> )} />
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("duration")}</div>
-                                </div>
-                                {errors.duration && <p className="text-sm text-destructive">{errors.duration.message}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="quantity-desktop">Total Quantity</Label>
-                                <div className="relative">
-                                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Controller name="quantity" control={control} render={({ field }) => ( <Input id="quantity-desktop" type="number" placeholder="e.g., 15" className="pl-10" {...field} /> )} />
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("quantity")}</div>
-                                </div>
-                                {errors.quantity && <p className="text-sm text-destructive">{errors.quantity.message}</p>}
-                            </div>
-                        </div>
-                      </div>
-                      <div className="pt-4 mt-auto">
-                        <Button type="submit" form="dispensing-form-desktop" className="w-full" size="lg">
-                            <ClipboardList className="mr-2 h-5 w-5" />
-                            Check Answers
-                        </Button>
-                      </div>
-                  </form>
-              </CardContent>
+            <div className="flex flex-col">
+              <DispensingForm />
             </div>
         )}
       </div>
