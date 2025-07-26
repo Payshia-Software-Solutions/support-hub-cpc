@@ -171,13 +171,6 @@ const DispensingForm = ({
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto pr-2 pb-24">
         <form id={`dispensing-form-${drug.id}`} onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-           <div className="flex justify-end">
-              <Button type="button" variant="ghost" size="sm" onClick={handleReset} className="text-xs">
-                <RotateCw className="mr-2 h-3.5 w-3.5" />
-                Reset Form
-              </Button>
-          </div>
-          
           <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -268,10 +261,16 @@ const DispensingForm = ({
         </form>
       </div>
        <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
-          <Button type="submit" form={`dispensing-form-${drug.id}`} className="w-full" size="lg">
-              <ClipboardList className="mr-2 h-5 w-5" />
-              Check Answers
-          </Button>
+          <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="lg" onClick={handleReset} className="w-auto">
+                <RotateCw className="mr-2 h-4 w-4" />
+                Reset
+              </Button>
+              <Button type="submit" form={`dispensing-form-${drug.id}`} className="flex-grow" size="lg">
+                  <ClipboardList className="mr-2 h-5 w-5" />
+                  Check Answers
+              </Button>
+          </div>
       </div>
     </div>
   );
@@ -296,10 +295,10 @@ const renderDispensingArea = (
           Back to Item List
       </Button>
       {isMobile ? (
-        <>
+        <SheetHeader className="p-0 text-left">
           <SheetTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</SheetTitle>
           <SheetDescription>Fill in the fields based on the prescription for this item.</SheetDescription>
-        </>
+        </SheetHeader>
       ) : (
         <>
           <CardTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</CardTitle>
@@ -323,7 +322,7 @@ const renderDispensingArea = (
   if (isMobile) {
     return (
       <>
-        <SheetHeader className="p-6 pb-2 shrink-0">{header}</SheetHeader>
+        <div className="p-6 pb-2 shrink-0">{header}</div>
         <div className="flex-1 overflow-hidden px-6 pb-6">{form}</div>
       </>
     )
