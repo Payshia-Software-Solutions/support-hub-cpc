@@ -13,7 +13,8 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { prescriptions } from "@/lib/d-pad-data";
 import Link from "next/link";
-import { ArrowRight, Pill } from "lucide-react";
+import { ArrowRight, Pill, UserMd } from "lucide-react";
+import { Stethoscope } from "lucide-react";
 
 export default function DPadIndexPage() {
   return (
@@ -29,12 +30,19 @@ export default function DPadIndexPage() {
             <Card className="shadow-lg hover:shadow-xl hover:border-primary transition-all flex flex-col h-full">
               <CardHeader>
                 <CardTitle>Prescription #{index + 1}</CardTitle>
-                <CardDescription>Patient: {rx.patient.name}</CardDescription>
+                 <div className="flex items-center gap-2 pt-2">
+                    <Stethoscope className="w-5 h-5 text-muted-foreground" />
+                    <div>
+                        <p className="font-semibold text-card-foreground text-sm">{rx.doctor.name}</p>
+                        <p className="text-xs text-muted-foreground">{rx.doctor.specialty}</p>
+                    </div>
+                </div>
               </CardHeader>
-              <CardContent className="flex-grow">
+              <CardContent className="flex-grow space-y-2">
+                 <p className="text-sm"><span className="font-semibold">Patient:</span> {rx.patient.name}</p>
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Pill className="mr-2 h-4 w-4 text-primary" />
-                  <span>{rx.correctAnswers.drugName}</span>
+                  <span className="font-medium text-card-foreground">{rx.correctAnswers.drugName}</span>
                 </div>
               </CardContent>
               <CardContent className="mt-auto">
