@@ -71,84 +71,21 @@ const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, va
 );
 
 
-export default function DPadDetailPage() {
-  const router = useRouter();
-  const params = useParams();
-  const prescriptionId = params.id as string;
-  const isMobile = useIsMobile();
-  
-  const [results, setResults] = useState<ResultState | null>(null);
-  
-  const currentPrescription = useMemo(() => {
-    return prescriptions.find(p => p.id === prescriptionId);
-  }, [prescriptionId]);
-
-  const { control, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<PrescriptionFormValues>({
-    resolver: zodResolver(prescriptionSchema),
-    defaultValues: {
-      drugName: "",
-      dosage: "",
-      frequency: "",
-      duration: "",
-      quantity: undefined,
-    },
-  });
-
+const DispensingForm = ({
+  form,
+  results,
+  onSubmit,
+  onReset,
+  currentPrescription,
+}: {
+  form: any;
+  results: ResultState | null;
+  onSubmit: (data: PrescriptionFormValues) => void;
+  onReset: () => void;
+  currentPrescription: (typeof prescriptions)[0];
+}) => {
+  const { control, handleSubmit, formState: { errors }, setValue, watch } = form;
   const formValues = watch();
-  
-  useEffect(() => {
-    reset({
-      drugName: "",
-      dosage: "",
-      frequency: "",
-      duration: "",
-      quantity: undefined,
-    });
-    setResults(null);
-  }, [prescriptionId, reset]);
-
-  const onSubmit = (data: PrescriptionFormValues) => {
-    if (!currentPrescription) return;
-
-    const newResults: ResultState = {};
-    let allCorrect = true;
-    
-    for (const key in currentPrescription.correctAnswers) {
-      const formKey = key as keyof PrescriptionFormValues;
-      const dataValue = String(data[formKey]).toLowerCase().trim().replace(/\s+/g, ' ');
-
-      if (formKey === 'frequency') {
-        if (currentPrescription.acceptedFrequencyAnswers.includes(dataValue)) {
-            newResults[formKey] = true;
-        } else {
-            newResults[formKey] = false;
-            allCorrect = false;
-        }
-      } else {
-        const answerValue = String(currentPrescription.correctAnswers[formKey]).toLowerCase().trim().replace(/\s+/g, ' ');
-        if (dataValue === answerValue) {
-          newResults[formKey] = true;
-        } else {
-          newResults[formKey] = false;
-          allCorrect = false;
-        }
-      }
-    }
-    setResults(newResults);
-
-    if (allCorrect) {
-      toast({
-        title: "Excellent Work!",
-        description: "You've filled the prescription correctly.",
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Check Your Answers",
-        description: "Some details are incorrect. Please review the fields.",
-      });
-    }
-  };
 
   const getResultIcon = (fieldName: keyof PrescriptionFormValues) => {
     if (results === null) return null;
@@ -156,34 +93,19 @@ export default function DPadDetailPage() {
     if (results[fieldName] === false) return <X className="h-5 w-5 text-destructive" />;
     return null;
   };
-  
-  if (!currentPrescription) {
-    return (
-        <div className="p-4 md:p-8 text-center">
-            <h1 className="text-xl font-semibold">Prescription not found.</h1>
-            <Button onClick={() => router.push('/dashboard/d-pad')} className="mt-4">Back to List</Button>
-        </div>
-    )
-  }
 
-  // Options for dialogs - in a real app this might be more dynamic
   const drugOptions = [currentPrescription.correctAnswers.drugName, "Paracetamol 250mg", "Amoxicillin 500mg", "Metformin 250mg"];
   const dosageOptions = ["1", "2", "1/2", "3"];
   const frequencyOptions = ["tds", "bd", "mane", "nocte", "qid", "sos"];
   const durationOptions = [currentPrescription.correctAnswers.duration, "3d", "7d", "10d", "1m"];
   const quantityOptions = [String(currentPrescription.correctAnswers.quantity), "10", "20", "30"];
 
-
-  const DispensingForm = () => (
+  return (
     <div className="flex flex-col h-full">
-      <SheetHeader>
-        <SheetTitle>Dispensing Label</SheetTitle>
-        <SheetDescription>Fill in the fields based on the prescription.</SheetDescription>
-      </SheetHeader>
-      <div className="pt-4 flex-1 overflow-y-auto pr-2">
+      <div className="flex-1 overflow-y-auto pr-2">
         <form id="dispensing-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
            <div className="flex justify-end">
-              <Button type="button" variant="ghost" size="sm" onClick={() => { setResults(null); reset(); }} className="text-xs">
+              <Button type="button" variant="ghost" size="sm" onClick={onReset} className="text-xs">
                 <RotateCw className="mr-2 h-3.5 w-3.5" />
                 Reset
               </Button>
@@ -270,6 +192,94 @@ export default function DPadDetailPage() {
       </div>
     </div>
   );
+};
+
+
+export default function DPadDetailPage() {
+  const router = useRouter();
+  const params = useParams();
+  const prescriptionId = params.id as string;
+  const isMobile = useIsMobile();
+  
+  const [results, setResults] = useState<ResultState | null>(null);
+  
+  const currentPrescription = useMemo(() => {
+    return prescriptions.find(p => p.id === prescriptionId);
+  }, [prescriptionId]);
+
+  const form = useForm<PrescriptionFormValues>({
+    resolver: zodResolver(prescriptionSchema),
+    defaultValues: {
+      drugName: "",
+      dosage: "",
+      frequency: "",
+      duration: "",
+      quantity: undefined,
+    },
+  });
+  
+  useEffect(() => {
+    form.reset({
+      drugName: "",
+      dosage: "",
+      frequency: "",
+      duration: "",
+      quantity: undefined,
+    });
+    setResults(null);
+  }, [prescriptionId, form]);
+
+  const onSubmit = (data: PrescriptionFormValues) => {
+    if (!currentPrescription) return;
+
+    const newResults: ResultState = {};
+    let allCorrect = true;
+    
+    for (const key in currentPrescription.correctAnswers) {
+      const formKey = key as keyof PrescriptionFormValues;
+      const dataValue = String(data[formKey]).toLowerCase().trim().replace(/\s+/g, ' ');
+
+      if (formKey === 'frequency') {
+        if (currentPrescription.acceptedFrequencyAnswers.includes(dataValue)) {
+            newResults[formKey] = true;
+        } else {
+            newResults[formKey] = false;
+            allCorrect = false;
+        }
+      } else {
+        const answerValue = String(currentPrescription.correctAnswers[formKey]).toLowerCase().trim().replace(/\s+/g, ' ');
+        if (dataValue === answerValue) {
+          newResults[formKey] = true;
+        } else {
+          newResults[formKey] = false;
+          allCorrect = false;
+        }
+      }
+    }
+    setResults(newResults);
+
+    if (allCorrect) {
+      toast({
+        title: "Excellent Work!",
+        description: "You've filled the prescription correctly.",
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Check Your Answers",
+        description: "Some details are incorrect. Please review the fields.",
+      });
+    }
+  };
+  
+  if (!currentPrescription) {
+    return (
+        <div className="p-4 md:p-8 text-center">
+            <h1 className="text-xl font-semibold">Prescription not found.</h1>
+            <Button onClick={() => router.push('/dashboard/d-pad')} className="mt-4">Back to List</Button>
+        </div>
+    )
+  }
 
   return (
     <div className="p-4 md:p-8 space-y-8 pb-20">
@@ -332,8 +342,18 @@ export default function DPadDetailPage() {
                         <Button className="w-full" size="lg"><ClipboardList className="mr-2"/> Start Challenge</Button>
                     </SheetTrigger>
                     <SheetContent side="bottom" className="h-[90%] p-0">
-                       <div className="p-6 h-full overflow-y-auto">
-                         <DispensingForm />
+                       <div className="p-6 h-full flex flex-col">
+                           <SheetHeader>
+                                <SheetTitle>Dispensing Label</SheetTitle>
+                                <SheetDescription>Fill in the fields based on the prescription.</SheetDescription>
+                            </SheetHeader>
+                           <DispensingForm 
+                                form={form} 
+                                results={results} 
+                                onSubmit={onSubmit} 
+                                onReset={() => { setResults(null); form.reset(); }}
+                                currentPrescription={currentPrescription}
+                            />
                        </div>
                     </SheetContent>
                 </Sheet>
@@ -343,10 +363,25 @@ export default function DPadDetailPage() {
 
         {!isMobile && (
             <div className="flex flex-col">
-              <DispensingForm />
+              <Card>
+                  <CardHeader>
+                    <CardTitle>Dispensing Label</CardTitle>
+                    <CardDescription>Fill in the fields based on the prescription.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                       <DispensingForm 
+                            form={form} 
+                            results={results} 
+                            onSubmit={onSubmit} 
+                            onReset={() => { setResults(null); form.reset(); }}
+                            currentPrescription={currentPrescription}
+                        />
+                  </CardContent>
+              </Card>
             </div>
         )}
       </div>
     </div>
   );
 }
+
