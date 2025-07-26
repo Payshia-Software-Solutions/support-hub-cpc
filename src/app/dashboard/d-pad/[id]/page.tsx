@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -24,7 +25,18 @@ const prescriptionSchema = z.object({
   frequency: z.string().nonempty("Frequency is required."),
   duration: z.string().nonempty("Duration is required."),
   quantity: z.coerce.number().min(1, "Quantity must be greater than 0."),
+  dosageForm: z.string().nonempty("Dosage form is required."),
+  morningQty: z.string().nonempty("Morning quantity is required."),
+  afternoonQty: z.string().nonempty("Afternoon quantity is required."),
+  eveningQty: z.string().nonempty("Evening quantity is required."),
+  nightQty: z.string().nonempty("Night quantity is required."),
+  mealType: z.string().nonempty("Meal type is required."),
+  usingFrequency: z.string().nonempty("Using frequency is required."),
+  bagin: z.string().nonempty("This field is required."),
+  payaWarak: z.string().nonempty("This field is required."),
+  additionalInstruction: z.string().optional(),
 });
+
 
 type ResultState = {
   [K in keyof PrescriptionFormValues]?: boolean;
@@ -73,21 +85,33 @@ const DispensingForm = ({
   drug,
   onSubmit,
   onReset,
-  results
+  results,
+  patientName
 }: {
   drug: PrescriptionDrug;
   onSubmit: (data: PrescriptionFormValues) => void;
   onReset: () => void;
   results: ResultState | null;
+  patientName: string;
 }) => {
   const form = useForm<PrescriptionFormValues>({
     resolver: zodResolver(prescriptionSchema),
     defaultValues: {
-      drugName: "",
+      drugName: drug.correctAnswers.drugName,
       dosage: "",
       frequency: "",
       duration: "",
       quantity: undefined,
+      dosageForm: "",
+      morningQty: "",
+      afternoonQty: "",
+      eveningQty: "",
+      nightQty: "",
+      mealType: "",
+      usingFrequency: "",
+      bagin: "",
+      payaWarak: "",
+      additionalInstruction: "",
     },
   });
 
@@ -95,7 +119,23 @@ const DispensingForm = ({
   const formValues = watch();
 
   const handleReset = () => {
-    form.reset();
+    form.reset({
+      drugName: drug.correctAnswers.drugName,
+      dosage: "",
+      frequency: "",
+      duration: "",
+      quantity: undefined,
+      dosageForm: "",
+      morningQty: "",
+      afternoonQty: "",
+      eveningQty: "",
+      nightQty: "",
+      mealType: "",
+      usingFrequency: "",
+      bagin: "",
+      payaWarak: "",
+      additionalInstruction: "",
+    });
     onReset();
   }
 
@@ -111,11 +151,14 @@ const DispensingForm = ({
   const frequencyOptions = ["tds", "bd", "mane", "nocte", "qid", "sos"];
   const durationOptions = [drug.correctAnswers.duration, "3d", "7d", "10d", "1m"];
   const quantityOptions = [String(drug.correctAnswers.quantity), "10", "20", "30"];
+  const dosageFormOptions = ["Tablet", "Capsule", "Syrup", "Inhaler"];
+  const mealTypeOptions = ["Before Meal", "With Meal", "After Meal", "N/A"];
+  const dailyQtyOptions = ["-", "1", "2", "3", "1/2"];
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto pr-2">
-        <form id={`dispensing-form-${drug.id}`} onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form id={`dispensing-form-${drug.id}`} onSubmit={handleSubmit(onSubmit)} className="space-y-6">
            <div className="flex justify-end">
               <Button type="button" variant="ghost" size="sm" onClick={handleReset} className="text-xs">
                 <RotateCw className="mr-2 h-3.5 w-3.5" />
@@ -123,77 +166,71 @@ const DispensingForm = ({
               </Button>
           </div>
           
-          <div className="space-y-2">
-            <Label>Drug Name & Strength</Label>
-            <SelectionDialog
-              triggerText="Select Drug Name"
-              title="Drug Name"
-              options={drugOptions}
-              onSelect={(val) => setValue("drugName", val, { shouldValidate: true })}
-              icon={Pill}
-              value={formValues.drugName}
-              resultIcon={getResultIcon("drugName")}
-            />
-            {errors.drugName && <p className="text-sm text-destructive">{errors.drugName.message}</p>}
+          <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2 md:col-span-1">
+                  <Label>Date</Label>
+                  <p className="p-3 border rounded-md text-sm">{new Date().toLocaleDateString()}</p>
+                </div>
+                 <div className="space-y-2 md:col-span-1">
+                  <Label>Name</Label>
+                  <p className="p-3 border rounded-md text-sm truncate">{patientName}</p>
+                </div>
+                <div className="space-y-2 md:col-span-1">
+                  <Label>Drug Name</Label>
+                  <p className="p-3 border rounded-md text-sm truncate">{formValues.drugName}</p>
+                </div>
+              </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Dosage Form</Label>
+                   <SelectionDialog triggerText="Select Form" title="Dosage Form" options={dosageFormOptions} onSelect={(val) => setValue("dosageForm", val, { shouldValidate: true })} icon={Pill} value={formValues.dosageForm} resultIcon={getResultIcon("dosageForm")} />
+                   {errors.dosageForm && <p className="text-sm text-destructive">{errors.dosageForm.message}</p>}
+                </div>
+                 <div className="space-y-2">
+                  <Label>Drug Quantity</Label>
+                  <SelectionDialog triggerText="Select Quantity" title="Total Quantity" options={quantityOptions} onSelect={(val) => setValue("quantity", parseInt(val), { shouldValidate: true })} icon={Hash} value={String(formValues.quantity || '')} resultIcon={getResultIcon("quantity")} />
+                   {errors.quantity && <p className="text-sm text-destructive">{errors.quantity.message}</p>}
+                </div>
+              </div>
+          </div>
+          
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold border-b pb-2">Drug Quantities</h3>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label>Morning</Label>
+                   <SelectionDialog triggerText="Qty" title="Morning Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("morningQty", val, { shouldValidate: true })} icon={Hash} value={formValues.morningQty} resultIcon={getResultIcon("morningQty")} />
+                </div>
+                 <div className="space-y-2">
+                  <Label>Afternoon</Label>
+                  <SelectionDialog triggerText="Qty" title="Afternoon Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("afternoonQty", val, { shouldValidate: true })} icon={Hash} value={formValues.afternoonQty} resultIcon={getResultIcon("afternoonQty")} />
+                </div>
+                 <div className="space-y-2">
+                  <Label>Evening</Label>
+                  <SelectionDialog triggerText="Qty" title="Evening Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("eveningQty", val, { shouldValidate: true })} icon={Hash} value={formValues.eveningQty} resultIcon={getResultIcon("eveningQty")} />
+                </div>
+                 <div className="space-y-2">
+                  <Label>Night</Label>
+                  <SelectionDialog triggerText="Qty" title="Night Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("nightQty", val, { shouldValidate: true })} icon={Hash} value={formValues.nightQty} resultIcon={getResultIcon("nightQty")} />
+                </div>
+            </div>
+          </div>
+          
+           <div className="space-y-4">
+            <h3 className="text-lg font-semibold border-b pb-2">Other</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Meal Type</Label>
+                   <SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={mealTypeOptions} onSelect={(val) => setValue("mealType", val, { shouldValidate: true })} icon={Pill} value={formValues.mealType} resultIcon={getResultIcon("mealType")} />
+                </div>
+                 <div className="space-y-2">
+                  <Label>Using Frequency</Label>
+                  <SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={["Daily", "Weekly", "As needed"]} onSelect={(val) => setValue("usingFrequency", val, { shouldValidate: true })} icon={Repeat} value={formValues.usingFrequency} resultIcon={getResultIcon("usingFrequency")} />
+                </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Dosage</Label>
-               <SelectionDialog
-                triggerText="Select Dosage"
-                title="Dosage"
-                options={dosageOptions}
-                onSelect={(val) => setValue("dosage", val, { shouldValidate: true })}
-                icon={Pill}
-                value={formValues.dosage}
-                resultIcon={getResultIcon("dosage")}
-              />
-              {errors.dosage && <p className="text-sm text-destructive">{errors.dosage.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label>Frequency</Label>
-              <SelectionDialog
-                triggerText="Select Frequency"
-                title="Frequency"
-                options={frequencyOptions}
-                onSelect={(val) => setValue("frequency", val, { shouldValidate: true })}
-                icon={Repeat}
-                value={formValues.frequency}
-                resultIcon={getResultIcon("frequency")}
-              />
-              {errors.frequency && <p className="text-sm text-destructive">{errors.frequency.message}</p>}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Duration</Label>
-              <SelectionDialog
-                triggerText="Select Duration"
-                title="Duration"
-                options={durationOptions}
-                onSelect={(val) => setValue("duration", val, { shouldValidate: true })}
-                icon={Calendar}
-                value={formValues.duration}
-                resultIcon={getResultIcon("duration")}
-              />
-              {errors.duration && <p className="text-sm text-destructive">{errors.duration.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label>Total Quantity</Label>
-               <SelectionDialog
-                triggerText="Select Quantity"
-                title="Total Quantity"
-                options={quantityOptions}
-                onSelect={(val) => setValue("quantity", parseInt(val), { shouldValidate: true })}
-                icon={Hash}
-                value={String(formValues.quantity || '')}
-                resultIcon={getResultIcon("quantity")}
-              />
-              {errors.quantity && <p className="text-sm text-destructive">{errors.quantity.message}</p>}
-            </div>
-          </div>
         </form>
       </div>
        <div className="pt-4 mt-auto">
@@ -232,27 +269,23 @@ export default function DPadDetailPage() {
     const newResults: ResultState = {};
     let allCorrect = true;
     
-    for (const key in drug.correctAnswers) {
-      const formKey = key as keyof PrescriptionFormValues;
-      const dataValue = String(data[formKey]).toLowerCase().trim().replace(/\s+/g, ' ');
-
-      if (formKey === 'frequency') {
-        if (drug.acceptedFrequencyAnswers.includes(dataValue)) {
-            newResults[formKey] = true;
-        } else {
-            newResults[formKey] = false;
-            allCorrect = false;
-        }
-      } else {
-        const answerValue = String(drug.correctAnswers[formKey]).toLowerCase().trim().replace(/\s+/g, ' ');
-        if (dataValue === answerValue) {
-          newResults[formKey] = true;
-        } else {
-          newResults[formKey] = false;
-          allCorrect = false;
-        }
-      }
-    }
+    // Manual check for all new fields
+    const checkField = (fieldName: keyof PrescriptionFormValues, formValue: any, correctValue: any) => {
+      const isCorrect = String(formValue).toLowerCase().trim() === String(correctValue).toLowerCase().trim();
+      newResults[fieldName] = isCorrect;
+      if (!isCorrect) allCorrect = false;
+    };
+    
+    checkField('drugName', data.drugName, drug.correctAnswers.drugName);
+    checkField('quantity', data.quantity, drug.correctAnswers.quantity);
+    checkField('dosageForm', data.dosageForm, drug.correctAnswers.dosageForm);
+    checkField('morningQty', data.morningQty, drug.correctAnswers.morningQty);
+    checkField('afternoonQty', data.afternoonQty, drug.correctAnswers.afternoonQty);
+    checkField('eveningQty', data.eveningQty, drug.correctAnswers.eveningQty);
+    checkField('nightQty', data.nightQty, drug.correctAnswers.nightQty);
+    checkField('mealType', data.mealType, drug.correctAnswers.mealType);
+    checkField('usingFrequency', data.usingFrequency, drug.correctAnswers.usingFrequency);
+    
     setAllResults(prev => ({ ...prev, [drugId]: newResults }));
 
     if (allCorrect) {
@@ -305,6 +338,7 @@ export default function DPadDetailPage() {
                 results={allResults[selectedDrug.id] || null} 
                 onSubmit={handleSubmit(selectedDrug.id)} 
                 onReset={() => handleReset(selectedDrug.id)}
+                patientName={currentPrescription.patient.name}
               />
             </CardContent>
         </>
@@ -410,7 +444,7 @@ export default function DPadDetailPage() {
                     </SheetTrigger>
                     <SheetContent side="bottom" className="h-[90%] p-0">
                        <div className="p-6 h-full flex flex-col">
-                            {renderDispensingArea()}
+                           {renderDispensingArea()}
                        </div>
                     </SheetContent>
                 </Sheet>

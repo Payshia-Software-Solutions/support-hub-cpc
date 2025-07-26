@@ -1,10 +1,21 @@
 
+
 export interface PrescriptionFormValues {
   drugName: string;
   dosage: string;
   frequency: string;
   duration: string;
   quantity: number;
+  dosageForm: string;
+  morningQty: string;
+  afternoonQty: string;
+  eveningQty: string;
+  nightQty: string;
+  mealType: string;
+  usingFrequency: string;
+  bagin: string; // Sinhala "බැගින්"
+  payaWarak: string; // Sinhala "පැය __ වරක්"
+  additionalInstruction: string;
 };
 
 export interface PrescriptionDrug {
@@ -47,6 +58,16 @@ export const prescriptions: Prescription[] = [
           frequency: "tds",
           duration: "5d",
           quantity: 15,
+          dosageForm: "Tablet",
+          morningQty: "1",
+          afternoonQty: "1",
+          eveningQty: "1",
+          nightQty: "-",
+          mealType: "After Meal",
+          usingFrequency: "Daily",
+          bagin: "1",
+          payaWarak: "-",
+          additionalInstruction: "If fever persists, see a doctor."
         },
         acceptedFrequencyAnswers: ['tds', 'tid', 'three times a day'],
       },
@@ -59,6 +80,16 @@ export const prescriptions: Prescription[] = [
           frequency: "bd",
           duration: "7d",
           quantity: 14,
+          dosageForm: "Capsule",
+          morningQty: "1",
+          afternoonQty: "-",
+          eveningQty: "-",
+          nightQty: "1",
+          mealType: "Before Meal",
+          usingFrequency: "Daily",
+          bagin: "1",
+          payaWarak: "12",
+          additionalInstruction: "Complete the full course."
         },
         acceptedFrequencyAnswers: ['bd', 'bid', 'twice a day'],
       }
@@ -73,15 +104,25 @@ export const prescriptions: Prescription[] = [
     drugs: [
       {
         id: '1',
-        lines: ['Amoxicillin 250mg', '1 bd', '7d'],
+        lines: ['Omeprazole 20mg', '1 mane', '1m'],
         correctAnswers: {
-          drugName: "Amoxicillin 250mg",
+          drugName: "Omeprazole 20mg",
           dosage: "1",
-          frequency: "bd",
-          duration: "7d",
-          quantity: 14,
+          frequency: "mane",
+          duration: "1m",
+          quantity: 30,
+          dosageForm: "Capsule",
+          morningQty: "1",
+          afternoonQty: "-",
+          eveningQty: "-",
+          nightQty: "-",
+          mealType: "Before Meal",
+          usingFrequency: "Daily",
+          bagin: "1",
+          payaWarak: "-",
+          additionalInstruction: "Take 30 mins before breakfast."
         },
-        acceptedFrequencyAnswers: ['bd', 'bid', 'twice a day'],
+        acceptedFrequencyAnswers: ['mane', 'om', 'in the morning'],
       }
     ]
   },
@@ -94,15 +135,25 @@ export const prescriptions: Prescription[] = [
     drugs: [
       {
         id: '1',
-        lines: ['Metformin 500mg', '1 mane', '30d'],
+        lines: ['Metformin 500mg', '1 bd', '30d'],
         correctAnswers: {
           drugName: "Metformin 500mg",
           dosage: "1",
-          frequency: "mane",
+          frequency: "bd",
           duration: "30d",
-          quantity: 30,
+          quantity: 60,
+          dosageForm: "Tablet",
+          morningQty: "1",
+          afternoonQty: "-",
+          eveningQty: "1",
+          nightQty: "-",
+          mealType: "With Meal",
+          usingFrequency: "Daily",
+          bagin: "1",
+          payaWarak: "-",
+          additionalInstruction: "Monitor blood sugar levels."
         },
-        acceptedFrequencyAnswers: ['mane', 'om', 'in the morning'],
+        acceptedFrequencyAnswers: ['bd', 'bid', 'twice a day'],
       }
     ]
   },
@@ -122,6 +173,16 @@ export const prescriptions: Prescription[] = [
           frequency: "bd",
           duration: "5d",
           quantity: 10,
+          dosageForm: "Tablet",
+          morningQty: "1",
+          afternoonQty: "-",
+          eveningQty: "-",
+          nightQty: "1",
+          mealType: "After Meal",
+          usingFrequency: "Daily",
+          bagin: "1",
+          payaWarak: "-",
+          additionalInstruction: "Drink plenty of water."
         },
         acceptedFrequencyAnswers: ['bd', 'bid', 'twice a day'],
       },
@@ -134,6 +195,16 @@ export const prescriptions: Prescription[] = [
           frequency: "tds",
           duration: "3d",
           quantity: 9,
+          dosageForm: "Tablet",
+          morningQty: "1",
+          afternoonQty: "1",
+          eveningQty: "1",
+          nightQty: "-",
+          mealType: "With Meal",
+          usingFrequency: "Daily",
+          bagin: "1",
+          payaWarak: "-",
+          additionalInstruction: "Take if required for pain."
         },
         acceptedFrequencyAnswers: ['tds', 'tid', 'three times a day'],
       },
@@ -146,6 +217,16 @@ export const prescriptions: Prescription[] = [
           frequency: "sos",
           duration: "N/A",
           quantity: 1,
+          dosageForm: "Inhaler",
+          morningQty: "-",
+          afternoonQty: "-",
+          eveningQty: "-",
+          nightQty: "-",
+          mealType: "N/A",
+          usingFrequency: "As needed",
+          bagin: "-",
+          payaWarak: "-",
+          additionalInstruction: "For shortness of breath."
         },
         acceptedFrequencyAnswers: ['sos', 'prn', 'when required'],
       }
@@ -167,6 +248,16 @@ export const prescriptions: Prescription[] = [
           frequency: "nocte",
           duration: "1m",
           quantity: 30,
+          dosageForm: "Tablet",
+          morningQty: "-",
+          afternoonQty: "-",
+          eveningQty: "-",
+          nightQty: "1",
+          mealType: "After Meal",
+          usingFrequency: "Daily",
+          bagin: "1",
+          payaWarak: "-",
+          additionalInstruction: "Avoid grapefruit juice."
         },
         acceptedFrequencyAnswers: ['nocte', 'on', 'at night'],
       },
@@ -179,6 +270,16 @@ export const prescriptions: Prescription[] = [
           frequency: "mane",
           duration: "30d",
           quantity: 30,
+          dosageForm: "Tablet",
+          morningQty: "1",
+          afternoonQty: "-",
+          eveningQty: "-",
+          nightQty: "-",
+          mealType: "After Meal",
+          usingFrequency: "Daily",
+          bagin: "1",
+          payaWarak: "-",
+          additionalInstruction: "Take with plenty of water."
         },
         acceptedFrequencyAnswers: ['mane', 'om', 'in the morning'],
       }
