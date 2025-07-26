@@ -20,6 +20,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Badge } from '@/components/ui/badge';
 
 
 const addressFormSchema = z.object({
@@ -118,9 +119,9 @@ export default function CertificateOrderPage() {
     retry: 1,
   });
 
-  const eligibleEnrollments = useMemo(() => {
+  const allEnrollments = useMemo(() => {
     if (!studentData) return [];
-    return Object.values(studentData.studentEnrollments).filter(e => e.certificate_eligibility);
+    return Object.values(studentData.studentEnrollments);
   }, [studentData]);
 
   useEffect(() => {
@@ -155,16 +156,19 @@ export default function CertificateOrderPage() {
               }
           }).catch(() => setCityName(''));
       }
+      
+      // Pre-select eligible courses
+      const initiallyEligible = Object.values(studentData.studentEnrollments).filter(e => e.certificate_eligibility);
+      setSelectedEnrollments(initiallyEligible);
 
-      if (eligibleEnrollments.length > 0) {
-        setSelectedEnrollments(eligibleEnrollments);
+      if (allEnrollments.length > 0) {
         setStep('selection');
       } else {
-        setErrorMessage("You do not have any courses eligible for a certificate at this time.");
+        setErrorMessage("You do not have any courses to request a certificate for at this time.");
         setStep('error');
       }
     }
-  }, [isLoadingStudent, isError, studentData, error, eligibleEnrollments, form]);
+  }, [isLoadingStudent, isError, studentData, error, allEnrollments, form]);
 
 
   const createOrderMutation = useMutation({
@@ -249,25 +253,35 @@ export default function CertificateOrderPage() {
           <>
             <CardHeader>
               <CardTitle>Step 1: Select Your Course(s)</CardTitle>
-              <CardDescription>Review and confirm the courses you are requesting a certificate for. Only eligible courses are shown.</CardDescription>
+              <CardDescription>Review your course eligibility and select the certificates you wish to order.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {eligibleEnrollments.map(enrollment => (
-                <div key={enrollment.id} className="flex items-center space-x-3 p-4 border rounded-md">
-                   <Checkbox 
-                     id={enrollment.id} 
-                     checked={selectedEnrollments.some(e => e.id === enrollment.id)}
-                     onCheckedChange={(checked) => {
-                         setSelectedEnrollments(prev => 
-                             checked ? [...prev, enrollment] : prev.filter(e => e.id !== enrollment.id)
-                         );
-                     }}
-                   />
-                   <Label htmlFor={enrollment.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      {enrollment.parent_course_name} <span className="text-xs text-muted-foreground">({enrollment.course_code})</span>
-                   </Label>
-                </div>
-              ))}
+              {allEnrollments.map(enrollment => {
+                const isEligible = enrollment.certificate_eligibility;
+                return (
+                    <div key={enrollment.id} className="flex items-center space-x-3 p-4 border rounded-md has-[:disabled]:opacity-60 has-[:disabled]:bg-muted/50">
+                       <Checkbox 
+                         id={enrollment.id} 
+                         checked={selectedEnrollments.some(e => e.id === enrollment.id)}
+                         disabled={!isEligible}
+                         onCheckedChange={(checked) => {
+                             setSelectedEnrollments(prev => 
+                                 checked ? [...prev, enrollment] : prev.filter(e => e.id !== enrollment.id)
+                             );
+                         }}
+                       />
+                       <div className="flex-1">
+                         <Label htmlFor={enrollment.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed">
+                            {enrollment.parent_course_name}
+                         </Label>
+                         <p className="text-xs text-muted-foreground">{enrollment.course_code}</p>
+                       </div>
+                       <Badge variant={isEligible ? 'default' : 'destructive'} className={isEligible ? 'bg-green-600' : ''}>
+                           {isEligible ? "Eligible" : "Not Eligible"}
+                       </Badge>
+                    </div>
+                )
+              })}
             </CardContent>
             <CardFooter>
               <Button onClick={handleSelectionSubmit} disabled={selectedEnrollments.length === 0}>
@@ -345,7 +359,7 @@ export default function CertificateOrderPage() {
                         {selectedEnrollments.map(enrollment => (
                             <div key={enrollment.id} className="p-3 border rounded-md">
                                 <h4 className="font-semibold text-card-foreground">{enrollment.parent_course_name}</h4>
-                                <p className="text-xs text-muted-foreground mb-2">Average Grade: {enrollment.assignment_grades.average_grade}%</p>
+                                <p className="text-xs text-muted-foreground mb-2">Average Grade: {parseFloat(enrollment.assignment_grades.average_grade).toFixed(2)}%</p>
                                 <ul className="space-y-2 text-sm">
                                     {enrollment.criteria_details.map(criterion => (
                                         <li key={criterion.id} className="flex items-center justify-between text-xs">
