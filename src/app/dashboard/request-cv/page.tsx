@@ -109,202 +109,233 @@ export default function RequestCvPage() {
 
   return (
     <>
-    <style jsx global>{`
-        @media screen {
-            .cv-preview-container {
-                height: 80vh; 
-                overflow: hidden;
-                display: flex;
-                justify-content: center;
-                align-items: flex-start;
-                padding: 1.5rem;
-                border-radius: var(--radius);
-                background-color: hsl(var(--muted));
-            }
-            .cv-preview-area {
-                width: 210mm;
-                height: 297mm;
-                transform-origin: top center;
-                transform: scale(0.65);
-            }
-        }
+      <style jsx global>{`
         @media print {
-            body > *:not(.print-area) {
-                display: none;
-            }
-            .print-area {
-                display: block !important;
-                position: absolute;
-                top: 0;
-                left: 0;
-            }
-            .cv-preview-container {
-                padding: 0;
-                height: 100vh;
-                overflow: visible;
-                display: block;
-            }
-            .cv-preview-area {
-                transform: scale(1);
-                box-shadow: none;
-                border: none;
-                width: 100%;
-                height: 100%;
-            }
-            @page {
-                size: A4;
-                margin: 0;
-            }
+          body {
+            background-color: #fff;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .print-area {
+            display: block !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+          }
         }
-    `}</style>
-    <div className="p-4 md:p-8 space-y-8 pb-20 print:p-0">
-      <header className="print:hidden">
-        <h1 className="text-3xl font-headline font-semibold">CV Generator</h1>
-        <p className="text-muted-foreground">Create and preview your professional CV in real-time.</p>
-      </header>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <Card className="shadow-lg print:hidden">
-            <CardHeader>
-                <CardTitle>Enter Your Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <form className="space-y-6">
-                    {/* --- Personal Details --- */}
-                    <div className="space-y-4">
-                        <h3 className="font-semibold text-lg border-b pb-2">Personal Details</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><Label>Full Name</Label><Input {...form.register('fullName')} /></div>
-                            <div><Label>Email</Label><Input {...form.register('email')} type="email" /></div>
-                            <div><Label>Phone</Label><Input {...form.register('phone')} /></div>
-                            <div><Label>Address</Label><Input {...form.register('address')} placeholder="e.g. Colombo, Sri Lanka"/></div>
-                        </div>
-                        <div><Label>LinkedIn Profile URL</Label><Input {...form.register('linkedin')} /></div>
-                    </div>
+      `}</style>
+      <div className="p-4 md:p-8 space-y-8 pb-20 no-print">
+        <header>
+          <h1 className="text-3xl font-headline font-semibold">CV Generator</h1>
+          <p className="text-muted-foreground">Create and preview your professional CV in real-time.</p>
+        </header>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <Card className="shadow-lg">
+              <CardHeader>
+                  <CardTitle>Enter Your Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <form className="space-y-6">
+                      {/* --- Personal Details --- */}
+                      <div className="space-y-4">
+                          <h3 className="font-semibold text-lg border-b pb-2">Personal Details</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div><Label>Full Name</Label><Input {...form.register('fullName')} /></div>
+                              <div><Label>Email</Label><Input {...form.register('email')} type="email" /></div>
+                              <div><Label>Phone</Label><Input {...form.register('phone')} /></div>
+                              <div><Label>Address</Label><Input {...form.register('address')} placeholder="e.g. Colombo, Sri Lanka"/></div>
+                          </div>
+                          <div><Label>LinkedIn Profile URL</Label><Input {...form.register('linkedin')} /></div>
+                      </div>
 
-                    {/* --- Professional Summary --- */}
-                     <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-semibold text-lg border-b pb-2">Professional Summary</h3>
-                            <Button type="button" size="sm" variant="outline" onClick={generateAiSummary} disabled={isAiLoading}>
-                                <Sparkles className="mr-2 h-4 w-4" /> {isAiLoading ? 'Generating...' : 'AI Generate'}
-                            </Button>
-                        </div>
-                        <Textarea {...form.register('summary')} rows={4} placeholder="A brief summary of your career..."/>
-                    </div>
+                      {/* --- Professional Summary --- */}
+                       <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                              <h3 className="font-semibold text-lg border-b pb-2">Professional Summary</h3>
+                              <Button type="button" size="sm" variant="outline" onClick={generateAiSummary} disabled={isAiLoading}>
+                                  <Sparkles className="mr-2 h-4 w-4" /> {isAiLoading ? 'Generating...' : 'AI Generate'}
+                              </Button>
+                          </div>
+                          <Textarea {...form.register('summary')} rows={4} placeholder="A brief summary of your career..."/>
+                      </div>
 
-                    {/* --- Work Experience --- */}
-                    <div className="space-y-4">
-                        <h3 className="font-semibold text-lg border-b pb-2">Work Experience</h3>
-                        {expFields.map((field, index) => (
-                            <div key={field.id} className="p-4 border rounded-md space-y-3 relative">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><Label>Job Title</Label><Input {...form.register(`experience.${index}.title`)} /></div>
-                                    <div><Label>Company</Label><Input {...form.register(`experience.${index}.company`)} /></div>
-                                    <div><Label>Start Date</Label><Input {...form.register(`experience.${index}.startDate`)} placeholder="e.g. Jan 2020"/></div>
-                                    <div><Label>End Date</Label><Input {...form.register(`experience.${index}.endDate`)} placeholder="e.g. Present"/></div>
-                                </div>
-                                <div><Label>Description</Label><Textarea {...form.register(`experience.${index}.description`)} placeholder="Your responsibilities and achievements..."/></div>
-                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => removeExp(index)}><Trash2 className="h-4 w-4"/></Button>
-                            </div>
-                        ))}
-                        <Button type="button" variant="outline" onClick={() => appendExp({ title: '', company: '', location: '', startDate: '', endDate: '', description: '' })}><PlusCircle className="mr-2 h-4 w-4"/> Add Experience</Button>
-                    </div>
+                      {/* --- Work Experience --- */}
+                      <div className="space-y-4">
+                          <h3 className="font-semibold text-lg border-b pb-2">Work Experience</h3>
+                          {expFields.map((field, index) => (
+                              <div key={field.id} className="p-4 border rounded-md space-y-3 relative">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div><Label>Job Title</Label><Input {...form.register(`experience.${index}.title`)} /></div>
+                                      <div><Label>Company</Label><Input {...form.register(`experience.${index}.company`)} /></div>
+                                      <div><Label>Start Date</Label><Input {...form.register(`experience.${index}.startDate`)} placeholder="e.g. Jan 2020"/></div>
+                                      <div><Label>End Date</Label><Input {...form.register(`experience.${index}.endDate`)} placeholder="e.g. Present"/></div>
+                                  </div>
+                                  <div><Label>Description</Label><Textarea {...form.register(`experience.${index}.description`)} placeholder="Your responsibilities and achievements..."/></div>
+                                  <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => removeExp(index)}><Trash2 className="h-4 w-4"/></Button>
+                              </div>
+                          ))}
+                          <Button type="button" variant="outline" onClick={() => appendExp({ title: '', company: '', location: '', startDate: '', endDate: '', description: '' })}><PlusCircle className="mr-2 h-4 w-4"/> Add Experience</Button>
+                      </div>
 
-                    {/* --- Education --- */}
-                    <div className="space-y-4">
-                        <h3 className="font-semibold text-lg border-b pb-2">Education</h3>
-                        {eduFields.map((field, index) => (
-                             <div key={field.id} className="p-4 border rounded-md space-y-3 relative">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><Label>Degree/Certificate</Label><Input {...form.register(`education.${index}.degree`)} /></div>
-                                    <div><Label>School/University</Label><Input {...form.register(`education.${index}.school`)} /></div>
-                                     <div><Label>Start Date</Label><Input {...form.register(`education.${index}.startDate`)} placeholder="e.g. Jan 2018"/></div>
-                                    <div><Label>End Date</Label><Input {...form.register(`education.${index}.endDate`)} placeholder="e.g. Dec 2021"/></div>
-                                </div>
-                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => removeEdu(index)}><Trash2 className="h-4 w-4"/></Button>
-                            </div>
-                        ))}
-                        <Button type="button" variant="outline" onClick={() => appendEdu({ degree: '', school: '', startDate: '', endDate: '' })}><PlusCircle className="mr-2 h-4 w-4"/> Add Education</Button>
-                    </div>
-                    
-                    {/* --- Skills --- */}
-                    <div className="space-y-2">
-                        <h3 className="font-semibold text-lg border-b pb-2">Skills</h3>
-                        <Textarea {...form.register('skills')} placeholder="Enter skills, separated by commas..."/>
-                    </div>
-                </form>
-            </CardContent>
-        </Card>
+                      {/* --- Education --- */}
+                      <div className="space-y-4">
+                          <h3 className="font-semibold text-lg border-b pb-2">Education</h3>
+                          {eduFields.map((field, index) => (
+                               <div key={field.id} className="p-4 border rounded-md space-y-3 relative">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div><Label>Degree/Certificate</Label><Input {...form.register(`education.${index}.degree`)} /></div>
+                                      <div><Label>School/University</Label><Input {...form.register(`education.${index}.school`)} /></div>
+                                       <div><Label>Start Date</Label><Input {...form.register(`education.${index}.startDate`)} placeholder="e.g. Jan 2018"/></div>
+                                      <div><Label>End Date</Label><Input {...form.register(`education.${index}.endDate`)} placeholder="e.g. Dec 2021"/></div>
+                                  </div>
+                                  <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => removeEdu(index)}><Trash2 className="h-4 w-4"/></Button>
+                              </div>
+                          ))}
+                          <Button type="button" variant="outline" onClick={() => appendEdu({ degree: '', school: '', startDate: '', endDate: '' })}><PlusCircle className="mr-2 h-4 w-4"/> Add Education</Button>
+                      </div>
+                      
+                      {/* --- Skills --- */}
+                      <div className="space-y-2">
+                          <h3 className="font-semibold text-lg border-b pb-2">Skills</h3>
+                          <Textarea {...form.register('skills')} placeholder="Enter skills, separated by commas..."/>
+                      </div>
+                  </form>
+              </CardContent>
+          </Card>
 
-        <div className="sticky top-24 print-area">
-            <div className="flex justify-end mb-4 print:hidden">
-                <Button onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/> Print / Save as PDF</Button>
-            </div>
-            <div className="cv-preview-container">
-                 <Card className="shadow-2xl cv-preview-area bg-white">
-                    <CardContent className="p-12 font-serif text-black">
-                        <header className="text-center border-b-2 border-gray-700 pb-4">
-                            <h1 className="text-4xl font-bold tracking-wider">{watchedValues.fullName}</h1>
-                            <div className="flex justify-center items-center gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
-                                <a href={`mailto:${watchedValues.email}`} className="flex items-center gap-1.5 hover:underline"><Mail className="h-3 w-3"/>{watchedValues.email}</a>
-                                <a href={`tel:${watchedValues.phone}`} className="flex items-center gap-1.5 hover:underline"><Phone className="h-3 w-3"/>{watchedValues.phone}</a>
-                               {watchedValues.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3"/>{watchedValues.address}</p>}
-                               {watchedValues.linkedin && <a href={watchedValues.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{watchedValues.linkedin.replace('https://','').replace('www.','')}</a>}
-                            </div>
-                        </header>
-                        
-                        <section className="mt-6">
-                            <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Summary</h2>
-                            <p className="text-sm mt-2 whitespace-pre-wrap">{watchedValues.summary}</p>
-                        </section>
+          <div className="sticky top-24">
+              <div className="flex justify-end mb-4">
+                  <Button onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/> Print / Save as PDF</Button>
+              </div>
+              <div className="h-[80vh] overflow-hidden flex justify-center items-start p-6 rounded-md bg-muted">
+                   <div className="w-[210mm] h-[297mm] transform scale-[0.65] origin-top bg-white">
+                      <Card className="shadow-2xl h-full w-full border-none rounded-none">
+                          <CardContent className="p-12 font-serif text-black">
+                              <header className="text-center border-b-2 border-gray-700 pb-4">
+                                  <h1 className="text-4xl font-bold tracking-wider">{watchedValues.fullName}</h1>
+                                  <div className="flex justify-center items-center gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
+                                      <a href={`mailto:${watchedValues.email}`} className="flex items-center gap-1.5 hover:underline"><Mail className="h-3 w-3"/>{watchedValues.email}</a>
+                                      <a href={`tel:${watchedValues.phone}`} className="flex items-center gap-1.5 hover:underline"><Phone className="h-3 w-3"/>{watchedValues.phone}</a>
+                                     {watchedValues.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3"/>{watchedValues.address}</p>}
+                                     {watchedValues.linkedin && <a href={watchedValues.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{watchedValues.linkedin.replace('https://','').replace('www.','')}</a>}
+                                  </div>
+                              </header>
+                              
+                              <section className="mt-6">
+                                  <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Summary</h2>
+                                  <p className="text-sm mt-2 whitespace-pre-wrap">{watchedValues.summary}</p>
+                              </section>
 
-                        <section className="mt-6">
-                            <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Experience</h2>
-                            <div className="space-y-4 mt-2">
-                                {watchedValues.experience?.map((exp, i) => exp.title && exp.company && (
-                                    <div key={i}>
-                                        <div className="flex justify-between items-baseline">
-                                            <h3 className="text-md font-semibold">{exp.title}</h3>
-                                            <p className="text-xs font-mono">{exp.startDate} - {exp.endDate}</p>
-                                        </div>
-                                        <p className="text-sm italic">{exp.company}</p>
-                                        <p className="text-sm mt-1 whitespace-pre-wrap">{exp.description}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                        
-                        <section className="mt-6">
-                            <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Education</h2>
-                             <div className="space-y-4 mt-2">
-                                {watchedValues.education?.map((edu, i) => edu.degree && edu.school && (
-                                    <div key={i}>
-                                        <div className="flex justify-between items-baseline">
-                                            <h3 className="text-md font-semibold">{edu.degree}</h3>
-                                             <p className="text-xs font-mono">{edu.startDate} - {edu.endDate}</p>
-                                        </div>
-                                        <p className="text-sm italic">{edu.school}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                        
-                         <section className="mt-6">
-                            <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Skills</h2>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                                {skillList.map((skill, i) => (
-                                    <span key={i} className="bg-gray-200 text-gray-800 text-xs font-medium px-2.5 py-1 rounded-full">{skill}</span>
-                                ))}
-                            </div>
-                        </section>
-                    </CardContent>
-                </Card>
-            </div>
+                              <section className="mt-6">
+                                  <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Experience</h2>
+                                  <div className="space-y-4 mt-2">
+                                      {watchedValues.experience?.map((exp, i) => exp.title && exp.company && (
+                                          <div key={i}>
+                                              <div className="flex justify-between items-baseline">
+                                                  <h3 className="text-md font-semibold">{exp.title}</h3>
+                                                  <p className="text-xs font-mono">{exp.startDate} - {exp.endDate}</p>
+                                              </div>
+                                              <p className="text-sm italic">{exp.company}</p>
+                                              <p className="text-sm mt-1 whitespace-pre-wrap">{exp.description}</p>
+                                          </div>
+                                      ))}
+                                  </div>
+                              </section>
+                              
+                              <section className="mt-6">
+                                  <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Education</h2>
+                                   <div className="space-y-4 mt-2">
+                                      {watchedValues.education?.map((edu, i) => edu.degree && edu.school && (
+                                          <div key={i}>
+                                              <div className="flex justify-between items-baseline">
+                                                  <h3 className="text-md font-semibold">{edu.degree}</h3>
+                                                   <p className="text-xs font-mono">{edu.startDate} - {edu.endDate}</p>
+                                              </div>
+                                              <p className="text-sm italic">{edu.school}</p>
+                                          </div>
+                                      ))}
+                                  </div>
+                              </section>
+                              
+                               <section className="mt-6">
+                                  <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Skills</h2>
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                      {skillList.map((skill, i) => (
+                                          <span key={i} className="bg-gray-200 text-gray-800 text-xs font-medium px-2.5 py-1 rounded-full">{skill}</span>
+                                      ))}
+                                  </div>
+                              </section>
+                          </CardContent>
+                      </Card>
+                   </div>
+              </div>
+          </div>
         </div>
       </div>
-    </div>
+      <div className="hidden print-area">
+          <Card className="shadow-none h-full w-full border-none rounded-none bg-white">
+              <CardContent className="p-12 font-serif text-black">
+                  <header className="text-center border-b-2 border-gray-700 pb-4">
+                      <h1 className="text-4xl font-bold tracking-wider">{watchedValues.fullName}</h1>
+                      <div className="flex justify-center items-center gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
+                          <a href={`mailto:${watchedValues.email}`} className="flex items-center gap-1.5 hover:underline"><Mail className="h-3 w-3"/>{watchedValues.email}</a>
+                          <a href={`tel:${watchedValues.phone}`} className="flex items-center gap-1.5 hover:underline"><Phone className="h-3 w-3"/>{watchedValues.phone}</a>
+                         {watchedValues.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3"/>{watchedValues.address}</p>}
+                         {watchedValues.linkedin && <a href={watchedValues.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{watchedValues.linkedin.replace('https://','').replace('www.','')}</a>}
+                      </div>
+                  </header>
+                  
+                  <section className="mt-6">
+                      <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Summary</h2>
+                      <p className="text-sm mt-2 whitespace-pre-wrap">{watchedValues.summary}</p>
+                  </section>
+
+                  <section className="mt-6">
+                      <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Experience</h2>
+                      <div className="space-y-4 mt-2">
+                          {watchedValues.experience?.map((exp, i) => exp.title && exp.company && (
+                              <div key={i}>
+                                  <div className="flex justify-between items-baseline">
+                                      <h3 className="text-md font-semibold">{exp.title}</h3>
+                                      <p className="text-xs font-mono">{exp.startDate} - {exp.endDate}</p>
+                                  </div>
+                                  <p className="text-sm italic">{exp.company}</p>
+                                  <p className="text-sm mt-1 whitespace-pre-wrap">{exp.description}</p>
+                              </div>
+                          ))}
+                      </div>
+                  </section>
+                  
+                  <section className="mt-6">
+                      <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Education</h2>
+                       <div className="space-y-4 mt-2">
+                          {watchedValues.education?.map((edu, i) => edu.degree && edu.school && (
+                              <div key={i}>
+                                  <div className="flex justify-between items-baseline">
+                                      <h3 className="text-md font-semibold">{edu.degree}</h3>
+                                       <p className="text-xs font-mono">{edu.startDate} - {edu.endDate}</p>
+                                  </div>
+                                  <p className="text-sm italic">{edu.school}</p>
+                              </div>
+                          ))}
+                      </div>
+                  </section>
+                  
+                   <section className="mt-6">
+                      <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Skills</h2>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                          {skillList.map((skill, i) => (
+                              <span key={i} className="bg-gray-200 text-gray-800 text-xs font-medium px-2.5 py-1 rounded-full">{skill}</span>
+                          ))}
+                      </div>
+                  </section>
+              </CardContent>
+          </Card>
+      </div>
     </>
   );
 }
-
