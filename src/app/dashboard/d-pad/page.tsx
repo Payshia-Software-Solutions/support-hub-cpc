@@ -25,34 +25,39 @@ export default function DPadIndexPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {prescriptions.map((rx, index) => (
-          <Link key={rx.id} href={`/dashboard/d-pad/${rx.id}`} className="group block h-full">
-            <Card className="shadow-lg hover:shadow-xl hover:border-primary transition-all flex flex-col h-full">
-              <CardHeader>
-                <CardTitle>Prescription #{index + 1}</CardTitle>
-                 <div className="flex items-center gap-3 pt-2">
-                    <DoctorIcon className="w-10 h-10 text-primary" />
-                    <div>
-                        <p className="font-semibold text-card-foreground text-sm">{rx.doctor.name}</p>
-                        <p className="text-xs text-muted-foreground">{rx.doctor.specialty}</p>
+        {prescriptions.map((rx, index) => {
+          const firstDrug = rx.drugs[0];
+          return (
+            <Link key={rx.id} href={`/dashboard/d-pad/${rx.id}`} className="group block h-full">
+              <Card className="shadow-lg hover:shadow-xl hover:border-primary transition-all flex flex-col h-full">
+                <CardHeader>
+                  <CardTitle>Prescription #{index + 1}</CardTitle>
+                  <div className="flex items-center gap-3 pt-2">
+                      <DoctorIcon className="w-10 h-10 text-primary" />
+                      <div>
+                          <p className="font-semibold text-card-foreground text-sm">{rx.doctor.name}</p>
+                          <p className="text-xs text-muted-foreground">{rx.doctor.specialty}</p>
+                      </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-grow space-y-2">
+                  <p className="text-sm"><span className="font-semibold">Patient:</span> {rx.patient.name}</p>
+                  {firstDrug && (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Pill className="mr-2 h-4 w-4 text-primary" />
+                      <span className="font-medium text-card-foreground">{firstDrug.correctAnswers.drugName}</span>
                     </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow space-y-2">
-                 <p className="text-sm"><span className="font-semibold">Patient:</span> {rx.patient.name}</p>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Pill className="mr-2 h-4 w-4 text-primary" />
-                  <span className="font-medium text-card-foreground">{rx.correctAnswers.drugName}</span>
-                </div>
-              </CardContent>
-              <CardContent className="mt-auto">
-                 <Button variant="secondary" className="w-full">
-                    Open Challenge <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+                  )}
+                </CardContent>
+                <CardContent className="mt-auto">
+                  <Button variant="secondary" className="w-full">
+                      Open Challenge <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
