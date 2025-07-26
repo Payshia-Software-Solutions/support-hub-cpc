@@ -1,5 +1,6 @@
 
 
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -543,3 +544,4 @@ export interface StudentBalanceData {
   TotalRegistrationFee: number;
   paymentRecords: Record<string, ApiPaymentRecord>;
 }
+

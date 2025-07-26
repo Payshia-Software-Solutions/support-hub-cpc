@@ -1,8 +1,10 @@
 
+
 export interface PrescriptionFormValues {
   date: string;
   patientName: string;
   drugName: string;
+  genericName: string;
   dosage: string;
   frequency: string;
   duration: string;
@@ -22,8 +24,16 @@ export interface PrescriptionFormValues {
 export interface PrescriptionDrug {
   id: string;
   lines: string[];
+  price: number;
   correctAnswers: PrescriptionFormValues;
   acceptedFrequencyAnswers: string[];
+}
+
+export interface GeneralStoreItem {
+    id: string;
+    name: string;
+    price: number;
+    category: 'Vitamins' | 'First-Aid' | 'Personal Care';
 }
 
 export interface Prescription {
@@ -66,10 +76,12 @@ export const ceylonPharmacyPatients: Patient[] = [
         {
           id: 'drug-cp1-1',
           lines: ['Metformin 500mg', '1 bd', '30d'],
+          price: 15.50,
           correctAnswers: {
             date: '2024-08-01',
             patientName: "Nimal Silva",
             drugName: "Metformin 500mg",
+            genericName: "Metformin Hydrochloride",
             dosage: "1",
             frequency: "bd",
             duration: "30d",
@@ -105,10 +117,12 @@ export const ceylonPharmacyPatients: Patient[] = [
         {
           id: 'drug-cp2-1',
           lines: ['Amoxicillin 250mg/5ml', '5ml tds', '7d'],
+          price: 250.00,
           correctAnswers: {
             date: '2024-08-01',
             patientName: "Saman Kumara",
             drugName: "Amoxicillin 250mg/5ml",
+            genericName: "Amoxicillin Trihydrate",
             dosage: "5ml",
             frequency: "tds",
             duration: "7d",
@@ -144,10 +158,12 @@ export const ceylonPharmacyPatients: Patient[] = [
         {
           id: 'drug-cp3-1',
           lines: ['Aspirin 75mg', '1 mane', '30d'],
+          price: 5.25,
           correctAnswers: {
              date: '2024-08-01',
             patientName: "Fathima Rizvi",
             drugName: "Aspirin 75mg",
+            genericName: "Acetylsalicylic Acid",
             dosage: "1",
             frequency: "mane",
             duration: "30d",
@@ -168,10 +184,12 @@ export const ceylonPharmacyPatients: Patient[] = [
         {
           id: 'drug-cp3-2',
           lines: ['Atorvastatin 20mg', '1 nocte', '30d'],
+          price: 30.00,
           correctAnswers: {
             date: '2024-08-01',
             patientName: "Fathima Rizvi",
             drugName: "Atorvastatin 20mg",
+            genericName: "Atorvastatin Calcium",
             dosage: "1",
             frequency: "nocte",
             duration: "30d",
@@ -192,4 +210,14 @@ export const ceylonPharmacyPatients: Patient[] = [
       ]
     }
   }
+];
+
+export const generalStoreItems: GeneralStoreItem[] = [
+    { id: 'gen-1', name: 'Vitamin C 500mg (30 tabs)', price: 450.00, category: 'Vitamins' },
+    { id: 'gen-2', name: 'Multivitamin Syrup', price: 600.00, category: 'Vitamins' },
+    { id: 'gen-3', name: 'Band-Aid (20 strips)', price: 150.00, category: 'First-Aid' },
+    { id: 'gen-4', name: 'Antiseptic Cream', price: 220.00, category: 'First-Aid' },
+    { id: 'gen-5', name: 'Digital Thermometer', price: 800.00, category: 'First-Aid' },
+    { id: 'gen-6', name: 'Herbal Toothpaste', price: 350.00, category: 'Personal Care' },
+    { id: 'gen-7', name: 'Sunscreen SPF 50', price: 1200.00, category: 'Personal Care' },
 ];
