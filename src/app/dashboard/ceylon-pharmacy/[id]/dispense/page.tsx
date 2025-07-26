@@ -158,7 +158,7 @@ const DispensingForm = ({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-y-auto pr-2 pb-24">
+      <div className="flex-1 md:overflow-y-auto pr-2 pb-24">
         <form id={`dispensing-form-${drug.id}`} onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
