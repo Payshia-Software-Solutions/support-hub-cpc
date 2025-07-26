@@ -111,18 +111,28 @@ export default function RequestCvPage() {
     <>
       <style jsx global>{`
         @media print {
-          body > *:not(.printable-cv) {
+          @page {
+            size: A4;
+            margin: 0;
+          }
+          body > * {
             display: none !important;
           }
-          .printable-cv {
+          .printable-cv, .printable-cv * {
             display: block !important;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
+            visibility: visible !important;
+          }
+          .printable-cv {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            transform: scale(1) !important;
           }
         }
       `}</style>
