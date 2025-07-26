@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, Search } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -113,7 +113,10 @@ export default function CertificateOrderPage() {
   const [cityName, setCityName] = useState('');
   const [districtName, setDistrictName] = useState('');
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-
+  
+  // For admin search
+  const [searchStudentId, setSearchStudentId] = useState('');
+  const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
@@ -125,11 +128,17 @@ export default function CertificateOrderPage() {
       phone: "",
     },
   });
+  
+  useEffect(() => {
+    if (user?.role !== 'staff') {
+        setActiveStudentId(user?.username || null);
+    }
+  }, [user]);
 
-  const { data: studentData, isLoading: isLoadingStudent, isError, error } = useQuery<FullStudentData>({
-    queryKey: ['studentFullInfoForCertOrder', user?.username],
-    queryFn: () => getStudentFullInfo(user!.username!),
-    enabled: !!user,
+  const { data: studentData, isLoading: isLoadingStudent, isError, error, refetch } = useQuery<FullStudentData>({
+    queryKey: ['studentFullInfoForCertOrder', activeStudentId],
+    queryFn: () => getStudentFullInfo(activeStudentId!),
+    enabled: !!activeStudentId,
     retry: 1,
   });
 
@@ -137,8 +146,18 @@ export default function CertificateOrderPage() {
     if (!studentData) return [];
     return Object.values(studentData.studentEnrollments);
   }, [studentData]);
+  
+  const resetAllState = () => {
+    setStep('loading');
+    setSelectedEnrollments([]);
+    setDeselectedEligible([]);
+    setAddressData(null);
+    setErrorMessage('');
+    form.reset();
+  };
 
   useEffect(() => {
+    resetAllState();
     if (isLoadingStudent) {
       setStep('loading');
       return;
@@ -177,7 +196,7 @@ export default function CertificateOrderPage() {
         setDeselectedEligible([]);
         setStep('selection');
       } else {
-        setErrorMessage("You do not have any courses to request a certificate for at this time.");
+        setErrorMessage("This student does not have any courses to request a certificate for at this time.");
         setStep('error');
       }
     }
@@ -191,11 +210,11 @@ export default function CertificateOrderPage() {
         setStep('success');
         toast({
             title: 'Order Submitted!',
-            description: `Your certificate request has been received.`,
+            description: `The certificate request has been received.`,
         });
     },
     onError: (err: Error) => {
-        setErrorMessage(err.message || 'An unknown error occurred while submitting your order.');
+        setErrorMessage(err.message || 'An unknown error occurred while submitting the order.');
         setStep('error');
     }
   });
@@ -217,6 +236,13 @@ export default function CertificateOrderPage() {
         setStep('form');
     }
   };
+  
+   const handleAdminSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchStudentId.trim()) {
+            setActiveStudentId(searchStudentId.trim());
+        }
+    };
 
   const handleFormSubmit = (values: AddressFormValues) => {
     setAddressData(values);
@@ -224,7 +250,8 @@ export default function CertificateOrderPage() {
   };
 
   const handleConfirmAndSubmit = () => {
-    if (!user || !user.username || !addressData || selectedEnrollments.length === 0) {
+    const studentUsername = studentData?.studentInfo.username;
+    if (!studentUsername || !addressData || selectedEnrollments.length === 0) {
       setErrorMessage("Missing required information to submit the order.");
       setStep('error');
       return;
@@ -236,7 +263,7 @@ export default function CertificateOrderPage() {
     submissionData.append("city_id", cityName);
     submissionData.append("district", districtName);
     submissionData.append("mobile", addressData.phone);
-    submissionData.append("created_by", user.username);
+    submissionData.append("created_by", studentUsername);
     submissionData.append("type", "1");
     submissionData.append("payment_amount", "0");
     submissionData.append("package_id", "default");
@@ -270,11 +297,21 @@ export default function CertificateOrderPage() {
   };
 
   const renderContent = () => {
+    if (!activeStudentId && user?.role === 'staff') {
+        return (
+             <CardHeader>
+                <CardTitle>Search for a Student</CardTitle>
+                <CardDescription>Enter a student ID to begin the certificate order process.</CardDescription>
+             </CardHeader>
+        )
+    }
+
     switch (step) {
       case 'loading':
         return (
           <CardContent className="flex justify-center items-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-4 text-muted-foreground">Loading student data...</p>
           </CardContent>
         );
 
@@ -283,7 +320,7 @@ export default function CertificateOrderPage() {
           <>
             <CardHeader>
               <CardTitle>Step 1: Select Your Course(s)</CardTitle>
-              <CardDescription>Review your course eligibility and select the certificates you wish to order.</CardDescription>
+              <CardDescription>Review course eligibility and select the certificates to order for {studentData?.studentInfo.full_name}.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {deselectedEligible.length > 0 && (
@@ -291,7 +328,7 @@ export default function CertificateOrderPage() {
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle>Warning</AlertTitle>
                         <AlertDescription>
-                            You have deselected {deselectedEligible.length} course(s) for which you are eligible to receive a certificate. Please ensure this is intentional before proceeding.
+                            You have deselected {deselectedEligible.length} course(s) for which this student is eligible. Please ensure this is intentional before proceeding.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -362,8 +399,8 @@ export default function CertificateOrderPage() {
                   <Button variant="ghost" onClick={() => setStep('selection')} className="w-fit h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Selection
                   </Button>
-                <CardTitle>Step 2: Enter Your Delivery Address</CardTitle>
-                <CardDescription>Please provide the address where you would like to receive your certificate(s).</CardDescription>
+                <CardTitle>Step 2: Enter Delivery Address</CardTitle>
+                <CardDescription>Provide the address where the certificate(s) should be sent.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField control={form.control} name="addressLine1" render={({ field }) => ( <FormItem><FormLabel>Address Line 1</FormLabel><FormControl><Input placeholder="e.g., No. 123, Main Street" {...field} /></FormControl><FormMessage /></FormItem> )} />
@@ -413,7 +450,7 @@ export default function CertificateOrderPage() {
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Edit
                 </Button>
               <CardTitle>Step 3: Confirm Your Order</CardTitle>
-              <CardDescription>Please review all the details below before submitting your request.</CardDescription>
+              <CardDescription>Please review all the details below before submitting the request.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-4">
@@ -469,10 +506,10 @@ export default function CertificateOrderPage() {
             <CardHeader className="items-center text-center">
               <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
               <CardTitle>Request Submitted!</CardTitle>
-              <CardDescription>Your certificate order has been successfully placed. You will be notified once it is processed.</CardDescription>
+              <CardDescription>The certificate order has been successfully placed. The student will be notified.</CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-                <p className="text-sm text-muted-foreground">Your Reference Number is:</p>
+                <p className="text-sm text-muted-foreground">Reference Number is:</p>
                 <div className="flex items-center justify-center gap-2 mt-2">
                     <p className="text-2xl font-bold font-mono tracking-widest text-primary p-2 border-2 border-dashed rounded-lg">{referenceNumber}</p>
                     <Button variant="ghost" size="icon" onClick={copyToClipboard}><Copy className="h-5 w-5"/></Button>
@@ -494,7 +531,7 @@ export default function CertificateOrderPage() {
             <CardHeader className="items-center text-center">
                <AlertCircle className="h-16 w-16 text-destructive mb-4" />
                <CardTitle>An Error Occurred</CardTitle>
-               <CardDescription>We couldn't process your request.</CardDescription>
+               <CardDescription>We couldn't process the request.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Alert variant="destructive">
@@ -503,11 +540,17 @@ export default function CertificateOrderPage() {
                 </Alert>
             </CardContent>
             <CardFooter className="justify-center">
-              <Button asChild variant="outline">
-                <a href="/dashboard">
-                  <Home className="mr-2 h-4 w-4" /> Back to Dashboard
-                </a>
-              </Button>
+                {user?.role === 'staff' ? (
+                     <Button onClick={() => setActiveStudentId(null)} variant="outline">
+                        Search for Another Student
+                    </Button>
+                ) : (
+                     <Button asChild variant="outline">
+                        <a href="/dashboard">
+                        <Home className="mr-2 h-4 w-4" /> Back to Dashboard
+                        </a>
+                    </Button>
+                )}
             </CardFooter>
           </>
         )
@@ -535,12 +578,36 @@ export default function CertificateOrderPage() {
 
        <header>
           <h1 className="text-3xl font-headline font-semibold">Request a Certificate</h1>
-          <p className="text-muted-foreground">Follow the steps to order your course certificates.</p>
-          {user && <p className="text-sm text-muted-foreground mt-2">Logged in as: {user.username}</p>}
+           {user?.role === 'staff' ? (
+                <p className="text-muted-foreground">Search for a student to order a certificate on their behalf.</p>
+           ) : (
+                <p className="text-muted-foreground">Follow the steps to order your course certificates.</p>
+           )}
         </header>
+
+        {user?.role === 'staff' && (
+            <Card className="shadow-lg">
+                 <CardContent className="p-6">
+                    <form onSubmit={handleAdminSearch} className="flex flex-col sm:flex-row gap-4">
+                        <Input
+                            placeholder="Enter Student ID..."
+                            value={searchStudentId}
+                            onChange={(e) => setSearchStudentId(e.target.value)}
+                            className="flex-grow"
+                        />
+                        <Button type="submit" disabled={isLoadingStudent}>
+                             {isLoadingStudent ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                            Search
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+        )}
+
       <Card className="shadow-lg w-full">
         {renderContent()}
       </Card>
     </div>
   );
 }
+
