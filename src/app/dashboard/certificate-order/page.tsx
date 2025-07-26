@@ -274,7 +274,7 @@ export default function CertificateOrderPage() {
                                     }}
                                 />
                                 <div className="flex-1">
-                                    <Label htmlFor={enrollment.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed">
+                                    <Label htmlFor={enrollment.id} className="font-medium leading-none peer-disabled:cursor-not-allowed">
                                         {enrollment.parent_course_name}
                                     </Label>
                                     <p className="text-xs text-muted-foreground">{enrollment.course_code}</p>
