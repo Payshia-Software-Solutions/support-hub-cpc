@@ -104,6 +104,8 @@ export interface Recording {
   youtubeUrl: string;
   thumbnailUrl: string;
   dataAiHint?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
 }
 
 export type CreateTicketPayload = Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>;

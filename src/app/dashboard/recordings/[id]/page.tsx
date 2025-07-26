@@ -2,10 +2,10 @@
 "use client";
 
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import type { Recording } from '@/lib/types';
 import { dummyRecordings } from '@/lib/dummy-data'; // Using dummy data for now
 
@@ -81,8 +81,17 @@ export default function RecordingPlayerPage() {
           <CardTitle className="text-2xl font-headline">{recording.title}</CardTitle>
           <CardDescription>{recording.description}</CardDescription>
         </CardHeader>
+        {recording.attachmentUrl && (
+            <CardFooter>
+                 <a href={recording.attachmentUrl} download={recording.attachmentName || true}>
+                    <Button>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download {recording.attachmentName || 'Attachment'}
+                    </Button>
+                </a>
+            </CardFooter>
+        )}
       </Card>
     </div>
   );
 }
-

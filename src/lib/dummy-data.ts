@@ -33,7 +33,7 @@ export const dummyCourses: Course[] = [
 ];
 
 export const dummyRecordings: Recording[] = [
-  { id: 'rec1', courseId: 'course1', title: 'Introduction to Pharmacy', description: 'Session 1: A basic overview of the field.', youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://placehold.co/600x400.png', dataAiHint: "lecture presentation" },
+  { id: 'rec1', courseId: 'course1', title: 'Introduction to Pharmacy', description: 'Session 1: A basic overview of the field.', youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://placehold.co/600x400.png', dataAiHint: "lecture presentation", attachmentUrl: "#", attachmentName: "Session_1_Slides.pdf" },
   { id: 'rec2', courseId: 'course1', title: 'Pharmacokinetics', description: 'Session 2: Understanding how drugs move through the body.', youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://placehold.co/600x400.png', dataAiHint: "science lesson" },
-  { id: 'rec3', courseId: 'course2', title: 'Advanced Compounding', description: 'Session 1: Techniques for complex preparations.', youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://placehold.co/600x400.png', dataAiHint: "lab work" },
+  { id: 'rec3', courseId: 'course2', title: 'Advanced Compounding', description: 'Session 1: Techniques for complex preparations.', youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://placehold.co/600x400.png', dataAiHint: "lab work", attachmentUrl: "#", attachmentName: "Compounding_Worksheet.docx" },
 ];

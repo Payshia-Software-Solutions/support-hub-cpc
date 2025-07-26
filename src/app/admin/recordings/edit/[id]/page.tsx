@@ -23,6 +23,8 @@ const recordingSchema = z.object({
   courseId: z.string({ required_error: "Please select a course." }),
   youtubeUrl: z.string().url("Please enter a valid YouTube URL."),
   thumbnailUrl: z.string().url("Please enter a valid image URL for the thumbnail."),
+  attachmentUrl: z.string().url("Please enter a valid URL for the attachment.").optional().or(z.literal('')),
+  attachmentName: z.string().optional(),
 });
 
 export default function EditRecordingPage() {
@@ -43,6 +45,8 @@ export default function EditRecordingPage() {
       courseId: recordingToEdit?.courseId || '',
       youtubeUrl: recordingToEdit?.youtubeUrl || '',
       thumbnailUrl: recordingToEdit?.thumbnailUrl || '',
+      attachmentUrl: recordingToEdit?.attachmentUrl || '',
+      attachmentName: recordingToEdit?.attachmentName || '',
     },
   });
 
@@ -154,6 +158,29 @@ export default function EditRecordingPage() {
                   <FormItem className="md:col-span-2">
                     <FormLabel>Description</FormLabel>
                     <FormControl><Textarea placeholder="A brief summary of the video content..." className="min-h-[150px]" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="attachmentUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Attachment URL (Optional)</FormLabel>
+                    <FormControl><Input placeholder="e.g., https://example.com/slides.pdf" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="attachmentName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Attachment Name (Optional)</FormLabel>
+                    <FormControl><Input placeholder="e.g., Session 1 Slides" {...field} /></FormControl>
+                    <FormDescription>The name for the download button.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
