@@ -78,6 +78,7 @@ const gameData = [
 const otherTasks = [
     { title: "Profile", icon: User, href: "/dashboard/profile"},
     { title: "Request CV", icon: FileText, href: "/dashboard/request-cv"},
+    { title: "Certificate Order", icon: Award, href: "/dashboard/certificate-order"},
     { title: "Apply Jobs", icon: Briefcase, href: "/dashboard/apply-jobs"},
     { title: "Delivery", icon: Truck, href: "/dashboard/delivery"},
 ];

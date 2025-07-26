@@ -1,4 +1,5 @@
 
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -230,6 +231,23 @@ export interface CertificateOrder {
   is_active: string;
   name_on_certificate: string;
   telephone_1?: string;
+}
+
+export interface CreateCertificateOrderPayload {
+    created_by: string;
+    course_code: string;
+    mobile: string;
+    address_line1: string;
+    address_line2: string;
+    city_id: string;
+    district: string;
+    type: 'courier' | 'in-person';
+    payment: 'paid' | 'unpaid';
+    package_id: string;
+    certificate_id: string;
+    certificate_status: 'Pending' | 'Printed' | 'Delivered';
+    cod_amount: string;
+    is_active: '1' | '0';
 }
 
 export interface SendSmsPayload {

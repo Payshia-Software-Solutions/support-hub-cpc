@@ -1,6 +1,6 @@
 
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
@@ -374,6 +374,21 @@ export const getCertificateOrders = async (): Promise<CertificateOrder[]> => {
     }
     return response.json();
 }
+
+export const createCertificateOrder = async (payload: CreateCertificateOrderPayload): Promise<{ reference_number: string; id: string; }> => {
+    const response = await fetch(`${QA_API_BASE_URL}/certificate-orders`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Certificate order creation failed. Status: ${response.status}` }));
+        throw new Error(errorData.error || errorData.message || 'Certificate order creation failed');
+    }
+    return response.json();
+};
 
 export const sendCertificateNameSms = async (payload: SendSmsPayload): Promise<any> => {
     const response = await fetch(`${QA_API_BASE_URL}/send-name-sms`, {
