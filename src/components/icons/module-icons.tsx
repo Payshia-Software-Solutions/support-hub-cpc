@@ -453,3 +453,25 @@ export const TopMedalIcon = (props: SVGProps<SVGSVGElement>) => (
         <circle cx="32" cy="18" r="4" className="pulse-top" fill="#A78BFA"/>
     </svg>
 );
+
+export const LuckyWheelIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="1em" height="1em" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" {...props} className={`module-icon-group ${props.className || ''}`}>
+        <style>{`
+          .spin-element {
+            transform-origin: center;
+            animation: spin 3s linear infinite;
+          }
+          @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+          }
+        `}</style>
+        <g className="spin-element">
+            <path d="M26 4C14.9543 4 6 12.9543 6 24H26V4Z" fill="#818CF8"/>
+            <path d="M6 24C6 35.0457 14.9543 44 26 44V24H6Z" fill="#F472B6"/>
+            <path d="M26 44C37.0457 44 46 35.0457 46 24H26V44Z" fill="#FBBF24"/>
+            <path d="M46 24C46 12.9543 37.0457 4 26 4V24H46Z" fill="#34D399"/>
+        </g>
+        <circle cx="26" cy="24" r="4" fill="white"/>
+    </svg>
+);

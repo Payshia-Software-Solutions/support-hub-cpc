@@ -1,6 +1,7 @@
 
 
 
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -352,6 +353,13 @@ export interface StudentEnrollment {
     parent_course_id: string;
     batch_name: string;
     parent_course_name: string;
+    assignment_grades: {
+        assignments: { assignment_id: string; assignment_name: string; grade: string; }[];
+        average_grade: string;
+    };
+    deliveryOrders: { id: string; delivery_id: string; tracking_number: string; order_date: string; current_status: string; delivery_title: string; active_status: string; }[];
+    certificateRecords: { id: string; certificate_id: string; print_date: string; print_status: string; type: string; course_code: string; }[];
+    studentBalance: number;
     certificate_eligibility: boolean;
     criteria_details: CriteriaDetail[];
     ceylon_pharmacy?: CeylonPharmacyInfo;
@@ -363,6 +371,8 @@ export interface FullStudentData {
     studentEnrollments: Record<string, StudentEnrollment>;
     studentBalance?: {
         studentBalance: number;
+        totalPaymentAmount: number;
+        paymentRecords: Record<string, any>;
     };
 }
 
@@ -544,4 +554,3 @@ export interface StudentBalanceData {
   TotalRegistrationFee: number;
   paymentRecords: Record<string, ApiPaymentRecord>;
 }
-

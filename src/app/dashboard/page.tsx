@@ -29,6 +29,7 @@ import {
     GoldMedalIcon,
     SilverMedalIcon,
     TopMedalIcon,
+    LuckyWheelIcon,
 } from "@/components/icons/module-icons";
 import { 
     ChevronRight,
@@ -73,6 +74,7 @@ const gameData = [
   { title: "Hunter Pro", icon: HunterProIcon, score: 1800, href: "/dashboard/hunter-pro" },
   { title: "Pharma Reader", icon: PharmaReaderIcon, score: 950, href: "/dashboard/pharma-reader" },
   { title: "Word Pallet", icon: WordPalletIcon, score: 1500, href: "/dashboard/word-pallet" },
+  { title: "Lucky Wheel", icon: LuckyWheelIcon, score: 0, href: "/dashboard/lucky-wheel" },
 ];
 
 const otherTasks = [
@@ -251,12 +253,12 @@ export default function StudentDashboardPage() {
              {/* --- Let's Play --- */}
             <section>
                 <h2 className="text-2xl font-semibold font-headline mb-4">Let's Play!</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                    {gameData.map((game) => (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                    {gameData.sort((a, b) => b.score - a.score).map((game) => (
                         <Link href={game.href} key={game.title} className="group">
                             <Card className="relative p-3 h-full flex flex-col items-center justify-center shadow-lg hover:shadow-xl hover:border-primary/50 transition-all text-center">
                                 <game.icon className="w-16 h-16 transition-transform group-hover:scale-110" />
-                                <p className="font-bold text-lg text-card-foreground mt-2">{game.score}</p>
+                                {game.score > 0 && <p className="font-bold text-lg text-card-foreground mt-2">{game.score}</p>}
                                 <p className="text-xs text-muted-foreground">{game.title}</p>
                             </Card>
                         </Link>
