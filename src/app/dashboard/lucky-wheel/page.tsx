@@ -33,12 +33,19 @@ export default function LuckyWheelPage() {
     setResult(null);
 
     const winningSegmentIndex = Math.floor(Math.random() * segments.length);
+    // Add multiple full rotations for a better spinning effect
+    const fullSpins = 5;
+    const baseRotation = 360 * fullSpins;
+    
+    // Calculate a random angle within the winning segment to make it look more natural
     const randomAngleWithinSegment = Math.random() * (segmentAngle - 10) + 5;
-    const baseRotation = 360 * 5; // Spin at least 5 times
-    const finalAngle = baseRotation - (winningSegmentIndex * segmentAngle + randomAngleWithinSegment);
+    
+    // The final angle is the base rotations plus the position of the winning segment
+    const finalAngle = baseRotation + (360 - (winningSegmentIndex * segmentAngle + randomAngleWithinSegment));
 
     setRotation(finalAngle);
 
+    // Set a timeout to match the animation duration in the CSS
     setTimeout(() => {
       setIsSpinning(false);
       const winningSegment = segments[winningSegmentIndex];
@@ -47,7 +54,7 @@ export default function LuckyWheelPage() {
         title: 'Congratulations!',
         description: winningSegment.value > 0 ? `You won ${winningSegment.label}!` : 'Better luck next time!',
       });
-    }, 5000); // Corresponds to the animation duration
+    }, 5000); // This duration must match the CSS transition duration
   };
 
   return (
@@ -68,7 +75,7 @@ export default function LuckyWheelPage() {
         
         {/* Wheel */}
         <div
-          className="relative w-full h-full rounded-full border-8 border-primary shadow-2xl transition-transform duration-[5000ms] ease-[cubic-bezier(0.1,0.7,0.3,1)]"
+          className="relative w-full h-full rounded-full border-8 border-primary shadow-2xl transition-transform duration-[5000ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]"
           style={{ transform: `rotate(${rotation}deg)` }}
         >
           {segments.map((segment, index) => (
