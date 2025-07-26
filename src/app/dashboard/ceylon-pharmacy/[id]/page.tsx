@@ -48,8 +48,10 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks }: {
     subtasks?: { id: string; name: string; href: string; completed: boolean; }[]
 }) => {
     const isCompleted = status === 'completed';
-    // The task is clickable if it is not completed, even if it has no subtasks.
-    const isParentLinkDisabled = isCompleted && !subtasks;
+    // A task is only truly disabled if it's completed AND it has no incomplete subtasks.
+    const isParentLinkDisabled = isCompleted && !subtasks?.some(t => !t.completed);
+
+    const firstIncompleteSubtaskHref = subtasks?.find(t => !t.completed)?.href;
 
     const content = (
          <Card className={cn("shadow-md transition-shadow", isParentLinkDisabled ? "" : "group-hover:shadow-lg group-hover:border-primary/50", isCompleted ? "bg-green-100 border-green-300" : "")}>
@@ -80,13 +82,12 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks }: {
             )}
         </Card>
     );
-
-    if (isCompleted && !subtasks?.some(t => !t.completed)) {
-        return <div className="block">{content}</div>
-    }
+    
+    // For tasks with subtasks, the main link should go to the first incomplete subtask.
+    const finalHref = firstIncompleteSubtaskHref || href;
 
     return (
-        <Link href={isParentLinkDisabled ? '#' : href} className={cn("block group", isParentLinkDisabled && "pointer-events-none")}>
+        <Link href={isParentLinkDisabled ? '#' : finalHref} className={cn("block group", isParentLinkDisabled && "pointer-events-none")}>
             {content}
         </Link>
     );
@@ -203,8 +204,8 @@ export default function CeylonPharmacyPatientPage() {
                                 </div>
                             </div>
 
-                            <div className="text-right mt-8 font-serif text-xl text-gray-700">
-                                <p className="italic">{currentPrescription.doctor.name.split(' ').slice(1).join(' ')}</p>
+                            <div className="text-right mt-8">
+                                <p className="italic font-serif text-xl text-gray-700">{currentPrescription.doctor.name.split(' ').slice(1).join(' ')}</p>
                                 <p className="text-xs text-muted-foreground non-italic">Signature</p>
                             </div>
                         </div>
