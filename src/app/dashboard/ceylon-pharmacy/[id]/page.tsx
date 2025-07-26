@@ -155,48 +155,97 @@ export default function CeylonPharmacyPatientPage() {
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
-        <Card className="shadow-xl">
-            <CardHeader>
-                <div className="flex justify-between items-start">
-                    <Button onClick={() => router.push('/dashboard/ceylon-pharmacy')} variant="outline" size="sm">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Waiting Room
-                    </Button>
-                    <CountdownTimer initialTime={patient.initialTime} onTimeEnd={handleTimeEnd} isPaused={allTasksCompleted} />
-                </div>
-                <div className="pt-4 flex items-center gap-4">
-                     <User className="h-10 w-10 text-primary" />
-                    <div>
-                        <CardTitle className="text-2xl">Treating: {patient.name}</CardTitle>
-                        <CardDescription>{patient.age} / {currentPrescription.doctor.name}</CardDescription>
+            <header>
+                 <Button onClick={() => router.push('/dashboard/ceylon-pharmacy')} variant="outline" size="sm" className="mb-4">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Waiting Room
+                </Button>
+            </header>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle>Prescription</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex justify-center p-4">
+                        <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
+                            <div className="text-center border-b pb-4 mb-4 border-gray-300">
+                                <h2 className="text-xl font-bold">{currentPrescription.doctor.name}</h2>
+                                <p className="text-sm text-gray-600">{currentPrescription.doctor.specialty}</p>
+                                <p className="text-sm text-gray-600">Reg. No: {currentPrescription.doctor.regNo}</p>
+                            </div>
+                            
+                            <div className="flex justify-between text-sm mb-6">
+                                <div>
+                                <p><span className="font-semibold">Name:</span> {currentPrescription.patient.name}</p>
+                                <p><span className="font-semibold">Age:</span> {currentPrescription.patient.age}</p>
+                                </div>
+                                <div>
+                                <p><span className="font-semibold">Date:</span> {currentPrescription.date}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start min-h-[200px] pl-10 relative mb-6">
+                                <div className="absolute left-0 top-0 text-6xl font-serif text-gray-700 select-none">℞</div>
+                                <div className="flex-1 space-y-4 font-mono text-lg text-gray-800 pt-2">
+                                    {currentPrescription.drugs.map(drug => (
+                                        <div key={drug.id}>
+                                            {drug.lines.map((line, index) => (
+                                                <p key={index}>{line}</p>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="text-right mt-8">
+                                <p className="italic font-serif text-xl text-gray-700">{currentPrescription.doctor.name.split(' ').slice(1).join(' ')}</p>
+                                <p className="text-xs text-muted-foreground">Signature</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <div className="space-y-4">
+                    <Card className="shadow-xl">
+                        <CardHeader>
+                            <div className="flex justify-between items-start">
+                                <div className="flex items-center gap-4">
+                                    <User className="h-10 w-10 text-primary" />
+                                    <div>
+                                        <CardTitle className="text-2xl">Treating: {patient.name}</CardTitle>
+                                        <CardDescription>{patient.age} / {currentPrescription.doctor.name}</CardDescription>
+                                    </div>
+                                </div>
+                                <CountdownTimer initialTime={patient.initialTime} onTimeEnd={handleTimeEnd} isPaused={allTasksCompleted} />
+                            </div>
+                        </CardHeader>
+                    </Card>
+                    <div className="space-y-4">
+                         <TaskCard 
+                            title="Task 1: Dispense Prescription"
+                            description="Fill the dispensing label correctly for each item."
+                            href={`/dashboard/ceylon-pharmacy/${patient.id}/dispense`}
+                            status={taskCompletion.dispense ? 'completed' : 'pending'}
+                            icon={ClipboardList}
+                            subtasks={dispensingSubtasks}
+                         />
+                         <TaskCard 
+                            title="Task 2: Patient Counselling"
+                            description="Provide correct instructions."
+                            href={`/dashboard/ceylon-pharmacy/${patient.id}/counsel`}
+                            status={taskCompletion.counsel ? 'completed' : 'pending'}
+                            icon={MessageCircle}
+                         />
+                         <TaskCard 
+                            title="Task 3: POS Billing"
+                            description="Use the POS system to bill the patient."
+                            href={`/dashboard/ceylon-pharmacy/${patient.id}/pos`}
+                            status={taskCompletion.pos ? 'completed' : 'pending'}
+                            icon={BookOpen}
+                         />
                     </div>
                 </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                 <TaskCard 
-                    title="Task 1: Dispense Prescription"
-                    description="Fill the dispensing label correctly for each item."
-                    href={`/dashboard/ceylon-pharmacy/${patient.id}/dispense`}
-                    status={taskCompletion.dispense ? 'completed' : 'pending'}
-                    icon={ClipboardList}
-                    subtasks={dispensingSubtasks}
-                 />
-                 <TaskCard 
-                    title="Task 2: Patient Counselling"
-                    description="Provide correct instructions."
-                    href={`/dashboard/ceylon-pharmacy/${patient.id}/counsel`}
-                    status={taskCompletion.counsel ? 'completed' : 'pending'}
-                    icon={MessageCircle}
-                 />
-                 <TaskCard 
-                    title="Task 3: POS Billing"
-                    description="Use the POS system to bill the patient."
-                    href={`/dashboard/ceylon-pharmacy/${patient.id}/pos`}
-                    status={taskCompletion.pos ? 'completed' : 'pending'}
-                    icon={BookOpen}
-                 />
-            </CardContent>
-        </Card>
-    </div>
+            </div>
+        </div>
     )
 }
