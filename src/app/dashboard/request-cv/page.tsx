@@ -112,7 +112,6 @@ export default function RequestCvPage() {
                 display: flex;
                 justify-content: center;
                 align-items: flex-start;
-                background: white;
                 padding: 1.5rem;
                 border-radius: var(--radius);
             }
@@ -232,8 +231,8 @@ export default function RequestCvPage() {
                 <Button onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/> Print / Save as PDF</Button>
             </div>
             <div className="cv-preview-container">
-                 <Card className="shadow-2xl cv-preview-area">
-                    <CardContent className="p-8 font-serif bg-white text-black">
+                 <Card className="shadow-2xl cv-preview-area bg-white">
+                    <CardContent className="p-8 font-serif text-black">
                         <header className="text-center border-b-2 border-gray-700 pb-4">
                             <h1 className="text-4xl font-bold tracking-wider">{watchedValues.fullName}</h1>
                             <div className="flex justify-center items-center gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
