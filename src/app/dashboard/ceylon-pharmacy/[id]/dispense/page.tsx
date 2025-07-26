@@ -2,11 +2,10 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ceylonPharmacyPatients, type Patient, type PrescriptionDrug, type PrescriptionFormValues } from '@/lib/ceylon-pharmacy-data';
-import { cn } from "@/lib/utils";
 import { toast } from '@/hooks/use-toast';
 import { useForm, Controller, Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -207,19 +206,31 @@ const DispensingForm = ({
 export default function DispensePage() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
+
     const patientId = params.id as string;
+    const drugId = searchParams.get('drug');
 
     const [patient, setPatient] = useState<Patient | null>(null);
+    const [drugToDispense, setDrugToDispense] = useState<PrescriptionDrug | null>(null);
     const [dispenseFormResults, setDispenseFormResults] = useState<Record<string, ResultState>>({});
 
     useEffect(() => {
         const foundPatient = ceylonPharmacyPatients.find(p => p.id === patientId);
         if (foundPatient) {
             setPatient(foundPatient);
+            const foundDrug = foundPatient.prescription.drugs.find(d => d.id === drugId);
+            if (foundDrug) {
+                setDrugToDispense(foundDrug);
+            } else {
+                 toast({ variant: 'destructive', title: 'Drug not found' });
+                 router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
+            }
         } else {
+             toast({ variant: 'destructive', title: 'Patient not found' });
             router.push('/dashboard/ceylon-pharmacy');
         }
-    }, [patientId, router]);
+    }, [patientId, drugId, router]);
 
     const handleDispenseSubmit = (drug: PrescriptionDrug) => (data: PrescriptionFormValues) => {
         const newResults: ResultState = {};
@@ -238,7 +249,7 @@ export default function DispensePage() {
                 title: "Drug Verified!",
                 description: `${drug.correctAnswers.drugName} details are correct.`,
             });
-            // In a real app, you would set the task as complete here and navigate back
+            // In a real app, you would set the task as complete here
             router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
         } else {
              toast({
@@ -249,22 +260,16 @@ export default function DispensePage() {
         }
     }
 
-    const handleDispenseReset = (drugId: string) => {
+    const handleDispenseReset = (drugIdToReset: string) => {
         setDispenseFormResults(prev => {
             const newResults = { ...prev };
-            delete newResults[drugId];
+            delete newResults[drugIdToReset];
             return newResults;
         });
     }
 
-    if (!patient) {
+    if (!patient || !drugToDispense) {
         return <div className="p-8 text-center">Loading patient data...</div>;
-    }
-    
-    // For this page, we'll assume we are working with the first drug in the prescription.
-    const drugToDispense = patient.prescription.drugs[0];
-    if (!drugToDispense) {
-        return <div className="p-8 text-center">This patient has no drugs to dispense.</div>;
     }
 
     return (

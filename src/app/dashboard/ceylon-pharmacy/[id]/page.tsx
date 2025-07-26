@@ -7,8 +7,8 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, Calendar as CalendarIcon, ClipboardList, BookOpen, MessageCircle } from 'lucide-react';
-import { ceylonPharmacyPatients, type Patient } from '@/lib/ceylon-pharmacy-data';
+import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, ClipboardList, BookOpen, MessageCircle } from 'lucide-react';
+import { ceylonPharmacyPatients, type Patient, type PrescriptionDrug } from '@/lib/ceylon-pharmacy-data';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -38,22 +38,54 @@ const CountdownTimer = ({ initialTime, onTimeEnd, isPaused }: { initialTime: num
     );
 }
 
-const TaskCard = ({ title, description, href, status, icon: Icon }: { title: string, description: string, href: string, status: 'pending' | 'completed', icon: React.ElementType }) => {
+const TaskCard = ({ title, description, href, status, icon: Icon, subtasks }: { 
+    title: string, 
+    description: string, 
+    href: string, 
+    status: 'pending' | 'completed', 
+    icon: React.ElementType,
+    subtasks?: { id: string; name: string; href: string; completed: boolean; }[]
+}) => {
     const isCompleted = status === 'completed';
-    return (
-        <Link href={isCompleted ? '#' : href} className={cn("block group", isCompleted && "pointer-events-none")}>
-            <Card className={cn("shadow-md hover:shadow-lg transition-shadow", isCompleted ? "bg-green-100 border-green-300" : "hover:border-primary/50")}>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div className='flex items-center gap-4'>
-                        <Icon className={cn("w-8 h-8", isCompleted ? "text-green-600" : "text-primary")} />
-                        <div>
-                            <CardTitle className="text-lg">{title}</CardTitle>
-                            <CardDescription>{description}</CardDescription>
-                        </div>
+    const isParentLinkDisabled = isCompleted || !subtasks;
+
+    const content = (
+         <Card className={cn("shadow-md transition-shadow", isParentLinkDisabled ? "" : "group-hover:shadow-lg group-hover:border-primary/50", isCompleted ? "bg-green-100 border-green-300" : "")}>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div className='flex items-center gap-4'>
+                    <Icon className={cn("w-8 h-8", isCompleted ? "text-green-600" : "text-primary")} />
+                    <div>
+                        <CardTitle className="text-lg">{title}</CardTitle>
+                        <CardDescription>{description}</CardDescription>
                     </div>
-                    {isCompleted && <CheckCircle className="h-6 w-6 text-green-600" />}
-                </CardHeader>
-            </Card>
+                </div>
+                {isCompleted && <CheckCircle className="h-6 w-6 text-green-600" />}
+            </CardHeader>
+             {subtasks && (
+                <CardContent className="space-y-2 pt-0 pl-10 pr-4 pb-4">
+                    {subtasks.map(task => (
+                        <Link key={task.id} href={task.completed ? '#' : task.href} className={cn("block rounded-md p-2 transition-colors", task.completed ? "bg-green-200/50 pointer-events-none" : "hover:bg-accent/50")}>
+                           <div className="flex items-center justify-between">
+                             <div className="flex items-center gap-2">
+                                <Pill className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium text-sm">{task.name}</span>
+                             </div>
+                             {task.completed && <CheckCircle className="h-5 w-5 text-green-500" />}
+                           </div>
+                        </Link>
+                    ))}
+                </CardContent>
+            )}
+        </Card>
+    );
+
+    if (isParentLinkDisabled) {
+        return <div className="block">{content}</div>
+    }
+
+    return (
+        <Link href={href} className="block group">
+            {content}
         </Link>
     );
 };
@@ -66,8 +98,7 @@ export default function CeylonPharmacyPatientPage() {
     const patientId = params.id as string;
     
     const [patient, setPatient] = useState<Patient | null>(null);
-    // In a real app, this completion state would come from a global state or API
-    const [taskCompletion, setTaskCompletion] = useState({ dispense: false, counsel: false, pos: false });
+    const [completedDrugIds, setCompletedDrugIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         const foundPatient = ceylonPharmacyPatients.find(p => p.id === patientId);
@@ -77,6 +108,16 @@ export default function CeylonPharmacyPatientPage() {
             router.push('/dashboard/ceylon-pharmacy');
         }
     }, [patientId, router]);
+    
+    // In a real app, this completion state would come from a global state or API
+    const [taskCompletion, setTaskCompletion] = useState({ dispense: false, counsel: false, pos: false });
+    
+    useEffect(() => {
+        if(patient && completedDrugIds.size === patient.prescription.drugs.length) {
+            setTaskCompletion(prev => ({...prev, dispense: true}));
+        }
+    }, [completedDrugIds, patient]);
+
 
     const allTasksCompleted = useMemo(() => {
         return taskCompletion.dispense && taskCompletion.counsel && taskCompletion.pos;
@@ -105,6 +146,13 @@ export default function CeylonPharmacyPatientPage() {
     
     const currentPrescription = patient.prescription;
 
+    const dispensingSubtasks = currentPrescription.drugs.map(drug => ({
+        id: drug.id,
+        name: drug.correctAnswers.drugName,
+        href: `/dashboard/ceylon-pharmacy/${patient.id}/dispense?drug=${drug.id}`,
+        completed: completedDrugIds.has(drug.id)
+    }));
+
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
         <Card className="shadow-xl">
@@ -127,10 +175,11 @@ export default function CeylonPharmacyPatientPage() {
             <CardContent className="space-y-4">
                  <TaskCard 
                     title="Task 1: Dispense Prescription"
-                    description="Fill the dispensing label correctly."
+                    description="Fill the dispensing label correctly for each item."
                     href={`/dashboard/ceylon-pharmacy/${patient.id}/dispense`}
                     status={taskCompletion.dispense ? 'completed' : 'pending'}
                     icon={ClipboardList}
+                    subtasks={dispensingSubtasks}
                  />
                  <TaskCard 
                     title="Task 2: Patient Counselling"
