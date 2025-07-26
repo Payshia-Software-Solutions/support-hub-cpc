@@ -112,8 +112,8 @@ export default function CertificateOrderPage() {
   });
 
   const { data: studentData, isLoading: isLoadingStudent, isError, error } = useQuery<FullStudentData>({
-    queryKey: ['studentFullInfoForCertOrder', user?.username],
-    queryFn: () => getStudentFullInfo(user!.username!),
+    queryKey: ['studentFullInfoForCertOrder', 'PA19218'],
+    queryFn: () => getStudentFullInfo('PA19218'),
     enabled: !!user,
     retry: 1,
   });
