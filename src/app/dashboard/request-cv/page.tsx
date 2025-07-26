@@ -118,13 +118,13 @@ export default function RequestCvPage() {
                 width: 100%;
                 height: 100%;
                 margin: 0;
-                padding: 1in;
+                padding: 0.5in;
                 box-shadow: none;
                 border: none;
             }
             @page {
                 size: A4;
-                margin: 0.5in;
+                margin: 0;
             }
         }
     `}</style>
