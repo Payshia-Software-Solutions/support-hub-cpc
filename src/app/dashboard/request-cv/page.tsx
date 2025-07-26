@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState } from 'react';
@@ -114,6 +113,7 @@ export default function RequestCvPage() {
                 align-items: flex-start;
                 padding: 1.5rem;
                 border-radius: var(--radius);
+                background-color: hsl(var(--muted));
             }
             .cv-preview-area {
                 width: 210mm;
@@ -123,22 +123,24 @@ export default function RequestCvPage() {
             }
         }
         @media print {
-            body * {
-                visibility: hidden;
+            body > *:not(.cv-print-area) {
+                display: none;
             }
-            .cv-preview-area, .cv-preview-area * {
-                visibility: visible;
-            }
-            .cv-preview-area {
+            .cv-print-area {
+                display: block;
                 position: absolute;
-                left: 0;
                 top: 0;
+                left: 0;
                 width: 100%;
                 height: 100%;
+            }
+            .cv-preview-area {
                 margin: 0;
-                padding: 0.5in;
+                padding: 0;
                 box-shadow: none;
                 border: none;
+                width: 100%;
+                height: 100%;
             }
             @page {
                 size: A4;
@@ -152,7 +154,7 @@ export default function RequestCvPage() {
         <p className="text-muted-foreground">Create and preview your professional CV in real-time.</p>
       </header>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start print:grid-cols-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         <Card className="shadow-lg print:hidden">
             <CardHeader>
                 <CardTitle>Enter Your Details</CardTitle>
@@ -226,7 +228,7 @@ export default function RequestCvPage() {
             </CardContent>
         </Card>
 
-        <div className="sticky top-24">
+        <div className="sticky top-24 cv-print-area">
             <div className="flex justify-end mb-4 print:hidden">
                 <Button onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/> Print / Save as PDF</Button>
             </div>
