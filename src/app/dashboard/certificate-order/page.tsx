@@ -23,6 +23,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 const addressFormSchema = z.object({
@@ -102,6 +112,7 @@ export default function CertificateOrderPage() {
   const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
   const [cityName, setCityName] = useState('');
   const [districtName, setDistrictName] = useState('');
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
 
   const form = useForm<AddressFormValues>({
@@ -199,7 +210,12 @@ export default function CertificateOrderPage() {
       });
       return;
     }
-    setStep('form');
+
+    if (deselectedEligible.length > 0) {
+        setIsConfirmDialogOpen(true);
+    } else {
+        setStep('form');
+    }
   };
 
   const handleFormSubmit = (values: AddressFormValues) => {
@@ -500,6 +516,23 @@ export default function CertificateOrderPage() {
 
   return (
     <div className="p-4 md:p-8 space-y-8 pb-20">
+       <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+                You have not selected all eligible courses. Are you sure you want to proceed without ordering all available certificates?
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogCancel>Go Back</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setStep('form')}>
+                Continue Anyway
+            </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
        <header>
           <h1 className="text-3xl font-headline font-semibold">Request a Certificate</h1>
           <p className="text-muted-foreground">Follow the steps to order your course certificates.</p>
@@ -510,4 +543,3 @@ export default function CertificateOrderPage() {
     </div>
   );
 }
-
