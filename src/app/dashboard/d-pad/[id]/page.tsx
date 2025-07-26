@@ -11,12 +11,11 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { prescriptions } from "@/lib/d-pad-data";
-import type { PrescriptionFormValues } from "@/lib/d-pad-data";
-import { Check, X, Pill, Repeat, Calendar, Hash, RotateCw, ArrowLeft, ClipboardList, ChevronDown, ArrowRight } from "lucide-react";
+import type { PrescriptionFormValues, PrescriptionDrug } from "@/lib/d-pad-data";
+import { Check, X, Pill, Repeat, Calendar, Hash, RotateCw, ArrowLeft, ClipboardList, ChevronRight, CheckCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 
 const prescriptionSchema = z.object({
@@ -76,7 +75,7 @@ const DispensingForm = ({
   onReset,
   results
 }: {
-  drug: (typeof prescriptions)[0]['drugs'][0];
+  drug: PrescriptionDrug;
   onSubmit: (data: PrescriptionFormValues) => void;
   onReset: () => void;
   results: ResultState | null;
@@ -92,7 +91,7 @@ const DispensingForm = ({
     },
   });
 
-  const { control, handleSubmit, formState: { errors }, setValue, watch } = form;
+  const { handleSubmit, formState: { errors }, setValue, watch } = form;
   const formValues = watch();
 
   const handleReset = () => {
@@ -214,18 +213,16 @@ export default function DPadDetailPage() {
   const isMobile = useIsMobile();
   
   const [allResults, setAllResults] = useState<Record<string, ResultState>>({});
-  const [activeTab, setActiveTab] = useState('');
+  const [selectedDrug, setSelectedDrug] = useState<PrescriptionDrug | null>(null);
 
   const currentPrescription = useMemo(() => {
     return prescriptions.find(p => p.id === prescriptionId);
   }, [prescriptionId]);
 
   useEffect(() => {
-    if (currentPrescription?.drugs) {
-      setActiveTab(currentPrescription.drugs[0].id);
-    }
+    setSelectedDrug(null);
     setAllResults({});
-  }, [prescriptionId, currentPrescription]);
+  }, [prescriptionId]);
 
   const handleSubmit = (drugId: string) => (data: PrescriptionFormValues) => {
     if (!currentPrescription) return;
@@ -263,14 +260,7 @@ export default function DPadDetailPage() {
         title: "Excellent Work!",
         description: `You've filled out the details for ${drug.correctAnswers.drugName} correctly.`,
       });
-      const currentIndex = currentPrescription.drugs.findIndex(d => d.id === drugId);
-      if (currentIndex < currentPrescription.drugs.length - 1) {
-          const nextDrug = currentPrescription.drugs[currentIndex + 1];
-          setActiveTab(nextDrug.id);
-      } else {
-          // Last drug, maybe show summary or congrats message
-          toast({ title: "Prescription Complete!", description: "You have successfully filled all items." });
-      }
+      setSelectedDrug(null); // Go back to the list
     } else {
       toast({
         variant: "destructive",
@@ -296,8 +286,69 @@ export default function DPadDetailPage() {
         </div>
     )
   }
+
+  const renderDispensingArea = () => {
+    if (selectedDrug) {
+      return (
+        <>
+           <CardHeader>
+                <Button variant="ghost" onClick={() => setSelectedDrug(null)} className="h-auto p-0 mb-4 text-sm font-medium w-fit text-muted-foreground hover:text-foreground">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Item List
+                </Button>
+                <CardTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</CardTitle>
+                <CardDescription>Fill in the fields based on the prescription for this item.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DispensingForm 
+                drug={selectedDrug} 
+                results={allResults[selectedDrug.id] || null} 
+                onSubmit={handleSubmit(selectedDrug.id)} 
+                onReset={() => handleReset(selectedDrug.id)}
+              />
+            </CardContent>
+        </>
+      );
+    }
+    
+    return (
+       <>
+        <CardHeader>
+            <CardTitle>Dispensing Items</CardTitle>
+            <CardDescription>Select an item to begin filling out the dispensing label.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {currentPrescription.drugs.map((drug) => {
+            const isCompleted = !!allResults[drug.id] && Object.values(allResults[drug.id]).every(r => r === true);
+            return (
+              <button
+                key={drug.id}
+                onClick={() => setSelectedDrug(drug)}
+                className={cn(
+                  "w-full p-4 border rounded-lg flex items-center justify-between text-left transition-all hover:border-primary/50 hover:bg-accent/50",
+                  isCompleted ? "bg-green-500/10 border-green-500/30" : ""
+                )}
+              >
+                <div className="font-medium">{drug.correctAnswers.drugName}</div>
+                <div className="flex items-center gap-2">
+                    {isCompleted ? (
+                         <span className="flex items-center gap-1.5 text-xs text-green-600 font-semibold">
+                            <CheckCircle className="h-4 w-4" />
+                            Completed
+                        </span>
+                    ) : (
+                         <span className="text-xs text-muted-foreground">Pending</span>
+                    )}
+                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </button>
+            )
+          })}
+        </CardContent>
+       </>
+    );
+  };
   
-  const allDrugsCompleted = currentPrescription.drugs.every(d => !!allResults[d.id] && Object.values(allResults[d.id]).every(r => r === true));
 
   return (
     <div className="p-4 md:p-8 space-y-8 pb-20">
@@ -359,31 +410,7 @@ export default function DPadDetailPage() {
                     </SheetTrigger>
                     <SheetContent side="bottom" className="h-[90%] p-0">
                        <div className="p-6 h-full flex flex-col">
-                            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-                                <SheetHeader>
-                                    <SheetTitle>Dispensing Label</SheetTitle>
-                                    <SheetDescription>Fill in the fields based on the prescription.</SheetDescription>
-                                </SheetHeader>
-                                <div className="w-full overflow-x-auto pb-2 mt-4">
-                                  <TabsList className="inline-flex h-auto p-1">
-                                      {currentPrescription.drugs.map(drug => (
-                                          <TabsTrigger key={drug.id} value={drug.id} className="truncate text-xs h-9">{drug.correctAnswers.drugName}</TabsTrigger>
-                                      ))}
-                                  </TabsList>
-                                </div>
-                                {currentPrescription.drugs.map(drug => (
-                                    <TabsContent key={drug.id} value={drug.id} className="flex-1 -m-6 pt-6">
-                                       <div className="p-6 h-full">
-                                         <DispensingForm 
-                                              drug={drug} 
-                                              results={allResults[drug.id] || null} 
-                                              onSubmit={handleSubmit(drug.id)} 
-                                              onReset={() => handleReset(drug.id)}
-                                          />
-                                       </div>
-                                    </TabsContent>
-                                ))}
-                            </Tabs>
+                            {renderDispensingArea()}
                        </div>
                     </SheetContent>
                 </Sheet>
@@ -392,29 +419,9 @@ export default function DPadDetailPage() {
         </Card>
 
         {!isMobile && (
-             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
-                <CardHeader>
-                    <CardTitle>Dispensing Label</CardTitle>
-                    <CardDescription>Fill in the fields based on the prescription.</CardDescription>
-                     <div className="w-full overflow-x-auto pb-2">
-                        <TabsList className="inline-flex h-auto p-1 mt-2">
-                            {currentPrescription.drugs.map(drug => (
-                                <TabsTrigger key={drug.id} value={drug.id} className="truncate text-xs h-9">{drug.correctAnswers.drugName}</TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </div>
-                </CardHeader>
-                {currentPrescription.drugs.map(drug => (
-                    <TabsContent key={drug.id} value={drug.id} className="flex-1">
-                       <DispensingForm 
-                            drug={drug} 
-                            results={allResults[drug.id] || null} 
-                            onSubmit={handleSubmit(drug.id)} 
-                            onReset={() => handleReset(drug.id)}
-                        />
-                    </TabsContent>
-                ))}
-            </Tabs>
+             <Card className="flex flex-col">
+                {renderDispensingArea()}
+            </Card>
         )}
       </div>
     </div>
