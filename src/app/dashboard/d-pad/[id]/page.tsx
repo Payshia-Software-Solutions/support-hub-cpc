@@ -4,7 +4,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter, useParams } from 'next/navigation';
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,11 +13,14 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { prescriptions } from "@/lib/d-pad-data";
 import type { PrescriptionFormValues, PrescriptionDrug } from "@/lib/d-pad-data";
-import { Check, X, Pill, Repeat, Calendar, Hash, RotateCw, ArrowLeft, ClipboardList, ChevronDown, CheckCircle, User } from "lucide-react";
+import { Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ArrowLeft, ClipboardList, ChevronDown, CheckCircle, User } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 
 const prescriptionSchema = z.object({
   date: z.string().nonempty("Date is required."),
@@ -121,7 +124,7 @@ const DispensingForm = ({
     },
   });
 
-  const { handleSubmit, formState: { errors }, setValue, watch } = form;
+  const { handleSubmit, formState: { errors }, setValue, watch, control } = form;
   const formValues = watch();
 
   const handleReset = () => {
@@ -154,7 +157,6 @@ const DispensingForm = ({
     return null;
   };
   
-  const dateOptions = [prescriptionDate, "2024-07-29", "2024-07-27", new Date().toLocaleDateString('en-CA')];
   const nameOptions = [patientName, "John Smith", "Jane Doe", "Peter Pan"];
   const drugOptions = [drug.correctAnswers.drugName, "Paracetamol 250mg", "Amoxicillin 500mg", "Metformin 250mg"];
   const dosageOptions = ["1", "2", "1/2", "3"];
@@ -179,8 +181,30 @@ const DispensingForm = ({
           <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Date</Label>
-                  <SelectionDialog triggerText="Select Date" title="Date" options={dateOptions} onSelect={(val) => setValue("date", val, { shouldValidate: true })} icon={Calendar} value={formValues.date} resultIcon={getResultIcon("date")} />
+                    <Label>Date</Label>
+                    <Controller
+                        control={control}
+                        name="date"
+                        render={({ field }) => (
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-start pl-10 relative h-12 text-base">
+                                        <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                        <span className="truncate">{field.value ? format(new Date(field.value), "PPP") : "Select Date"}</span>
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("date")}</div>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={field.value ? new Date(field.value) : undefined}
+                                        onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        )}
+                    />
                 </div>
                  <div className="space-y-2">
                   <Label>Name</Label>
@@ -261,19 +285,54 @@ const renderDispensingArea = (
   handleSubmit: (drugId: string) => (data: PrescriptionFormValues) => void,
   handleReset: (drugId: string) => void,
   handleGoBack: () => void,
+  isMobile: boolean
 ) => {
+  if (!selectedDrug) return null;
+
+  const header = (
+    <>
+       <Button variant="ghost" onClick={handleGoBack} className="h-auto p-0 mb-4 text-sm font-medium w-fit text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Item List
+      </Button>
+      {isMobile ? (
+        <>
+          <SheetTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</SheetTitle>
+          <SheetDescription>Fill in the fields based on the prescription for this item.</SheetDescription>
+        </>
+      ) : (
+        <>
+          <CardTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</CardTitle>
+          <CardDescription>Fill in the fields based on the prescription for this item.</CardDescription>
+        </>
+      )}
+    </>
+  );
+
+  const form = (
+    <DispensingForm
+      drug={selectedDrug}
+      results={results[selectedDrug.id] || null}
+      onSubmit={handleSubmit(selectedDrug.id)}
+      onReset={() => handleReset(selectedDrug.id)}
+      patientName={patientName}
+      prescriptionDate={prescriptionDate}
+    />
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <SheetHeader className="p-6 pb-2 shrink-0">{header}</SheetHeader>
+        <div className="flex-1 overflow-hidden px-6 pb-6">{form}</div>
+      </>
+    )
+  }
+
   return (
     <>
-      <div className="flex-1 overflow-hidden px-6 pb-6">
-        <DispensingForm
-          drug={selectedDrug!}
-          results={results[selectedDrug!.id] || null}
-          onSubmit={handleSubmit(selectedDrug!.id)}
-          onReset={() => handleReset(selectedDrug!.id)}
-          patientName={patientName}
-          prescriptionDate={prescriptionDate}
-        />
-      </div>
+      <CardHeader>{header}</CardHeader>
+      <CardContent className="flex-1 overflow-hidden">{form}</CardContent>
     </>
   );
 };
@@ -453,17 +512,7 @@ export default function DPadDetailPage() {
                     <SheetContent side="bottom" className="h-[90%] p-0">
                        <div className="h-full flex flex-col relative">
                            {selectedDrug ? (
-                             <>
-                                <SheetHeader className="p-6 pb-2 shrink-0">
-                                  <Button variant="ghost" onClick={handleGoBack} className="h-auto p-0 mb-4 text-sm font-medium w-fit text-muted-foreground hover:text-foreground">
-                                      <ArrowLeft className="mr-2 h-4 w-4" />
-                                      Back to Item List
-                                  </Button>
-                                  <SheetTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</SheetTitle>
-                                  <SheetDescription>Fill in the fields based on the prescription for this item.</SheetDescription>
-                                </SheetHeader>
-                                {renderDispensingArea(selectedDrug, currentPrescription.patient.name, currentPrescription.date, allResults, handleSubmit, handleReset, handleGoBack)}
-                             </>
+                             renderDispensingArea(selectedDrug, currentPrescription.patient.name, currentPrescription.date, allResults, handleSubmit, handleReset, handleGoBack, true)
                            ) : (
                               <>
                                 <SheetHeader className="p-6">
@@ -484,19 +533,7 @@ export default function DPadDetailPage() {
              <Card className="flex flex-col">
                 <div className="h-full flex flex-col relative">
                     {selectedDrug ? (
-                      <>
-                        <CardHeader>
-                          <Button variant="ghost" onClick={handleGoBack} className="h-auto p-0 mb-4 text-sm font-medium w-fit text-muted-foreground hover:text-foreground">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Item List
-                          </Button>
-                          <CardTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</CardTitle>
-                          <CardDescription>Fill in the fields based on the prescription for this item.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-1 overflow-hidden">
-                          {renderDispensingArea(selectedDrug, currentPrescription.patient.name, currentPrescription.date, allResults, handleSubmit, handleReset, handleGoBack)}
-                        </CardContent>
-                      </>
+                      renderDispensingArea(selectedDrug, currentPrescription.patient.name, currentPrescription.date, allResults, handleSubmit, handleReset, handleGoBack, false)
                     ) : (
                       <>
                         <CardHeader>
