@@ -421,7 +421,7 @@ export const getFilteredConvocationRegistrations = async (courseCode: string, se
 };
 
 export const getStudentFullInfo = async (studentNumber: string): Promise<FullStudentData> => {
-    const response = await fetch(`${QA_API_BASE_URL}/get-student-full-info?loggedUser=${studentNumber.trim().toUpperCase()}`);
+    const response = await fetch(`${QA_API_BASE_URL}/get-student-full-info?loggedUser=${studentNumber.trim()}`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: `Student full info not found for ${studentNumber}` }));
         throw new Error(errorData.message || 'Failed to fetch student full info');
