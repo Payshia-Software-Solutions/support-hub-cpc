@@ -105,5 +105,83 @@ export const prescriptions: Prescription[] = [
         acceptedFrequencyAnswers: ['mane', 'om', 'in the morning'],
       }
     ]
+  },
+  {
+    id: 'rx4',
+    doctor: { name: 'Dr. N. Silva', specialty: 'MBBS, FCCP', regNo: '24680' },
+    patient: { name: 'Emily Carter', age: '28 Years' },
+    date: '2024-07-22',
+    rightSideText: '3/52',
+    drugs: [
+      {
+        id: '1',
+        lines: ['Cefixime 200mg', '1 bd', '5d'],
+        correctAnswers: {
+          drugName: "Cefixime 200mg",
+          dosage: "1",
+          frequency: "bd",
+          duration: "5d",
+          quantity: 10,
+        },
+        acceptedFrequencyAnswers: ['bd', 'bid', 'twice a day'],
+      },
+      {
+        id: '2',
+        lines: ['Ibuprofen 400mg', '1 tds', '3d'],
+        correctAnswers: {
+          drugName: "Ibuprofen 400mg",
+          dosage: "1",
+          frequency: "tds",
+          duration: "3d",
+          quantity: 9,
+        },
+        acceptedFrequencyAnswers: ['tds', 'tid', 'three times a day'],
+      },
+      {
+        id: '3',
+        lines: ['Salbutamol Inhaler', '2 puffs sos'],
+        correctAnswers: {
+          drugName: "Salbutamol Inhaler",
+          dosage: "2 puffs",
+          frequency: "sos",
+          duration: "N/A",
+          quantity: 1,
+        },
+        acceptedFrequencyAnswers: ['sos', 'prn', 'when required'],
+      }
+    ]
+  },
+   {
+    id: 'rx5',
+    doctor: { name: 'Dr. L. Jayasinghe', specialty: 'Cardiologist', regNo: '13579' },
+    patient: { name: 'Michael Chen', age: '58 Years' },
+    date: '2024-07-20',
+    rightSideText: '12/52',
+    drugs: [
+      {
+        id: '1',
+        lines: ['Atorvastatin 20mg', '1 nocte', '1m'],
+        correctAnswers: {
+          drugName: "Atorvastatin 20mg",
+          dosage: "1",
+          frequency: "nocte",
+          duration: "1m",
+          quantity: 30,
+        },
+        acceptedFrequencyAnswers: ['nocte', 'on', 'at night'],
+      },
+      {
+        id: '2',
+        lines: ['Aspirin 75mg', '1 mane', '30d'],
+        correctAnswers: {
+          drugName: "Aspirin 75mg",
+          dosage: "1",
+          frequency: "mane",
+          duration: "30d",
+          quantity: 30,
+        },
+        acceptedFrequencyAnswers: ['mane', 'om', 'in the morning'],
+      }
+    ]
   }
 ];
