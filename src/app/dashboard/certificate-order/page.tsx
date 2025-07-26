@@ -416,12 +416,12 @@ export default function CertificateOrderPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-8 pb-20 bg-transparent">
+    <div className="p-4 md:p-8 space-y-8 pb-20">
        <header>
           <h1 className="text-3xl font-headline font-semibold">Request a Certificate</h1>
           <p className="text-muted-foreground">Follow the steps to order your course certificates.</p>
         </header>
-      <Card className="w-full">
+      <Card className="w-full max-w-2xl mx-auto shadow-lg">
         {renderContent()}
       </Card>
     </div>
