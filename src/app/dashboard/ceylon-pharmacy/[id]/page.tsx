@@ -4,10 +4,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, ClipboardList, BookOpen, MessageCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, ClipboardList, BookOpen, MessageCircle, PlayCircle } from 'lucide-react';
 import { ceylonPharmacyPatients, type Patient, type PrescriptionDrug } from '@/lib/ceylon-pharmacy-data';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -47,8 +47,9 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks }: {
     subtasks?: { id: string; name: string; href: string; completed: boolean; }[]
 }) => {
     const isCompleted = status === 'completed';
-    // A task is only non-clickable if it's completed.
-    const isParentLinkDisabled = isCompleted;
+    // A task is only non-clickable if it's completed and has no subtasks, or if all subtasks are complete.
+    const allSubtasksCompleted = subtasks ? subtasks.every(st => st.completed) : false;
+    const isParentLinkDisabled = isCompleted || allSubtasksCompleted;
 
     const content = (
          <Card className={cn("shadow-md transition-shadow", isParentLinkDisabled ? "" : "group-hover:shadow-lg group-hover:border-primary/50", isCompleted ? "bg-green-100 border-green-300" : "")}>
@@ -80,12 +81,12 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks }: {
         </Card>
     );
 
-    if (isParentLinkDisabled) {
+    if (isParentLinkDisabled && !subtasks) {
         return <div className="block">{content}</div>
     }
 
     return (
-        <Link href={href} className="block group">
+        <Link href={isParentLinkDisabled && subtasks ? '#' : href} className={cn("block group", isParentLinkDisabled && !subtasks && "pointer-events-none")}>
             {content}
         </Link>
     );
@@ -100,6 +101,7 @@ export default function CeylonPharmacyPatientPage() {
     
     const [patient, setPatient] = useState<Patient | null>(null);
     const [completedDrugIds, setCompletedDrugIds] = useState<Set<string>>(new Set());
+    const [treatmentStarted, setTreatmentStarted] = useState(false);
 
     useEffect(() => {
         const foundPatient = ceylonPharmacyPatients.find(p => p.id === patientId);
@@ -163,9 +165,12 @@ export default function CeylonPharmacyPatientPage() {
                 </Button>
             </header>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <Card className="shadow-lg">
+                 <Card className="shadow-lg">
                     <CardHeader>
-                        <CardTitle>Prescription</CardTitle>
+                        <div className="flex justify-between items-start">
+                             <CardTitle>Prescription</CardTitle>
+                             <CountdownTimer initialTime={patient.initialTime} onTimeEnd={handleTimeEnd} isPaused={!treatmentStarted || allTasksCompleted} />
+                        </div>
                     </CardHeader>
                     <CardContent className="flex justify-center p-4">
                         <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
@@ -204,6 +209,14 @@ export default function CeylonPharmacyPatientPage() {
                             </div>
                         </div>
                     </CardContent>
+                    {!treatmentStarted && (
+                        <CardFooter>
+                            <Button size="lg" className="w-full" onClick={() => setTreatmentStarted(true)}>
+                                <PlayCircle className="mr-2 h-5 w-5" />
+                                Start Treatment
+                            </Button>
+                        </CardFooter>
+                    )}
                 </Card>
 
                 <div className="space-y-4">
@@ -217,34 +230,36 @@ export default function CeylonPharmacyPatientPage() {
                                         <CardDescription>{patient.age} / {currentPrescription.doctor.name}</CardDescription>
                                     </div>
                                 </div>
-                                <CountdownTimer initialTime={patient.initialTime} onTimeEnd={handleTimeEnd} isPaused={allTasksCompleted} />
                             </div>
                         </CardHeader>
                     </Card>
-                    <div className="space-y-4">
-                         <TaskCard 
-                            title="Task 1: Dispense Prescription"
-                            description="Fill the dispensing label correctly for each item."
-                            href={`/dashboard/ceylon-pharmacy/${patient.id}/dispense`}
-                            status={taskCompletion.dispense ? 'completed' : 'pending'}
-                            icon={ClipboardList}
-                            subtasks={dispensingSubtasks}
-                         />
-                         <TaskCard 
-                            title="Task 2: Patient Counselling"
-                            description="Provide correct instructions."
-                            href={`/dashboard/ceylon-pharmacy/${patient.id}/counsel`}
-                            status={taskCompletion.counsel ? 'completed' : 'pending'}
-                            icon={MessageCircle}
-                         />
-                         <TaskCard 
-                            title="Task 3: POS Billing"
-                            description="Use the POS system to bill the patient."
-                            href={`/dashboard/ceylon-pharmacy/${patient.id}/pos`}
-                            status={taskCompletion.pos ? 'completed' : 'pending'}
-                            icon={BookOpen}
-                         />
-                    </div>
+                    
+                    {treatmentStarted && (
+                        <div className="space-y-4 animate-in fade-in-50">
+                            <TaskCard 
+                                title="Task 1: Dispense Prescription"
+                                description="Fill the dispensing label correctly for each item."
+                                href={`/dashboard/ceylon-pharmacy/${patient.id}/dispense`}
+                                status={taskCompletion.dispense ? 'completed' : 'pending'}
+                                icon={ClipboardList}
+                                subtasks={dispensingSubtasks}
+                            />
+                            <TaskCard 
+                                title="Task 2: Patient Counselling"
+                                description="Provide correct instructions."
+                                href={`/dashboard/ceylon-pharmacy/${patient.id}/counsel`}
+                                status={taskCompletion.counsel ? 'completed' : 'pending'}
+                                icon={MessageCircle}
+                            />
+                            <TaskCard 
+                                title="Task 3: POS Billing"
+                                description="Use the POS system to bill the patient."
+                                href={`/dashboard/ceylon-pharmacy/${patient.id}/pos`}
+                                status={taskCompletion.pos ? 'completed' : 'pending'}
+                                icon={BookOpen}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
