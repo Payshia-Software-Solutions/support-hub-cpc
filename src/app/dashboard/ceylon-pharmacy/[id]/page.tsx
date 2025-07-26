@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -13,19 +13,27 @@ import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-const CountdownTimer = ({ initialTime, onTimeEnd, isPaused }: { initialTime: number, onTimeEnd: () => void, isPaused: boolean }) => {
-    const [timeLeft, setTimeLeft] = useState(initialTime);
+const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused }: { initialTime: number, startTime: number | null, onTimeEnd: () => void, isPaused: boolean }) => {
+    const calculateTimeLeft = useCallback(() => {
+        if (!startTime) return initialTime;
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        return Math.max(0, initialTime - elapsed);
+    }, [startTime, initialTime]);
+
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft);
 
     useEffect(() => {
-        if (isPaused || timeLeft <= 0) {
+        if (isPaused || timeLeft <= 0 || !startTime) {
             if (timeLeft <= 0) onTimeEnd();
             return;
         }
+
         const timer = setInterval(() => {
-            setTimeLeft(prevTime => prevTime - 1);
+            setTimeLeft(calculateTimeLeft());
         }, 1000);
+
         return () => clearInterval(timer);
-    }, [timeLeft, onTimeEnd, isPaused]);
+    }, [timeLeft, onTimeEnd, isPaused, startTime, calculateTimeLeft]);
 
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
@@ -102,12 +110,20 @@ export default function CeylonPharmacyPatientPage() {
     
     const [patient, setPatient] = useState<Patient | null>(null);
     const [completedDrugIds, setCompletedDrugIds] = useState<Set<string>>(new Set());
-    const [treatmentStarted, setTreatmentStarted] = useState(false);
+    const [treatmentStartTime, setTreatmentStartTime] = useState<number | null>(null);
 
     useEffect(() => {
         const foundPatient = ceylonPharmacyPatients.find(p => p.id === patientId);
         if (foundPatient) {
             setPatient(foundPatient);
+            try {
+                const storedStartTime = localStorage.getItem(`treatment_start_${patientId}`);
+                if (storedStartTime) {
+                    setTreatmentStartTime(parseInt(storedStartTime, 10));
+                }
+            } catch (error) {
+                console.error("Failed to read from localStorage", error);
+            }
         } else {
             router.push('/dashboard/ceylon-pharmacy');
         }
@@ -127,7 +143,7 @@ export default function CeylonPharmacyPatientPage() {
         return taskCompletion.dispense && taskCompletion.counsel && taskCompletion.pos;
     }, [taskCompletion]);
 
-    const handleTimeEnd = () => {
+    const handleTimeEnd = useCallback(() => {
         if (patient && !allTasksCompleted) {
             // In a real app, this would be a mutation to update the backend
             setPatient(prev => prev ? { ...prev, status: 'dead' } : null);
@@ -138,7 +154,17 @@ export default function CeylonPharmacyPatientPage() {
             });
             router.push('/dashboard/ceylon-pharmacy');
         }
-    }
+    }, [patient, allTasksCompleted, router]);
+
+    const handleStartTreatment = () => {
+        const now = Date.now();
+        setTreatmentStartTime(now);
+        try {
+            localStorage.setItem(`treatment_start_${patientId}`, String(now));
+        } catch (error) {
+            console.error("Failed to write to localStorage", error);
+        }
+    };
 
     if (!patient) {
         return (
@@ -170,7 +196,14 @@ export default function CeylonPharmacyPatientPage() {
                     <CardHeader>
                         <div className="flex justify-between items-start">
                              <CardTitle>Prescription</CardTitle>
-                             <CountdownTimer initialTime={patient.initialTime} onTimeEnd={handleTimeEnd} isPaused={!treatmentStarted || allTasksCompleted} />
+                             {treatmentStartTime && (
+                                <CountdownTimer 
+                                    initialTime={patient.initialTime} 
+                                    startTime={treatmentStartTime}
+                                    onTimeEnd={handleTimeEnd} 
+                                    isPaused={allTasksCompleted} 
+                                />
+                             )}
                         </div>
                     </CardHeader>
                     <CardContent className="flex justify-center p-4">
@@ -210,9 +243,9 @@ export default function CeylonPharmacyPatientPage() {
                             </div>
                         </div>
                     </CardContent>
-                    {!treatmentStarted && (
+                    {!treatmentStartTime && (
                         <CardFooter>
-                            <Button size="lg" className="w-full" onClick={() => setTreatmentStarted(true)}>
+                            <Button size="lg" className="w-full" onClick={handleStartTreatment}>
                                 <PlayCircle className="mr-2 h-5 w-5" />
                                 Start Treatment
                             </Button>
@@ -235,7 +268,7 @@ export default function CeylonPharmacyPatientPage() {
                         </CardContent>
                     </Card>
                     
-                    {treatmentStarted && (
+                    {treatmentStartTime && (
                         <div className="space-y-4 animate-in fade-in-50">
                             <TaskCard 
                                 title="Task 1: Dispense Prescription"
