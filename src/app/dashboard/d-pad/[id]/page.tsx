@@ -156,7 +156,7 @@ const DispensingForm = ({
   const dailyQtyOptions = ["-", "1", "2", "3", "1/2"];
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto pr-2 pb-24">
         <form id={`dispensing-form-${drug.id}`} onSubmit={handleSubmit(onSubmit)} className="space-y-6">
            <div className="flex justify-end">
@@ -320,69 +320,48 @@ export default function DPadDetailPage() {
     )
   }
 
-  const renderDispensingArea = () => {
-    if (selectedDrug) {
-      return (
-        <div className="h-full flex flex-col">
-           <SheetHeader className="p-6 pb-2 shrink-0">
-                <Button variant="ghost" onClick={() => setSelectedDrug(null)} className="h-auto p-0 mb-4 text-sm font-medium w-fit text-muted-foreground hover:text-foreground">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Item List
-                </Button>
-                <SheetTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</SheetTitle>
-                <SheetDescription>Fill in the fields based on the prescription for this item.</SheetDescription>
-            </SheetHeader>
-            <div className="flex-1 overflow-hidden px-6 pb-6">
-              <DispensingForm 
-                drug={selectedDrug} 
-                results={allResults[selectedDrug.id] || null} 
-                onSubmit={handleSubmit(selectedDrug.id)} 
-                onReset={() => handleReset(selectedDrug.id)}
-                patientName={currentPrescription.patient.name}
-              />
-            </div>
-        </div>
-      );
-    }
-    
-    return (
-       <>
-        <SheetHeader className="p-6">
-            <SheetTitle>Dispensing Items</SheetTitle>
-            <SheetDescription>Select an item to begin filling out the dispensing label.</SheetDescription>
-        </SheetHeader>
-        <div className="p-6 pt-0 space-y-3">
-          {currentPrescription.drugs.map((drug) => {
-            const isCompleted = !!allResults[drug.id] && Object.values(allResults[drug.id]).every(r => r === true);
-            return (
-              <button
-                key={drug.id}
-                onClick={() => setSelectedDrug(drug)}
-                className={cn(
-                  "w-full p-4 border rounded-lg flex items-center justify-between text-left transition-all hover:border-primary/50 hover:bg-accent/50",
-                  isCompleted ? "bg-green-500/10 border-green-500/30" : ""
-                )}
-              >
-                <div className="font-medium">{drug.correctAnswers.drugName}</div>
-                <div className="flex items-center gap-2">
-                    {isCompleted ? (
-                         <span className="flex items-center gap-1.5 text-xs text-green-600 font-semibold">
-                            <CheckCircle className="h-4 w-4" />
-                            Completed
-                        </span>
-                    ) : (
-                         <span className="text-xs text-muted-foreground">Pending</span>
-                    )}
-                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </button>
-            )
-          })}
-        </div>
-       </>
-    );
-  };
-  
+  const itemListContent = (
+    <>
+      <div className="p-6 pt-0 space-y-3">
+        {currentPrescription.drugs.map((drug) => {
+          const isCompleted = !!allResults[drug.id] && Object.values(allResults[drug.id]).every(r => r === true);
+          return (
+            <button
+              key={drug.id}
+              onClick={() => setSelectedDrug(drug)}
+              className={cn(
+                "w-full p-4 border rounded-lg flex items-center justify-between text-left transition-all hover:border-primary/50 hover:bg-accent/50",
+                isCompleted ? "bg-green-500/10 border-green-500/30" : ""
+              )}
+            >
+              <div className="font-medium">{drug.correctAnswers.drugName}</div>
+              <div className="flex items-center gap-2">
+                  {isCompleted ? (
+                       <span className="flex items-center gap-1.5 text-xs text-green-600 font-semibold">
+                          <CheckCircle className="h-4 w-4" />
+                          Completed
+                      </span>
+                  ) : (
+                       <span className="text-xs text-muted-foreground">Pending</span>
+                  )}
+                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </>
+  );
+
+  const formContent = selectedDrug ? (
+    <DispensingForm 
+      drug={selectedDrug} 
+      results={allResults[selectedDrug.id] || null} 
+      onSubmit={handleSubmit(selectedDrug.id)} 
+      onReset={() => handleReset(selectedDrug.id)}
+      patientName={currentPrescription.patient.name}
+    />
+  ) : null;
 
   return (
     <div className="p-4 md:p-8 space-y-8 pb-20">
@@ -444,7 +423,29 @@ export default function DPadDetailPage() {
                     </SheetTrigger>
                     <SheetContent side="bottom" className="h-[90%] p-0">
                        <div className="h-full flex flex-col relative">
-                           {renderDispensingArea()}
+                           {selectedDrug ? (
+                             <>
+                                <SheetHeader className="p-6 pb-2 shrink-0">
+                                  <Button variant="ghost" onClick={() => setSelectedDrug(null)} className="h-auto p-0 mb-4 text-sm font-medium w-fit text-muted-foreground hover:text-foreground">
+                                      <ArrowLeft className="mr-2 h-4 w-4" />
+                                      Back to Item List
+                                  </Button>
+                                  <SheetTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</SheetTitle>
+                                  <SheetDescription>Fill in the fields based on the prescription for this item.</SheetDescription>
+                                </SheetHeader>
+                                <div className="flex-1 overflow-hidden px-6 pb-6">
+                                  {formContent}
+                                </div>
+                             </>
+                           ) : (
+                              <>
+                                <SheetHeader className="p-6">
+                                  <SheetTitle>Dispensing Items</SheetTitle>
+                                  <SheetDescription>Select an item to begin filling out the dispensing label.</SheetDescription>
+                                </SheetHeader>
+                                {itemListContent}
+                              </>
+                           )}
                        </div>
                     </SheetContent>
                 </Sheet>
@@ -455,7 +456,31 @@ export default function DPadDetailPage() {
         {!isMobile && (
              <Card className="flex flex-col">
                 <div className="h-full flex flex-col relative">
-                    {renderDispensingArea()}
+                    {selectedDrug ? (
+                      <>
+                        <CardHeader>
+                          <Button variant="ghost" onClick={() => setSelectedDrug(null)} className="h-auto p-0 mb-4 text-sm font-medium w-fit text-muted-foreground hover:text-foreground">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to Item List
+                          </Button>
+                          <CardTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</CardTitle>
+                          <CardDescription>Fill in the fields based on the prescription for this item.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-1 overflow-hidden">
+                           {formContent}
+                        </CardContent>
+                      </>
+                    ) : (
+                      <>
+                        <CardHeader>
+                          <CardTitle>Dispensing Items</CardTitle>
+                          <CardDescription>Select an item to begin filling out the dispensing label.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {itemListContent}
+                        </CardContent>
+                      </>
+                    )}
                 </div>
             </Card>
         )}
