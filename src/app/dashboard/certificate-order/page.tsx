@@ -25,7 +25,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 const addressFormSchema = z.object({
   addressLine1: z.string().min(5, { message: "Address Line 1 must be at least 5 characters." }),
   addressLine2: z.string().optional(),
-  city: z.string().min(3, { message: "City must be at least 3 characters." }),
+  city: z.string().min(1, { message: "City is required." }),
   district: z.string().min(3, { message: "District must be at least 3 characters." }),
   phone: z.string().regex(/^(\+94|0)?\d{9}$/, { message: "Please enter a valid Sri Lankan phone number." }),
 });
@@ -33,6 +33,33 @@ const addressFormSchema = z.object({
 type AddressFormValues = z.infer<typeof addressFormSchema>;
 
 type OrderStep = 'loading' | 'selection' | 'form' | 'confirmation' | 'success' | 'error';
+
+interface City {
+    id: string;
+    name_en: string;
+}
+
+const getCityName = async (cityId: string): Promise<City> => {
+    if (!cityId) return { id: '', name_en: 'N/A' };
+    const response = await fetch(`https://qa-api.pharmacollege.lk/cities/${cityId}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch city data');
+    }
+    return response.json();
+}
+
+const CityName = ({ cityId }: { cityId: string | undefined }) => {
+    const { data: city, isLoading, isError } = useQuery<City>({
+        queryKey: ['city', cityId],
+        queryFn: () => getCityName(cityId!),
+        enabled: !!cityId,
+    });
+
+    if (isLoading) return <Skeleton className="h-5 w-24 inline-block" />;
+    if (isError) return <span className="text-destructive">Error</span>;
+    return <span>{city?.name_en || 'Unknown City'}</span>;
+};
+
 
 export default function CertificateOrderPage() {
   const { user } = useAuth();
@@ -76,7 +103,6 @@ export default function CertificateOrderPage() {
       return;
     }
     if (studentData) {
-      // Pre-populate form with student's existing address
       form.reset({
         addressLine1: studentData.studentInfo.address_line_1 || "",
         addressLine2: studentData.studentInfo.address_line_2 || "",
@@ -86,7 +112,6 @@ export default function CertificateOrderPage() {
       });
 
       if (eligibleEnrollments.length > 0) {
-        // Pre-select all eligible enrollments
         setSelectedEnrollments(eligibleEnrollments);
         setStep('selection');
       } else {
@@ -146,14 +171,14 @@ export default function CertificateOrderPage() {
       mobile: addressData.phone,
       address_line1: addressData.addressLine1,
       address_line2: addressData.addressLine2 || '',
-      city_id: addressData.city, // Assuming city name is used as ID for now
+      city_id: addressData.city, 
       district: addressData.district,
       type: 'courier',
-      payment: 'unpaid', // Defaulting to unpaid
-      package_id: 'default', // Placeholder
-      certificate_id: 'pending', // Placeholder
+      payment: 'unpaid',
+      package_id: 'default', 
+      certificate_id: 'pending', 
       certificate_status: 'Pending',
-      cod_amount: '0.00', // Placeholder
+      cod_amount: '0.00',
       is_active: '1',
     };
     
@@ -258,7 +283,7 @@ export default function CertificateOrderPage() {
                     <div className="text-sm text-muted-foreground pl-4 border-l-2 border-primary ml-2">
                         <p>{addressData?.addressLine1}</p>
                         {addressData?.addressLine2 && <p>{addressData.addressLine2}</p>}
-                        <p>{addressData?.city}, {addressData?.district}</p>
+                        <p><CityName cityId={addressData?.city} />, {addressData?.district}</p>
                         <p>Phone: {addressData?.phone}</p>
                     </div>
                 </div>
