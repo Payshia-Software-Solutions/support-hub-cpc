@@ -58,8 +58,8 @@ const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, va
         <DialogTitle>Select {title}</DialogTitle>
       </DialogHeader>
       <div className="py-4 grid grid-cols-2 gap-2">
-        {options.map((option) => (
-           <DialogClose asChild key={option}>
+        {options.map((option, index) => (
+           <DialogClose asChild key={`${option}-${index}`}>
               <Button variant="outline" onClick={() => onSelect(option)}>
                 {option}
               </Button>
@@ -281,6 +281,16 @@ export default function DPadDetailPage() {
     )
   }
 
+  const formComponent = (
+     <DispensingForm 
+        form={form} 
+        results={results} 
+        onSubmit={onSubmit} 
+        onReset={() => { setResults(null); form.reset(); }}
+        currentPrescription={currentPrescription}
+      />
+  );
+
   return (
     <div className="p-4 md:p-8 space-y-8 pb-20">
       <header>
@@ -343,17 +353,11 @@ export default function DPadDetailPage() {
                     </SheetTrigger>
                     <SheetContent side="bottom" className="h-[90%] p-0">
                        <div className="p-6 h-full flex flex-col">
-                           <SheetHeader>
+                            <SheetHeader>
                                 <SheetTitle>Dispensing Label</SheetTitle>
                                 <SheetDescription>Fill in the fields based on the prescription.</SheetDescription>
                             </SheetHeader>
-                           <DispensingForm 
-                                form={form} 
-                                results={results} 
-                                onSubmit={onSubmit} 
-                                onReset={() => { setResults(null); form.reset(); }}
-                                currentPrescription={currentPrescription}
-                            />
+                           {formComponent}
                        </div>
                     </SheetContent>
                 </Sheet>
@@ -362,22 +366,14 @@ export default function DPadDetailPage() {
         </Card>
 
         {!isMobile && (
-            <div className="flex flex-col">
-              <Card>
-                  <CardHeader>
+             <div className="flex flex-col">
+                <CardHeader>
                     <CardTitle>Dispensing Label</CardTitle>
                     <CardDescription>Fill in the fields based on the prescription.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                       <DispensingForm 
-                            form={form} 
-                            results={results} 
-                            onSubmit={onSubmit} 
-                            onReset={() => { setResults(null); form.reset(); }}
-                            currentPrescription={currentPrescription}
-                        />
-                  </CardContent>
-              </Card>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col">
+                    {formComponent}
+                </CardContent>
             </div>
         )}
       </div>
