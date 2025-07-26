@@ -16,6 +16,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const prescriptionSchema = z.object({
@@ -207,6 +209,7 @@ export default function DispensePage() {
     const router = useRouter();
     const params = useParams();
     const searchParams = useSearchParams();
+    const isMobile = useIsMobile();
 
     const patientId = params.id as string;
     const drugId = searchParams.get('drug');
@@ -323,23 +326,52 @@ export default function DispensePage() {
                             </div>
                         </div>
                     </CardContent>
+                     {isMobile && (
+                        <CardContent>
+                            <Sheet>
+                                <SheetTrigger asChild>
+                                    <Button className="w-full" size="lg"><ClipboardList className="mr-2"/> Dispense</Button>
+                                </SheetTrigger>
+                                <SheetContent side="bottom" className="h-[90%] p-0">
+                                <div className="h-full flex flex-col relative">
+                                    <SheetHeader className="p-6 pb-2 shrink-0 text-left">
+                                        <SheetTitle>Dispensing: {drugToDispense.correctAnswers.drugName}</SheetTitle>
+                                        <SheetDescription>Fill in the fields based on the prescription for this item.</SheetDescription>
+                                    </SheetHeader>
+                                    <div className="flex-1 overflow-hidden px-6 pb-6">
+                                        <DispensingForm 
+                                            drug={drugToDispense}
+                                            onSubmit={handleDispenseSubmit(drugToDispense)}
+                                            onReset={() => handleDispenseReset(drugToDispense.id)}
+                                            results={dispenseFormResults[drugToDispense.id] || null}
+                                            patientName={patient.prescription.patient.name}
+                                            prescriptionDate={patient.prescription.date}
+                                        />
+                                    </div>
+                                    </div>
+                                </SheetContent>
+                            </Sheet>
+                        </CardContent>
+                     )}
                 </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Dispense: {drugToDispense.correctAnswers.drugName}</CardTitle>
-                        <CardDescription>Fill out the label for the selected item.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="h-[calc(100vh-350px)] relative">
-                        <DispensingForm 
-                            drug={drugToDispense}
-                            onSubmit={handleDispenseSubmit(drugToDispense)}
-                            onReset={() => handleDispenseReset(drugToDispense.id)}
-                            results={dispenseFormResults[drugToDispense.id] || null}
-                            patientName={patient.prescription.patient.name}
-                            prescriptionDate={patient.prescription.date}
-                        />
-                    </CardContent>
-                </Card>
+                {!isMobile && (
+                    <Card className="flex flex-col">
+                        <CardHeader>
+                            <CardTitle>Dispense: {drugToDispense.correctAnswers.drugName}</CardTitle>
+                            <CardDescription>Fill out the label for the selected item.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-1 overflow-hidden">
+                             <DispensingForm 
+                                drug={drugToDispense}
+                                onSubmit={handleDispenseSubmit(drugToDispense)}
+                                onReset={() => handleDispenseReset(drugToDispense.id)}
+                                results={dispenseFormResults[drugToDispense.id] || null}
+                                patientName={patient.prescription.patient.name}
+                                prescriptionDate={patient.prescription.date}
+                            />
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     );
