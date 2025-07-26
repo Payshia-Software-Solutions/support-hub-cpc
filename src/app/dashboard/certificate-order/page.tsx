@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -112,9 +112,9 @@ export default function CertificateOrderPage() {
   });
 
   const { data: studentData, isLoading: isLoadingStudent, isError, error } = useQuery<FullStudentData>({
-    queryKey: ['studentFullInfoForCertOrder', 'PA15002'],
-    queryFn: () => getStudentFullInfo('PA15002'),
-    enabled: true,
+    queryKey: ['studentFullInfoForCertOrder', user?.username],
+    queryFn: () => getStudentFullInfo(user!.username!),
+    enabled: !!user,
     retry: 1,
   });
 
@@ -147,7 +147,6 @@ export default function CertificateOrderPage() {
       if (cityId) {
           getCityName(cityId).then(city => {
               setCityName(city.name_en);
-              form.setValue('city', city.id);
               if (city.district_id) {
                   form.setValue('district', city.district_id);
                   getDistrictName(city.district_id).then(district => {
@@ -340,11 +339,33 @@ export default function CertificateOrderPage() {
               <CardDescription>Please review all the details below before submitting your request.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="space-y-2">
+                <div className="space-y-4">
                     <h3 className="font-semibold text-foreground flex items-center gap-2"><Award className="h-5 w-5 text-primary"/>Requested Certificate(s)</h3>
-                    <ul className="list-disc list-inside pl-2 text-muted-foreground text-sm">
-                        {selectedEnrollments.map(e => <li key={e.id}>{e.parent_course_name}</li>)}
-                    </ul>
+                    <div className="space-y-4">
+                        {selectedEnrollments.map(enrollment => (
+                            <div key={enrollment.id} className="p-3 border rounded-md">
+                                <h4 className="font-semibold text-card-foreground">{enrollment.parent_course_name}</h4>
+                                <p className="text-xs text-muted-foreground mb-2">Average Grade: {enrollment.assignment_grades.average_grade}%</p>
+                                <ul className="space-y-2 text-sm">
+                                    {enrollment.criteria_details.map(criterion => (
+                                        <li key={criterion.id} className="flex items-center justify-between text-xs">
+                                            <div className="flex items-center gap-2">
+                                                {criterion.evaluation.completed ? (
+                                                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                                                ) : (
+                                                    <XCircle className="h-4 w-4 text-destructive shrink-0" />
+                                                )}
+                                                <span className="text-muted-foreground">{criterion.list_name}</span>
+                                            </div>
+                                            <span className="font-mono text-foreground bg-muted px-1.5 py-0.5 rounded-sm">
+                                                {criterion.evaluation.currentValue} / {criterion.evaluation.requiredValue}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
                 </div>
                 <div className="space-y-2">
                     <h3 className="font-semibold text-foreground flex items-center gap-2"><Truck className="h-5 w-5 text-primary"/>Delivery Address</h3>
@@ -428,3 +449,4 @@ export default function CertificateOrderPage() {
     </div>
   );
 }
+
