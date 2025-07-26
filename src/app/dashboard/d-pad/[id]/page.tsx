@@ -13,13 +13,15 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { prescriptions } from "@/lib/d-pad-data";
 import type { PrescriptionFormValues, PrescriptionDrug } from "@/lib/d-pad-data";
-import { Check, X, Pill, Repeat, Calendar, Hash, RotateCw, ArrowLeft, ClipboardList, ChevronDown, CheckCircle } from "lucide-react";
+import { Check, X, Pill, Repeat, Calendar, Hash, RotateCw, ArrowLeft, ClipboardList, ChevronDown, CheckCircle, User } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
 const prescriptionSchema = z.object({
+  date: z.string().nonempty("Date is required."),
+  patientName: z.string().nonempty("Patient name is required."),
   drugName: z.string().nonempty("Drug name is required."),
   dosage: z.string().nonempty("Dosage is required."),
   frequency: z.string().nonempty("Frequency is required."),
@@ -86,17 +88,21 @@ const DispensingForm = ({
   onSubmit,
   onReset,
   results,
-  patientName
+  patientName,
+  prescriptionDate,
 }: {
   drug: PrescriptionDrug;
   onSubmit: (data: PrescriptionFormValues) => void;
   onReset: () => void;
   results: ResultState | null;
   patientName: string;
+  prescriptionDate: string;
 }) => {
   const form = useForm<PrescriptionFormValues>({
     resolver: zodResolver(prescriptionSchema),
     defaultValues: {
+      date: "",
+      patientName: "",
       drugName: "",
       dosage: "",
       frequency: "",
@@ -120,6 +126,8 @@ const DispensingForm = ({
 
   const handleReset = () => {
     form.reset({
+      date: "",
+      patientName: "",
       drugName: "",
       dosage: "",
       frequency: "",
@@ -145,7 +153,9 @@ const DispensingForm = ({
     if (results[fieldName] === false) return <X className="h-5 w-5 text-destructive" />;
     return null;
   };
-
+  
+  const dateOptions = [prescriptionDate, "2024-07-29", "2024-07-27", new Date().toLocaleDateString('en-CA')];
+  const nameOptions = [patientName, "John Smith", "Jane Doe", "Peter Pan"];
   const drugOptions = [drug.correctAnswers.drugName, "Paracetamol 250mg", "Amoxicillin 500mg", "Metformin 250mg"];
   const dosageOptions = ["1", "2", "1/2", "3"];
   const frequencyOptions = ["tds", "bd", "mane", "nocte", "qid", "sos"];
@@ -170,11 +180,11 @@ const DispensingForm = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Date</Label>
-                  <p className="p-3 border rounded-md text-sm">{new Date().toLocaleDateString()}</p>
+                  <SelectionDialog triggerText="Select Date" title="Date" options={dateOptions} onSelect={(val) => setValue("date", val, { shouldValidate: true })} icon={Calendar} value={formValues.date} resultIcon={getResultIcon("date")} />
                 </div>
                  <div className="space-y-2">
                   <Label>Name</Label>
-                  <p className="p-3 border rounded-md text-sm truncate">{patientName}</p>
+                  <SelectionDialog triggerText="Select Name" title="Patient Name" options={nameOptions} onSelect={(val) => setValue("patientName", val, { shouldValidate: true })} icon={User} value={formValues.patientName} resultIcon={getResultIcon("patientName")} />
                 </div>
               </div>
               <div className="space-y-2">
@@ -246,6 +256,7 @@ const DispensingForm = ({
 const renderDispensingArea = (
   selectedDrug: PrescriptionDrug | null,
   patientName: string,
+  prescriptionDate: string,
   results: Record<string, ResultState>,
   handleSubmit: (drugId: string) => (data: PrescriptionFormValues) => void,
   handleReset: (drugId: string) => void,
@@ -260,6 +271,7 @@ const renderDispensingArea = (
           onSubmit={handleSubmit(selectedDrug!.id)}
           onReset={() => handleReset(selectedDrug!.id)}
           patientName={patientName}
+          prescriptionDate={prescriptionDate}
         />
       </div>
     </>
@@ -299,6 +311,8 @@ export default function DPadDetailPage() {
       if (!isCorrect) allCorrect = false;
     };
     
+    checkField('date', data.date, drug.correctAnswers.date);
+    checkField('patientName', data.patientName, drug.correctAnswers.patientName);
     checkField('drugName', data.drugName, drug.correctAnswers.drugName);
     checkField('quantity', data.quantity, drug.correctAnswers.quantity);
     checkField('dosageForm', data.dosageForm, drug.correctAnswers.dosageForm);
@@ -448,7 +462,7 @@ export default function DPadDetailPage() {
                                   <SheetTitle>Dispensing: {selectedDrug.correctAnswers.drugName}</SheetTitle>
                                   <SheetDescription>Fill in the fields based on the prescription for this item.</SheetDescription>
                                 </SheetHeader>
-                                {renderDispensingArea(selectedDrug, currentPrescription.patient.name, allResults, handleSubmit, handleReset, handleGoBack)}
+                                {renderDispensingArea(selectedDrug, currentPrescription.patient.name, currentPrescription.date, allResults, handleSubmit, handleReset, handleGoBack)}
                              </>
                            ) : (
                               <>
@@ -480,7 +494,7 @@ export default function DPadDetailPage() {
                           <CardDescription>Fill in the fields based on the prescription for this item.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1 overflow-hidden">
-                          {renderDispensingArea(selectedDrug, currentPrescription.patient.name, allResults, handleSubmit, handleReset, handleGoBack)}
+                          {renderDispensingArea(selectedDrug, currentPrescription.patient.name, currentPrescription.date, allResults, handleSubmit, handleReset, handleGoBack)}
                         </CardContent>
                       </>
                     ) : (

@@ -1,6 +1,8 @@
 
 
 export interface PrescriptionFormValues {
+  date: string;
+  patientName: string;
   drugName: string;
   dosage: string;
   frequency: string;
@@ -53,6 +55,8 @@ export const prescriptions: Prescription[] = [
         id: '1',
         lines: ['Paracetamol 500mg', '1 tds', '5d'],
         correctAnswers: {
+          date: '2024-07-30',
+          patientName: "John Doe",
           drugName: "Paracetamol 500mg",
           dosage: "1",
           frequency: "tds",
@@ -75,6 +79,8 @@ export const prescriptions: Prescription[] = [
         id: '2',
         lines: ['Amoxicillin 250mg', '1 bd', '7d'],
         correctAnswers: {
+          date: '2024-07-30',
+          patientName: "John Doe",
           drugName: "Amoxicillin 250mg",
           dosage: "1",
           frequency: "bd",
@@ -106,6 +112,8 @@ export const prescriptions: Prescription[] = [
         id: '1',
         lines: ['Omeprazole 20mg', '1 mane', '1m'],
         correctAnswers: {
+          date: '2024-07-28',
+          patientName: "Jane Smith",
           drugName: "Omeprazole 20mg",
           dosage: "1",
           frequency: "mane",
@@ -137,6 +145,8 @@ export const prescriptions: Prescription[] = [
         id: '1',
         lines: ['Metformin 500mg', '1 bd', '30d'],
         correctAnswers: {
+          date: '2024-07-25',
+          patientName: "Peter Jones",
           drugName: "Metformin 500mg",
           dosage: "1",
           frequency: "bd",
@@ -168,6 +178,8 @@ export const prescriptions: Prescription[] = [
         id: '1',
         lines: ['Cefixime 200mg', '1 bd', '5d'],
         correctAnswers: {
+          date: '2024-07-22',
+          patientName: "Emily Carter",
           drugName: "Cefixime 200mg",
           dosage: "1",
           frequency: "bd",
@@ -190,6 +202,8 @@ export const prescriptions: Prescription[] = [
         id: '2',
         lines: ['Ibuprofen 400mg', '1 tds', '3d'],
         correctAnswers: {
+          date: '2024-07-22',
+          patientName: "Emily Carter",
           drugName: "Ibuprofen 400mg",
           dosage: "1",
           frequency: "tds",
@@ -212,6 +226,8 @@ export const prescriptions: Prescription[] = [
         id: '3',
         lines: ['Salbutamol Inhaler', '2 puffs sos'],
         correctAnswers: {
+          date: '2024-07-22',
+          patientName: "Emily Carter",
           drugName: "Salbutamol Inhaler",
           dosage: "2 puffs",
           frequency: "sos",
@@ -243,6 +259,8 @@ export const prescriptions: Prescription[] = [
         id: '1',
         lines: ['Atorvastatin 20mg', '1 nocte', '1m'],
         correctAnswers: {
+          date: '2024-07-20',
+          patientName: "Michael Chen",
           drugName: "Atorvastatin 20mg",
           dosage: "1",
           frequency: "nocte",
@@ -265,6 +283,8 @@ export const prescriptions: Prescription[] = [
         id: '2',
         lines: ['Aspirin 75mg', '1 mane', '30d'],
         correctAnswers: {
+          date: '2024-07-20',
+          patientName: "Michael Chen",
           drugName: "Aspirin 75mg",
           dosage: "1",
           frequency: "mane",
