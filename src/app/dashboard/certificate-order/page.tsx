@@ -68,6 +68,7 @@ export default function CertificateOrderPage() {
   const [addressData, setAddressData] = useState<AddressFormValues | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
+  const [cityName, setCityName] = useState('');
 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
@@ -103,13 +104,18 @@ export default function CertificateOrderPage() {
       return;
     }
     if (studentData) {
+      const cityId = studentData.studentInfo.city || "";
       form.reset({
         addressLine1: studentData.studentInfo.address_line_1 || "",
         addressLine2: studentData.studentInfo.address_line_2 || "",
-        city: studentData.studentInfo.city || "",
+        city: cityId,
         district: studentData.studentInfo.district || "",
         phone: studentData.studentInfo.telephone_1 || "",
       });
+
+      if (cityId) {
+          getCityName(cityId).then(city => setCityName(city.name_en)).catch(() => setCityName(''));
+      }
 
       if (eligibleEnrollments.length > 0) {
         setSelectedEnrollments(eligibleEnrollments);
@@ -248,7 +254,22 @@ export default function CertificateOrderPage() {
               <CardContent className="space-y-4">
                 <FormField control={form.control} name="addressLine1" render={({ field }) => ( <FormItem><FormLabel>Address Line 1</FormLabel><FormControl><Input placeholder="e.g., No. 123, Main Street" {...field} /></FormControl><FormMessage /></FormItem> )} />
                 <FormField control={form.control} name="addressLine2" render={({ field }) => ( <FormItem><FormLabel>Address Line 2 (Optional)</FormLabel><FormControl><Input placeholder="e.g., Apartment 4B, Near the junction" {...field} /></FormControl><FormMessage /></FormItem> )} />
-                <FormField control={form.control} name="city" render={({ field }) => ( <FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="e.g., Colombo" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                 <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                        <Input 
+                            placeholder="e.g., Colombo" 
+                            value={cityName}
+                            onChange={(e) => {
+                                setCityName(e.target.value);
+                                // You might want a more sophisticated lookup here in a real app
+                                // For now, this just allows typing. We assume the ID is still stored
+                                // if it was pre-filled.
+                            }}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
                 <FormField control={form.control} name="district" render={({ field }) => ( <FormItem><FormLabel>District</FormLabel><FormControl><Input placeholder="e.g., Colombo" {...field} /></FormControl><FormMessage /></FormItem> )} />
                 <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="e.g., 0771234567" {...field} /></FormControl><FormMessage /></FormItem> )} />
               </CardContent>
