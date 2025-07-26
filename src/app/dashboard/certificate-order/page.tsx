@@ -536,6 +536,7 @@ export default function CertificateOrderPage() {
        <header>
           <h1 className="text-3xl font-headline font-semibold">Request a Certificate</h1>
           <p className="text-muted-foreground">Follow the steps to order your course certificates.</p>
+          {user && <p className="text-sm text-muted-foreground mt-2">Logged in as: {user.username}</p>}
         </header>
       <Card className="shadow-lg w-full">
         {renderContent()}
