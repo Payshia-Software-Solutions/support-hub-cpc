@@ -26,7 +26,7 @@ const addressFormSchema = z.object({
   addressLine1: z.string().min(5, { message: "Address Line 1 must be at least 5 characters." }),
   addressLine2: z.string().optional(),
   city: z.string().min(1, { message: "City is required." }),
-  district: z.string().min(3, { message: "District must be at least 3 characters." }),
+  district: z.string().min(1, { message: "District is required." }),
   phone: z.string().regex(/^(\+94|0)?\d{9}$/, { message: "Please enter a valid Sri Lankan phone number." }),
 });
 
@@ -38,6 +38,11 @@ interface City {
     id: string;
     name_en: string;
 }
+interface District {
+    id: string;
+    name_en: string;
+}
+
 
 const getCityName = async (cityId: string): Promise<City> => {
     if (!cityId) return { id: '', name_en: 'N/A' };
@@ -47,6 +52,16 @@ const getCityName = async (cityId: string): Promise<City> => {
     }
     return response.json();
 }
+
+const getDistrictName = async (districtId: string): Promise<District> => {
+    if (!districtId) return { id: '', name_en: 'N/A' };
+    const response = await fetch(`https://qa-api.pharmacollege.lk/districts/${districtId}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch district data');
+    }
+    return response.json();
+}
+
 
 const CityName = ({ cityId }: { cityId: string | undefined }) => {
     const { data: city, isLoading, isError } = useQuery<City>({
@@ -60,6 +75,18 @@ const CityName = ({ cityId }: { cityId: string | undefined }) => {
     return <span>{city?.name_en || 'Unknown City'}</span>;
 };
 
+const DistrictName = ({ districtId }: { districtId: string | undefined }) => {
+    const { data: district, isLoading, isError } = useQuery<District>({
+        queryKey: ['district', districtId],
+        queryFn: () => getDistrictName(districtId!),
+        enabled: !!districtId,
+    });
+
+    if (isLoading) return <Skeleton className="h-5 w-24 inline-block" />;
+    if (isError) return <span className="text-destructive">Error</span>;
+    return <span>{district?.name_en || 'Unknown District'}</span>;
+};
+
 
 export default function CertificateOrderPage() {
   const { user } = useAuth();
@@ -69,6 +96,8 @@ export default function CertificateOrderPage() {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
   const [cityName, setCityName] = useState('');
+  const [districtName, setDistrictName] = useState('');
+
 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
@@ -105,16 +134,21 @@ export default function CertificateOrderPage() {
     }
     if (studentData) {
       const cityId = studentData.studentInfo.city || "";
+      const districtId = studentData.studentInfo.district || "";
+
       form.reset({
         addressLine1: studentData.studentInfo.address_line_1 || "",
         addressLine2: studentData.studentInfo.address_line_2 || "",
         city: cityId,
-        district: studentData.studentInfo.district || "",
+        district: districtId,
         phone: studentData.studentInfo.telephone_1 || "",
       });
 
       if (cityId) {
           getCityName(cityId).then(city => setCityName(city.name_en)).catch(() => setCityName(''));
+      }
+      if (districtId) {
+          getDistrictName(districtId).then(district => setDistrictName(district.name_en)).catch(() => setDistrictName(''));
       }
 
       if (eligibleEnrollments.length > 0) {
@@ -262,15 +296,24 @@ export default function CertificateOrderPage() {
                             value={cityName}
                             onChange={(e) => {
                                 setCityName(e.target.value);
-                                // You might want a more sophisticated lookup here in a real app
-                                // For now, this just allows typing. We assume the ID is still stored
-                                // if it was pre-filled.
                             }}
                         />
                     </FormControl>
                     <FormMessage />
                 </FormItem>
-                <FormField control={form.control} name="district" render={({ field }) => ( <FormItem><FormLabel>District</FormLabel><FormControl><Input placeholder="e.g., Colombo" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                 <FormItem>
+                    <FormLabel>District</FormLabel>
+                    <FormControl>
+                        <Input 
+                            placeholder="e.g., Colombo" 
+                            value={districtName}
+                            onChange={(e) => {
+                                setDistrictName(e.target.value);
+                            }}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
                 <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="e.g., 0771234567" {...field} /></FormControl><FormMessage /></FormItem> )} />
               </CardContent>
               <CardFooter>
@@ -304,7 +347,7 @@ export default function CertificateOrderPage() {
                     <div className="text-sm text-muted-foreground pl-4 border-l-2 border-primary ml-2">
                         <p>{addressData?.addressLine1}</p>
                         {addressData?.addressLine2 && <p>{addressData.addressLine2}</p>}
-                        <p><CityName cityId={addressData?.city} />, {addressData?.district}</p>
+                        <p><CityName cityId={addressData?.city} />, <DistrictName districtId={addressData?.district} /></p>
                         <p>Phone: {addressData?.phone}</p>
                     </div>
                 </div>
