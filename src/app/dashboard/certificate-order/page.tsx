@@ -115,8 +115,8 @@ export default function CertificateOrderPage() {
   });
 
   const { data: studentData, isLoading: isLoadingStudent, isError, error } = useQuery<FullStudentData>({
-    queryKey: ['studentFullInfoForCertOrder', 'PA15001'],
-    queryFn: () => getStudentFullInfo('PA15001'),
+    queryKey: ['studentFullInfoForCertOrder', 'PA15002'],
+    queryFn: () => getStudentFullInfo('PA15002'),
     enabled: !!user,
     retry: 1,
   });
@@ -216,7 +216,7 @@ export default function CertificateOrderPage() {
     submissionData.append("city_id", cityName);
     submissionData.append("district", districtName);
     submissionData.append("mobile", addressData.phone);
-    submissionData.append("created_by", "PA15001");
+    submissionData.append("created_by", "PA15002");
     submissionData.append("type", "1");
     submissionData.append("payment_amount", "0");
     submissionData.append("package_id", "default");
