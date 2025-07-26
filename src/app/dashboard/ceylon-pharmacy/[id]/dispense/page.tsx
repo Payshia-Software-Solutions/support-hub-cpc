@@ -11,7 +11,7 @@ import { useForm, Controller, Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -271,6 +271,8 @@ export default function DispensePage() {
     if (!patient || !drugToDispense) {
         return <div className="p-8 text-center">Loading patient data...</div>;
     }
+    
+    const currentPrescription = patient.prescription;
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -279,22 +281,66 @@ export default function DispensePage() {
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Patient Hub
                 </Button>
             </header>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Task 1: Dispense Prescription</CardTitle>
-                    <CardDescription>Fill out the label for <span className="font-semibold">{drugToDispense.correctAnswers.drugName}</span></CardDescription>
-                </CardHeader>
-                <CardContent className="h-[calc(100vh-250px)] relative">
-                    <DispensingForm 
-                        drug={drugToDispense}
-                        onSubmit={handleDispenseSubmit(drugToDispense)}
-                        onReset={() => handleDispenseReset(drugToDispense.id)}
-                        results={dispenseFormResults[drugToDispense.id] || null}
-                        patientName={patient.prescription.patient.name}
-                        prescriptionDate={patient.prescription.date}
-                    />
-                </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                 <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle>Prescription</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex justify-center p-4">
+                        <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
+                            <div className="text-center border-b pb-4 mb-4 border-gray-300">
+                                <h2 className="text-xl font-bold">{currentPrescription.doctor.name}</h2>
+                                <p className="text-sm text-gray-600">{currentPrescription.doctor.specialty}</p>
+                                <p className="text-sm text-gray-600">Reg. No: {currentPrescription.doctor.regNo}</p>
+                            </div>
+                            
+                            <div className="flex justify-between text-sm mb-6">
+                                <div>
+                                <p><span className="font-semibold">Name:</span> {currentPrescription.patient.name}</p>
+                                <p><span className="font-semibold">Age:</span> {currentPrescription.patient.age}</p>
+                                </div>
+                                <div>
+                                <p><span className="font-semibold">Date:</span> {currentPrescription.date}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start min-h-[200px] pl-10 relative mb-6">
+                                <div className="absolute left-0 top-0 text-6xl font-serif text-gray-700 select-none">℞</div>
+                                <div className="flex-1 space-y-4 font-mono text-lg text-gray-800 pt-2">
+                                    {currentPrescription.drugs.map(drug => (
+                                        <div key={drug.id}>
+                                            {drug.lines.map((line, index) => (
+                                                <p key={index}>{line}</p>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="text-right mt-8">
+                                <p className="italic font-serif text-xl text-gray-700">{currentPrescription.doctor.name.split(' ').slice(1).join(' ')}</p>
+                                <p className="text-xs text-muted-foreground">Signature</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Dispense: {drugToDispense.correctAnswers.drugName}</CardTitle>
+                        <CardDescription>Fill out the label for the selected item.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[calc(100vh-350px)] relative">
+                        <DispensingForm 
+                            drug={drugToDispense}
+                            onSubmit={handleDispenseSubmit(drugToDispense)}
+                            onReset={() => handleDispenseReset(drugToDispense.id)}
+                            results={dispenseFormResults[drugToDispense.id] || null}
+                            patientName={patient.prescription.patient.name}
+                            prescriptionDate={patient.prescription.date}
+                        />
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
