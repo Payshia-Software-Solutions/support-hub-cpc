@@ -126,11 +126,11 @@ export default function DPadDetailPage() {
 
   const DispensingForm = () => (
     <Card className="shadow-lg md:shadow-none md:border-none">
-        <CardHeader>
-        <CardTitle>Dispensing Label</CardTitle>
-        <CardDescription>Fill in the fields based on the prescription.</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <SheetHeader>
+        <SheetTitle>Dispensing Label</SheetTitle>
+        <SheetDescription>Fill in the fields based on the prescription.</SheetDescription>
+        </SheetHeader>
+        <CardContent className="pt-4">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
             <Label htmlFor="drugName">Drug Name & Strength</Label>
@@ -256,8 +256,10 @@ export default function DPadDetailPage() {
                     <SheetTrigger asChild>
                         <Button className="w-full" size="lg"><ClipboardList className="mr-2"/> Start Challenge</Button>
                     </SheetTrigger>
-                    <SheetContent side="bottom" className="h-[90%]">
-                        <DispensingForm />
+                    <SheetContent side="bottom" className="h-[90%] p-0">
+                       <div className="p-6 h-full overflow-y-auto">
+                         <DispensingForm />
+                       </div>
                     </SheetContent>
                 </Sheet>
             </CardContent>
@@ -265,7 +267,75 @@ export default function DPadDetailPage() {
         </Card>
 
         {!isMobile && (
-            <DispensingForm />
+            <Card className="shadow-lg md:shadow-none md:border-none">
+              <CardHeader>
+                  <CardTitle>Dispensing Label</CardTitle>
+                  <CardDescription>Fill in the fields based on the prescription.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                      <div className="space-y-2">
+                      <Label htmlFor="drugName-desktop">Drug Name & Strength</Label>
+                      <div className="relative">
+                          <Pill className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Controller name="drugName" control={control} render={({ field }) => ( <Input id="drugName-desktop" placeholder="e.g., Amoxicillin 250mg" className="pl-10" {...field} /> )} />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("drugName")}</div>
+                      </div>
+                      {errors.drugName && <p className="text-sm text-destructive">{errors.drugName.message}</p>}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                          <Label htmlFor="dosage-desktop">Dosage</Label>
+                              <div className="relative">
+                              <Pill className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Controller name="dosage" control={control} render={({ field }) => ( <Input id="dosage-desktop" placeholder="e.g., 1" className="pl-10" {...field} /> )} />
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("dosage")}</div>
+                          </div>
+                              {errors.dosage && <p className="text-sm text-destructive">{errors.dosage.message}</p>}
+                      </div>
+                          <div className="space-y-2">
+                          <Label htmlFor="frequency-desktop">Frequency</Label>
+                              <div className="relative">
+                              <Repeat className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Controller name="frequency" control={control} render={({ field }) => ( <Input id="frequency-desktop" placeholder="e.g., tds" className="pl-10" {...field} /> )} />
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("frequency")}</div>
+                          </div>
+                              {errors.frequency && <p className="text-sm text-destructive">{errors.frequency.message}</p>}
+                      </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                          <Label htmlFor="duration-desktop">Duration</Label>
+                              <div className="relative">
+                              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Controller name="duration" control={control} render={({ field }) => ( <Input id="duration-desktop" placeholder="e.g., 5d" className="pl-10" {...field} /> )} />
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("duration")}</div>
+                          </div>
+                              {errors.duration && <p className="text-sm text-destructive">{errors.duration.message}</p>}
+                      </div>
+                          <div className="space-y-2">
+                          <Label htmlFor="quantity-desktop">Total Quantity</Label>
+                              <div className="relative">
+                              <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Controller name="quantity" control={control} render={({ field }) => ( <Input id="quantity-desktop" type="number" placeholder="e.g., 15" className="pl-10" {...field} /> )} />
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("quantity")}</div>
+                          </div>
+                              {errors.quantity && <p className="text-sm text-destructive">{errors.quantity.message}</p>}
+                      </div>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-4">
+                          <Button type="button" variant="outline" onClick={() => { setResults(null); reset(); }}>
+                          <RotateCw className="mr-2 h-4 w-4" />
+                          Try Again
+                      </Button>
+                      <Button type="submit">Check Answers</Button>
+                      </div>
+                  </form>
+              </CardContent>
+          </Card>
         )}
       </div>
     </div>
