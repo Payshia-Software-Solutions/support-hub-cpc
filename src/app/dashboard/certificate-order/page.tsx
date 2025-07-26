@@ -147,6 +147,7 @@ export default function CertificateOrderPage() {
       if (cityId) {
           getCityName(cityId).then(city => {
               setCityName(city.name_en);
+              form.setValue('city', city.id);
               if (city.district_id) {
                   form.setValue('district', city.district_id);
                   getDistrictName(city.district_id).then(district => {
@@ -213,13 +214,13 @@ export default function CertificateOrderPage() {
     const submissionData = new FormData();
     submissionData.append("address_line1", addressData.addressLine1);
     submissionData.append("address_line2", addressData.addressLine2 || "");
-    submissionData.append("city_id", addressData.city);
-    submissionData.append("district", addressData.district);
+    submissionData.append("city_id", cityName);
+    submissionData.append("district", districtName);
     submissionData.append("mobile", addressData.phone);
     submissionData.append("created_by", user.username);
-    submissionData.append("type", "1"); // As per user instruction
+    submissionData.append("type", "1");
     submissionData.append("payment_amount", "0");
-    submissionData.append("package_id", "default"); // Added placeholder
+    submissionData.append("package_id", "default");
     submissionData.append("certificate_id", "0");
     submissionData.append("certificate_status", "Pending");
     submissionData.append("course_code", courseCodes);
@@ -349,7 +350,7 @@ export default function CertificateOrderPage() {
                     <div className="text-sm text-muted-foreground pl-4 border-l-2 border-primary ml-2">
                         <p>{addressData?.addressLine1}</p>
                         {addressData?.addressLine2 && <p>{addressData.addressLine2}</p>}
-                        <p><CityName cityId={addressData?.city} />, <DistrictName districtId={addressData?.district} /></p>
+                        <p>{cityName}, {districtName}</p>
                         <p>Phone: {addressData?.phone}</p>
                     </div>
                 </div>
@@ -426,3 +427,4 @@ export default function CertificateOrderPage() {
     </div>
   );
 }
+
