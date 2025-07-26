@@ -36,6 +36,7 @@ interface Prescription {
   };
   date: string;
   lines: string[];
+  rightSideText?: string;
   correctAnswers: PrescriptionFormValues;
   acceptedFrequencyAnswers: string[];
 }
@@ -47,6 +48,7 @@ const prescriptions: Prescription[] = [
     patient: { name: 'John Doe', age: '34 Years' },
     date: '2024-07-30',
     lines: ['Paracetamol 500mg', '1 tds', '5d'],
+    rightSideText: '4/52',
     correctAnswers: {
       drugName: "Paracetamol 500mg",
       dosage: "1",
@@ -62,6 +64,7 @@ const prescriptions: Prescription[] = [
     patient: { name: 'Jane Smith', age: '45 Years' },
     date: '2024-07-28',
     lines: ['Amoxicillin 250mg', '1 bd', '7d'],
+    rightSideText: '8/52',
     correctAnswers: {
       drugName: "Amoxicillin 250mg",
       dosage: "1",
@@ -77,6 +80,7 @@ const prescriptions: Prescription[] = [
     patient: { name: 'Peter Jones', age: '62 Years' },
     date: '2024-07-25',
     lines: ['Metformin 500mg', '1 mane', '30d'],
+    rightSideText: '1/52',
     correctAnswers: {
       drugName: "Metformin 500mg",
       dosage: "1",
@@ -214,12 +218,18 @@ export default function DPadPage() {
                     </div>
                 </div>
 
-                <div className="min-h-[200px] pl-10 relative mb-6">
+                <div className="flex items-center min-h-[200px] pl-10 relative mb-6">
                     <div className="absolute left-0 top-0 text-6xl font-serif text-gray-700 select-none">℞</div>
-                    <div className="space-y-4 font-mono text-lg text-gray-800 pt-2">
+                    <div className="flex-1 space-y-4 font-mono text-lg text-gray-800 pt-2">
                         {currentPrescription.lines.map((line, index) => (
                             <p key={index}>{line}</p>
                         ))}
+                    </div>
+                    <div className="w-1/5 flex justify-center items-center">
+                         <div className="w-px h-24 bg-gray-400 transform -rotate-12"></div>
+                    </div>
+                    <div className="w-1/5 flex justify-center items-center font-bold text-xl text-gray-700">
+                        {currentPrescription.rightSideText}
                     </div>
                 </div>
 
