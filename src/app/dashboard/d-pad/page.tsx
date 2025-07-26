@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { prescriptions } from "@/lib/d-pad-data";
 import Link from "next/link";
 import { ArrowRight, Pill, UserMd } from "lucide-react";
-import { Stethoscope } from "lucide-react";
+import { DoctorIcon } from "@/components/icons/module-icons";
 
 export default function DPadIndexPage() {
   return (
@@ -30,8 +30,8 @@ export default function DPadIndexPage() {
             <Card className="shadow-lg hover:shadow-xl hover:border-primary transition-all flex flex-col h-full">
               <CardHeader>
                 <CardTitle>Prescription #{index + 1}</CardTitle>
-                 <div className="flex items-center gap-2 pt-2">
-                    <Stethoscope className="w-5 h-5 text-muted-foreground" />
+                 <div className="flex items-center gap-3 pt-2">
+                    <DoctorIcon className="w-10 h-10 text-primary" />
                     <div>
                         <p className="font-semibold text-card-foreground text-sm">{rx.doctor.name}</p>
                         <p className="text-xs text-muted-foreground">{rx.doctor.specialty}</p>

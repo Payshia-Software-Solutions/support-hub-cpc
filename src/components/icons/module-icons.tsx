@@ -376,6 +376,26 @@ export const WordPalletIcon = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
+export const DoctorIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="1em" height="1em" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" {...props} className={`module-icon-group ${props.className || ''}`}>
+        <style>{`
+          .float-element {
+            animation: float 3s ease-in-out infinite;
+          }
+           @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+          }
+        `}</style>
+        <g className="float-element">
+            <path d="M26 22C30.4183 22 34 18.4183 34 14C34 9.58172 30.4183 6 26 6C21.5817 6 18 9.58172 18 14C18 18.4183 21.5817 22 26 22Z" fill="#93C5FD"/>
+            <path d="M38 46V38C38 34.6863 35.3137 32 32 32H20C16.6863 32 14 34.6863 14 38V46H38Z" fill="#60A5FA"/>
+            <path d="M29 14L28 12L26 16L24 12L23 14L26 19L29 14Z" fill="white"/>
+            <path d="M20 26C20 23.7909 22.2386 22 25 22H27C29.7614 22 32 23.7909 32 26V32H20V26Z" fill="#93C5FD"/>
+        </g>
+    </svg>
+);
+
 
 // Achievement Icons
 export const GoldMedalIcon = (props: SVGProps<SVGSVGElement>) => (
