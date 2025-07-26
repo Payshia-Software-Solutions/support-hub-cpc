@@ -9,6 +9,9 @@ import { ArrowLeft, Plus, Trash2, Save, AlertCircle, Sparkles } from 'lucide-rea
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 // --- Mock Data for Instructions ---
 const allInstructions = [
@@ -27,6 +30,7 @@ export default function CounselPage() {
     const router = useRouter();
     const params = useParams();
     const patientId = params.id as string;
+    const isMobile = useIsMobile();
 
     const [givenInstructions, setGivenInstructions] = useState<{ id: string; text: string }[]>([]);
 
@@ -68,6 +72,56 @@ export default function CounselPage() {
     const availableInstructions = allInstructions.filter(
       (inst) => !givenInstructions.some((given) => given.id === inst.id)
     );
+    
+    const availableInstructionsPanel = (
+        <div className="space-y-3">
+            {!isMobile && <h3 className="font-semibold text-card-foreground">Available Instructions</h3>}
+            <Card className="p-3 bg-muted/50 min-h-[200px]">
+                <div className="space-y-2">
+                    {availableInstructions.map(instruction => (
+                        <Button
+                            key={instruction.id}
+                            variant="outline"
+                            className="w-full justify-start text-left h-auto py-2"
+                            onClick={() => handleSelectInstruction(instruction)}
+                        >
+                            <Plus className="mr-2 h-4 w-4 text-primary shrink-0" />
+                            {instruction.text}
+                        </Button>
+                    ))}
+                </div>
+            </Card>
+        </div>
+    );
+    
+    const givenInstructionsPanel = (
+         <div className="space-y-3">
+             {!isMobile && <h3 className="font-semibold text-card-foreground">Given Instructions</h3>}
+            <Card className="p-3 bg-muted/50 min-h-[200px]">
+                <div className="space-y-2">
+                     {givenInstructions.length > 0 ? (
+                        givenInstructions.map(instruction => (
+                             <div key={instruction.id} className="flex items-center justify-between p-2 pl-3 rounded-md bg-background border animate-in fade-in-50">
+                                <p className="text-sm font-medium">{instruction.text}</p>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="text-destructive hover:text-destructive h-7 w-7"
+                                    onClick={() => handleRemoveInstruction(instruction.id)}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                             </div>
+                        ))
+                     ) : (
+                        <div className="flex items-center justify-center h-full min-h-[150px] text-muted-foreground text-center text-sm">
+                            <p>Click on an instruction to add it here.</p>
+                        </div>
+                     )}
+                </div>
+            </Card>
+        </div>
+    );
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -92,55 +146,24 @@ export default function CounselPage() {
                         </Alert>
                     )}
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Available Instructions Panel */}
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-card-foreground">Available Instructions</h3>
-                            <Card className="p-3 bg-muted/50 min-h-[200px]">
-                                <div className="space-y-2">
-                                    {availableInstructions.map(instruction => (
-                                        <Button
-                                            key={instruction.id}
-                                            variant="outline"
-                                            className="w-full justify-start text-left h-auto py-2"
-                                            onClick={() => handleSelectInstruction(instruction)}
-                                        >
-                                            <Plus className="mr-2 h-4 w-4 text-primary shrink-0" />
-                                            {instruction.text}
-                                        </Button>
-                                    ))}
-                                </div>
-                            </Card>
+                   {isMobile ? (
+                        <Tabs defaultValue="available" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="available">Available</TabsTrigger>
+                                <TabsTrigger value="given">
+                                    Given
+                                    {givenInstructions.length > 0 && <Badge className="ml-2 h-5 px-1.5">{givenInstructions.length}</Badge>}
+                                </TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="available" className="mt-4">{availableInstructionsPanel}</TabsContent>
+                            <TabsContent value="given" className="mt-4">{givenInstructionsPanel}</TabsContent>
+                        </Tabs>
+                   ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           {availableInstructionsPanel}
+                           {givenInstructionsPanel}
                         </div>
-                        
-                        {/* Given Instructions Panel */}
-                         <div className="space-y-3">
-                            <h3 className="font-semibold text-card-foreground">Given Instructions</h3>
-                            <Card className="p-3 bg-muted/50 min-h-[200px]">
-                                <div className="space-y-2">
-                                     {givenInstructions.length > 0 ? (
-                                        givenInstructions.map(instruction => (
-                                             <div key={instruction.id} className="flex items-center justify-between p-2 pl-3 rounded-md bg-background border animate-in fade-in-50">
-                                                <p className="text-sm font-medium">{instruction.text}</p>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
-                                                    className="text-destructive hover:text-destructive h-7 w-7"
-                                                    onClick={() => handleRemoveInstruction(instruction.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                             </div>
-                                        ))
-                                     ) : (
-                                        <div className="flex items-center justify-center h-full min-h-[150px] text-muted-foreground text-center text-sm">
-                                            <p>Click on an instruction from the left to add it here.</p>
-                                        </div>
-                                     )}
-                                </div>
-                            </Card>
-                        </div>
-                    </div>
+                   )}
 
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
