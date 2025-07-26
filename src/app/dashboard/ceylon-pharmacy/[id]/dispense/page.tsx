@@ -8,16 +8,15 @@ import { Button } from '@/components/ui/button';
 import { ceylonPharmacyPatients, type Patient, type PrescriptionDrug, type PrescriptionFormValues } from '@/lib/ceylon-pharmacy-data';
 import { cn } from "@/lib/utils";
 import { toast } from '@/hooks/use-toast';
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User } from 'lucide-react';
-import { DialogTrigger } from '@radix-ui/react-dialog';
 
 
 const prescriptionSchema = z.object({
@@ -80,6 +79,39 @@ const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, va
   </Dialog>
 );
 
+const DatePickerField = ({
+  control,
+  getResultIcon,
+}: {
+  control: Control<PrescriptionFormValues>;
+  getResultIcon: (fieldName: keyof PrescriptionFormValues) => React.ReactNode;
+}) => (
+  <Controller
+    control={control}
+    name="date"
+    render={({ field }) => (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="w-full justify-start pl-10 relative h-12 text-base">
+            <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <span className="truncate">{field.value ? format(new Date(field.value), 'PPP') : 'Select Date'}</span>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon('date')}</div>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0">
+          <Calendar
+            mode="single"
+            selected={field.value ? new Date(field.value) : undefined}
+            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+    )}
+  />
+);
+
+
 const DispensingForm = ({
   drug,
   onSubmit,
@@ -133,7 +165,7 @@ const DispensingForm = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label>Date</Label>
-                    <Controller control={control} name="date" render={({ field }) => ( <Popover> <PopoverTrigger asChild> <Button variant="outline" className="w-full justify-start pl-10 relative h-12 text-base"> <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /> <span className="truncate">{field.value ? format(new Date(field.value), "PPP") : "Select Date"}</span> <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon("date")}</div> </Button> </PopoverTrigger> <PopoverContent className="w-auto p-0"> <Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')} initialFocus /> </PopoverContent> </Popover> )}/>
+                    <DatePickerField control={control} getResultIcon={getResultIcon} />
                 </div>
                  <div className="space-y-2"> <Label>Name</Label> <SelectionDialog triggerText="Select Name" title="Patient Name" options={nameOptions} onSelect={(val) => setValue("patientName", val, { shouldValidate: true })} icon={User} value={formValues.patientName} resultIcon={getResultIcon("patientName")} /> </div>
               </div>
@@ -261,4 +293,3 @@ export default function DispensePage() {
         </div>
     );
 }
-
