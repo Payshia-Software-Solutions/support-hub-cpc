@@ -11,6 +11,7 @@ import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, ClipboardList
 import { ceylonPharmacyPatients, type Patient, type PrescriptionDrug } from '@/lib/ceylon-pharmacy-data';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const CountdownTimer = ({ initialTime, onTimeEnd, isPaused }: { initialTime: number, onTimeEnd: () => void, isPaused: boolean }) => {
     const [timeLeft, setTimeLeft] = useState(initialTime);
@@ -47,9 +48,8 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks }: {
     subtasks?: { id: string; name: string; href: string; completed: boolean; }[]
 }) => {
     const isCompleted = status === 'completed';
-    // A task is only non-clickable if it's completed and has no subtasks, or if all subtasks are complete.
-    const allSubtasksCompleted = subtasks ? subtasks.every(st => st.completed) : false;
-    const isParentLinkDisabled = isCompleted || allSubtasksCompleted;
+    // The task is clickable if it is not completed.
+    const isParentLinkDisabled = isCompleted;
 
     const content = (
          <Card className={cn("shadow-md transition-shadow", isParentLinkDisabled ? "" : "group-hover:shadow-lg group-hover:border-primary/50", isCompleted ? "bg-green-100 border-green-300" : "")}>
@@ -86,7 +86,7 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks }: {
     }
 
     return (
-        <Link href={isParentLinkDisabled && subtasks ? '#' : href} className={cn("block group", isParentLinkDisabled && !subtasks && "pointer-events-none")}>
+        <Link href={isParentLinkDisabled ? '#' : href} className={cn("block group", isParentLinkDisabled && "pointer-events-none")}>
             {content}
         </Link>
     );
@@ -224,7 +224,10 @@ export default function CeylonPharmacyPatientPage() {
                         <CardHeader>
                             <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-4">
-                                    <User className="h-10 w-10 text-primary" />
+                                     <Avatar className="h-14 w-14 border-2 border-primary">
+                                        <AvatarImage src={`https://placehold.co/100x100.png`} alt={patient.name} />
+                                        <AvatarFallback>{patient.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
                                     <div>
                                         <CardTitle className="text-2xl">Treating: {patient.name}</CardTitle>
                                         <CardDescription>{patient.age} / {currentPrescription.doctor.name}</CardDescription>
