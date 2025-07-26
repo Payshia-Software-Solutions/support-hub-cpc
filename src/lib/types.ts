@@ -243,6 +243,7 @@ export interface CreateCertificateOrderPayload {
   type: 'courier' | 'in-person';
   payment_amount: string;
   package_id: string;
+  course_code: string;
   certificate_id: string;
   certificate_status: 'Pending' | 'Printed' | 'Delivered';
 }

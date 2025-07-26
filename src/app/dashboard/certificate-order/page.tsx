@@ -208,6 +208,8 @@ export default function CertificateOrderPage() {
       setStep('error');
       return;
     }
+    
+    const courseCodes = selectedEnrollments.map(e => e.parent_course_id).join(',');
 
     const payload: CreateCertificateOrderPayload = {
       created_by: user.username!,
@@ -219,6 +221,7 @@ export default function CertificateOrderPage() {
       type: 'courier',
       payment_amount: '0.00',
       package_id: 'default', 
+      course_code: courseCodes,
       certificate_id: 'pending', 
       certificate_status: 'Pending',
     };
