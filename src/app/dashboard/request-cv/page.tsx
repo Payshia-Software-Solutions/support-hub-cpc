@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -44,6 +44,70 @@ const cvSchema = z.object({
 });
 
 type CvFormValues = z.infer<typeof cvSchema>;
+
+const CvContent = ({ values }: { values: CvFormValues }) => {
+    const skillList = values.skills?.split(',').map(s => s.trim()).filter(Boolean) || [];
+    return (
+        <Card className="shadow-2xl h-full w-full border-none rounded-none">
+            <CardContent className="p-12 font-serif text-black">
+                <header className="text-center border-b-2 border-gray-700 pb-4">
+                    <h1 className="text-4xl font-bold tracking-wider">{values.fullName}</h1>
+                    <div className="flex justify-center items-center gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
+                        <a href={`mailto:${values.email}`} className="flex items-center gap-1.5 hover:underline"><Mail className="h-3 w-3"/>{values.email}</a>
+                        <a href={`tel:${values.phone}`} className="flex items-center gap-1.5 hover:underline"><Phone className="h-3 w-3"/>{values.phone}</a>
+                       {values.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3"/>{values.address}</p>}
+                       {values.linkedin && <a href={values.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{values.linkedin.replace('https://','').replace('www.','')}</a>}
+                    </div>
+                </header>
+                
+                <section className="mt-6">
+                    <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Summary</h2>
+                    <p className="text-sm mt-2 whitespace-pre-wrap">{values.summary}</p>
+                </section>
+
+                <section className="mt-6">
+                    <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Experience</h2>
+                    <div className="space-y-4 mt-2">
+                        {values.experience?.map((exp, i) => exp.title && exp.company && (
+                            <div key={i}>
+                                <div className="flex justify-between items-baseline">
+                                    <h3 className="text-md font-semibold">{exp.title}</h3>
+                                    <p className="text-xs font-mono">{exp.startDate} - {exp.endDate}</p>
+                                </div>
+                                <p className="text-sm italic">{exp.company}</p>
+                                <p className="text-sm mt-1 whitespace-pre-wrap">{exp.description}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+                
+                <section className="mt-6">
+                    <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Education</h2>
+                     <div className="space-y-4 mt-2">
+                        {values.education?.map((edu, i) => edu.degree && edu.school && (
+                            <div key={i}>
+                                <div className="flex justify-between items-baseline">
+                                    <h3 className="text-md font-semibold">{edu.degree}</h3>
+                                     <p className="text-xs font-mono">{edu.startDate} - {edu.endDate}</p>
+                                </div>
+                                <p className="text-sm italic">{edu.school}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+                
+                 <section className="mt-6">
+                    <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Skills</h2>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                        {skillList.map((skill, i) => (
+                            <span key={i} className="bg-gray-200 text-gray-800 text-xs font-medium px-2.5 py-1 rounded-full">{skill}</span>
+                        ))}
+                    </div>
+                </section>
+            </CardContent>
+        </Card>
+    );
+};
 
 export default function RequestCvPage() {
   const { user } = useAuth();
@@ -105,38 +169,30 @@ export default function RequestCvPage() {
     }, 1500);
   };
   
-  const skillList = watchedValues.skills?.split(',').map(s => s.trim()).filter(Boolean) || [];
-
   return (
     <>
       <style jsx global>{`
         @media print {
-          @page {
-            size: A4;
-            margin: 0;
-          }
-          body > * {
+          body * {
             display: none !important;
+            visibility: hidden !important;
           }
-          .printable-cv, .printable-cv * {
+          .printable-cv-fullscale, .printable-cv-fullscale * {
             display: block !important;
             visibility: visible !important;
           }
-          .printable-cv {
+          .printable-cv-fullscale {
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
             width: 100% !important;
-            height: 100% !important;
+            height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
-            transform: scale(1) !important;
           }
         }
       `}</style>
-      <div className="p-4 md:p-8 space-y-8 pb-20">
+      <div className="p-4 md:p-8 space-y-8 pb-20 print:hidden">
         <header>
           <h1 className="text-3xl font-headline font-semibold">CV Generator</h1>
           <p className="text-muted-foreground">Create and preview your professional CV in real-time.</p>
@@ -222,68 +278,14 @@ export default function RequestCvPage() {
               </div>
               <div className="h-[80vh] overflow-hidden flex justify-center items-start p-6 rounded-md bg-muted">
                    <div className="w-[210mm] h-[297mm] transform scale-[0.65] origin-top bg-white printable-cv">
-                      <Card className="shadow-2xl h-full w-full border-none rounded-none">
-                          <CardContent className="p-12 font-serif text-black">
-                              <header className="text-center border-b-2 border-gray-700 pb-4">
-                                  <h1 className="text-4xl font-bold tracking-wider">{watchedValues.fullName}</h1>
-                                  <div className="flex justify-center items-center gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
-                                      <a href={`mailto:${watchedValues.email}`} className="flex items-center gap-1.5 hover:underline"><Mail className="h-3 w-3"/>{watchedValues.email}</a>
-                                      <a href={`tel:${watchedValues.phone}`} className="flex items-center gap-1.5 hover:underline"><Phone className="h-3 w-3"/>{watchedValues.phone}</a>
-                                     {watchedValues.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3"/>{watchedValues.address}</p>}
-                                     {watchedValues.linkedin && <a href={watchedValues.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{watchedValues.linkedin.replace('https://','').replace('www.','')}</a>}
-                                  </div>
-                              </header>
-                              
-                              <section className="mt-6">
-                                  <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Summary</h2>
-                                  <p className="text-sm mt-2 whitespace-pre-wrap">{watchedValues.summary}</p>
-                              </section>
-
-                              <section className="mt-6">
-                                  <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Experience</h2>
-                                  <div className="space-y-4 mt-2">
-                                      {watchedValues.experience?.map((exp, i) => exp.title && exp.company && (
-                                          <div key={i}>
-                                              <div className="flex justify-between items-baseline">
-                                                  <h3 className="text-md font-semibold">{exp.title}</h3>
-                                                  <p className="text-xs font-mono">{exp.startDate} - {exp.endDate}</p>
-                                              </div>
-                                              <p className="text-sm italic">{exp.company}</p>
-                                              <p className="text-sm mt-1 whitespace-pre-wrap">{exp.description}</p>
-                                          </div>
-                                      ))}
-                                  </div>
-                              </section>
-                              
-                              <section className="mt-6">
-                                  <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Education</h2>
-                                   <div className="space-y-4 mt-2">
-                                      {watchedValues.education?.map((edu, i) => edu.degree && edu.school && (
-                                          <div key={i}>
-                                              <div className="flex justify-between items-baseline">
-                                                  <h3 className="text-md font-semibold">{edu.degree}</h3>
-                                                   <p className="text-xs font-mono">{edu.startDate} - {edu.endDate}</p>
-                                              </div>
-                                              <p className="text-sm italic">{edu.school}</p>
-                                          </div>
-                                      ))}
-                                  </div>
-                              </section>
-                              
-                               <section className="mt-6">
-                                  <h2 className="text-lg font-bold uppercase tracking-widest border-b border-gray-400 pb-1">Skills</h2>
-                                  <div className="mt-2 flex flex-wrap gap-2">
-                                      {skillList.map((skill, i) => (
-                                          <span key={i} className="bg-gray-200 text-gray-800 text-xs font-medium px-2.5 py-1 rounded-full">{skill}</span>
-                                      ))}
-                                  </div>
-                              </section>
-                          </CardContent>
-                      </Card>
+                      <CvContent values={watchedValues} />
                    </div>
               </div>
           </div>
         </div>
+      </div>
+      <div className="hidden print:block printable-cv-fullscale">
+        <CvContent values={watchedValues} />
       </div>
     </>
   );
