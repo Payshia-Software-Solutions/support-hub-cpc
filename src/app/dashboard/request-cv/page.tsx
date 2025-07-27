@@ -53,11 +53,11 @@ const CvContent = ({ values }: { values: CvFormValues }) => {
         <div className="p-12 font-serif text-black bg-white">
             <header className="text-center border-b-2 border-gray-700 pb-4">
                 <h1 className="text-4xl font-bold tracking-wider">{values.fullName}</h1>
-                <div className="flex justify-center items-center gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
-                    <a href={`mailto:${values.email}`} className="flex items-center gap-1.5 hover:underline"><Mail className="h-3 w-3"/>{values.email}</a>
-                    <a href={`tel:${values.phone}`} className="flex items-center gap-1.5 hover:underline"><Phone className="h-3 w-3"/>{values.phone}</a>
-                   {values.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3"/>{values.address}</p>}
-                   {values.linkedin && <a href={values.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{values.linkedin.replace('https://','').replace('www.','')}</a>}
+                <div className="flex justify-center items-baseline gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
+                    <a href={`mailto:${values.email}`} className="flex items-baseline gap-1.5 hover:underline"><Mail className="h-3 w-3"/>{values.email}</a>
+                    <a href={`tel:${values.phone}`} className="flex items-baseline gap-1.5 hover:underline"><Phone className="h-3 w-3"/>{values.phone}</a>
+                   {values.address && <p className="flex items-baseline gap-1.5"><MapPin className="h-3 w-3"/>{values.address}</p>}
+                   {values.linkedin && <a href={values.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-baseline gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{values.linkedin.replace('https://','').replace('www.','')}</a>}
                 </div>
             </header>
             
@@ -173,22 +173,10 @@ export default function RequestCvPage() {
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
         const canvasAspectRatio = canvasWidth / canvasHeight;
-        const pdfAspectRatio = pdfWidth / pdfHeight;
-
-        let finalWidth, finalHeight;
-
-        if (canvasAspectRatio > pdfAspectRatio) {
-            finalWidth = pdfWidth;
-            finalHeight = pdfWidth / canvasAspectRatio;
-        } else {
-            finalHeight = pdfHeight;
-            finalWidth = pdfHeight * canvasAspectRatio;
-        }
         
-        const xOffset = (pdfWidth - finalWidth) / 2;
-        const yOffset = 0; // Align to top
+        const finalHeight = pdfWidth / canvasAspectRatio;
 
-        pdf.addImage(imgData, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
         pdf.save(`${watchedValues.fullName}_CV.pdf`);
     } catch (error) {
         console.error("Error generating PDF:", error);
