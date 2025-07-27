@@ -55,10 +55,26 @@ const CvContent = ({ values }: { values: CvFormValues }) => {
             <header className="text-center border-b-2 border-gray-700 pb-4">
                 <h1 className="text-4xl font-bold tracking-wider">{values.fullName}</h1>
                 <div className="flex justify-center items-center gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
-                    <a href={`mailto:${values.email}`} className="flex items-center gap-1.5 hover:underline"><Mail className="h-3 w-3"/>{values.email}</a>
-                    <a href={`tel:${values.phone}`} className="flex items-center gap-1.5 hover:underline"><Phone className="h-3 w-3"/>{values.phone}</a>
-                   {values.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3"/>{values.address}</p>}
-                   {values.linkedin && <a href={values.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{values.linkedin.replace('https://','').replace('www.','')}</a>}
+                    <a href={`mailto:${values.email}`} className="hover:underline">
+                        <Mail className="h-3 w-3 inline-block align-middle mr-1.5"/>
+                        <span className="inline-block align-middle">{values.email}</span>
+                    </a>
+                    <a href={`tel:${values.phone}`} className="hover:underline">
+                         <Phone className="h-3 w-3 inline-block align-middle mr-1.5"/>
+                         <span className="inline-block align-middle">{values.phone}</span>
+                    </a>
+                   {values.address && (
+                        <p>
+                            <MapPin className="h-3 w-3 inline-block align-middle mr-1.5"/>
+                            <span className="inline-block align-middle">{values.address}</span>
+                        </p>
+                    )}
+                   {values.linkedin && (
+                        <a href={values.linkedin} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                            <Linkedin className="h-3 w-3 inline-block align-middle mr-1.5"/>
+                            <span className="inline-block align-middle">{values.linkedin.replace('https://','').replace('www.','')}</span>
+                        </a>
+                    )}
                 </div>
             </header>
             
@@ -156,7 +172,7 @@ export default function RequestCvPage() {
     setIsDownloading(true);
     try {
         const canvas = await html2canvas(cvElement, {
-            scale: 2, 
+            scale: 3, 
             useCORS: true,
         });
 
@@ -208,107 +224,110 @@ export default function RequestCvPage() {
   };
   
   return (
-    <div className="p-4 md:p-8 space-y-8 pb-20">
-      <header>
-        <h1 className="text-3xl font-headline font-semibold">CV Generator</h1>
-        <p className="text-muted-foreground">Create and preview your professional CV in real-time.</p>
-      </header>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <Card className="shadow-lg">
-            <CardHeader>
-                <CardTitle>Enter Your Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <form className="space-y-6">
-                    {/* --- Personal Details --- */}
-                    <div className="space-y-4">
-                        <h3 className="font-semibold text-lg border-b pb-2">Personal Details</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><Label>Full Name</Label><Input {...form.register('fullName')} /></div>
-                            <div><Label>Email</Label><Input {...form.register('email')} type="email" /></div>
-                            <div><Label>Phone</Label><Input {...form.register('phone')} /></div>
-                            <div><Label>Address</Label><Input {...form.register('address')} placeholder="e.g. Colombo, Sri Lanka"/></div>
-                        </div>
-                        <div><Label>LinkedIn Profile URL</Label><Input {...form.register('linkedin')} /></div>
-                    </div>
+    <>
+      <div className="p-4 md:p-8 space-y-8 pb-20 print:hidden">
+        <header className="print:hidden">
+          <h1 className="text-3xl font-headline font-semibold">CV Generator</h1>
+          <p className="text-muted-foreground">Create and preview your professional CV in real-time.</p>
+        </header>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <Card className="shadow-lg">
+              <CardHeader>
+                  <CardTitle>Enter Your Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <form className="space-y-6">
+                      {/* --- Personal Details --- */}
+                      <div className="space-y-4">
+                          <h3 className="font-semibold text-lg border-b pb-2">Personal Details</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div><Label>Full Name</Label><Input {...form.register('fullName')} /></div>
+                              <div><Label>Email</Label><Input {...form.register('email')} type="email" /></div>
+                              <div><Label>Phone</Label><Input {...form.register('phone')} /></div>
+                              <div><Label>Address</Label><Input {...form.register('address')} placeholder="e.g. Colombo, Sri Lanka"/></div>
+                          </div>
+                          <div><Label>LinkedIn Profile URL</Label><Input {...form.register('linkedin')} /></div>
+                      </div>
 
-                    {/* --- Professional Summary --- */}
-                     <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-semibold text-lg border-b pb-2">Professional Summary</h3>
-                            <Button type="button" size="sm" variant="outline" onClick={generateAiSummary} disabled={isAiLoading}>
-                                <Sparkles className="mr-2 h-4 w-4" /> {isAiLoading ? 'Generating...' : 'AI Generate'}
-                            </Button>
-                        </div>
-                        <Textarea {...form.register('summary')} rows={4} placeholder="A brief summary of your career..."/>
-                    </div>
+                      {/* --- Professional Summary --- */}
+                      <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                              <h3 className="font-semibold text-lg border-b pb-2">Professional Summary</h3>
+                              <Button type="button" size="sm" variant="outline" onClick={generateAiSummary} disabled={isAiLoading}>
+                                  <Sparkles className="mr-2 h-4 w-4" /> {isAiLoading ? 'Generating...' : 'AI Generate'}
+                              </Button>
+                          </div>
+                          <Textarea {...form.register('summary')} rows={4} placeholder="A brief summary of your career..."/>
+                      </div>
 
-                    {/* --- Work Experience --- */}
-                    <div className="space-y-4">
-                        <h3 className="font-semibold text-lg border-b pb-2">Work Experience</h3>
-                        {expFields.map((field, index) => (
-                            <div key={field.id} className="p-4 border rounded-md space-y-3 relative">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><Label>Job Title</Label><Input {...form.register(`experience.${index}.title`)} /></div>
-                                    <div><Label>Company</Label><Input {...form.register(`experience.${index}.company`)} /></div>
-                                    <div><Label>Start Date</Label><Input {...form.register(`experience.${index}.startDate`)} placeholder="e.g. Jan 2020"/></div>
-                                    <div><Label>End Date</Label><Input {...form.register(`experience.${index}.endDate`)} placeholder="e.g. Present"/></div>
-                                </div>
-                                <div><Label>Description</Label><Textarea {...form.register(`experience.${index}.description`)} placeholder="Your responsibilities and achievements..."/></div>
-                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => removeExp(index)}><Trash2 className="h-4 w-4"/></Button>
-                            </div>
-                        ))}
-                        <Button type="button" variant="outline" onClick={() => appendExp({ title: '', company: '', location: '', startDate: '', endDate: '', description: '' })}><PlusCircle className="mr-2 h-4 w-4"/> Add Experience</Button>
-                    </div>
+                      {/* --- Work Experience --- */}
+                      <div className="space-y-4">
+                          <h3 className="font-semibold text-lg border-b pb-2">Work Experience</h3>
+                          {expFields.map((field, index) => (
+                              <div key={field.id} className="p-4 border rounded-md space-y-3 relative">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div><Label>Job Title</Label><Input {...form.register(`experience.${index}.title`)} /></div>
+                                      <div><Label>Company</Label><Input {...form.register(`experience.${index}.company`)} /></div>
+                                      <div><Label>Start Date</Label><Input {...form.register(`experience.${index}.startDate`)} placeholder="e.g. Jan 2020"/></div>
+                                      <div><Label>End Date</Label><Input {...form.register(`experience.${index}.endDate`)} placeholder="e.g. Present"/></div>
+                                  </div>
+                                  <div><Label>Description</Label><Textarea {...form.register(`experience.${index}.description`)} placeholder="Your responsibilities and achievements..."/></div>
+                                  <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => removeExp(index)}><Trash2 className="h-4 w-4"/></Button>
+                              </div>
+                          ))}
+                          <Button type="button" variant="outline" onClick={() => appendExp({ title: '', company: '', location: '', startDate: '', endDate: '', description: '' })}><PlusCircle className="mr-2 h-4 w-4"/> Add Experience</Button>
+                      </div>
 
-                    {/* --- Education --- */}
-                    <div className="space-y-4">
-                        <h3 className="font-semibold text-lg border-b pb-2">Education</h3>
-                        {eduFields.map((field, index) => (
-                             <div key={field.id} className="p-4 border rounded-md space-y-3 relative">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><Label>Degree/Certificate</Label><Input {...form.register(`education.${index}.degree`)} /></div>
-                                    <div><Label>School/University</Label><Input {...form.register(`education.${index}.school`)} /></div>
-                                     <div><Label>Start Date</Label><Input {...form.register(`education.${index}.startDate`)} placeholder="e.g. Jan 2018"/></div>
-                                    <div><Label>End Date</Label><Input {...form.register(`education.${index}.endDate`)} placeholder="e.g. Dec 2021"/></div>
-                                </div>
-                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => removeEdu(index)}><Trash2 className="h-4 w-4"/></Button>
-                            </div>
-                        ))}
-                        <Button type="button" variant="outline" onClick={() => appendEdu({ degree: '', school: '', startDate: '', endDate: '' })}><PlusCircle className="mr-2 h-4 w-4"/> Add Education</Button>
-                    </div>
-                    
-                    {/* --- Skills --- */}
-                    <div className="space-y-2">
-                        <h3 className="font-semibold text-lg border-b pb-2">Skills</h3>
-                        <Textarea {...form.register('skills')} placeholder="Enter skills, separated by commas..."/>
-                    </div>
-                </form>
-            </CardContent>
-        </Card>
+                      {/* --- Education --- */}
+                      <div className="space-y-4">
+                          <h3 className="font-semibold text-lg border-b pb-2">Education</h3>
+                          {eduFields.map((field, index) => (
+                              <div key={field.id} className="p-4 border rounded-md space-y-3 relative">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div><Label>Degree/Certificate</Label><Input {...form.register(`education.${index}.degree`)} /></div>
+                                      <div><Label>School/University</Label><Input {...form.register(`education.${index}.school`)} /></div>
+                                      <div><Label>Start Date</Label><Input {...form.register(`education.${index}.startDate`)} placeholder="e.g. Jan 2018"/></div>
+                                      <div><Label>End Date</Label><Input {...form.register(`education.${index}.endDate`)} placeholder="e.g. Dec 2021"/></div>
+                                  </div>
+                                  <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => removeEdu(index)}><Trash2 className="h-4 w-4"/></Button>
+                              </div>
+                          ))}
+                          <Button type="button" variant="outline" onClick={() => appendEdu({ degree: '', school: '', startDate: '', endDate: '' })}><PlusCircle className="mr-2 h-4 w-4"/> Add Education</Button>
+                      </div>
+                      
+                      {/* --- Skills --- */}
+                      <div className="space-y-2">
+                          <h3 className="font-semibold text-lg border-b pb-2">Skills</h3>
+                          <Textarea {...form.register('skills')} placeholder="Enter skills, separated by commas..."/>
+                      </div>
+                  </form>
+              </CardContent>
+          </Card>
 
-        <div className="sticky top-24">
-            <div className="flex justify-end mb-4">
-                <Button onClick={handleDownloadPdf} disabled={isDownloading}>
-                  {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4"/>}
-                  {isDownloading ? 'Generating...' : 'Download as PDF'}
-                </Button>
-            </div>
-            <div className="h-[80vh] overflow-hidden flex justify-center items-start p-6 rounded-md bg-muted">
-                 <div className="w-[210mm] h-[297mm] transform scale-[0.65] origin-top bg-white shadow-lg">
-                    <CvContent values={watchedValues} />
-                 </div>
-            </div>
+          <div className="sticky top-24">
+              <div className="flex justify-end mb-4">
+                  <Button onClick={handleDownloadPdf} disabled={isDownloading}>
+                    {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4"/>}
+                    {isDownloading ? 'Generating...' : 'Download as PDF'}
+                  </Button>
+              </div>
+              <div className="h-[80vh] overflow-hidden flex justify-center items-start p-6 rounded-md bg-muted">
+                  <div className="w-[210mm] h-[297mm] transform scale-[0.65] origin-top bg-white shadow-lg">
+                      <CvContent values={watchedValues} />
+                  </div>
+              </div>
+          </div>
         </div>
+
       </div>
 
       {/* Hidden, full-scale div for high-quality PDF generation */}
-      <div className="fixed -left-[9999px] top-0">
-          <div id="cv-to-print" style={{ width: '210mm', height: '297mm' }}>
+      <div id="cv-to-print" className="fixed -left-[9999px] top-0">
+          <div style={{ width: '210mm', height: '297mm' }}>
              <CvContent values={watchedValues} />
           </div>
       </div>
-    </div>
+    </>
   );
 }
