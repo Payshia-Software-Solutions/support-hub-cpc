@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -53,11 +54,11 @@ const CvContent = ({ values }: { values: CvFormValues }) => {
         <div className="p-12 font-serif text-black bg-white">
             <header className="text-center border-b-2 border-gray-700 pb-4">
                 <h1 className="text-4xl font-bold tracking-wider">{values.fullName}</h1>
-                <div className="flex justify-center items-baseline gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
-                    <a href={`mailto:${values.email}`} className="flex items-baseline gap-1.5 hover:underline"><Mail className="h-3 w-3"/>{values.email}</a>
-                    <a href={`tel:${values.phone}`} className="flex items-baseline gap-1.5 hover:underline"><Phone className="h-3 w-3"/>{values.phone}</a>
-                   {values.address && <p className="flex items-baseline gap-1.5"><MapPin className="h-3 w-3"/>{values.address}</p>}
-                   {values.linkedin && <a href={values.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-baseline gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{values.linkedin.replace('https://','').replace('www.','')}</a>}
+                <div className="flex justify-center items-center gap-x-4 gap-y-1 mt-2 text-xs flex-wrap">
+                    <a href={`mailto:${values.email}`} className="flex items-center gap-1.5 hover:underline"><Mail className="h-3 w-3"/>{values.email}</a>
+                    <a href={`tel:${values.phone}`} className="flex items-center gap-1.5 hover:underline"><Phone className="h-3 w-3"/>{values.phone}</a>
+                   {values.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3"/>{values.address}</p>}
+                   {values.linkedin && <a href={values.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:underline"><Linkedin className="h-3 w-3"/>{values.linkedin.replace('https://','').replace('www.','')}</a>}
                 </div>
             </header>
             
@@ -155,13 +156,12 @@ export default function RequestCvPage() {
     setIsDownloading(true);
     try {
         const canvas = await html2canvas(cvElement, {
-            scale: 2, // Increase scale for better quality
+            scale: 2, 
             useCORS: true,
         });
 
         const imgData = canvas.toDataURL('image/png');
         
-        // A4 page dimensions in mm: 210 x 297
         const pdf = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
@@ -169,7 +169,6 @@ export default function RequestCvPage() {
         });
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
         const canvasAspectRatio = canvasWidth / canvasHeight;
