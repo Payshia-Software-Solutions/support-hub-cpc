@@ -247,6 +247,9 @@ const OrderStatusCell = ({ student, selectedBatch }: { student: StudentInBatch, 
         return <Badge variant="destructive">Error</Badge>;
     }
     
+    // This function maps numeric status codes from the API to readable text and colors.
+    // This mapping is based on common conventions and may need to be adjusted
+    // if the API documentation specifies different meanings for these codes.
     const getStatusInfo = (status: string | null | undefined): { text: string; variant: "default" | "secondary" | "destructive" } => {
         switch (status) {
             case '1': return { text: 'Processing', variant: 'secondary' };
