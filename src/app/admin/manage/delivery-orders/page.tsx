@@ -26,8 +26,10 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
 const ITEMS_PER_PAGE = 25;
@@ -239,6 +241,7 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
 // Maps numeric status codes to text and color
 const getStatusInfo = (status: string | null | undefined): { text: string; variant: "default" | "secondary" | "destructive" } => {
     // This mapping handles the dispatch status.
+    // Based on user feedback, these are the only relevant statuses here.
     switch (status) {
         case '1': return { text: 'Processing', variant: 'secondary' };
         case '2': return { text: 'Packed', variant: 'default' };
