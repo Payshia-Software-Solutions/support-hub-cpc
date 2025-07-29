@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -301,9 +302,9 @@ const ReceivedStatusCell = ({ student, selectedBatch }: { student: StudentInBatc
     }, [deliveryOrders, selectedBatch.courseCode]);
 
     const updateStatusMutation = useMutation({
-        mutationFn: (orderId: string) => updateDeliveryOrderStatus(orderId, 'Received'),
-        onSuccess: () => {
-            toast({ title: 'Status Updated', description: `Order for ${student.full_name} marked as received.` });
+        mutationFn: ({ orderId, status }: { orderId: string, status: "Received" | "Not Received" }) => updateDeliveryOrderStatus(orderId, status),
+        onSuccess: (data, variables) => {
+            toast({ title: 'Status Updated', description: `Order for ${student.full_name} marked as ${variables.status}.` });
             queryClient.invalidateQueries({ queryKey: ['studentDeliveryOrders', student.username] });
         },
         onError: (error: Error) => {
@@ -321,20 +322,41 @@ const ReceivedStatusCell = ({ student, selectedBatch }: { student: StudentInBatc
 
     if (orderForBatch.order_recived_status !== "Not Received") {
         return (
-            <div className="flex flex-col items-start gap-1">
+            <div className="flex flex-col items-start gap-2">
                 <Badge variant="default" className="bg-green-500 text-white">
                     {orderForBatch.order_recived_status}
                 </Badge>
                 {orderForBatch.received_date && (
                     <span className="text-xs text-muted-foreground">{format(new Date(orderForBatch.received_date), 'yyyy-MM-dd')}</span>
                 )}
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button size="xs" variant="ghost" className="h-auto p-1 text-xs text-muted-foreground" disabled={updateStatusMutation.isPending}>
+                            Revert
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Revert Status?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Are you sure you want to change the status for {student.full_name} back to "Not Received"?
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => updateStatusMutation.mutate({ orderId: orderForBatch.id, status: 'Not Received' })}>
+                                Confirm Revert
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         );
     }
 
     return (
          <div className="flex flex-col items-start gap-2">
-            <Badge variant="secondary">Not Received</Badge>
+            <Badge variant="secondary">{orderForBatch.order_recived_status || "Not yet received"}</Badge>
              <AlertDialog>
                 <AlertDialogTrigger asChild>
                     <Button size="sm" variant="outline" disabled={updateStatusMutation.isPending}>
@@ -345,12 +367,12 @@ const ReceivedStatusCell = ({ student, selectedBatch }: { student: StudentInBatc
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirm Reception</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to mark this order for {student.full_name} as "Received"? This action cannot be undone.
+                            Are you sure you want to mark this order for {student.full_name} as "Received"? This action can be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => updateStatusMutation.mutate(orderForBatch.id)}>
+                        <AlertDialogAction onClick={() => updateStatusMutation.mutate({ orderId: orderForBatch.id, status: 'Received' })}>
                             Confirm
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -473,7 +495,7 @@ export default function BatchDeliveryOrdersPage() {
                                         <TableRow>
                                             <TableHead>Student ID</TableHead>
                                             <TableHead>Full Name</TableHead>
-                                            <TableHead>Order Status</TableHead>
+                                            <TableHead>Dispatch Status</TableHead>
                                             <TableHead>Received Status</TableHead>
                                         </TableRow>
                                     </TableHeader>

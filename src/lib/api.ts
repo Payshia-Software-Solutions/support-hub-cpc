@@ -732,7 +732,7 @@ export const getStudentBalance = async (studentNumber: string): Promise<StudentB
     return response.json();
 }
 
-export const updateDeliveryOrderStatus = async (orderId: string, status: "Received"): Promise<any> => {
+export const updateDeliveryOrderStatus = async (orderId: string, status: "Received" | "Not Received"): Promise<any> => {
     const response = await fetch(`${QA_API_BASE_URL}/delivery_orders/update-status/${orderId}/`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
