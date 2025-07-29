@@ -191,9 +191,6 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
                                 <SelectItem value="1">Processing</SelectItem>
                                 <SelectItem value="2">Packed</SelectItem>
                                 <SelectItem value="3">Dispatched</SelectItem>
-                                <SelectItem value="4">Returned</SelectItem>
-                                <SelectItem value="5">Completed</SelectItem>
-                                <SelectItem value="6">On Hold</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -232,15 +229,11 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
 
 // Maps numeric status codes to text and color
 const getStatusInfo = (status: string | null | undefined): { text: string; variant: "default" | "secondary" | "destructive" } => {
-    // This mapping is an assumption based on common numeric status codes.
-    // It should be verified with the API documentation.
+    // This mapping handles the dispatch status.
     switch (status) {
         case '1': return { text: 'Processing', variant: 'secondary' };
         case '2': return { text: 'Packed', variant: 'default' };
         case '3': return { text: 'Dispatched', variant: 'default' };
-        case '4': return { text: 'Returned', variant: 'destructive' };
-        case '5': return { text: 'Completed', variant: 'default' };
-        case '6': return { text: 'On Hold', variant: 'secondary' };
         default: return { text: 'Unknown', variant: 'secondary' };
     }
 };
@@ -301,16 +294,14 @@ const ReceivedStatusCell = ({ student, selectedBatch }: { student: StudentInBatc
         return <Badge variant="outline">Error</Badge>;
     }
 
-    if (!orderForBatch.order_recived_status) {
-         return <span className="text-xs text-muted-foreground">Not yet received</span>;
+    if (!orderForBatch.order_recived_status || orderForBatch.order_recived_status === "Not Received") {
+         return <Badge variant="secondary">Not Received</Badge>;
     }
-
-    const receivedStatusInfo = getStatusInfo(orderForBatch.order_recived_status);
 
     return (
         <div className="flex flex-col items-start gap-1">
-            <Badge variant={receivedStatusInfo.variant} className={cn(receivedStatusInfo.variant === 'default' && 'bg-green-500 text-white')}>
-                {receivedStatusInfo.text}
+            <Badge variant="default" className="bg-green-500 text-white">
+                {orderForBatch.order_recived_status}
             </Badge>
             {orderForBatch.received_date && (
                 <span className="text-xs text-muted-foreground">{format(new Date(orderForBatch.received_date), 'yyyy-MM-dd')}</span>
