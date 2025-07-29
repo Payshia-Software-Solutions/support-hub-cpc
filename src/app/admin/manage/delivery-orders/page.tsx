@@ -190,8 +190,10 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
                             <SelectContent>
                                 <SelectItem value="1">Processing</SelectItem>
                                 <SelectItem value="2">Packed</SelectItem>
-                                <SelectItem value="3">Delivered</SelectItem>
-                                <SelectItem value="4">Removed</SelectItem>
+                                <SelectItem value="3">Dispatched</SelectItem>
+                                <SelectItem value="4">Returned</SelectItem>
+                                <SelectItem value="5">Completed</SelectItem>
+                                <SelectItem value="6">On Hold</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -228,6 +230,19 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
     );
 };
 
+// Maps numeric status codes to text and color
+const getStatusInfo = (status: string | null | undefined): { text: string; variant: "default" | "secondary" | "destructive" } => {
+    switch (status) {
+        case '1': return { text: 'Processing', variant: 'secondary' };
+        case '2': return { text: 'Packed', variant: 'default' };
+        case '3': return { text: 'Dispatched', variant: 'default' };
+        case '4': return { text: 'Returned', variant: 'destructive' };
+        case '5': return { text: 'Completed', variant: 'default' };
+        case '6': return { text: 'On Hold', variant: 'secondary' };
+        default: return { text: 'Unknown', variant: 'secondary' };
+    }
+};
+
 const OrderStatusCell = ({ student, selectedBatch }: { student: StudentInBatch, selectedBatch: Course }) => {
     const { data: deliveryOrders, isLoading, isError } = useQuery<DeliveryOrder[]>({
         queryKey: ['studentDeliveryOrders', student.username],
@@ -248,47 +263,58 @@ const OrderStatusCell = ({ student, selectedBatch }: { student: StudentInBatch, 
         return <Badge variant="destructive">Error</Badge>;
     }
     
-    const getStatusInfo = (status: string | null | undefined): { text: string; variant: "default" | "secondary" | "destructive" } => {
-        switch (status) {
-            case '1': return { text: 'Processing', variant: 'secondary' };
-            case '2': return { text: 'Packed', variant: 'default' };
-            case '3': return { text: 'Dispatched', variant: 'default' };
-            case '4': return { text: 'Returned', variant: 'destructive' };
-            case '5': return { text: 'Completed', variant: 'default' };
-            case '6': return { text: 'On Hold', variant: 'secondary' };
-            default: return { text: 'Unknown', variant: 'secondary' };
-        }
-    };
-
     if (orderForBatch) {
         const currentStatusInfo = getStatusInfo(orderForBatch.current_status);
-        const receivedStatusInfo = getStatusInfo(orderForBatch.order_recived_status);
-
         return (
-            <div className="flex flex-col items-start gap-2">
-                <div className="flex flex-col items-start gap-1">
-                    <Badge variant={currentStatusInfo.variant} className={cn(currentStatusInfo.variant === 'default' && 'bg-blue-500 text-white')}>
-                        {currentStatusInfo.text}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">{orderForBatch.tracking_number}</span>
-                </div>
-                 {orderForBatch.order_recived_status && (
-                    <div className="flex flex-col items-start gap-1 text-xs">
-                        <span className="font-medium text-muted-foreground">Received: 
-                            <Badge variant={receivedStatusInfo.variant} className={cn("ml-1", receivedStatusInfo.variant === 'default' && 'bg-green-500 text-white')}>
-                                {receivedStatusInfo.text}
-                            </Badge>
-                        </span>
-                        {orderForBatch.received_date && (
-                           <span className="text-muted-foreground">on {format(new Date(orderForBatch.received_date), 'yyyy-MM-dd')}</span>
-                        )}
-                    </div>
-                )}
+            <div className="flex flex-col items-start gap-1">
+                <Badge variant={currentStatusInfo.variant} className={cn(currentStatusInfo.variant === 'default' && 'bg-blue-500 text-white')}>
+                    {currentStatusInfo.text}
+                </Badge>
+                <span className="text-xs text-muted-foreground">{orderForBatch.tracking_number}</span>
             </div>
         );
     }
     
     return <CreateOrderDialog student={student} selectedBatch={selectedBatch} />;
+};
+
+
+const ReceivedStatusCell = ({ student, selectedBatch }: { student: StudentInBatch, selectedBatch: Course }) => {
+    const { data: deliveryOrders, isLoading, isError } = useQuery<DeliveryOrder[]>({
+        queryKey: ['studentDeliveryOrders', student.username],
+        queryFn: () => getDeliveryOrdersForStudent(student.username),
+        staleTime: 5 * 60 * 1000,
+    });
+    
+    const orderForBatch = useMemo(() => {
+        if (!deliveryOrders) return undefined;
+        return deliveryOrders.find(order => order.course_code === selectedBatch.courseCode);
+    }, [deliveryOrders, selectedBatch.courseCode]);
+
+    if (isLoading || !orderForBatch) {
+        return <span className="text-xs text-muted-foreground">--</span>;
+    }
+    
+    if (isError) {
+        return <Badge variant="outline">Error</Badge>;
+    }
+
+    if (!orderForBatch.order_recived_status) {
+         return <span className="text-xs text-muted-foreground">Not yet received</span>;
+    }
+
+    const receivedStatusInfo = getStatusInfo(orderForBatch.order_recived_status);
+
+    return (
+        <div className="flex flex-col items-start gap-1">
+            <Badge variant={receivedStatusInfo.variant} className={cn(receivedStatusInfo.variant === 'default' && 'bg-green-500 text-white')}>
+                {receivedStatusInfo.text}
+            </Badge>
+            {orderForBatch.received_date && (
+                <span className="text-xs text-muted-foreground">{format(new Date(orderForBatch.received_date), 'yyyy-MM-dd')}</span>
+            )}
+        </div>
+    );
 };
 
 
@@ -404,7 +430,8 @@ export default function BatchDeliveryOrdersPage() {
                                         <TableRow>
                                             <TableHead>Student ID</TableHead>
                                             <TableHead>Full Name</TableHead>
-                                            <TableHead>Status & Details</TableHead>
+                                            <TableHead>Order Status</TableHead>
+                                            <TableHead>Received Status</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -418,10 +445,16 @@ export default function BatchDeliveryOrdersPage() {
                                                         selectedBatch={selectedCourse!} 
                                                     />
                                                 </TableCell>
+                                                <TableCell>
+                                                    <ReceivedStatusCell
+                                                        student={student}
+                                                        selectedBatch={selectedCourse!}
+                                                    />
+                                                </TableCell>
                                             </TableRow>
                                         )) : (
                                             <TableRow>
-                                                <TableCell colSpan={3} className="text-center h-24">
+                                                <TableCell colSpan={4} className="text-center h-24">
                                                     No students found matching your search.
                                                 </TableCell>
                                             </TableRow>
