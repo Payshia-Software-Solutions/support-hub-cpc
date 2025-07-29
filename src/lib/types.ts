@@ -2,6 +2,7 @@
 
 
 
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -419,7 +420,8 @@ export interface DeliveryOrder {
   send_date: string | null;
   current_status: string; 
   course_code: string;
-  order_recived_status: string; 
+  order_recived_status: string | null;
+  received_date: string | null;
 }
 
 export interface StudentInBatch {

@@ -19,6 +19,7 @@ import { getStudentsByCourseCode, createDeliveryOrderForStudent, getDeliveryOrde
 import type { StudentInBatch, DeliveryOrder, Course, DeliverySetting } from '@/lib/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 const ITEMS_PER_PAGE = 25;
 const LOCAL_STORAGE_KEY = 'deliveryOrderDefaults';
@@ -247,25 +248,42 @@ const OrderStatusCell = ({ student, selectedBatch }: { student: StudentInBatch, 
         return <Badge variant="destructive">Error</Badge>;
     }
     
-    // This function maps numeric status codes from the API to readable text and colors.
-    // This mapping is based on common conventions and may need to be adjusted
-    // if the API documentation specifies different meanings for these codes.
     const getStatusInfo = (status: string | null | undefined): { text: string; variant: "default" | "secondary" | "destructive" } => {
         switch (status) {
             case '1': return { text: 'Processing', variant: 'secondary' };
             case '2': return { text: 'Packed', variant: 'default' };
-            case '3': return { text: 'Delivered', variant: 'default' };
-            case '4': return { text: 'Removed', variant: 'destructive' };
+            case '3': return { text: 'Dispatched', variant: 'default' };
+            case '4': return { text: 'Returned', variant: 'destructive' };
+            case '5': return { text: 'Completed', variant: 'default' };
+            case '6': return { text: 'On Hold', variant: 'secondary' };
             default: return { text: 'Unknown', variant: 'secondary' };
         }
     };
-    
+
     if (orderForBatch) {
-        const statusInfo = getStatusInfo(orderForBatch.current_status);
+        const currentStatusInfo = getStatusInfo(orderForBatch.current_status);
+        const receivedStatusInfo = getStatusInfo(orderForBatch.order_recived_status);
+
         return (
-             <div className="flex flex-col items-start gap-1">
-                <Badge variant={statusInfo.variant} className={cn(statusInfo.variant === 'default' && 'bg-green-500 text-white')}>{statusInfo.text}</Badge>
-                <span className="text-xs text-muted-foreground">{orderForBatch.tracking_number}</span>
+            <div className="flex flex-col items-start gap-2">
+                <div className="flex flex-col items-start gap-1">
+                    <Badge variant={currentStatusInfo.variant} className={cn(currentStatusInfo.variant === 'default' && 'bg-blue-500 text-white')}>
+                        {currentStatusInfo.text}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">{orderForBatch.tracking_number}</span>
+                </div>
+                 {orderForBatch.order_recived_status && (
+                    <div className="flex flex-col items-start gap-1 text-xs">
+                        <span className="font-medium text-muted-foreground">Received: 
+                            <Badge variant={receivedStatusInfo.variant} className={cn("ml-1", receivedStatusInfo.variant === 'default' && 'bg-green-500 text-white')}>
+                                {receivedStatusInfo.text}
+                            </Badge>
+                        </span>
+                        {orderForBatch.received_date && (
+                           <span className="text-muted-foreground">on {format(new Date(orderForBatch.received_date), 'yyyy-MM-dd')}</span>
+                        )}
+                    </div>
+                )}
             </div>
         );
     }
