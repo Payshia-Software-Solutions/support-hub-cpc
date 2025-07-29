@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -427,9 +428,6 @@ export default function BatchDeliveryOrdersPage() {
     const { filteredStudents, counts } = useMemo(() => {
         if (!students) return { filteredStudents: [], counts: { processing: 0, packed: 0, dispatched: 0, received: 0, notReceived: 0, noOrder: 0 }};
 
-        const lowercasedFilter = searchTerm.toLowerCase();
-
-        let filtered = students;
         let processing = 0, packed = 0, dispatched = 0, received = 0, notReceived = 0, noOrder = 0;
 
         students.forEach(student => {
@@ -445,28 +443,26 @@ export default function BatchDeliveryOrdersPage() {
             }
         });
 
-        if (searchTerm) {
-            filtered = filtered.filter(student =>
+        const filterLogic = (student: StudentInBatch) => {
+            const lowercasedFilter = searchTerm.toLowerCase();
+            const order = ordersData[student.username];
+
+            const matchesSearch = !searchTerm ||
                 (student.username?.toLowerCase() || '').includes(lowercasedFilter) ||
-                (student.full_name?.toLowerCase() || '').includes(lowercasedFilter)
-            );
-        }
+                (student.full_name?.toLowerCase() || '').includes(lowercasedFilter);
 
-        if (dispatchStatusFilter !== 'all') {
-            filtered = filtered.filter(student => {
-                const order = ordersData[student.username];
-                return order ? order.current_status === dispatchStatusFilter : false;
-            });
-        }
+            const matchesDispatchStatus = dispatchStatusFilter === 'all' ||
+                (dispatchStatusFilter === 'no_order' && !order) ||
+                (order && order.current_status === dispatchStatusFilter);
 
-        if (receivedStatusFilter !== 'all') {
-            filtered = filtered.filter(student => {
-                const order = ordersData[student.username];
-                if (receivedStatusFilter === 'Received') return order ? order.order_recived_status === 'Received' : false;
-                if (receivedStatusFilter === 'Not Received') return order ? order.order_recived_status !== 'Received' : false;
-                return true;
-            });
-        }
+            const matchesReceivedStatus = receivedStatusFilter === 'all' ||
+                (receivedStatusFilter === 'Received' && order?.order_recived_status === 'Received') ||
+                (receivedStatusFilter === 'Not Received' && (!order || order.order_recived_status !== 'Received'));
+
+            return matchesSearch && matchesDispatchStatus && matchesReceivedStatus;
+        };
+        
+        const filtered = students.filter(filterLogic);
 
         return {
             filteredStudents: filtered,
@@ -551,6 +547,7 @@ export default function BatchDeliveryOrdersPage() {
                                             <SelectItem value="1">Processing</SelectItem>
                                             <SelectItem value="2">Packed</SelectItem>
                                             <SelectItem value="3">Dispatched</SelectItem>
+                                            <SelectItem value="no_order">No Order</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <Select value={receivedStatusFilter} onValueChange={setReceivedStatusFilter}>
