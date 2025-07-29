@@ -232,6 +232,8 @@ const CreateOrderDialog = ({ student, selectedBatch }: { student: StudentInBatch
 
 // Maps numeric status codes to text and color
 const getStatusInfo = (status: string | null | undefined): { text: string; variant: "default" | "secondary" | "destructive" } => {
+    // This mapping is an assumption based on common numeric status codes.
+    // It should be verified with the API documentation.
     switch (status) {
         case '1': return { text: 'Processing', variant: 'secondary' };
         case '2': return { text: 'Packed', variant: 'default' };
