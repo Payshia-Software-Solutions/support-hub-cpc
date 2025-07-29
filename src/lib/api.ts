@@ -373,7 +373,7 @@ export const getCertificateOrders = async (): Promise<CertificateOrder[]> => {
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
-}
+};
 
 export const createCertificateOrder = async (payload: FormData): Promise<{ reference_number: string; id: string; }> => {
     const response = await fetch(`${QA_API_BASE_URL}/certificate-orders/`, {
@@ -734,7 +734,7 @@ export const getStudentBalance = async (studentNumber: string): Promise<StudentB
 
 export const updateDeliveryOrderStatus = async (orderId: string, status: "Received"): Promise<any> => {
     const response = await fetch(`${QA_API_BASE_URL}/delivery_orders/update-status/${orderId}/`, {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             id: orderId,
