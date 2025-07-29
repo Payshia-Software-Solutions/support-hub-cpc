@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { getStudentsByCourseCode, createDeliveryOrderForStudent, getDeliveryOrdersForStudent, getCourses, getDeliverySettingsForCourse } from '@/lib/api';
 import type { StudentInBatch, DeliveryOrder, Course, DeliverySetting } from '@/lib/types';
 import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 
 const ITEMS_PER_PAGE = 25;
 const LOCAL_STORAGE_KEY = 'deliveryOrderDefaults';
@@ -245,11 +246,22 @@ const OrderStatusCell = ({ student, selectedBatch }: { student: StudentInBatch, 
     if (isError) {
         return <Badge variant="destructive">Error</Badge>;
     }
-
+    
+    const getStatusInfo = (status: string | null | undefined): { text: string; variant: "default" | "secondary" | "destructive" } => {
+        switch (status) {
+            case '1': return { text: 'Processing', variant: 'secondary' };
+            case '2': return { text: 'Packed', variant: 'default' };
+            case '3': return { text: 'Delivered', variant: 'default' };
+            case '4': return { text: 'Removed', variant: 'destructive' };
+            default: return { text: 'Unknown', variant: 'secondary' };
+        }
+    };
+    
     if (orderForBatch) {
+        const statusInfo = getStatusInfo(orderForBatch.current_status);
         return (
              <div className="flex flex-col items-start gap-1">
-                <Badge variant="secondary">{orderForBatch.id}</Badge>
+                <Badge variant={statusInfo.variant} className={cn(statusInfo.variant === 'default' && 'bg-green-500 text-white')}>{statusInfo.text}</Badge>
                 <span className="text-xs text-muted-foreground">{orderForBatch.tracking_number}</span>
             </div>
         );
@@ -371,7 +383,7 @@ export default function BatchDeliveryOrdersPage() {
                                         <TableRow>
                                             <TableHead>Student ID</TableHead>
                                             <TableHead>Full Name</TableHead>
-                                            <TableHead>Delivery Order Status</TableHead>
+                                            <TableHead>Status & Details</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
