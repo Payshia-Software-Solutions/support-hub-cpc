@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -9,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Loader2, PlusCircle, Search } from 'lucide-react';
+import { AlertTriangle, Loader2, PlusCircle, Search, Package, ThumbsUp, Truck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -388,6 +386,9 @@ export default function BatchDeliveryOrdersPage() {
     const [selectedCourseId, setSelectedCourseId] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [dispatchStatusFilter, setDispatchStatusFilter] = useState('all');
+    const [receivedStatusFilter, setReceivedStatusFilter] = useState('all');
+    const [ordersData, setOrdersData] = useState<Record<string, DeliveryOrder | null>>({});
 
     const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[]>({
         queryKey: ['allCourses'],
@@ -405,19 +406,74 @@ export default function BatchDeliveryOrdersPage() {
         enabled: !!selectedCourse?.courseCode,
     });
     
+    // Fetch all orders for the students in the current batch
+    useEffect(() => {
+        if (students) {
+            const studentUsernames = students.map(s => s.username);
+            studentUsernames.forEach(username => {
+                getDeliveryOrdersForStudent(username).then(orders => {
+                    const orderForBatch = orders.find(o => o.course_code === selectedCourse?.courseCode);
+                    setOrdersData(prev => ({ ...prev, [username]: orderForBatch || null }));
+                });
+            });
+        }
+    }, [students, selectedCourse?.courseCode]);
+
+
     useEffect(() => {
         setCurrentPage(1);
-    }, [selectedCourseId, searchTerm]);
+    }, [selectedCourseId, searchTerm, dispatchStatusFilter, receivedStatusFilter]);
+    
+    const { filteredStudents, counts } = useMemo(() => {
+        if (!students) return { filteredStudents: [], counts: { processing: 0, packed: 0, dispatched: 0, received: 0, notReceived: 0, noOrder: 0 }};
 
-    const filteredStudents = useMemo(() => {
-        if (!students) return [];
         const lowercasedFilter = searchTerm.toLowerCase();
-        if (!lowercasedFilter) return students;
-        return students.filter(student =>
-            (student.username?.toLowerCase() || '').includes(lowercasedFilter) ||
-            (student.full_name?.toLowerCase() || '').includes(lowercasedFilter)
-        );
-    }, [students, searchTerm]);
+
+        let filtered = students;
+        let processing = 0, packed = 0, dispatched = 0, received = 0, notReceived = 0, noOrder = 0;
+
+        students.forEach(student => {
+            const order = ordersData[student.username];
+            if (order) {
+                if (order.current_status === '1') processing++;
+                if (order.current_status === '2') packed++;
+                if (order.current_status === '3') dispatched++;
+                if (order.order_recived_status === 'Received') received++;
+                else notReceived++;
+            } else {
+                noOrder++;
+            }
+        });
+
+        if (searchTerm) {
+            filtered = filtered.filter(student =>
+                (student.username?.toLowerCase() || '').includes(lowercasedFilter) ||
+                (student.full_name?.toLowerCase() || '').includes(lowercasedFilter)
+            );
+        }
+
+        if (dispatchStatusFilter !== 'all') {
+            filtered = filtered.filter(student => {
+                const order = ordersData[student.username];
+                return order ? order.current_status === dispatchStatusFilter : false;
+            });
+        }
+
+        if (receivedStatusFilter !== 'all') {
+            filtered = filtered.filter(student => {
+                const order = ordersData[student.username];
+                if (receivedStatusFilter === 'Received') return order ? order.order_recived_status === 'Received' : false;
+                if (receivedStatusFilter === 'Not Received') return order ? order.order_recived_status !== 'Received' : false;
+                return true;
+            });
+        }
+
+        return {
+            filteredStudents: filtered,
+            counts: { processing, packed, dispatched, received, notReceived, noOrder }
+        };
+
+    }, [students, searchTerm, dispatchStatusFilter, receivedStatusFilter, ordersData]);
 
     const totalPages = Math.ceil((filteredStudents?.length || 0) / ITEMS_PER_PAGE);
     const paginatedStudents = useMemo(() => {
@@ -456,6 +512,18 @@ export default function BatchDeliveryOrdersPage() {
             </Card>
 
             {selectedCourse && (
+                <>
+                 <Card>
+                    <CardHeader><CardTitle>Batch Overview</CardTitle></CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <Card><CardHeader className="pb-2"><CardDescription>Processing</CardDescription></CardHeader><CardContent><p className="text-2xl font-bold flex items-center gap-2"><Package className="h-6 w-6 text-muted-foreground"/> {counts.processing}</p></CardContent></Card>
+                        <Card><CardHeader className="pb-2"><CardDescription>Packed</CardDescription></CardHeader><CardContent><p className="text-2xl font-bold flex items-center gap-2"><Package className="h-6 w-6 text-muted-foreground"/> {counts.packed}</p></CardContent></Card>
+                        <Card><CardHeader className="pb-2"><CardDescription>Dispatched</CardDescription></CardHeader><CardContent><p className="text-2xl font-bold flex items-center gap-2"><Truck className="h-6 w-6 text-muted-foreground"/> {counts.dispatched}</p></CardContent></Card>
+                        <Card><CardHeader className="pb-2"><CardDescription>Received</CardDescription></CardHeader><CardContent><p className="text-2xl font-bold flex items-center gap-2"><ThumbsUp className="h-6 w-6 text-muted-foreground"/> {counts.received}</p></CardContent></Card>
+                        <Card><CardHeader className="pb-2"><CardDescription>No Order</CardDescription></CardHeader><CardContent><p className="text-2xl font-bold flex items-center gap-2"><PlusCircle className="h-6 w-6 text-muted-foreground"/> {counts.noOrder}</p></CardContent></Card>
+                    </CardContent>
+                 </Card>
+
                  <Card className="shadow-lg">
                     <CardHeader>
                         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -465,14 +533,35 @@ export default function BatchDeliveryOrdersPage() {
                                      {isLoadingStudents ? "Loading..." : `Showing ${paginatedStudents.length} of ${filteredStudents.length} students.`}
                                 </CardDescription>
                             </div>
-                            <div className="relative w-full sm:w-auto sm:max-w-xs">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search student or ID..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10"
-                                />
+                            <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                                <div className="relative w-full md:w-auto flex-grow">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Search student or ID..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="pl-10 w-full"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                     <Select value={dispatchStatusFilter} onValueChange={setDispatchStatusFilter}>
+                                        <SelectTrigger><SelectValue placeholder="Filter by dispatch status" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Dispatch Statuses</SelectItem>
+                                            <SelectItem value="1">Processing</SelectItem>
+                                            <SelectItem value="2">Packed</SelectItem>
+                                            <SelectItem value="3">Dispatched</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Select value={receivedStatusFilter} onValueChange={setReceivedStatusFilter}>
+                                        <SelectTrigger><SelectValue placeholder="Filter by received status" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Received Statuses</SelectItem>
+                                            <SelectItem value="Received">Received</SelectItem>
+                                            <SelectItem value="Not Received">Not Received</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
                         </div>
                     </CardHeader>
@@ -537,6 +626,7 @@ export default function BatchDeliveryOrdersPage() {
                         </CardFooter>
                     )}
                  </Card>
+                </>
             )}
         </div>
     );
