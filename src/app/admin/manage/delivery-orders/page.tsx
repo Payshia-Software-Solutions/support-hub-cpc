@@ -15,11 +15,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { getStudentsByCourseCode, createDeliveryOrderForStudent, getDeliveryOrdersForStudent, getCourses, getDeliverySettingsForCourse } from '@/lib/api';
+import { getStudentsByCourseCode, createDeliveryOrderForStudent, getDeliveryOrdersForStudent, getCourses, getDeliverySettingsForCourse, updateDeliveryOrderStatus } from '@/lib/api';
 import type { StudentInBatch, DeliveryOrder, Course, DeliverySetting } from '@/lib/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const ITEMS_PER_PAGE = 25;
 const LOCAL_STORAGE_KEY = 'deliveryOrderDefaults';
@@ -275,6 +284,8 @@ const OrderStatusCell = ({ student, selectedBatch }: { student: StudentInBatch, 
 
 
 const ReceivedStatusCell = ({ student, selectedBatch }: { student: StudentInBatch, selectedBatch: Course }) => {
+    const queryClient = useQueryClient();
+    
     const { data: deliveryOrders, isLoading, isError } = useQuery<DeliveryOrder[]>({
         queryKey: ['studentDeliveryOrders', student.username],
         queryFn: () => getDeliveryOrdersForStudent(student.username),
@@ -286,6 +297,17 @@ const ReceivedStatusCell = ({ student, selectedBatch }: { student: StudentInBatc
         return deliveryOrders.find(order => order.course_code === selectedBatch.courseCode);
     }, [deliveryOrders, selectedBatch.courseCode]);
 
+    const updateStatusMutation = useMutation({
+        mutationFn: (orderId: string) => updateDeliveryOrderStatus(orderId, 'Received'),
+        onSuccess: () => {
+            toast({ title: 'Status Updated', description: `Order for ${student.full_name} marked as received.` });
+            queryClient.invalidateQueries({ queryKey: ['studentDeliveryOrders', student.username] });
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+        }
+    });
+
     if (isLoading || !orderForBatch) {
         return <span className="text-xs text-muted-foreground">--</span>;
     }
@@ -294,18 +316,43 @@ const ReceivedStatusCell = ({ student, selectedBatch }: { student: StudentInBatc
         return <Badge variant="outline">Error</Badge>;
     }
 
-    if (!orderForBatch.order_recived_status || orderForBatch.order_recived_status === "Not Received") {
-         return <Badge variant="secondary">Not Received</Badge>;
+    if (orderForBatch.order_recived_status !== "Not Received") {
+        return (
+            <div className="flex flex-col items-start gap-1">
+                <Badge variant="default" className="bg-green-500 text-white">
+                    {orderForBatch.order_recived_status}
+                </Badge>
+                {orderForBatch.received_date && (
+                    <span className="text-xs text-muted-foreground">{format(new Date(orderForBatch.received_date), 'yyyy-MM-dd')}</span>
+                )}
+            </div>
+        );
     }
 
     return (
-        <div className="flex flex-col items-start gap-1">
-            <Badge variant="default" className="bg-green-500 text-white">
-                {orderForBatch.order_recived_status}
-            </Badge>
-            {orderForBatch.received_date && (
-                <span className="text-xs text-muted-foreground">{format(new Date(orderForBatch.received_date), 'yyyy-MM-dd')}</span>
-            )}
+         <div className="flex flex-col items-start gap-2">
+            <Badge variant="secondary">Not Received</Badge>
+             <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline" disabled={updateStatusMutation.isPending}>
+                        Mark as Received
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirm Reception</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to mark this order for {student.full_name} as "Received"? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => updateStatusMutation.mutate(orderForBatch.id)}>
+                            Confirm
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

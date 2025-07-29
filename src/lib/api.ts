@@ -731,3 +731,19 @@ export const getStudentBalance = async (studentNumber: string): Promise<StudentB
     }
     return response.json();
 }
+
+export const updateDeliveryOrderStatus = async (orderId: string, status: "Received"): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/delivery_orders/update-status/${orderId}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            id: orderId,
+            OrderStatus: status
+        })
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update delivery status' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+}
