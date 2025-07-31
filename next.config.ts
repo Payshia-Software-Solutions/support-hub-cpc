@@ -1,9 +1,13 @@
 
 import type {NextConfig} from 'next';
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://chat-server.pharmacollege.lk/api';
-const apiHostname = new URL(apiBaseUrl).hostname;
+const chatServerUrl = process.env.NEXT_PUBLIC_CHAT_SERVER_URL || 'https://chat-server.pharmacollege.lk';
+const lmsServerUrl = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const contentProviderHostname = "content-provider.pharmacollege.lk";
+
+const chatServerHostname = new URL(chatServerUrl).hostname;
+const lmsServerHostname = new URL(lmsServerUrl).hostname;
+
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -23,7 +27,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: apiHostname,
+        hostname: chatServerHostname,
         port: '',
         pathname: '/**',
       },
@@ -35,7 +39,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'qa-api.pharmacollege.lk',
+        hostname: lmsServerHostname,
         port: '',
         pathname: '/**',
       },
