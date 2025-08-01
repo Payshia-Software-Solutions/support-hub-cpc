@@ -321,15 +321,14 @@ const TicketDiscussionContent = ({
                     )}
                     >
                      {message.attachments?.map((att, index) => att.type === 'image' && att.url && (
-                        <div key={index} className="mb-2 group relative">
+                        <div key={index} className="mb-2 group relative cursor-pointer" onClick={() => setViewingImage(att.url)}>
                             <Image
                                 src={att.url}
                                 alt={att.name}
                                 width={200}
                                 height={200}
-                                className="rounded-md object-cover cursor-pointer"
+                                className="rounded-md object-cover"
                                 data-ai-hint="attached image"
-                                onClick={() => setViewingImage(att.url)}
                             />
                              <div className="absolute inset-0 bg-black/40 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <ZoomIn className="h-8 w-8 text-white"/>
@@ -372,7 +371,7 @@ const TicketDiscussionContent = ({
               <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={(userRole === 'staff' && isTicketLockedByOther)} onClick={handleAttachmentClick}>
               <Paperclip className="h-5 w-5" />
               </Button>
-              <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" multiple/>
+              <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" multiple />
               <Textarea
               placeholder="Type your reply..."
               value={newMessage}
@@ -708,3 +707,5 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     </div>
   );
 }
+
+    
