@@ -51,9 +51,8 @@ export default function CreateTicketPage() {
     formData.append('description', data.description);
     formData.append('category', data.category);
     formData.append('priority', 'Medium');
-    formData.append('studentNumber', user.username);
-    formData.append('studentName', user.username);
-    formData.append('studentAvatar', user.avatar);
+    formData.append('student_name', user.username);
+    formData.append('student_avatar', user.avatar);
     formData.append('status', 'Open');
 
     // Append a JSON string of attachment metadata
