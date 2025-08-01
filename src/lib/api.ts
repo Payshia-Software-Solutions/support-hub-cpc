@@ -6,6 +6,7 @@ import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessa
 const API_BASE_URL = (process.env.NEXT_PUBLIC_CHAT_SERVER_URL || 'https://chat-server.pharmacollege.lk') + '/api';
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const PAYMENT_API_BASE_URL = process.env.NEXT_PUBLIC_PAYMENT_API_URL || 'https://api.pharmacollege.lk';
+const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk';
 
 
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -53,25 +54,23 @@ interface ApiMessage {
   text: string;
   time: string;
   avatar?: string;
-  attachment_type?: 'image' | 'document' | null;
-  attachment_url?: string | null;
-  attachment_name?: string | null;
   attachments?: Attachment[];
+  img_url?: string;
 }
 
 function mapApiMessageToMessage(apiMsg: ApiMessage): Message {
     let attachments: Attachment[] = [];
 
-    // Handle single, legacy attachment format
-    if (apiMsg.attachment_type && apiMsg.attachment_url && apiMsg.attachment_name) {
+    // Handle new `img_url` field
+    if (apiMsg.img_url) {
         attachments.push({
-            type: apiMsg.attachment_type,
-            url: apiMsg.attachment_url,
-            name: apiMsg.attachment_name,
+            type: 'image',
+            url: `${CONTENT_PROVIDER_URL}${apiMsg.img_url}`,
+            name: apiMsg.img_url.split('/').pop() || 'image.jpg',
         });
     }
 
-    // Handle new, array-based attachments format
+    // Handle new, array-based attachments format (if it ever co-exists)
     if (Array.isArray(apiMsg.attachments)) {
         attachments = [...attachments, ...apiMsg.attachments];
     }
@@ -259,7 +258,7 @@ export const createTicketMessage = async (messageData: CreateTicketMessageClient
   formData.append('ticket_id', ticketId);
   formData.append('from_role', messageData.from);
   formData.append('text', messageData.text);
-  formData.append('time', messageData.time);
+  formData.append('time', new Date().toISOString());
 
   if (messageData.attachments && messageData.attachments.length > 0) {
     const attachmentMetadata = messageData.attachments.map(att => ({
@@ -781,4 +780,3 @@ export const updateDeliveryOrderStatus = async (orderId: string, status: "Receiv
     }
     return response.json();
 }
-
