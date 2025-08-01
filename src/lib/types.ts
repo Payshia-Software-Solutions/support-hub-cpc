@@ -4,6 +4,7 @@
 
 
 
+
 export interface Attachment {
   type: 'image' | 'document';
   url: string; 
@@ -118,7 +119,8 @@ export type UpdateTicketPayload = Partial<Ticket> & { id: string };
 export type CreateTicketMessageClientPayload = { 
   from: 'student' | 'staff';
   text: string;
-  attachment?: Attachment;
+  attachments?: Attachment[];
+  time: string;
 };
 
 export type CreateChatMessageClientPayload = {

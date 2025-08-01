@@ -34,6 +34,12 @@ interface TicketDetailClientProps {
   currentStaffId?: string;
 }
 
+// Local attachment type with a unique ID for state management
+interface StagedAttachment extends Attachment {
+  id: string; 
+}
+
+
 const priorityColors: Record<Ticket["priority"], string> = {
   High: "bg-red-500 hover:bg-red-600 text-white",
   Medium: "bg-yellow-500 hover:bg-yellow-600 text-white",
@@ -201,8 +207,7 @@ const TicketDiscussionContent = ({
   staffAvatar,
   newMessage,
   setNewMessage,
-  stagedAttachment,
-  setStagedAttachment,
+  stagedAttachments,
   handleSendMessage,
   handleAttachmentClick,
   removeStagedAttachment,
@@ -215,11 +220,10 @@ const TicketDiscussionContent = ({
     staffAvatar: string,
     newMessage: string,
     setNewMessage: Dispatch<SetStateAction<string>>,
-    stagedAttachment: Attachment | null,
-    setStagedAttachment: Dispatch<SetStateAction<Attachment | null>>,
+    stagedAttachments: StagedAttachment[],
     handleSendMessage: () => void,
     handleAttachmentClick: () => void,
-    removeStagedAttachment: () => void,
+    removeStagedAttachment: (id: string) => void,
     isTicketLockedByOther: boolean,
     fileInputRef: React.RefObject<HTMLInputElement>,
     handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void,
@@ -298,18 +302,18 @@ const TicketDiscussionContent = ({
                         : "bg-card border rounded-bl-none"
                     )}
                     >
-                     {message.attachments?.[0]?.type === 'image' && message.attachments?.[0].url && (
-                        <div className="mb-2">
+                     {message.attachments?.map((att, index) => att.type === 'image' && att.url && (
+                        <div key={index} className="mb-2">
                             <Image
-                                src={message.attachments[0].url}
-                                alt={message.attachments[0].name}
+                                src={att.url}
+                                alt={att.name}
                                 width={200}
                                 height={200}
                                 className="rounded-md object-cover"
                                 data-ai-hint="attached image"
                             />
                         </div>
-                    )}
+                    ))}
                     {message.text && <p className="text-sm">{message.text}</p>}
                     <p className="text-xs mt-1 opacity-70">
                         {new Date(message.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -322,26 +326,31 @@ const TicketDiscussionContent = ({
         </ScrollArea>
 
         <footer className="px-4 py-3 border-t bg-card shrink-0">
-          {stagedAttachment && (
-            <div className="mb-2 p-2 border rounded-md flex items-center justify-between bg-muted/50">
-              <div className="flex items-center gap-2 truncate">
-                {stagedAttachment.type === 'image' ? (
-                  <Image src={stagedAttachment.url} alt={stagedAttachment.name} width={32} height={32} className="rounded object-cover" data-ai-hint="image preview"/>
-                ) : (
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                )}
-                <span className="text-sm text-muted-foreground truncate">{stagedAttachment.name}</span>
+          {stagedAttachments.length > 0 && (
+            <ScrollArea className="max-h-32 w-full mb-2">
+              <div className="flex gap-2 p-1">
+                {stagedAttachments.map(att => (
+                  <div key={att.id} className="relative group shrink-0">
+                    <div className="p-1 border rounded-md bg-muted/50">
+                        {att.type === 'image' ? (
+                          <Image src={att.url} alt={att.name} width={48} height={48} className="rounded object-cover h-12 w-12" data-ai-hint="image preview"/>
+                        ) : (
+                          <div className="h-12 w-12 flex items-center justify-center"><FileText className="h-6 w-6 text-muted-foreground" /></div>
+                        )}
+                    </div>
+                     <button onClick={() => removeStagedAttachment(att.id)} className="absolute -top-1 -right-1 bg-background text-destructive rounded-full p-0.5 group-hover:opacity-100 opacity-0 transition-opacity">
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                  </div>
+                ))}
               </div>
-              <Button type="button" variant="ghost" size="icon" onClick={removeStagedAttachment} className="text-destructive hover:text-destructive h-6 w-6">
-                <XCircle className="h-5 w-5" />
-              </Button>
-            </div>
+            </ScrollArea>
           )}
           <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={(userRole === 'staff' && isTicketLockedByOther)} onClick={handleAttachmentClick}>
               <Paperclip className="h-5 w-5" />
               </Button>
-              <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*"/>
+              <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" multiple/>
               <Textarea
               placeholder="Type your reply..."
               value={newMessage}
@@ -369,7 +378,7 @@ const TicketDiscussionContent = ({
 export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTicket, onUnlockTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffId }: TicketDetailClientProps) {
   const [ticket, setTicket] = useState(initialTicket);
   const [newMessage, setNewMessage] = useState("");
-  const [stagedAttachment, setStagedAttachment] = useState<Attachment | null>(null);
+  const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -386,18 +395,18 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const sendMessageMutation = useMutation({
       mutationFn: (payload: {data: CreateTicketMessageClientPayload, ticketId: string}) => createTicketMessage(payload.data, payload.ticketId),
       onMutate: async ({data}) => {
-          const { ticketId, text, from, attachment } = data;
+          const { ticketId, text, attachments } = data;
           
           await queryClient.cancelQueries({ queryKey: ['ticketMessages', ticketId] });
           const previousMessages = queryClient.getQueryData<Message[]>(['ticketMessages', ticketId]);
           
           const optimisticMessage: Message = {
               id: `optimistic-${Date.now()}`,
-              from: from,
+              from: userRole,
               text: text,
               time: new Date().toISOString(),
-              avatar: from === 'staff' ? staffAvatar : ticket.studentAvatar,
-              attachments: attachment ? [attachment] : [],
+              avatar: userRole === 'staff' ? staffAvatar : ticket.studentAvatar,
+              attachments: attachments,
           };
           queryClient.setQueryData<Message[]>(['ticketMessages', ticketId], (old) => 
               old ? [...old, optimisticMessage] : [optimisticMessage]
@@ -507,7 +516,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   };
 
   const handleSendMessage = () => {
-    if (newMessage.trim() === "" && !stagedAttachment) return;
+    if (newMessage.trim() === "" && stagedAttachments.length === 0) return;
     if (userRole === 'staff' && isTicketLockedByOther) return;
 
     sendMessageMutation.mutate({
@@ -515,13 +524,13 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
       data: {
         from: userRole,
         text: newMessage.trim(),
-        attachment: stagedAttachment || undefined,
+        attachments: stagedAttachments,
         time: new Date().toISOString(),
       }
     });
 
     setNewMessage("");
-    setStagedAttachment(null);
+    setStagedAttachments([]);
     if (fileInputRef.current) {
         fileInputRef.current.value = "";
     }
@@ -543,32 +552,39 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast({ variant: "destructive", title: "File too large", description: "Please select an image smaller than 5MB." });
-        return;
-      }
-      if (!file.type.startsWith("image/")) {
-        toast({ variant: "destructive", title: "Invalid file type", description: "Please select an image file." });
-        return;
-      }
+    const files = event.target.files;
+    if (files) {
+      Array.from(files).forEach((file, index) => {
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+          toast({ variant: "destructive", title: "File too large", description: `"${file.name}" is over 5MB and won't be attached.` });
+          return;
+        }
+        if (!file.type.startsWith("image/")) {
+          toast({ variant: "destructive", title: "Invalid file type", description: `"${file.name}" is not an image.` });
+          return;
+        }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setStagedAttachment({
-          type: "image",
-          url: reader.result as string,
-          name: file.name,
-          file: file,
-        });
-      };
-      reader.readAsDataURL(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setStagedAttachments(prev => [...prev, {
+            id: `${Date.now()}-${index}`,
+            type: "image",
+            url: reader.result as string,
+            name: file.name,
+            file: file,
+          }]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    // Clear the input value to allow selecting the same file again
+    if (event.target) {
+        event.target.value = '';
     }
   };
 
-  const removeStagedAttachment = () => {
-    setStagedAttachment(null);
+  const removeStagedAttachment = (idToRemove: string) => {
+    setStagedAttachments(prev => prev.filter(att => att.id !== idToRemove));
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -623,8 +639,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
                 staffAvatar={staffAvatar}
                 newMessage={newMessage}
                 setNewMessage={setNewMessage}
-                stagedAttachment={stagedAttachment}
-                setStagedAttachment={setStagedAttachment}
+                stagedAttachments={stagedAttachments}
                 handleSendMessage={handleSendMessage}
                 handleAttachmentClick={handleAttachmentClick}
                 removeStagedAttachment={removeStagedAttachment}
@@ -659,8 +674,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
             staffAvatar={staffAvatar}
             newMessage={newMessage}
             setNewMessage={setNewMessage}
-            stagedAttachment={stagedAttachment}
-            setStagedAttachment={setStagedAttachment}
+            stagedAttachments={stagedAttachments}
             handleSendMessage={handleSendMessage}
             handleAttachmentClick={handleAttachmentClick}
             removeStagedAttachment={removeStagedAttachment}

@@ -56,23 +56,34 @@ interface ApiMessage {
   attachment_type?: 'image' | 'document' | null;
   attachment_url?: string | null;
   attachment_name?: string | null;
+  attachments?: Attachment[];
 }
 
 function mapApiMessageToMessage(apiMsg: ApiMessage): Message {
-  return {
-    id: apiMsg.id,
-    from: apiMsg.from_role, 
-    text: apiMsg.text,
-    time: apiMsg.time,
-    avatar: apiMsg.avatar,
-    attachments: (apiMsg.attachment_type && apiMsg.attachment_url && apiMsg.attachment_name)
-      ? [{
-          type: apiMsg.attachment_type,
-          url: apiMsg.attachment_url,
-          name: apiMsg.attachment_name,
-        }]
-      : [],
-  };
+    let attachments: Attachment[] = [];
+
+    // Handle single, legacy attachment format
+    if (apiMsg.attachment_type && apiMsg.attachment_url && apiMsg.attachment_name) {
+        attachments.push({
+            type: apiMsg.attachment_type,
+            url: apiMsg.attachment_url,
+            name: apiMsg.attachment_name,
+        });
+    }
+
+    // Handle new, array-based attachments format
+    if (Array.isArray(apiMsg.attachments)) {
+        attachments = [...attachments, ...apiMsg.attachments];
+    }
+
+    return {
+        id: apiMsg.id,
+        from: apiMsg.from_role,
+        text: apiMsg.text,
+        time: apiMsg.time,
+        avatar: apiMsg.avatar,
+        attachments: attachments,
+    };
 }
 
 interface ApiChat {
@@ -248,10 +259,20 @@ export const createTicketMessage = async (messageData: CreateTicketMessageClient
   formData.append('ticket_id', ticketId);
   formData.append('from_role', messageData.from);
   formData.append('text', messageData.text);
-  formData.append('time', new Date().toISOString());
+  formData.append('time', messageData.time);
 
-  if (messageData.attachment && messageData.attachment.file) {
-    formData.append('attachment', messageData.attachment.file);
+  if (messageData.attachments && messageData.attachments.length > 0) {
+    const attachmentMetadata = messageData.attachments.map(att => ({
+        type: att.type,
+        name: att.name,
+    }));
+    formData.append('attachments_meta', JSON.stringify(attachmentMetadata));
+
+    messageData.attachments.forEach(att => {
+        if (att.file) {
+            formData.append('attachments[]', att.file, att.name);
+        }
+    });
   }
 
   const newApiMessage = await apiFetch<ApiMessage>(`/ticket-messages`, { 
