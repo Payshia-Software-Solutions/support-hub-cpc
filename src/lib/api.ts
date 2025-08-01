@@ -248,7 +248,8 @@ export const createTicketMessage = async (messageData: CreateTicketMessageClient
   formData.append('ticket_id', ticketId);
   formData.append('from_role', messageData.from);
   formData.append('text', messageData.text);
-  
+  formData.append('time', new Date().toISOString());
+
   if (messageData.attachment && messageData.attachment.file) {
     formData.append('attachment', messageData.attachment.file);
   }
@@ -433,7 +434,7 @@ export const getFilteredConvocationRegistrations = async (courseCode: string, se
 };
 
 export const getStudentFullInfo = async (studentNumber: string): Promise<FullStudentData> => {
-    const response = await fetch(`${QA_API_BASE_URL}/get-student-full-info?loggedUser=${studentNumber.trim()}`);
+    const response = await fetch(`${QA_API_BASE_URL}/get-student-full-info?loggedUser=${studentNumber.trim().toUpperCase()}`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: `Student full info not found for ${studentNumber}` }));
         throw new Error(errorData.message || 'Failed to fetch student full info');
@@ -759,3 +760,4 @@ export const updateDeliveryOrderStatus = async (orderId: string, status: "Receiv
     }
     return response.json();
 }
+
