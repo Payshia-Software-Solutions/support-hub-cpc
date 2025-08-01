@@ -208,11 +208,16 @@ export const getTicketMessages = async (ticketId: string): Promise<Message[]> =>
 };
 
 export const createTicket = async (ticketFormData: FormData): Promise<Ticket> => {
-    const newApiTicket = await apiFetch<any>('/tickets', {
+    const response = await apiFetch<any>('/tickets', {
         method: 'POST',
         body: ticketFormData
     });
-    return mapApiTicketToTicket(newApiTicket);
+    // Assuming the API returns { "ticket": { ... } }
+    if (response && response.ticket) {
+        return mapApiTicketToTicket(response.ticket);
+    }
+    // Fallback for cases where it might return the ticket object directly
+    return mapApiTicketToTicket(response);
 };
 
 export const updateTicket = async (ticketData: UpdateTicketPayload): Promise<Ticket> => {
