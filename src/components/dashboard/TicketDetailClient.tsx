@@ -2,14 +2,14 @@
 "use client";
 
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction, memo } from "react";
-import type { Ticket, Message, TicketStatus, StaffMember, CreateTicketMessageClientPayload } from "@/lib/types";
+import type { Ticket, Message, TicketStatus, StaffMember, CreateTicketMessageClientPayload, Attachment } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag } from "lucide-react"; 
+import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle } from "lucide-react"; 
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; 
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTicketMessages, createTicketMessage, updateTicketStatus } from "@/lib/api";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { Skeleton } from "../ui/skeleton";
+import Image from "next/image";
 
 
 interface TicketDetailClientProps {
@@ -200,16 +201,28 @@ const TicketDiscussionContent = ({
   staffAvatar,
   newMessage,
   setNewMessage,
+  stagedAttachment,
+  setStagedAttachment,
   handleSendMessage,
+  handleAttachmentClick,
+  removeStagedAttachment,
   isTicketLockedByOther,
+  fileInputRef,
+  handleFileSelect,
  }: {
     ticket: Ticket,
     userRole: 'student' | 'staff',
     staffAvatar: string,
     newMessage: string,
     setNewMessage: Dispatch<SetStateAction<string>>,
+    stagedAttachment: Attachment | null,
+    setStagedAttachment: Dispatch<SetStateAction<Attachment | null>>,
     handleSendMessage: () => void,
+    handleAttachmentClick: () => void,
+    removeStagedAttachment: () => void,
     isTicketLockedByOther: boolean,
+    fileInputRef: React.RefObject<HTMLInputElement>,
+    handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void,
  }) => {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -285,7 +298,19 @@ const TicketDiscussionContent = ({
                         : "bg-card border rounded-bl-none"
                     )}
                     >
-                    <p className="text-sm">{message.text}</p>
+                     {message.attachments?.[0]?.type === 'image' && message.attachments?.[0].url && (
+                        <div className="mb-2">
+                            <Image
+                                src={message.attachments[0].url}
+                                alt={message.attachments[0].name}
+                                width={200}
+                                height={200}
+                                className="rounded-md object-cover"
+                                data-ai-hint="attached image"
+                            />
+                        </div>
+                    )}
+                    {message.text && <p className="text-sm">{message.text}</p>}
                     <p className="text-xs mt-1 opacity-70">
                         {new Date(message.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </p>
@@ -297,10 +322,26 @@ const TicketDiscussionContent = ({
         </ScrollArea>
 
         <footer className="px-4 py-3 border-t bg-card shrink-0">
+          {stagedAttachment && (
+            <div className="mb-2 p-2 border rounded-md flex items-center justify-between bg-muted/50">
+              <div className="flex items-center gap-2 truncate">
+                {stagedAttachment.type === 'image' ? (
+                  <Image src={stagedAttachment.url} alt={stagedAttachment.name} width={32} height={32} className="rounded object-cover" data-ai-hint="image preview"/>
+                ) : (
+                  <FileText className="h-6 w-6 text-muted-foreground" />
+                )}
+                <span className="text-sm text-muted-foreground truncate">{stagedAttachment.name}</span>
+              </div>
+              <Button type="button" variant="ghost" size="icon" onClick={removeStagedAttachment} className="text-destructive hover:text-destructive">
+                <XCircle className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
           <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={(userRole === 'staff' && isTicketLockedByOther)}>
+              <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={(userRole === 'staff' && isTicketLockedByOther)} onClick={handleAttachmentClick}>
               <Paperclip className="h-5 w-5" />
               </Button>
+              <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*"/>
               <Textarea
               placeholder="Type your reply..."
               value={newMessage}
@@ -328,6 +369,8 @@ const TicketDiscussionContent = ({
 export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTicket, onUnlockTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffId }: TicketDetailClientProps) {
   const [ticket, setTicket] = useState(initialTicket);
   const [newMessage, setNewMessage] = useState("");
+  const [stagedAttachment, setStagedAttachment] = useState<Attachment | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [activeMobileTab, setActiveMobileTab] = useState<'info' | 'discussion'>('info');
@@ -341,18 +384,20 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const isTicketLockedByCurrentUser = ticket.isLocked && ticket.lockedByStaffId === currentStaffId;
 
   const sendMessageMutation = useMutation({
-      mutationFn: createTicketMessage,
-      onMutate: async (newMessagePayload: CreateTicketMessageClientPayload) => {
-          const { ticketId, text, from } = newMessagePayload;
+      mutationFn: (payload: {data: CreateTicketMessageClientPayload, ticketId: string}) => createTicketMessage(payload.data, payload.ticketId),
+      onMutate: async ({data}) => {
+          const { ticketId, text, from, attachment } = data;
           
           await queryClient.cancelQueries({ queryKey: ['ticketMessages', ticketId] });
           const previousMessages = queryClient.getQueryData<Message[]>(['ticketMessages', ticketId]);
+          
           const optimisticMessage: Message = {
               id: `optimistic-${Date.now()}`,
               from: from,
               text: text,
               time: new Date().toISOString(),
-              avatar: from === 'staff' ? staffAvatar : ticket.studentAvatar
+              avatar: from === 'staff' ? staffAvatar : ticket.studentAvatar,
+              attachments: attachment ? [attachment] : [],
           };
           queryClient.setQueryData<Message[]>(['ticketMessages', ticketId], (old) => 
               old ? [...old, optimisticMessage] : [optimisticMessage]
@@ -462,15 +507,20 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   };
 
   const handleSendMessage = () => {
-    if (newMessage.trim() === "") return;
+    if (newMessage.trim() === "" && !stagedAttachment) return;
     if (userRole === 'staff' && isTicketLockedByOther) return;
 
     sendMessageMutation.mutate({
       ticketId: ticket.id,
-      from: userRole,
-      text: newMessage.trim(),
+      data: {
+        from: userRole,
+        text: newMessage.trim(),
+        attachment: stagedAttachment || undefined,
+      }
     });
+
     setNewMessage("");
+    setStagedAttachment(null);
 
     toast({
       title: userRole === 'staff' ? "Reply Sent" : "Message Sent",
@@ -484,6 +534,42 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     }
   };
   
+  const handleAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({ variant: "destructive", title: "File too large", description: "Please select an image smaller than 5MB." });
+        return;
+      }
+      if (!file.type.startsWith("image/")) {
+        toast({ variant: "destructive", title: "Invalid file type", description: "Please select an image file." });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setStagedAttachment({
+          type: "image",
+          url: reader.result as string,
+          name: file.name,
+          file: file,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeStagedAttachment = () => {
+    setStagedAttachment(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const lockerName = ticket.lockedByStaffId ? dummyStaffMembers.find(s => s.id === ticket.lockedByStaffId)?.name : 'another staff member';
 
   if (isMobile) {
@@ -533,8 +619,14 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
                 staffAvatar={staffAvatar}
                 newMessage={newMessage}
                 setNewMessage={setNewMessage}
+                stagedAttachment={stagedAttachment}
+                setStagedAttachment={setStagedAttachment}
                 handleSendMessage={handleSendMessage}
+                handleAttachmentClick={handleAttachmentClick}
+                removeStagedAttachment={removeStagedAttachment}
                 isTicketLockedByOther={isTicketLockedByOther}
+                fileInputRef={fileInputRef}
+                handleFileSelect={handleFileSelect}
             />
           </div>
         )}
@@ -563,8 +655,14 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
             staffAvatar={staffAvatar}
             newMessage={newMessage}
             setNewMessage={setNewMessage}
+            stagedAttachment={stagedAttachment}
+            setStagedAttachment={setStagedAttachment}
             handleSendMessage={handleSendMessage}
+            handleAttachmentClick={handleAttachmentClick}
+            removeStagedAttachment={removeStagedAttachment}
             isTicketLockedByOther={isTicketLockedByOther}
+            fileInputRef={fileInputRef}
+            handleFileSelect={handleFileSelect}
         />
       </div>
     </div>

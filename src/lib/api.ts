@@ -212,7 +212,6 @@ export const createTicket = async (ticketFormData: FormData): Promise<Ticket> =>
         method: 'POST',
         body: ticketFormData
     });
-    // The API returns a flat ticket object directly on success.
     return mapApiTicketToTicket(response);
 };
 
@@ -244,14 +243,21 @@ export const updateTicketStatus = async (ticketId: string, newStatus: TicketStat
     return mapApiTicketToTicket(updatedApiTicket);
 }
 
-export const createTicketMessage = async (messageData: CreateTicketMessageClientPayload): Promise<Message> => {
-  const apiPayload = {
-    ticket_id: messageData.ticketId,
-    from_role: messageData.from,
-    text: messageData.text,
-    time: new Date().toISOString(),
-  };
-  const newApiMessage = await apiFetch<ApiMessage>(`/ticket-messages`, { method: 'POST', body: JSON.stringify(apiPayload) });
+export const createTicketMessage = async (messageData: CreateTicketMessageClientPayload, ticketId: string): Promise<Message> => {
+  const formData = new FormData();
+  formData.append('ticket_id', ticketId);
+  formData.append('from_role', messageData.from);
+  formData.append('text', messageData.text);
+  
+  if (messageData.attachment && messageData.attachment.file) {
+    formData.append('attachment', messageData.attachment.file);
+  }
+
+  const newApiMessage = await apiFetch<ApiMessage>(`/ticket-messages`, { 
+    method: 'POST', 
+    body: formData 
+  });
+  
   return mapApiMessageToMessage(newApiMessage);
 };
 
