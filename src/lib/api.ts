@@ -212,11 +212,7 @@ export const createTicket = async (ticketFormData: FormData): Promise<Ticket> =>
         method: 'POST',
         body: ticketFormData
     });
-    // Assuming the API returns { "ticket": { ... } }
-    if (response && response.ticket) {
-        return mapApiTicketToTicket(response.ticket);
-    }
-    // Fallback for cases where it might return the ticket object directly
+    // The API returns a flat ticket object directly on success.
     return mapApiTicketToTicket(response);
 };
 
