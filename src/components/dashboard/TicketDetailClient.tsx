@@ -328,11 +328,11 @@ const TicketDiscussionContent = ({
                 {stagedAttachment.type === 'image' ? (
                   <Image src={stagedAttachment.url} alt={stagedAttachment.name} width={32} height={32} className="rounded object-cover" data-ai-hint="image preview"/>
                 ) : (
-                  <FileText className="h-6 w-6 text-muted-foreground" />
+                  <FileText className="h-5 w-5 text-muted-foreground" />
                 )}
                 <span className="text-sm text-muted-foreground truncate">{stagedAttachment.name}</span>
               </div>
-              <Button type="button" variant="ghost" size="icon" onClick={removeStagedAttachment} className="text-destructive hover:text-destructive">
+              <Button type="button" variant="ghost" size="icon" onClick={removeStagedAttachment} className="text-destructive hover:text-destructive h-6 w-6">
                 <XCircle className="h-5 w-5" />
               </Button>
             </div>
@@ -516,11 +516,15 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
         from: userRole,
         text: newMessage.trim(),
         attachment: stagedAttachment || undefined,
+        time: new Date().toISOString(),
       }
     });
 
     setNewMessage("");
     setStagedAttachment(null);
+    if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
 
     toast({
       title: userRole === 'staff' ? "Reply Sent" : "Message Sent",
