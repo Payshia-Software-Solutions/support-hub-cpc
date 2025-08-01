@@ -56,9 +56,19 @@ export default function CreateTicketPage() {
     formData.append('studentAvatar', user.avatar);
     formData.append('status', 'Open');
 
-    attachments.forEach((att, index) => {
+    // Append a JSON string of attachment metadata
+    if (attachments.length > 0) {
+      const attachmentMetadata = attachments.map(att => ({
+        type: att.type,
+        name: att.name,
+      }));
+      formData.append('attachments', JSON.stringify(attachmentMetadata));
+    }
+
+    // Append each file with a key like `attachments[]`
+    attachments.forEach(att => {
       if (att.file) {
-        formData.append(`attachments[${index}]`, att.file, att.name);
+        formData.append('attachments[]', att.file, att.name);
       }
     });
 
