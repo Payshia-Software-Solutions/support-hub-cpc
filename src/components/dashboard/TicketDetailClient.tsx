@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle } from "lucide-react"; 
+import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle, ZoomIn } from "lucide-react"; 
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; 
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -22,7 +22,7 @@ import { getTicketMessages, createTicketMessage, updateTicketStatus } from "@/li
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { Skeleton } from "../ui/skeleton";
 import Image from "next/image";
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 
 interface TicketDetailClientProps {
   initialTicket: Ticket;
@@ -47,6 +47,22 @@ const priorityColors: Record<Ticket["priority"], string> = {
 };
 
 const defaultStaffAvatar = "https://placehold.co/40x40.png?text=S";
+
+// --- Sub-components for better readability ---
+
+const ImageViewerDialog = ({ imageUrl, onOpenChange }: { imageUrl: string | null; onOpenChange: (open: boolean) => void }) => {
+    if (!imageUrl) return null;
+    return (
+        <Dialog open={!!imageUrl} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-3xl p-2 sm:p-4">
+                <div className="relative aspect-video w-full">
+                    <Image src={imageUrl} alt="Full size image view" layout="fill" objectFit="contain" />
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 const TicketInfoContent = memo(({ 
   ticket, 
@@ -229,6 +245,7 @@ const TicketDiscussionContent = ({
     handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void,
  }) => {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const [viewingImage, setViewingImage] = useState<string | null>(null);
 
     const { data: messages, isLoading, isError } = useQuery<Message[]>({
         queryKey: ['ticketMessages', ticket.id],
@@ -247,6 +264,7 @@ const TicketDiscussionContent = ({
 
     return (
     <div className="flex flex-col h-full bg-background">
+        <ImageViewerDialog imageUrl={viewingImage} onOpenChange={(open) => !open && setViewingImage(null)} />
         <header className="px-4 py-3 border-b bg-card flex items-center gap-3 shrink-0">
           <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-primary" />
           <h2 className="font-semibold text-md md:text-lg">Ticket Discussion</h2>
@@ -303,15 +321,19 @@ const TicketDiscussionContent = ({
                     )}
                     >
                      {message.attachments?.map((att, index) => att.type === 'image' && att.url && (
-                        <div key={index} className="mb-2">
+                        <div key={index} className="mb-2 group relative">
                             <Image
                                 src={att.url}
                                 alt={att.name}
                                 width={200}
                                 height={200}
-                                className="rounded-md object-cover"
+                                className="rounded-md object-cover cursor-pointer"
                                 data-ai-hint="attached image"
+                                onClick={() => setViewingImage(att.url)}
                             />
+                             <div className="absolute inset-0 bg-black/40 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <ZoomIn className="h-8 w-8 text-white"/>
+                            </div>
                         </div>
                     ))}
                     {message.text && <p className="text-sm">{message.text}</p>}
