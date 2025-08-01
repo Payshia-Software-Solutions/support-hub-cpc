@@ -10,13 +10,17 @@ const PAYMENT_API_BASE_URL = process.env.NEXT_PUBLIC_PAYMENT_API_URL || 'https:/
 
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   try {
+    const headers: HeadersInit = options.headers || {};
+    
+    // Do not set Content-Type for FormData, the browser does it
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      credentials: 'omit', 
+      headers,
+      credentials: 'omit',
     });
 
     if (!response.ok) {
@@ -202,14 +206,15 @@ export const getTicketMessages = async (ticketId: string): Promise<Message[]> =>
     if (!apiMessages) return [];
     return apiMessages.map(mapApiMessageToMessage);
 };
-export const createTicket = async (ticketData: CreateTicketPayload): Promise<Ticket> => {
-    const apiPayload = mapTicketToApiPayload({
-        ...ticketData,
-        studentName: ticketData.studentNumber, 
+
+export const createTicket = async (ticketFormData: FormData): Promise<Ticket> => {
+    const newApiTicket = await apiFetch<any>('/tickets', {
+        method: 'POST',
+        body: ticketFormData
     });
-    const newApiTicket = await apiFetch<any>('/tickets', { method: 'POST', body: JSON.stringify(apiPayload) });
     return mapApiTicketToTicket(newApiTicket);
 };
+
 export const updateTicket = async (ticketData: UpdateTicketPayload): Promise<Ticket> => {
     const apiPayload = mapTicketToApiPayload(ticketData);
     const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketData.id}`, { method: 'POST', body: JSON.stringify(apiPayload) });

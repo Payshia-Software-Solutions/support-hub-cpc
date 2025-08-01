@@ -15,7 +15,7 @@ export default function CreateTicketPage() {
   const { user } = useAuth();
 
   const createTicketMutation = useMutation({
-    mutationFn: createTicket,
+    mutationFn: (formData: FormData) => createTicket(formData),
     onSuccess: (newTicket: Ticket) => {
       // Invalidate both the general and the user-specific ticket queries
       queryClient.invalidateQueries({ queryKey: ['tickets', user?.username] });
@@ -46,15 +46,23 @@ export default function CreateTicketPage() {
         return;
     }
     
-    createTicketMutation.mutate({
-      ...data,
-      priority: 'Medium', // Default priority
-      studentNumber: user.username,
-      studentName: user.username,
-      studentAvatar: user.avatar,
-      status: 'Open',
-      attachments: attachments,
+    const formData = new FormData();
+    formData.append('subject', data.subject);
+    formData.append('description', data.description);
+    formData.append('category', data.category);
+    formData.append('priority', 'Medium');
+    formData.append('studentNumber', user.username);
+    formData.append('studentName', user.username);
+    formData.append('studentAvatar', user.avatar);
+    formData.append('status', 'Open');
+
+    attachments.forEach((att, index) => {
+      if (att.file) {
+        formData.append(`attachments[${index}]`, att.file, att.name);
+      }
     });
+
+    createTicketMutation.mutate(formData);
   };
 
   return (
