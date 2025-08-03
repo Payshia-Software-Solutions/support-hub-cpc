@@ -321,6 +321,8 @@ const TicketDiscussionContent = ({
               const isStaffMessage = message.from === 'staff';
               const isCurrentUserMessage = (message.from === 'student' && userRole === 'student') || (isStaffMessage && userRole === 'staff');
               const isOptimistic = message.id.startsWith('optimistic-');
+              const hasText = message.text && message.text.trim().length > 0;
+              const hasAttachment = message.attachments && message.attachments.length > 0;
 
               return (
                 <div
@@ -342,15 +344,16 @@ const TicketDiscussionContent = ({
                     </AvatarFallback>
                     </Avatar>
                     <div
-                    className={cn(
-                        "p-3 rounded-xl shadow-sm",
-                        isCurrentUserMessage
-                        ? "bg-primary/90 text-primary-foreground rounded-br-none"
-                        : "bg-card border rounded-bl-none"
-                    )}
+                        className={cn(
+                            "rounded-xl shadow-sm",
+                            isCurrentUserMessage
+                            ? "bg-primary/90 text-primary-foreground rounded-br-none"
+                            : "bg-card border rounded-bl-none",
+                            hasText && "p-3"
+                        )}
                     >
-                     {message.attachments?.map((att, index) => att.type === 'image' && att.url && (
-                        <div key={index} className="mb-2 group relative cursor-pointer" onClick={() => setViewingImage(att.url)}>
+                     {hasAttachment && message.attachments?.map((att, index) => att.type === 'image' && att.url && (
+                        <div key={index} className={cn(hasText && "mb-2", "group relative cursor-pointer")} onClick={() => setViewingImage(att.url)}>
                             <Image
                                 src={att.url}
                                 alt={att.name}
@@ -364,8 +367,8 @@ const TicketDiscussionContent = ({
                             </div>
                         </div>
                     ))}
-                    {message.text && <p className="text-sm">{message.text}</p>}
-                    <p className="text-xs mt-1 opacity-70">
+                    {hasText && <p className="text-sm">{message.text}</p>}
+                    <p className={cn("text-xs mt-1 text-right opacity-70", hasText && "pr-1")}>
                         {new Date(message.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </p>
                     </div>
@@ -463,22 +466,11 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
       mutationFn: (payload: {data: CreateTicketMessageClientPayload, ticketId: string}) => createTicketMessage(payload.data, payload.ticketId),
       onMutate: async ({data}) => {
           setIsSending(true);
-          const { ticketId, text, attachments } = data;
+          const { ticketId } = data;
           
           await queryClient.cancelQueries({ queryKey: ['ticketMessages', ticketId] });
           const previousMessages = queryClient.getQueryData<Message[]>(['ticketMessages', ticketId]) || [];
           
-          const optimisticMessage: Message = {
-              id: `optimistic-${Date.now()}`,
-              from: userRole,
-              text: text,
-              time: new Date().toISOString(),
-              avatar: userRole === 'staff' ? staffAvatar : ticket.studentAvatar,
-              attachments: attachments,
-          };
-          queryClient.setQueryData<Message[]>(['ticketMessages', ticketId], (old) => 
-              [...(old || []), optimisticMessage]
-          );
           setNewMessage("");
           setStagedAttachments([]);
           if (fileInputRef.current) {
