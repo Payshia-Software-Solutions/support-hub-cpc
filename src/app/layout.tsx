@@ -34,7 +34,10 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#25D366" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="https://content-provider.pharmacollege.lk/app-icon/apple-touch-icon.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="https://content-provider.pharmacollege.lk/app-icon/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="https://content-provider.pharmacollege.lk/app-icon/favicon-16x16.png" />
+        <link rel="shortcut icon" href="https://content-provider.pharmacollege.lk/app-icon/favicon.ico" />
       </head>
       <body className="font-body antialiased">
         <ThemeProvider
