@@ -491,6 +491,33 @@ const UnreadDivider = () => (
     </div>
 );
 
+const LinkifiedText = ({ text }: { text: string }) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.match(urlRegex)) {
+          return (
+            <a
+              key={index}
+              href={part}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:underline"
+            >
+              {part}
+            </a>
+          );
+        }
+        return <React.Fragment key={index}>{part}</React.Fragment>;
+      })}
+    </>
+  );
+};
+
+
 const TicketDiscussionContent = ({ 
   ticket,
   userRole,
@@ -522,6 +549,7 @@ const TicketDiscussionContent = ({
  }) => {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [viewingImage, setViewingImage] = useState<string | null>(null);
+    const queryClient = useQueryClient();
 
     const { data: messages, isLoading, isError } = useQuery<Message[]>({
         queryKey: ['ticketMessages', ticket.id],
@@ -547,12 +575,14 @@ const TicketDiscussionContent = ({
                 .map(m => String(m.id));
 
             if (unreadIds.length > 0) {
-                markTicketMessagesAsRead(unreadIds).catch(err => {
+                markTicketMessagesAsRead(unreadIds).then(() => {
+                    queryClient.invalidateQueries({ queryKey: ['unreadCount', ticket.id, userRole] });
+                }).catch(err => {
                     console.error("Failed to mark messages as read:", err);
                 });
             }
         }
-    }, [messages, userRole, isLoading]);
+    }, [messages, userRole, isLoading, ticket.id, queryClient]);
 
     // Find the first unread message for the current user
     const firstUnreadIndex = messages?.findIndex(m => m.readStatus === 'Unread' && m.from !== userRole) ?? -1;
@@ -642,7 +672,7 @@ const TicketDiscussionContent = ({
                                 </div>
                             </div>
                         ))}
-                        {hasText && <p className="text-sm p-3 pt-2 pb-1">{message.text}</p>}
+                        {hasText && <p className="text-sm p-3 pt-2 pb-1"><LinkifiedText text={message.text} /></p>}
                         <p className={cn("text-xs mt-1 text-right opacity-70", hasText ? "pr-3 pb-2" : "p-0")}>
                             {new Date(message.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </p>
@@ -1095,4 +1125,3 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     </div>
   );
 }
-
