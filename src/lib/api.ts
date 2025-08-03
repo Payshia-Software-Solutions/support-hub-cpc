@@ -141,6 +141,8 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
         isLocked: apiTicket.is_locked == 1,
         lockedByStaffId: apiTicket.locked_by_staff_id,
         attachments: attachments,
+        lastMessagePreview: apiTicket.last_message_preview,
+        unreadCount: typeof apiTicket.unread_count === 'string' ? parseInt(apiTicket.unread_count, 10) : apiTicket.unread_count,
     };
 }
 

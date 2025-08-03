@@ -10,10 +10,9 @@ import type { Ticket } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle } from "lucide-react";
+import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, MessageSquare } from "lucide-react";
 
 // --- Sub Components ---
 const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boolean }) => {
@@ -107,50 +106,54 @@ export default function StudentDashboardPage() {
             <section>
                  <h2 className="text-2xl font-semibold font-headline mb-4">Recent Tickets</h2>
                  <Card className="shadow-lg">
-                    <CardContent className="p-0">
-                       <div className="relative w-full overflow-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Subject</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Last Updated</TableHead>
-                                    <TableHead></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {isLoading && [...Array(3)].map((_, i) => (
-                                    <TableRow key={i}>
-                                        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                                        <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                        <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
-                                    </TableRow>
-                                ))}
-                                {!isLoading && recentTickets.length > 0 ? recentTickets.map((ticket) => (
-                                    <TableRow key={ticket.id}>
-                                        <TableCell className="font-medium">{ticket.subject}</TableCell>
-                                        <TableCell><Badge variant={ticket.status === 'Closed' ? 'secondary' : 'default'}>{ticket.status}</Badge></TableCell>
-                                        <TableCell>{new Date(ticket.updatedAt || ticket.createdAt).toLocaleDateString()}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" asChild>
-                                                <Link href={`/dashboard/tickets/${ticket.id}`}>
-                                                    <ArrowRight className="h-4 w-4" />
-                                                </Link>
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                )) : (
-                                    !isLoading && (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="h-24 text-center">
-                                                You haven't created any tickets yet.
-                                            </TableCell>
-                                        </TableRow>
-                                    )
-                                )}
-                            </TableBody>
-                        </Table>
+                    <CardContent className="p-4 md:p-6">
+                       <div className="space-y-4">
+                        {isLoading && [...Array(3)].map((_, i) => (
+                            <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
+                                <Skeleton className="h-10 w-10 rounded-full" />
+                                <div className="flex-1 space-y-2">
+                                    <Skeleton className="h-4 w-3/4" />
+                                    <Skeleton className="h-3 w-1/2" />
+                                </div>
+                                <Skeleton className="h-8 w-8 rounded-full" />
+                            </div>
+                        ))}
+                        {!isLoading && recentTickets.length > 0 ? recentTickets.map((ticket) => (
+                            <Link key={ticket.id} href={`/dashboard/tickets/${ticket.id}`} className="block group">
+                                <div className="flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                                    <div className="flex-shrink-0">
+                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                            <MessageSquare className="w-5 h-5 text-primary"/>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start">
+                                            <p className="font-semibold truncate pr-2">{ticket.subject}</p>
+                                            <Badge variant={ticket.status === 'Closed' ? 'secondary' : 'default'}>{ticket.status}</Badge>
+                                        </div>
+                                        <div className="flex justify-between items-end mt-1">
+                                            <p className="text-sm text-muted-foreground truncate pr-2">
+                                                {ticket.lastMessagePreview || "No messages yet."}
+                                            </p>
+                                            {ticket.unreadCount && ticket.unreadCount > 0 && (
+                                                <Badge variant="destructive" className="h-5 px-1.5 text-xs shrink-0 animate-pulse">
+                                                    {ticket.unreadCount} New
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex-shrink-0">
+                                        <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                    </div>
+                                </div>
+                            </Link>
+                        )) : (
+                            !isLoading && (
+                                <div className="text-center py-10 text-muted-foreground">
+                                    You haven't created any tickets yet.
+                                </div>
+                            )
+                        )}
                         </div>
                     </CardContent>
                  </Card>
