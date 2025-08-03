@@ -106,53 +106,55 @@ export default function CreateTicketPage() {
     )
   }
 
+  const messageCard = (
+        <Card className={canCreateTicket ? "border-primary/50 bg-primary/10" : "border-destructive bg-destructive/10"}>
+            <CardHeader>
+                <CardTitle className={canCreateTicket ? "text-primary" : "text-destructive"}>
+                    {canCreateTicket ? `You can create ${ticketsLeft} more ticket${ticketsLeft === 1 ? '' : 's'}.` : 'You have reached the maximum number of open tickets.'}
+                </CardTitle>
+                <CardDescription className={canCreateTicket ? "text-primary/80" : "text-destructive/90"}>
+                    Please close your existing tickets before creating new ones if possible.
+                </CardDescription>
+            </CardHeader>
+        </Card>
+    );
+
+    const openTicketsSection = (
+        <div>
+            <h3 className="font-semibold mb-2 text-card-foreground">Your Open Tickets:</h3>
+            <div className="space-y-3">
+                {openTickets.map(ticket => (
+                    <Link key={ticket.id} href={`/dashboard/tickets/${ticket.id}`} className="block">
+                        <div className="p-3 border rounded-lg bg-card hover:bg-muted transition-colors flex justify-between items-center">
+                            <div>
+                                <p className="font-medium">{ticket.subject}</p>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                    <Badge variant={ticket.status === 'Open' ? 'default' : 'secondary'}>{ticket.status}</Badge>
+                                    <span>ID: {ticket.id}</span>
+                                </div>
+                            </div>
+                            <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                    </Link>
+                ))}
+            </div>
+        </div>
+    );
+
   return (
     <div className="w-full h-full overflow-y-auto">
-       {canCreateTicket ? (
-        <>
-            <div className="p-4 md:px-6">
-                <Card className="border-primary/50 bg-primary/10">
-                    <CardHeader>
-                        <CardTitle className="text-primary">You can create {ticketsLeft} more ticket{ticketsLeft === 1 ? '' : 's'}.</CardTitle>
-                        <CardDescription className="text-primary/80">Please close your existing tickets before creating new ones if possible.</CardDescription>
-                    </CardHeader>
-                </Card>
-            </div>
-            <TicketForm onSubmitTicket={handleTicketSubmit} isSubmitting={createTicketMutation.isPending} />
-        </>
-      ) : (
-        <div className="p-4 md:p-6">
-             <Card className="w-full border-destructive bg-destructive/10">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-destructive">
-                        <AlertCircle /> You have reached the maximum number of open tickets.
-                    </CardTitle>
-                    <CardDescription className="text-destructive/90">
-                        Please wait for your existing tickets to be resolved before creating new ones.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <h3 className="font-semibold mb-2 text-card-foreground">Your Open Tickets:</h3>
-                    <div className="space-y-3">
-                        {openTickets.map(ticket => (
-                            <Link key={ticket.id} href={`/dashboard/tickets/${ticket.id}`} className="block">
-                                <div className="p-3 border rounded-lg bg-card hover:bg-muted transition-colors flex justify-between items-center">
-                                    <div>
-                                        <p className="font-medium">{ticket.subject}</p>
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                                            <Badge variant={ticket.status === 'Open' ? 'default' : 'secondary'}>{ticket.status}</Badge>
-                                            <span>ID: {ticket.id}</span>
-                                        </div>
-                                    </div>
-                                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
+        <div className="p-4 md:px-6">
+            {messageCard}
+            {openTickets.length > 0 && <div className="mt-4">{openTicketsSection}</div>}
         </div>
-      )}
+       
+        {canCreateTicket ? (
+            <TicketForm onSubmitTicket={handleTicketSubmit} isSubmitting={createTicketMutation.isPending} />
+        ) : (
+             <div className="p-4 md:px-6 text-center text-muted-foreground">
+                <p>Please manage your existing tickets to continue.</p>
+            </div>
+        )}
     </div>
   );
 }
