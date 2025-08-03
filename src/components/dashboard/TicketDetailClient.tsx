@@ -530,10 +530,10 @@ const TicketDiscussionContent = ({
     });
 
     useEffect(() => {
-        if (messages && messages.length > 0 && userRole === 'staff') {
+        if (!isLoading && messages && messages.length > 0 && userRole === 'staff') {
             const unreadIds = messages
                 .filter(m => m.readStatus === 'Unread' && m.from === 'student')
-                .map(m => m.id);
+                .map(m => String(m.id));
 
             if (unreadIds.length > 0) {
                 markTicketMessagesAsRead(unreadIds).catch(err => {
@@ -541,7 +541,7 @@ const TicketDiscussionContent = ({
                 });
             }
         }
-    }, [messages, userRole]);
+    }, [messages, userRole, isLoading]);
 
     useEffect(() => {
         if (scrollAreaRef.current) {
