@@ -598,7 +598,7 @@ const TicketDiscussionContent = ({
         <ScrollArea className="flex-1 px-4 py-4" ref={scrollAreaRef}>
         <div className="space-y-6">
             {isLoading && (
-                 <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[75%] mr-auto">
+                 <div className="flex items-end gap-2 max-w-[60%] mr-auto">
                     <Avatar className="h-8 w-8">
                         <AvatarImage 
                             src={userRole === 'staff' ? ticket.studentAvatar : staffAvatar}
@@ -633,7 +633,7 @@ const TicketDiscussionContent = ({
                     {showUnreadDivider && <UnreadDivider />}
                     <div
                         className={cn(
-                        "flex items-end gap-2 max-w-[85%] sm:max-w-[75%]", 
+                        "flex items-end gap-2 max-w-[60%]", 
                         isCurrentUserMessage ? "ml-auto flex-row-reverse" : "mr-auto",
                         isOptimistic && "opacity-60"
                         )}
@@ -682,7 +682,7 @@ const TicketDiscussionContent = ({
               );
             })}
              {isSending && (
-                <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[75%] ml-auto flex-row-reverse">
+                <div className="flex items-end gap-2 max-w-[60%] ml-auto flex-row-reverse">
                     <Avatar className="h-8 w-8">
                        <AvatarImage 
                           src={userRole === 'staff' ? staffAvatar : ticket.studentAvatar} 
