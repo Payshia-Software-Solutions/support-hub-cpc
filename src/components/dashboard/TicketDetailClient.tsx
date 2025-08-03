@@ -20,6 +20,7 @@ import { getTicketMessages, createTicketMessage, updateTicketStatus, markTicketM
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "@/components/ui/dialog";
+import { Separator } from "../ui/separator";
 
 interface TicketDetailClientProps {
   initialTicket: Ticket;
@@ -241,6 +242,15 @@ const TicketInfoContent = memo(({
 });
 TicketInfoContent.displayName = "TicketInfoContent";
 
+const UnreadDivider = () => (
+    <div className="relative my-4">
+        <Separator />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 bg-background">
+            <span className="text-xs font-semibold text-destructive">Unread Messages</span>
+        </div>
+    </div>
+);
+
 const TicketDiscussionContent = ({ 
   ticket,
   userRole,
@@ -303,6 +313,9 @@ const TicketDiscussionContent = ({
         }
     }, [messages, isSending]);
 
+    // Find the first unread message for the current user
+    const firstUnreadIndex = messages?.findIndex(m => m.readStatus === 'Unread' && m.from !== userRole) ?? -1;
+
     return (
     <div className="flex flex-col h-full bg-background">
         <ImageViewerDialog imageUrl={viewingImage} onOpenChange={(open) => !open && setViewingImage(null)} />
@@ -331,7 +344,7 @@ const TicketDiscussionContent = ({
                 </div>
             )}
             {isError && <p className="text-destructive text-center">Failed to load messages.</p>}
-            {!isLoading && messages?.map((message) => {
+            {!isLoading && messages?.map((message, index) => {
               const isStaffMessage = message.from === 'staff';
               const isCurrentUserMessage = (message.from === 'student' && userRole === 'student') || (isStaffMessage && userRole === 'staff');
               const isOptimistic = message.id.startsWith('optimistic-');
@@ -342,55 +355,59 @@ const TicketDiscussionContent = ({
                 return null;
               }
 
+              const showUnreadDivider = firstUnreadIndex !== -1 && index === firstUnreadIndex;
+
               return (
-                <div
-                    key={message.id}
-                    className={cn(
-                    "flex items-end gap-2 max-w-[85%] sm:max-w-[75%]", 
-                    isCurrentUserMessage ? "ml-auto flex-row-reverse" : "mr-auto",
-                    isOptimistic && "opacity-60"
-                    )}
-                >
-                    <Avatar className="h-8 w-8">
-                    <AvatarImage 
-                        src={isStaffMessage ? (message.avatar || staffAvatar) : ticket.studentAvatar} 
-                        alt={message.from} 
-                        data-ai-hint="avatar person"
-                    />
-                    <AvatarFallback>
-                        {isStaffMessage ? 'S' : (ticket.studentName?.charAt(0).toUpperCase() || 'U')}
-                    </AvatarFallback>
-                    </Avatar>
+                <React.Fragment key={message.id}>
+                    {showUnreadDivider && <UnreadDivider />}
                     <div
                         className={cn(
-                            "rounded-xl shadow-sm",
-                            isCurrentUserMessage
-                            ? "bg-primary/90 text-primary-foreground rounded-br-none"
-                            : "bg-card border rounded-bl-none",
-                            !hasText && hasAttachment && "p-1.5"
+                        "flex items-end gap-2 max-w-[85%] sm:max-w-[75%]", 
+                        isCurrentUserMessage ? "ml-auto flex-row-reverse" : "mr-auto",
+                        isOptimistic && "opacity-60"
                         )}
                     >
-                     {hasAttachment && message.attachments?.map((att, index) => att.type === 'image' && att.url && (
-                        <div key={index} className={cn(hasText && "mb-2", "group relative cursor-pointer")} onClick={() => setViewingImage(att.url)}>
-                            <Image
-                                src={att.url}
-                                alt={att.name}
-                                width={200}
-                                height={200}
-                                className="rounded-md object-cover"
-                                data-ai-hint="attached image"
-                            />
-                             <div className="absolute inset-0 bg-black/40 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <ZoomIn className="h-8 w-8 text-white"/>
+                        <Avatar className="h-8 w-8">
+                        <AvatarImage 
+                            src={isStaffMessage ? (message.avatar || staffAvatar) : ticket.studentAvatar} 
+                            alt={message.from} 
+                            data-ai-hint="avatar person"
+                        />
+                        <AvatarFallback>
+                            {isStaffMessage ? 'S' : (ticket.studentName?.charAt(0).toUpperCase() || 'U')}
+                        </AvatarFallback>
+                        </Avatar>
+                        <div
+                            className={cn(
+                                "rounded-xl shadow-sm",
+                                isCurrentUserMessage
+                                ? "bg-primary/90 text-primary-foreground rounded-br-none"
+                                : "bg-card border rounded-bl-none",
+                                !hasText && hasAttachment && "p-1.5"
+                            )}
+                        >
+                        {hasAttachment && message.attachments?.map((att, index) => att.type === 'image' && att.url && (
+                            <div key={index} className={cn(hasText && "mb-2", "group relative cursor-pointer")} onClick={() => setViewingImage(att.url)}>
+                                <Image
+                                    src={att.url}
+                                    alt={att.name}
+                                    width={200}
+                                    height={200}
+                                    className="rounded-md object-cover"
+                                    data-ai-hint="attached image"
+                                />
+                                <div className="absolute inset-0 bg-black/40 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <ZoomIn className="h-8 w-8 text-white"/>
+                                </div>
                             </div>
+                        ))}
+                        {hasText && <p className="text-sm p-3 pt-2 pb-1">{message.text}</p>}
+                        <p className={cn("text-xs mt-1 text-right opacity-70", hasText ? "pr-3 pb-2" : "p-0")}>
+                            {new Date(message.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </p>
                         </div>
-                    ))}
-                    {hasText && <p className="text-sm p-3 pt-2 pb-1">{message.text}</p>}
-                    <p className={cn("text-xs mt-1 text-right opacity-70", hasText ? "pr-3 pb-2" : "p-0")}>
-                        {new Date(message.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </p>
                     </div>
-                </div>
+                </React.Fragment>
               );
             })}
              {isSending && (

@@ -240,9 +240,11 @@ export const markTicketMessagesAsRead = async (messageIds: string[]): Promise<an
     if (messageIds.length === 0) {
         return Promise.resolve({ success: true, message: 'No messages to mark as read.' });
     }
-    // The API seems to expect one ID at a time. We'll send requests in parallel.
     const promises = messageIds.map(id => 
-        apiFetch(`/ticket-messages/update-read-status/${id}/`, { method: 'PUT' })
+        apiFetch(`/ticket-messages/update-read-status/${id}/`, { 
+            method: 'PUT',
+            body: JSON.stringify({ read_status: "Read" }) // Send body with new status
+        })
     );
     return Promise.all(promises);
 };
