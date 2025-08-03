@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -20,8 +20,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import type { TicketCategory, Attachment as ApiAttachment } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Book, CreditCard, Gamepad2, Truck, MoreHorizontal, ArrowLeft, Video, ClipboardList, ClipboardCheck, Award, Paperclip, FileText, XCircle } from "lucide-react";
+import { Book, CreditCard, Gamepad2, Truck, MoreHorizontal, ArrowLeft, Video, ClipboardList, ClipboardCheck, Award, Paperclip, FileText, XCircle, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { Progress } from "@/components/ui/progress";
 
 // Local attachment type with a unique ID for state management
 interface Attachment extends ApiAttachment {
@@ -30,7 +31,7 @@ interface Attachment extends ApiAttachment {
 
 
 const ticketFormSchema = z.object({
-  subject: z.string().min(5, "Topic must be at least 5 characters.").max(20, "Topic must be 20 characters or less."),
+  subject: z.string().min(5, "Topic must be at least 5 characters.").max(100, "Topic must be 100 characters or less."),
   category: z.enum(["Course", "Payment", "Games", "Delivery Packs", "Recordings", "Assignments", "Quiz", "Exam", "Other"], {
     required_error: "You need to select a ticket category.",
   }),
@@ -60,6 +61,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   const [selectedCategory, setSelectedCategory] = useState<TicketCategory | null>(null);
   const [stagedAttachments, setStagedAttachments] = useState<Attachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [progress, setProgress] = useState(0);
 
   const form = useForm<TicketFormValues>({
     resolver: zodResolver(ticketFormSchema),
@@ -68,6 +70,28 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
       description: "",
     },
   });
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isSubmitting) {
+      setProgress(0);
+      // Simulate progress for a better user experience
+      timer = setInterval(() => {
+        setProgress(oldProgress => {
+          if (oldProgress >= 95) {
+            return oldProgress;
+          }
+          return Math.min(oldProgress + 10, 95);
+        });
+      }, 500);
+    } else {
+      setProgress(0);
+    }
+    return () => {
+      clearInterval(timer);
+    };
+  }, [isSubmitting]);
+
 
   function onSubmit(data: TicketFormValues) {
     const apiAttachments: ApiAttachment[] = stagedAttachments.map(({ id, ...rest }) => rest);
@@ -132,6 +156,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
     <Card className="w-full border-0 md:border-y-0 rounded-none bg-transparent mb-16">
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
+                 {isSubmitting && <Progress value={progress} className="w-full h-1" />}
                 <CardHeader className="p-6">
                     {!selectedCategory ? (
                         <>
@@ -226,6 +251,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                 {selectedCategory && (
                      <CardFooter className="px-6">
                         <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         {isSubmitting ? "Submitting..." : "Submit Ticket"}
                         </Button>
                     </CardFooter>
