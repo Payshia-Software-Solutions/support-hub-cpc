@@ -4,14 +4,14 @@
 
 import * as React from "react";
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction, memo } from "react";
-import type { Ticket, Message, TicketStatus, StaffMember, CreateTicketMessageClientPayload, Attachment, FullStudentData } from "@/lib/types";
+import type { Ticket, Message, TicketStatus, StaffMember, CreateTicketMessageClientPayload, Attachment, FullStudentData, StudentEnrollment, ApiPaymentRecord } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle, ZoomIn, RotateCw, ZoomOut, Mail, Phone, Loader2, Building, Home, MapPin } from "lucide-react"; 
+import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle, ZoomIn, RotateCw, ZoomOut, Mail, Phone, Loader2, Building, Home, MapPin, CheckCircle, XCircle as XCircleEligibility } from "lucide-react"; 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"; 
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,10 @@ import Image from "next/image";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { Separator } from "../ui/separator";
 import { Skeleton } from "../ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 
 interface TicketDetailClientProps {
   initialTicket: Ticket;
@@ -89,8 +93,115 @@ const ImageViewerDialog = ({ imageUrl, onOpenChange }: { imageUrl: string | null
     );
 };
 
+const EnrollmentCard = ({ enrollment }: { enrollment: StudentEnrollment }) => (
+    <Card>
+        <CardHeader>
+            <CardTitle>{enrollment.parent_course_name}</CardTitle>
+            <CardDescription>Course Code: {enrollment.course_code} | Batch: {enrollment.batch_name}</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Accordion type="multiple" className="w-full">
+                <AccordionItem value="assignments">
+                    <AccordionTrigger>Assignment Grades (Avg: {enrollment.assignment_grades.average_grade}%)</AccordionTrigger>
+                    <AccordionContent>
+                        <Table>
+                           <TableHeader><TableRow><TableHead>Assignment</TableHead><TableHead className="text-right">Grade</TableHead></TableRow></TableHeader>
+                           <TableBody>
+                                {enrollment.assignment_grades.assignments.map(a => (
+                                    <TableRow key={a.assignment_id}><TableCell>{a.assignment_name}</TableCell><TableCell className="text-right">{parseFloat(a.grade).toFixed(2)}%</TableCell></TableRow>
+                                ))}
+                           </TableBody>
+                        </Table>
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="deliveries">
+                    <AccordionTrigger>Delivery Orders ({enrollment.deliveryOrders.length})</AccordionTrigger>
+                     <AccordionContent>
+                        {/* Mobile view */}
+                        <div className="md:hidden space-y-3">
+                            {enrollment.deliveryOrders.map(d => (
+                                <div key={d.id} className="p-3 border rounded-md text-sm space-y-1">
+                                    <p className="font-medium">{d.delivery_title}</p>
+                                    <p className="text-muted-foreground"><strong className="text-foreground">Tracking #:</strong> <span className="whitespace-nowrap break-all">{d.tracking_number}</span></p>
+                                    <p className="text-muted-foreground"><strong className="text-foreground">Status:</strong> {d.active_status}</p>
+                                </div>
+                            ))}
+                        </div>
+                        {/* Desktop view */}
+                        <div className="hidden md:block">
+                            <Table>
+                               <TableHeader><TableRow><TableHead>Order</TableHead><TableHead>Tracking #</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                               <TableBody>
+                                    {enrollment.deliveryOrders.map(d => (
+                                        <TableRow key={d.id}>
+                                            <TableCell>{d.delivery_title}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{d.tracking_number}</TableCell>
+                                            <TableCell>{d.active_status}</TableCell>
+                                        </TableRow>
+                                    ))}
+                               </TableBody>
+                            </Table>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="certificates">
+                    <AccordionTrigger>Certificate Records ({enrollment.certificateRecords.length})</AccordionTrigger>
+                     <AccordionContent>
+                        {/* Mobile view */}
+                        <div className="md:hidden space-y-3">
+                            {enrollment.certificateRecords.map(c => (
+                                <div key={c.id} className="p-3 border rounded-md text-sm space-y-1">
+                                    <p className="font-medium">{c.type}</p>
+                                    <p className="text-muted-foreground"><strong className="text-foreground">ID:</strong> {c.certificate_id}</p>
+                                    <p className="text-muted-foreground"><strong className="text-foreground">Printed On:</strong> <span className="whitespace-nowrap">{new Date(c.print_date).toLocaleDateString()}</span></p>
+                                </div>
+                            ))}
+                        </div>
+                        {/* Desktop view */}
+                        <div className="hidden md:block">
+                            <Table>
+                               <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>ID</TableHead><TableHead>Printed On</TableHead></TableRow></TableHeader>
+                               <TableBody>
+                                    {enrollment.certificateRecords.map(c => (
+                                        <TableRow key={c.id}>
+                                            <TableCell>{c.type}</TableCell>
+                                            <TableCell>{c.certificate_id}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{new Date(c.print_date).toLocaleDateString()}</TableCell>
+                                        </TableRow>
+                                    ))}
+                               </TableBody>
+                            </Table>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="eligibility">
+                    <AccordionTrigger className="flex items-center gap-2">
+                        Certificate Eligibility 
+                        <Badge variant={enrollment.certificate_eligibility ? 'default' : 'destructive'}>
+                            {enrollment.certificate_eligibility ? "Eligible" : "Not Eligible"}
+                        </Badge>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                        <ul className="space-y-2">
+                            {enrollment.criteria_details.map(c => (
+                                <li key={c.id} className="flex items-center justify-between p-2 rounded-md border">
+                                    <div className="flex items-center gap-2">
+                                        {c.evaluation.completed ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircleEligibility className="h-5 w-5 text-red-500" />}
+                                        <span>{c.list_name}</span>
+                                    </div>
+                                    <span className="text-sm text-muted-foreground">({c.evaluation.currentValue} / {c.evaluation.requiredValue})</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
+        </CardContent>
+    </Card>
+);
+
 const StudentInfoDisplay = ({ studentInfo }: { studentInfo: FullStudentData }) => {
-    const { studentInfo: details } = studentInfo;
+    const { studentInfo: details, studentBalance, studentEnrollments } = studentInfo;
 
     const infoItem = (icon: React.ReactNode, label: string, value: string | undefined | null) => {
         if (!value) return null;
@@ -105,38 +216,85 @@ const StudentInfoDisplay = ({ studentInfo }: { studentInfo: FullStudentData }) =
         );
     };
 
+    const paymentRecordsArray = Object.values(studentBalance.paymentRecords || {});
+    const enrollmentsArray = Object.values(studentEnrollments || {});
+
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-lg">Student Profile</CardTitle>
-                <CardDescription>{details.student_id}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="space-y-3">
-                    <h4 className="font-semibold text-sm">Personal</h4>
-                    {infoItem(<User className="h-4 w-4"/>, "Full Name", details.full_name)}
-                    {infoItem(<User className="h-4 w-4"/>, "Name with Initials", details.name_with_initials)}
-                    {infoItem(<User className="h-4 w-4"/>, "Name on Certificate", details.name_on_certificate)}
-                    {infoItem(<User className="h-4 w-4"/>, "NIC", details.nic)}
+        <Tabs defaultValue="profile" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="profile">Profile</TabsTrigger>
+                <TabsTrigger value="payments">Payments</TabsTrigger>
+                <TabsTrigger value="enrollments">Enrollments</TabsTrigger>
+            </TabsList>
+            <TabsContent value="profile" className="mt-4">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">Student Profile</CardTitle>
+                        <CardDescription>{details.student_id}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="space-y-3">
+                            <h4 className="font-semibold text-sm">Personal</h4>
+                            {infoItem(<User className="h-4 w-4"/>, "Full Name", details.full_name)}
+                            {infoItem(<User className="h-4 w-4"/>, "Name with Initials", details.name_with_initials)}
+                            {infoItem(<User className="h-4 w-4"/>, "Name on Certificate", details.name_on_certificate)}
+                            {infoItem(<User className="h-4 w-4"/>, "NIC", details.nic)}
+                        </div>
+                        <Separator/>
+                        <div className="space-y-3">
+                            <h4 className="font-semibold text-sm">Contact</h4>
+                            {infoItem(<Mail className="h-4 w-4"/>, "Email", details.e_mail)}
+                            {infoItem(<Phone className="h-4 w-4"/>, "Phone 1", details.telephone_1)}
+                            {infoItem(<Phone className="h-4 w-4"/>, "Phone 2", details.telephone_2)}
+                        </div>
+                        <Separator/>
+                        <div className="space-y-3">
+                            <h4 className="font-semibold text-sm">Address</h4>
+                            {infoItem(<Home className="h-4 w-4"/>, "Address Line 1", details.address_line_1)}
+                            {infoItem(<Home className="h-4 w-4"/>, "Address Line 2", details.address_line_2)}
+                            {infoItem(<MapPin className="h-4 w-4"/>, "City", details.city)}
+                            {infoItem(<Building className="h-4 w-4"/>, "District", details.district)}
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="payments" className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Paid</CardTitle></CardHeader>
+                        <CardContent><p className="text-2xl font-bold">LKR {studentBalance.totalPaymentAmount.toLocaleString()}</p></CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Outstanding</CardTitle></CardHeader>
+                        <CardContent><p className="text-2xl font-bold text-destructive">LKR {studentBalance.studentBalance.toLocaleString()}</p></CardContent>
+                    </Card>
                 </div>
-                <Separator/>
-                <div className="space-y-3">
-                    <h4 className="font-semibold text-sm">Contact</h4>
-                    {infoItem(<Mail className="h-4 w-4"/>, "Email", details.e_mail)}
-                    {infoItem(<Phone className="h-4 w-4"/>, "Phone 1", details.telephone_1)}
-                    {infoItem(<Phone className="h-4 w-4"/>, "Phone 2", details.telephone_2)}
-                </div>
-                <Separator/>
-                <div className="space-y-3">
-                    <h4 className="font-semibold text-sm">Address</h4>
-                    {infoItem(<Home className="h-4 w-4"/>, "Address Line 1", details.address_line_1)}
-                    {infoItem(<Home className="h-4 w-4"/>, "Address Line 2", details.address_line_2)}
-                    {infoItem(<MapPin className="h-4 w-4"/>, "City", details.city)}
-                    {infoItem(<Building className="h-4 w-4"/>, "District", details.district)}
-                </div>
-            </CardContent>
-        </Card>
-    )
+                 <Card>
+                    <CardHeader><CardTitle className="text-lg">Payment History</CardTitle></CardHeader>
+                    <CardContent>
+                         <Table>
+                            <TableHeader><TableRow><TableHead>Receipt #</TableHead><TableHead>Course</TableHead><TableHead>Amount</TableHead><TableHead>Date</TableHead></TableRow></TableHeader>
+                            <TableBody>
+                                {paymentRecordsArray.map(rec => (
+                                    <TableRow key={rec.id}>
+                                        <TableCell className="font-mono text-xs">{rec.receipt_number}</TableCell>
+                                        <TableCell>{rec.course_code}</TableCell>
+                                        <TableCell>{parseFloat(rec.paid_amount).toLocaleString()}</TableCell>
+                                        <TableCell>{rec.paid_date}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+             <TabsContent value="enrollments" className="mt-4 space-y-4">
+                {enrollmentsArray.map(enrollment => (
+                    <EnrollmentCard key={enrollment.id} enrollment={enrollment} />
+                ))}
+             </TabsContent>
+        </Tabs>
+    );
 };
 
 

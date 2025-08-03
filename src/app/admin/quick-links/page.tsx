@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -14,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { searchStudents, getStudentFullInfo } from '@/lib/api';
-import type { StudentSearchResult, FullStudentData, StudentBalance, StudentEnrollment, DeliveryOrder, CertificateRecord } from '@/lib/types';
+import type { StudentSearchResult, FullStudentData, StudentBalance, StudentEnrollment, DeliveryOrder, CertificateRecord, ApiPaymentRecord } from '@/lib/types';
 
 
 // --- End Type Definitions ---
@@ -22,57 +23,67 @@ import type { StudentSearchResult, FullStudentData, StudentBalance, StudentEnrol
 
 // --- Sub-components for displaying data ---
 
-const PaymentHistory = ({ balance }: { balance: StudentBalance }) => (
-    <Card>
-        <CardHeader>
-            <CardTitle>Full Payment History</CardTitle>
-            <CardDescription>A complete record of all payments made by the student.</CardDescription>
-        </CardHeader>
-        <CardContent>
-             {/* Mobile View: List of Cards */}
-            <div className="md:hidden space-y-4">
-                {Object.values(balance.paymentRecords).map(rec => (
-                    <div key={rec.id} className="p-4 border rounded-lg space-y-2 text-sm">
-                        <div className="flex justify-between items-center font-medium">
-                            <span className="break-all">{rec.receipt_number}</span>
-                            <Badge variant={rec.payment_status === 'Paid' ? 'default' : 'secondary'}>{rec.payment_status}</Badge>
+const PaymentHistory = ({ balance }: { balance: StudentBalance }) => {
+    const paymentRecordsArray = Object.values(balance.paymentRecords || {});
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Full Payment History</CardTitle>
+                <CardDescription>A complete record of all payments made by the student.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {paymentRecordsArray.length > 0 ? (
+                    <>
+                        {/* Mobile View: List of Cards */}
+                        <div className="md:hidden space-y-4">
+                            {paymentRecordsArray.map(rec => (
+                                <div key={rec.id} className="p-4 border rounded-lg space-y-2 text-sm">
+                                    <div className="flex justify-between items-center font-medium">
+                                        <span className="break-all">{rec.receipt_number}</span>
+                                        <Badge variant={rec.payment_status === 'Paid' ? 'default' : 'secondary'}>{rec.payment_status}</Badge>
+                                    </div>
+                                    <div className="text-muted-foreground">
+                                        <p><strong className="text-foreground">Course:</strong> {rec.course_code}</p>
+                                        <p><strong className="text-foreground">Amount:</strong> LKR {parseFloat(rec.paid_amount).toLocaleString()}</p>
+                                        <p><strong className="text-foreground">Date:</strong> {rec.paid_date}</p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <div className="text-muted-foreground">
-                            <p><strong className="text-foreground">Course:</strong> {rec.course_code}</p>
-                            <p><strong className="text-foreground">Amount:</strong> LKR {parseFloat(rec.paid_amount).toLocaleString()}</p>
-                            <p><strong className="text-foreground">Date:</strong> {rec.paid_date}</p>
+                        {/* Desktop View: Table */}
+                        <div className="hidden md:block">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Receipt #</TableHead>
+                                        <TableHead>Course</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Status</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {paymentRecordsArray.map(rec => (
+                                        <TableRow key={rec.id}>
+                                            <TableCell className="font-medium whitespace-nowrap">{rec.receipt_number}</TableCell>
+                                            <TableCell>{rec.course_code}</TableCell>
+                                            <TableCell className="text-right whitespace-nowrap">LKR {parseFloat(rec.paid_amount).toLocaleString()}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{rec.paid_date}</TableCell>
+                                            <TableCell><Badge variant={rec.payment_status === 'Paid' ? 'default' : 'secondary'}>{rec.payment_status}</Badge></TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
                         </div>
-                    </div>
-                ))}
-            </div>
-            {/* Desktop View: Table */}
-            <div className="hidden md:block">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Receipt #</TableHead>
-                            <TableHead>Course</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Status</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {Object.values(balance.paymentRecords).map(rec => (
-                            <TableRow key={rec.id}>
-                                <TableCell className="font-medium whitespace-nowrap">{rec.receipt_number}</TableCell>
-                                <TableCell>{rec.course_code}</TableCell>
-                                <TableCell className="text-right whitespace-nowrap">LKR {parseFloat(rec.paid_amount).toLocaleString()}</TableCell>
-                                <TableCell className="whitespace-nowrap">{rec.paid_date}</TableCell>
-                                <TableCell><Badge variant={rec.payment_status === 'Paid' ? 'default' : 'secondary'}>{rec.payment_status}</Badge></TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
-        </CardContent>
-    </Card>
-);
+                    </>
+                ) : (
+                    <p className="text-muted-foreground text-center py-4">No payment records found.</p>
+                )}
+            </CardContent>
+        </Card>
+    );
+};
 
 const EnrollmentCard = ({ enrollment }: { enrollment: StudentEnrollment }) => (
     <Card>
@@ -394,11 +405,7 @@ export default function AdminQuickLinksPage() {
                             </div>
                         </TabsContent>
                         <TabsContent value="payments" className="mt-4">
-                            {Object.values(studentData.studentBalance.paymentRecords).length > 0 ? (
-                                <PaymentHistory balance={studentData.studentBalance} />
-                             ) : (
-                                <p className="text-muted-foreground text-center p-4">No payment records found.</p>
-                             )}
+                            <PaymentHistory balance={studentData.studentBalance} />
                         </TabsContent>
                     </Tabs>
                 </div>

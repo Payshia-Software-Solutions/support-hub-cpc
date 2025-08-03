@@ -1,6 +1,5 @@
 
 
-
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -399,6 +398,7 @@ export interface StudentEnrollment {
     course_code: string;
     batch_name: string;
     parent_course_name: string;
+    parent_course_id: string;
     assignment_grades: {
         assignments: AssignmentGrade[];
         average_grade: string;
