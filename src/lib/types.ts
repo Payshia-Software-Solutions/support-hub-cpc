@@ -116,6 +116,7 @@ export type CreateTicketMessageClientPayload = {
   text: string;
   attachments?: Attachment[];
   time: string;
+  createdBy: string;
 };
 
 export type CreateChatMessageClientPayload = {
@@ -371,6 +372,8 @@ export interface DeliveryOrder {
     current_status: string;
     delivery_title: string;
     active_status: string;
+    order_recived_status?: 'Received' | 'Not Received' | null;
+    received_date?: string | null;
 }
 
 export interface CertificateRecord {
@@ -380,6 +383,7 @@ export interface CertificateRecord {
     print_status: string;
     type: string;
     course_code: string;
+    parent_course_id: string;
 }
 
 export interface CriteriaDetail {

@@ -77,7 +77,7 @@ function mapApiMessageToMessage(apiMsg: ApiMessage): Message {
     }
 
     return {
-        id: apiMsg.id,
+        id: String(apiMsg.id),
         from: apiMsg.from_role,
         text: apiMsg.text,
         time: apiMsg.time,
@@ -117,12 +117,13 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
         const attachmentUrls = apiTicket.attachments.split(',');
         attachments = attachmentUrls.map((url: string) => {
             const trimmedUrl = url.trim();
+            if (!trimmedUrl) return null;
             return {
                 type: 'image',
                 url: `${CONTENT_PROVIDER_URL}${trimmedUrl}`,
                 name: trimmedUrl.split('/').pop() || 'attachment.jpg'
             };
-        });
+        }).filter(Boolean) as Attachment[];
     } else if (Array.isArray(apiTicket.attachments)) {
         attachments = apiTicket.attachments;
     }
@@ -271,6 +272,7 @@ export const createTicketMessage = async (messageData: CreateTicketMessageClient
   formData.append('from_role', messageData.from);
   formData.append('text', messageData.text);
   formData.append('time', new Date().toISOString());
+  formData.append('created_by', messageData.createdBy);
 
   if (messageData.attachments && messageData.attachments.length > 0) {
     const attachmentMetadata = messageData.attachments.map(att => ({

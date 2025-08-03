@@ -28,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 interface TicketDetailClientProps {
@@ -735,6 +736,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [isStudentInfoDialogOpen, setIsStudentInfoDialogOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   
   useEffect(() => {
     setTicket(initialTicket);
@@ -857,7 +859,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   };
 
   const handleSendMessage = () => {
-    if (newMessage.trim() === "" && stagedAttachments.length === 0) return;
+    if ((newMessage.trim() === "" && stagedAttachments.length === 0) || !user?.username) return;
     if (userRole === 'staff' && isTicketLockedByOther) return;
 
     sendMessageMutation.mutate({
@@ -867,6 +869,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
         text: newMessage.trim(),
         attachments: stagedAttachments,
         time: new Date().toISOString(),
+        createdBy: user.username,
       }
     });
   };
