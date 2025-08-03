@@ -63,12 +63,9 @@ export default function AdminLayout({
   return (
     <ProtectedRoute>
       <MobileDetailActiveProvider>
-        {/* AnnouncementsProvider might not be relevant for admin */}
-        {/* <AnnouncementsProvider> */}
-          <SidebarProvider defaultOpen>
-            <LayoutContent>{children}</LayoutContent>
-          </SidebarProvider>
-        {/* </AnnouncementsProvider> */}
+        <SidebarProvider defaultOpen>
+          <LayoutContent>{children}</LayoutContent>
+        </SidebarProvider>
       </MobileDetailActiveProvider>
     </ProtectedRoute>
   );

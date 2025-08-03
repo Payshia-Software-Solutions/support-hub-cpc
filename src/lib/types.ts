@@ -1,6 +1,5 @@
 
 
-
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -56,17 +55,6 @@ export interface Ticket {
   isLocked?: boolean;
   lockedByStaffId?: string;
   attachments?: Attachment[];
-}
-
-export interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  date: string; 
-  author?: string;
-  category?: 'General' | 'Academic' | 'Events' | 'Urgent';
-  isNew?: boolean; 
-  seenCount?: number;
 }
 
 export interface UserProfile {
@@ -138,8 +126,6 @@ export interface StudentSearchResult {
   student_id: string;
   full_name: string;
 }
-
-export type CreateAnnouncementPayload = Omit<Announcement, 'id' | 'date' | 'isNew' | 'seenCount' | 'author'>;
 
 export interface UserFullDetails {
   id: string;
