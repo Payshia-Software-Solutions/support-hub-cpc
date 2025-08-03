@@ -21,7 +21,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTicketMessages, createTicketMessage, updateTicketStatus, markTicketMessagesAsRead, getStudentFullInfo } from "@/lib/api";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import Image from "next/image";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "../ui/separator";
 import { Skeleton } from "../ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1059,4 +1059,3 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     </div>
   );
 }
-
