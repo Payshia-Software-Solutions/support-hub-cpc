@@ -134,13 +134,13 @@ export default function AdminTicketDetailPage() {
   }, [unlockMutation]);
 
   useEffect(() => {
-    if (ticket && user && !ticket.assignedTo && !assignmentAttempted.current) {
+    if (ticket && user && user.username && !ticket.assignedTo && !assignmentAttempted.current) {
       assignmentAttempted.current = true;
       assignMutation.mutate({
         ticketId: ticket.id,
         assignedTo: user.email,
         assigneeAvatar: user.avatar,
-        lockedByStaffId: ticket.studentNumber,
+        lockedByStaffId: user.username,
       });
     }
   }, [ticket, user, assignMutation]);
