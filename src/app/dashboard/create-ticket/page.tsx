@@ -8,7 +8,6 @@ import { createTicket } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import type { Ticket, Attachment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { Preloader } from "@/components/ui/preloader";
 
 export default function CreateTicketPage() {
   const router = useRouter();
@@ -74,10 +73,6 @@ export default function CreateTicketPage() {
 
     createTicketMutation.mutate(formData);
   };
-  
-  if (createTicketMutation.isPending) {
-    return <Preloader message="Submitting your ticket..." />;
-  }
 
   return (
     <div className="w-full h-full overflow-y-auto">

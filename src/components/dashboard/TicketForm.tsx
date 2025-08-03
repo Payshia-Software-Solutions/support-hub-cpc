@@ -92,6 +92,15 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
     };
   }, [isSubmitting]);
 
+  // Disable form when submitting
+  useEffect(() => {
+      if (isSubmitting) {
+          form.control.disabled = true;
+      } else {
+          form.control.disabled = false;
+      }
+  }, [isSubmitting, form.control]);
+
 
   function onSubmit(data: TicketFormValues) {
     const apiAttachments: ApiAttachment[] = stagedAttachments.map(({ id, ...rest }) => rest);
@@ -165,7 +174,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                         </>
                     ) : (
                          <>
-                            <Button variant="ghost" onClick={handleGoBack} className="w-fit h-auto mb-2 pl-1 text-sm text-muted-foreground hover:text-foreground">
+                            <Button variant="ghost" onClick={handleGoBack} className="w-fit h-auto mb-2 pl-1 text-sm text-muted-foreground hover:text-foreground" disabled={isSubmitting}>
                                 <ArrowLeft className="mr-2 h-4 w-4" /> Change Category
                             </Button>
                             <CardTitle className="text-2xl font-headline">Describe Your Issue</CardTitle>
@@ -197,7 +206,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                                 <FormItem>
                                     <FormLabel>Topic</FormLabel>
                                     <FormControl>
-                                    <Input placeholder="e.g., Issue with course registration" {...field} />
+                                    <Input placeholder="e.g., Issue with course registration" {...field} disabled={isSubmitting} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -214,6 +223,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                                         placeholder="Please describe your issue in detail..."
                                         className="min-h-[150px]"
                                         {...field}
+                                        disabled={isSubmitting}
                                     />
                                     </FormControl>
                                     <FormMessage />
@@ -222,7 +232,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                             />
                             <div>
                               <FormLabel>Attachments (Optional)</FormLabel>
-                               <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" multiple />
+                               <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" multiple disabled={isSubmitting}/>
                                
                                <div className="mt-2 space-y-2">
                                   {stagedAttachments.map(att => (
@@ -235,12 +245,12 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                                         )}
                                         <span className="text-sm text-muted-foreground truncate">{att.name}</span>
                                       </div>
-                                      <Button type="button" variant="ghost" size="icon" onClick={() => removeStagedAttachment(att.id)} className="text-destructive hover:text-destructive h-6 w-6">
+                                      <Button type="button" variant="ghost" size="icon" onClick={() => removeStagedAttachment(att.id)} className="text-destructive hover:text-destructive h-6 w-6" disabled={isSubmitting}>
                                         <XCircle className="h-5 w-5" />
                                       </Button>
                                     </div>
                                   ))}
-                                  <Button type="button" variant="outline" onClick={handleAttachmentClick} className="w-full">
+                                  <Button type="button" variant="outline" onClick={handleAttachmentClick} className="w-full" disabled={isSubmitting}>
                                       <Paperclip className="mr-2 h-4 w-4" /> Add attachment(s)
                                   </Button>
                                </div>
