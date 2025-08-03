@@ -38,7 +38,7 @@ const sheetVariants = cva(
       side: {
         top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
         bottom:
-          "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom rounded-t-2xl",
+          "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
         left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
         right:
           "inset-y-0 right-0 h-full w-3/4  border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
@@ -57,25 +57,54 @@ interface SheetContentProps
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
-  <SheetPortal>
-    <SheetOverlay />
-    <SheetPrimitive.Content
-      ref={ref}
-      className={cn(sheetVariants({ side }), className)}
-      {...props}
-    >
-      <div className="absolute left-1/2 top-3 -translate-x-1/2">
-        <div className="h-2 w-20 rounded-full bg-muted" />
-      </div>
-      {children}
-      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-        <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
-      </SheetPrimitive.Close>
-    </SheetPrimitive.Content>
-  </SheetPortal>
-))
+>(({ side = "right", className, children, ...props }, ref) => {
+    const { onOpenChange } = React.useContext(SheetPrimitive.Context);
+    const contentRef = React.useRef<React.ElementRef<typeof SheetPrimitive.Content>>(null);
+    const startY = React.useRef(0);
+    const startX = React.useRef(0);
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+        startY.current = e.clientY;
+        startX.current = e.clientX;
+    };
+
+    const handlePointerUp = (e: React.PointerEvent) => {
+        const deltaY = e.clientY - startY.current;
+        const deltaX = e.clientX - startX.current;
+
+        // Swipe down to close
+        if (deltaY > 100) {
+            onOpenChange?.(false);
+        }
+        // Swipe left to close
+        if (side === 'left' && deltaX < -100) {
+            onOpenChange?.(false);
+        }
+    };
+
+
+  return (
+    <SheetPortal>
+      <SheetOverlay />
+      <SheetPrimitive.Content
+        ref={ref}
+        className={cn(sheetVariants({ side }), className)}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        {...props}
+      >
+        <div className="absolute left-1/2 top-3 -translate-x-1/2">
+            <div className="h-2 w-20 rounded-full bg-muted" />
+        </div>
+        {children}
+        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </SheetPrimitive.Close>
+      </SheetPrimitive.Content>
+    </SheetPortal>
+  )
+})
 SheetContent.displayName = SheetPrimitive.Content.displayName
 
 const SheetHeader = ({
