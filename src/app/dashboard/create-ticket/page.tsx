@@ -100,7 +100,7 @@ export default function CreateTicketPage() {
   if (createTicketMutation.isPending) {
     return (
         <div className="flex h-full flex-col items-center justify-center gap-4">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <Loader2 className="h-12 h-12 animate-spin text-primary" />
             <p className="text-muted-foreground">Submitting your ticket...</p>
         </div>
     )
