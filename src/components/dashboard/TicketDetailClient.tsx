@@ -530,9 +530,19 @@ const TicketDiscussionContent = ({
     });
 
     useEffect(() => {
-        if (!isLoading && messages && messages.length > 0 && userRole === 'staff') {
+        if (scrollAreaRef.current) {
+            const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+            if (viewport) {
+                viewport.scrollTop = viewport.scrollHeight;
+            }
+        }
+    }, [messages, isSending]);
+
+    useEffect(() => {
+        if (!isLoading && messages && messages.length > 0) {
+            const fromRole = userRole === 'student' ? 'staff' : 'student';
             const unreadIds = messages
-                .filter(m => m.readStatus === 'Unread' && m.from === 'student')
+                .filter(m => m.readStatus === 'Unread' && m.from === fromRole)
                 .map(m => String(m.id));
 
             if (unreadIds.length > 0) {
@@ -542,15 +552,6 @@ const TicketDiscussionContent = ({
             }
         }
     }, [messages, userRole, isLoading]);
-
-    useEffect(() => {
-        if (scrollAreaRef.current) {
-            const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-            if (viewport) {
-                viewport.scrollTop = viewport.scrollHeight;
-            }
-        }
-    }, [messages, isSending]);
 
     // Find the first unread message for the current user
     const firstUnreadIndex = messages?.findIndex(m => m.readStatus === 'Unread' && m.from !== userRole) ?? -1;
@@ -1091,3 +1092,4 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     </div>
   );
 }
+
