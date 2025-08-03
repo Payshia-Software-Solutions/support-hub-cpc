@@ -162,10 +162,10 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
   };
 
   return (
-    <Card className="w-full border-0 md:border-y-0 rounded-none bg-transparent mb-16">
+    <Card className="w-full border-0 md:border-y-0 rounded-none bg-transparent mb-16 relative overflow-hidden">
+        {isSubmitting && <Progress value={progress} className="absolute top-0 left-0 w-full h-1 rounded-none" />}
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
-                 {isSubmitting && <Progress value={progress} className="w-full h-1" />}
                 <CardHeader className="p-6">
                     {!selectedCategory ? (
                         <>
