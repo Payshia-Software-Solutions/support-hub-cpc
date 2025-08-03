@@ -586,7 +586,7 @@ const TicketDiscussionContent = ({
             {!isLoading && messages?.map((message, index) => {
               const isStaffMessage = message.from === 'staff';
               const isCurrentUserMessage = (message.from === 'student' && userRole === 'student') || (isStaffMessage && userRole === 'staff');
-              const isOptimistic = message.id.startsWith('optimistic-');
+              const isOptimistic = String(message.id).startsWith('optimistic-');
               const hasText = message.text && message.text.trim().length > 0;
               const hasAttachment = message.attachments && message.attachments.length > 0;
               
@@ -907,8 +907,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
         reader.readAsDataURL(file);
       });
 
-      if (event.target) {
-          event.target.value = '';
+      if (fileInputRef.current) {
+          fileInputRef.current.value = '';
       }
     }
   };
