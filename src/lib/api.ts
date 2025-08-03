@@ -1,6 +1,6 @@
 
 
-import type { Ticket, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload, ApiStaffMember, StaffMember } from './types';
+import type { Ticket, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload, ApiStaffMember, StaffMember } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = (process.env.NEXT_PUBLIC_CHAT_SERVER_URL || 'https://chat-server.pharmacollege.lk') + '/api';
@@ -142,7 +142,6 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
         lockedByStaffId: apiTicket.locked_by_staff_id,
         attachments: attachments,
         lastMessagePreview: apiTicket.last_message_preview,
-        unreadCount: typeof apiTicket.unread_count === 'string' ? parseInt(apiTicket.unread_count, 10) : apiTicket.unread_count,
     };
 }
 
@@ -246,6 +245,18 @@ export const markTicketMessagesAsRead = async (messageIds: string[]): Promise<an
         apiFetch(`/ticket-messages/update-read-status/${id}/`, { method: 'PUT' })
     );
     return Promise.all(promises);
+};
+
+export const getUnreadMessageCount = async (ticketId: string, fromRole: 'student' | 'staff'): Promise<number> => {
+    const payload = {
+        read_status: 'Unread',
+        from_role: fromRole,
+    };
+    const response = await apiFetch<ApiMessage[]>(`/ticket-messages/get-unread-messages/${ticketId}`, {
+        method: 'POST', // Assuming POST based on PHP code analysis
+        body: JSON.stringify(payload),
+    });
+    return response.length;
 };
 
 

@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, MessageSquare } from "lucide-react";
+import { UnreadBadge } from "@/components/dashboard/UnreadBadge";
 
 // --- Sub Components ---
 const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boolean }) => {
@@ -135,11 +136,7 @@ export default function StudentDashboardPage() {
                                             <p className="text-sm text-muted-foreground truncate pr-2">
                                                 {ticket.lastMessagePreview || "No messages yet."}
                                             </p>
-                                            {ticket.unreadCount && ticket.unreadCount > 0 && (
-                                                <Badge variant="destructive" className="h-5 px-1.5 text-xs shrink-0 animate-pulse">
-                                                    {ticket.unreadCount} New
-                                                </Badge>
-                                            )}
+                                            <UnreadBadge ticketId={ticket.id} userRole="student" />
                                         </div>
                                     </div>
                                     <div className="flex-shrink-0">

@@ -13,6 +13,7 @@ export interface Attachment {
   url: string; 
   name: string;
   file?: File;
+  id?: string;
 }
 
 export interface Message {
@@ -57,7 +58,6 @@ export interface Ticket {
   lockedByStaffId?: string;
   attachments?: Attachment[];
   lastMessagePreview?: string;
-  unreadCount?: number;
 }
 
 export interface UserProfile {

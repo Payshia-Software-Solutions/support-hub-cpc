@@ -13,7 +13,9 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
+import { UnreadBadge } from "./UnreadBadge";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TicketListItemProps {
   ticket: Ticket;
@@ -34,6 +36,7 @@ const statusColors: Record<Ticket["status"], string> = {
 };
 
 export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: TicketListItemProps) {
+  const { user } = useAuth();
   const linkPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
     ? `/admin/tickets/${ticket.id}`
     : `/dashboard/tickets/${ticket.id}`;
@@ -114,6 +117,7 @@ export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: Ti
               <CalendarDays className="h-3 w-3" />
               <span>Created: {new Date(ticket.createdAt).toLocaleDateString()}</span>
             </div>
+             <UnreadBadge ticketId={ticket.id} userRole={user?.role || 'student'} />
           </div>
           <ArrowRight className="h-4 w-4 text-primary" />
         </CardFooter>
