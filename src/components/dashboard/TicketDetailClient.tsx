@@ -323,6 +323,10 @@ const TicketDiscussionContent = ({
               const isOptimistic = message.id.startsWith('optimistic-');
               const hasText = message.text && message.text.trim().length > 0;
               const hasAttachment = message.attachments && message.attachments.length > 0;
+              
+              if (!hasText && !hasAttachment) {
+                return null;
+              }
 
               return (
                 <div
@@ -368,7 +372,7 @@ const TicketDiscussionContent = ({
                         </div>
                     ))}
                     {hasText && <p className="text-sm">{message.text}</p>}
-                    <p className={cn("text-xs mt-1 text-right opacity-70", hasText && "pr-1")}>
+                    <p className={cn("text-xs mt-1 text-right opacity-70", hasText ? "pr-1" : "p-2 pt-0")}>
                         {new Date(message.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </p>
                     </div>
