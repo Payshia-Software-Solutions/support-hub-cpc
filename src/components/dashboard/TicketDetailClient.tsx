@@ -672,7 +672,7 @@ const TicketDiscussionContent = ({
                                 </div>
                             </div>
                         ))}
-                        {hasText && <p className="text-sm p-3 pt-2 pb-1"><LinkifiedText text={message.text} /></p>}
+                        {hasText && <p className="text-sm p-3 pt-2 pb-1 break-all"><LinkifiedText text={message.text} /></p>}
                         <p className={cn("text-xs mt-1 text-right opacity-70", hasText ? "pr-3 pb-2" : "p-0")}>
                             {new Date(message.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </p>
