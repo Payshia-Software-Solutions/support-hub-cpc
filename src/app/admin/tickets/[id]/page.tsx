@@ -140,7 +140,7 @@ export default function AdminTicketDetailPage() {
         ticketId: ticket.id,
         assignedTo: user.email,
         assigneeAvatar: user.avatar,
-        lockedByStaffId: user.id,
+        lockedByStaffId: ticket.studentNumber,
       });
     }
   }, [ticket, user, assignMutation]);
