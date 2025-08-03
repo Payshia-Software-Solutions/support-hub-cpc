@@ -62,7 +62,7 @@ export default function AdminTicketDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
       queryClient.invalidateQueries({ queryKey: ['ticketMessages', data.id] });
       
-      const assignedStaff = staffMembers?.find(s => s.email === data.assignedTo);
+      const assignedStaff = staffMembers?.find(s => s.username === data.assignedTo);
       const displayName = assignedStaff ? assignedStaff.name : data.assignedTo;
 
       toast({
@@ -138,7 +138,7 @@ export default function AdminTicketDetailPage() {
       assignmentAttempted.current = true;
       assignMutation.mutate({
         ticketId: ticket.id,
-        assignedTo: user.email,
+        assignedTo: user.username,
         assigneeAvatar: user.avatar,
         lockedByStaffId: user.username,
       });

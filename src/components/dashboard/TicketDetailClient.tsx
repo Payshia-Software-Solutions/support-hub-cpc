@@ -529,7 +529,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
                 ticketId: ticket.id,
                 assignedTo: selectedStaff.username,
                 assigneeAvatar: selectedStaff.avatar,
-                lockedByStaffId: currentStaffId,
+                lockedByStaffId: selectedStaff.username,
             });
         } else {
             console.error("onAssignTicket prop not provided");
