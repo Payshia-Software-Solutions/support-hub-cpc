@@ -8,7 +8,15 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const Sheet = SheetPrimitive.Root
+const SheetContext = React.createContext<{ onOpenChange?: (open: boolean) => void }>({})
+
+const Sheet = ({ onOpenChange, ...props }: SheetPrimitive.DialogProps) => (
+    <SheetContext.Provider value={{ onOpenChange }}>
+        <SheetPrimitive.Root onOpenChange={onOpenChange} {...props} />
+    </SheetContext.Provider>
+)
+Sheet.displayName = "Sheet"
+
 
 const SheetTrigger = SheetPrimitive.Trigger
 
@@ -58,8 +66,7 @@ const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
 >(({ side = "right", className, children, ...props }, ref) => {
-    const { onOpenChange } = React.useContext(SheetPrimitive.Context);
-    const contentRef = React.useRef<React.ElementRef<typeof SheetPrimitive.Content>>(null);
+    const { onOpenChange } = React.useContext(SheetContext);
     const startY = React.useRef(0);
     const startX = React.useRef(0);
 
@@ -71,13 +78,10 @@ const SheetContent = React.forwardRef<
     const handlePointerUp = (e: React.PointerEvent) => {
         const deltaY = e.clientY - startY.current;
         const deltaX = e.clientX - startX.current;
+        
+        const swipeThreshold = 80;
 
-        // Swipe down to close
-        if (deltaY > 100) {
-            onOpenChange?.(false);
-        }
-        // Swipe left to close
-        if (side === 'left' && deltaX < -100) {
+        if (deltaY > swipeThreshold || (side === 'left' && deltaX < -swipeThreshold)) {
             onOpenChange?.(false);
         }
     };
