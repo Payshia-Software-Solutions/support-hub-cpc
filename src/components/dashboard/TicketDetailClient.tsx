@@ -98,8 +98,8 @@ const StudentInfoDisplay = ({ studentInfo }: { studentInfo: FullStudentData }) =
             <div className="flex items-start text-sm">
                 <div className="text-muted-foreground w-6 h-6 flex items-center justify-center shrink-0">{icon}</div>
                 <div className="ml-3">
-                    <p className="font-medium text-card-foreground">{value}</p>
                     <p className="text-xs text-muted-foreground">{label}</p>
+                    <p className="font-medium text-card-foreground break-all">{value}</p>
                 </div>
             </div>
         );
