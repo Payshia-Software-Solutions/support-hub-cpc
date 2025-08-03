@@ -21,12 +21,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTicketMessages, createTicketMessage, updateTicketStatus, markTicketMessagesAsRead, getStudentFullInfo } from "@/lib/api";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import Image from "next/image";
-import { Dialog, DialogContent, DialogFooter, DialogHeader } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Separator } from "../ui/separator";
 import { Skeleton } from "../ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 interface TicketDetailClientProps {
@@ -703,6 +704,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
 
   const [studentDetails, setStudentDetails] = useState<FullStudentData | null>(null);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+  const [isStudentInfoDialogOpen, setIsStudentInfoDialogOpen] = useState(false);
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     setTicket(initialTicket);
@@ -888,12 +891,18 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
         return;
     }
     setIsFetchingDetails(true);
+    if (!isMobile) {
+        setIsStudentInfoDialogOpen(true);
+    }
     try {
         const data = await getStudentFullInfo(ticket.studentNumber);
         setStudentDetails(data);
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Failed to Fetch Details', description: error.message });
         setStudentDetails(null);
+        if (!isMobile) {
+            setIsStudentInfoDialogOpen(false);
+        }
     } finally {
         setIsFetchingDetails(false);
     }
@@ -908,7 +917,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
 
   const lockerName = ticket.lockedByStaffId ? staffMembers?.find(s => s.username === ticket.lockedByStaffId)?.name : 'another staff member';
 
-  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+  if (isMobile) {
     return (
       <div className="flex flex-col h-full w-full">
         <div className="p-2 border-b bg-card shrink-0">
@@ -1007,17 +1016,26 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
             handleAssignmentChange={handleAssignmentChange}
             staffMembers={staffMembers}
           />
-          <Separator className="my-6"/>
           {userRole === 'staff' && (
-              <div className="space-y-4">
-                   {!studentDetails && (
-                        <Button onClick={handleFetchStudentDetails} disabled={isFetchingDetails} className="w-full">
+              <div className="mt-6">
+                <Dialog open={isStudentInfoDialogOpen} onOpenChange={setIsStudentInfoDialogOpen}>
+                    <DialogTrigger asChild>
+                         <Button onClick={handleFetchStudentDetails} disabled={isFetchingDetails} className="w-full">
                             {isFetchingDetails ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <User className="mr-2 h-4 w-4"/>}
                             Show Student Details
                         </Button>
-                    )}
-                    {isFetchingDetails && <Skeleton className="h-64 w-full" />}
-                    {studentDetails && <StudentInfoDisplay studentInfo={studentDetails} />}
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl h-[90vh]">
+                         <DialogHeader>
+                            <DialogTitle>Student Details</DialogTitle>
+                            {studentDetails && <DialogDescription>{studentDetails?.studentInfo.full_name} ({studentDetails?.studentInfo.student_id})</DialogDescription>}
+                        </DialogHeader>
+                        <div className="overflow-y-auto pr-4 -mr-4">
+                            {isFetchingDetails && <div className="p-4"><Skeleton className="h-96 w-full" /></div>}
+                            {studentDetails && <StudentInfoDisplay studentInfo={studentDetails} />}
+                        </div>
+                    </DialogContent>
+                </Dialog>
               </div>
           )}
       </div>
@@ -1041,3 +1059,4 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     </div>
   );
 }
+
