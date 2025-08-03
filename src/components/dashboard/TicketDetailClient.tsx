@@ -254,6 +254,7 @@ const TicketDiscussionContent = ({
   isTicketLockedByOther,
   fileInputRef,
   handleFileSelect,
+  isSending,
  }: {
     ticket: Ticket,
     userRole: 'student' | 'staff',
@@ -267,6 +268,7 @@ const TicketDiscussionContent = ({
     isTicketLockedByOther: boolean,
     fileInputRef: React.RefObject<HTMLInputElement>,
     handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void,
+    isSending: boolean,
  }) => {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [viewingImage, setViewingImage] = useState<string | null>(null);
@@ -285,7 +287,7 @@ const TicketDiscussionContent = ({
                 viewport.scrollTop = viewport.scrollHeight;
             }
         }
-    }, [messages]);
+    }, [messages, isSending]);
 
     return (
     <div className="flex flex-col h-full bg-background">
@@ -370,6 +372,23 @@ const TicketDiscussionContent = ({
                 </div>
               );
             })}
+             {isSending && (
+                <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[75%] ml-auto flex-row-reverse">
+                    <Avatar className="h-8 w-8">
+                       <AvatarImage 
+                          src={userRole === 'staff' ? staffAvatar : ticket.studentAvatar} 
+                          alt="Sending..."
+                          data-ai-hint="avatar person"
+                        />
+                       <AvatarFallback>
+                          {userRole === 'staff' ? 'S' : ticket.studentName?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className={cn("p-1 rounded-xl shadow-sm", "bg-primary/90 text-primary-foreground rounded-br-none")}>
+                        <TypingIndicator />
+                    </div>
+                </div>
+            )}
         </div>
         </ScrollArea>
 
@@ -431,6 +450,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const { toast } = useToast();
   const [activeMobileTab, setActiveMobileTab] = useState<'info' | 'discussion'>('info');
   const queryClient = useQueryClient();
+  const [isSending, setIsSending] = useState(false);
   
   useEffect(() => {
     setTicket(initialTicket);
@@ -442,6 +462,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const sendMessageMutation = useMutation({
       mutationFn: (payload: {data: CreateTicketMessageClientPayload, ticketId: string}) => createTicketMessage(payload.data, payload.ticketId),
       onMutate: async ({data}) => {
+          setIsSending(true);
           const { ticketId, text, attachments } = data;
           
           await queryClient.cancelQueries({ queryKey: ['ticketMessages', ticketId] });
@@ -458,6 +479,11 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
           queryClient.setQueryData<Message[]>(['ticketMessages', ticketId], (old) => 
               [...(old || []), optimisticMessage]
           );
+          setNewMessage("");
+          setStagedAttachments([]);
+          if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+          }
           return { previousMessages, ticketId };
       },
       onError: (error: Error, variables, context: any) => {
@@ -471,6 +497,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
            });
       },
       onSettled: (data, error, variables) => {
+          setIsSending(false);
           queryClient.invalidateQueries({ queryKey: ['ticketMessages', variables.ticketId] });
       }
   });
@@ -569,12 +596,6 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
         time: new Date().toISOString(),
       }
     });
-
-    setNewMessage("");
-    setStagedAttachments([]);
-    if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-    }
   };
 
   const handleUnlockTicket = () => {
@@ -683,6 +704,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
                 isTicketLockedByOther={isTicketLockedByOther}
                 fileInputRef={fileInputRef}
                 handleFileSelect={handleFileSelect}
+                isSending={isSending}
             />
           </div>
         )}
@@ -719,6 +741,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
             isTicketLockedByOther={isTicketLockedByOther}
             fileInputRef={fileInputRef}
             handleFileSelect={handleFileSelect}
+            isSending={isSending}
         />
       </div>
     </div>
