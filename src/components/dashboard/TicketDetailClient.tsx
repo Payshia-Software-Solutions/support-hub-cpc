@@ -1,6 +1,7 @@
 
 "use client";
 
+import * as React from "react";
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction, memo } from "react";
 import type { Ticket, Message, TicketStatus, StaffMember, CreateTicketMessageClientPayload, Attachment } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
