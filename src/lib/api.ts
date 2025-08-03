@@ -217,11 +217,11 @@ export const getTicketMessages = async (ticketId: string): Promise<Message[]> =>
 };
 
 export const createTicket = async (ticketFormData: FormData): Promise<Ticket> => {
-    const response = await apiFetch<any>('/tickets', {
+    const response = await apiFetch<{ message: string, ticket: any }>('/tickets', {
         method: 'POST',
         body: ticketFormData
     });
-    return mapApiTicketToTicket(response);
+    return mapApiTicketToTicket(response.ticket);
 };
 
 export const updateTicket = async (ticketData: UpdateTicketPayload): Promise<Ticket> => {
