@@ -363,6 +363,7 @@ export interface StudentEnrollment {
     pharma_hunter?: PharmaHunterInfo;
     pharma_hunter_pro?: PharmaHunterProInfo;
 }
+
 export interface FullStudentData {
     studentInfo: StudentInfo;
     studentEnrollments: Record<string, StudentEnrollment>;

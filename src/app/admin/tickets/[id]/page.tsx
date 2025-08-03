@@ -1,18 +1,19 @@
 
+
 "use client";
 
 import { useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TicketDetailClient } from "@/components/dashboard/TicketDetailClient";
-import type { Ticket, StaffMember } from "@/lib/types";
+import type { Ticket, StaffMember, FullStudentData } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { toast } from "@/hooks/use-toast";
-import { getTicket, updateTicket, assignTicket, unlockTicket, getStaffMembers } from "@/lib/api";
+import { getTicket, updateTicket, assignTicket, unlockTicket, getStaffMembers, getStudentFullInfo } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminTicketDetailPage() {
@@ -36,6 +37,12 @@ export default function AdminTicketDetailPage() {
     queryKey: ['staffMembers'],
     queryFn: getStaffMembers,
     staleTime: 1000 * 60 * 5, // Cache staff list for 5 minutes
+  });
+
+  const { data: studentInfo, isLoading: isLoadingStudentInfo } = useQuery<FullStudentData>({
+    queryKey: ['studentFullInfo', ticket?.studentNumber],
+    queryFn: () => getStudentFullInfo(ticket!.studentNumber),
+    enabled: !!ticket?.studentNumber,
   });
 
   const updateMutation = useMutation({
@@ -145,7 +152,7 @@ export default function AdminTicketDetailPage() {
     }
   }, [ticket, user, assignMutation]);
 
-  if (isLoadingTicket || !user || isLoadingStaff) { 
+  if (isLoadingTicket || !user || isLoadingStaff || isLoadingStudentInfo) { 
     return (
       <div className="p-4 md:p-6 space-y-4">
         <Skeleton className="h-8 w-3/4" />
@@ -203,6 +210,7 @@ export default function AdminTicketDetailPage() {
           staffAvatar={user.avatar}
           currentStaffUsername={user.username}
           staffMembers={staffMembers || []}
+          studentInfo={studentInfo}
         />
       </div>
     </div>

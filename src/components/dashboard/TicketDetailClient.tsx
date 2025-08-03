@@ -1,17 +1,18 @@
 
+
 "use client";
 
 import * as React from "react";
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction, memo } from "react";
-import type { Ticket, Message, TicketStatus, StaffMember, CreateTicketMessageClientPayload, Attachment } from "@/lib/types";
+import type { Ticket, Message, TicketStatus, StaffMember, CreateTicketMessageClientPayload, Attachment, FullStudentData } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle, ZoomIn, RotateCw, ZoomOut } from "lucide-react"; 
-import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; 
+import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle, ZoomIn, RotateCw, ZoomOut, Mail, Phone } from "lucide-react"; 
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; 
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ interface TicketDetailClientProps {
   staffAvatar?: string; 
   currentStaffUsername?: string;
   staffMembers?: StaffMember[];
+  studentInfo?: FullStudentData;
 }
 
 // Local attachment type with a unique ID for state management
@@ -98,6 +100,7 @@ const TicketInfoContent = memo(({
   handleStatusChange,
   handleAssignmentChange,
   staffMembers = [],
+  studentInfo,
 }: {
   ticket: Ticket,
   userRole: 'student' | 'staff',
@@ -108,6 +111,7 @@ const TicketInfoContent = memo(({
   handleStatusChange: (newStatus: TicketStatus) => void,
   handleAssignmentChange: (staffId: string) => void,
   staffMembers?: StaffMember[];
+  studentInfo?: FullStudentData;
 }) => {
   
   const assignedStaffMember = staffMembers.find(s => s.username === ticket.assignedTo);
@@ -137,6 +141,21 @@ const TicketInfoContent = memo(({
           <CardTitle className="text-xl md:text-2xl font-headline">{ticket.subject}</CardTitle>
           <CardDescription>Ticket ID: {ticket.id}</CardDescription>
         </CardHeader>
+
+        {userRole === 'staff' && studentInfo && (
+            <Card className="mb-4">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Student Details</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm space-y-1">
+                    <p className="font-semibold text-card-foreground">{studentInfo.studentInfo.full_name}</p>
+                    <div className="text-muted-foreground">
+                        <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5"/>{studentInfo.studentInfo.e_mail}</p>
+                        <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5"/>{studentInfo.studentInfo.telephone_1}</p>
+                    </div>
+                </CardContent>
+            </Card>
+        )}
         
         <div className="space-y-4">
           <div>
@@ -481,7 +500,7 @@ const TicketDiscussionContent = ({
 };
 
 
-export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTicket, onUnlockTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffUsername, staffMembers }: TicketDetailClientProps) {
+export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTicket, onUnlockTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffUsername, staffMembers, studentInfo }: TicketDetailClientProps) {
   const [ticket, setTicket] = useState(initialTicket);
   const [newMessage, setNewMessage] = useState("");
   const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([]);
@@ -713,6 +732,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
                 handleStatusChange={handleStatusChange}
                 handleAssignmentChange={handleAssignmentChange}
                 staffMembers={staffMembers}
+                studentInfo={studentInfo}
               />
             </div>
           </ScrollArea>
@@ -754,6 +774,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
             handleStatusChange={handleStatusChange}
             handleAssignmentChange={handleAssignmentChange}
             staffMembers={staffMembers}
+            studentInfo={studentInfo}
           />
       </div>
       <div className="flex-1 flex flex-col bg-background overflow-hidden">
