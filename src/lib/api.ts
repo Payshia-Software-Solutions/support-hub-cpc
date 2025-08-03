@@ -171,25 +171,6 @@ function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
 }
 
 
-// Announcements
-export const getAnnouncements = (): Promise<Announcement[]> => apiFetch('/announcements');
-export const getAnnouncement = (id: string): Promise<Announcement> => apiFetch(`/announcements/${id}`);
-export const createAnnouncement = (announcementData: CreateAnnouncementPayload): Promise<Announcement> => {
-    const payload = {
-        ...announcementData,
-        author: 'Admin'
-    };
-    return apiFetch('/announcements', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-    });
-};
-export const markAnnouncementAsRead = (announcementId: string, studentId: string): Promise<void> => {
-    console.log(`Student ${studentId} has read announcement ${announcementId}`);
-    return Promise.resolve(); 
-};
-
-
 // Tickets
 export const getTickets = async (studentNumber: string): Promise<Ticket[]> => {
     const endpoint = `/tickets/username/${studentNumber}`;

@@ -6,7 +6,6 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { SidebarNav } from "@/components/dashboard/SidebarNav";
 import { MobileHeader } from "@/components/dashboard/MobileHeader";
 import { BottomDock } from "@/components/dashboard/BottomDock";
-import { AnnouncementsProvider } from "@/contexts/AnnouncementsContext";
 import { MobileDetailActiveProvider, useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -62,11 +61,9 @@ export default function DashboardLayout({
   return (
     <ProtectedRoute>
       <MobileDetailActiveProvider>
-        <AnnouncementsProvider>
           <SidebarProvider defaultOpen>
             <LayoutContent>{children}</LayoutContent>
           </SidebarProvider>
-        </AnnouncementsProvider>
       </MobileDetailActiveProvider>
     </ProtectedRoute>
   );

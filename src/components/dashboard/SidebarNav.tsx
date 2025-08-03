@@ -30,7 +30,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useAnnouncements } from "@/contexts/AnnouncementsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeSwitcher } from "../ui/ThemeSwitcher";
 
@@ -38,14 +37,12 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   // { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
-  { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
 ];
 
 const adminNavItem = { href: "/admin/dashboard", label: "Admin Panel", icon: Shield };
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { unreadCount: unreadAnnouncementsCount } = useAnnouncements();
   const { user, logout } = useAuth();
   
   const currentNavItems = user?.role === 'staff' ? [...navItems, adminNavItem] : navItems;
@@ -76,14 +73,6 @@ export function SidebarNav() {
                 <Link href={item.href}>
                   <item.icon className="h-5 w-5" />
                   <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                  {item.href === "/dashboard/announcements" && unreadAnnouncementsCount > 0 && (
-                    <Badge 
-                      variant="destructive" 
-                      className="ml-auto h-5 px-1.5 text-xs group-data-[collapsible=icon]:hidden"
-                    >
-                      {unreadAnnouncementsCount}
-                    </Badge>
-                  )}
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

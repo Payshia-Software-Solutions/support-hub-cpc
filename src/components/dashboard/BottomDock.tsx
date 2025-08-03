@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { useAnnouncements } from "@/contexts/AnnouncementsContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,14 +25,12 @@ const baseNavItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   // { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
-  { href: "/dashboard/announcements", label: "Alerts", icon: Megaphone },
 ];
 
 const adminNavItem = { href: "/admin/dashboard", label: "Admin", icon: Shield };
 
 export function BottomDock() {
   const pathname = usePathname();
-  const { unreadCount: unreadAnnouncementsCount } = useAnnouncements();
   const isMobile = useIsMobile();
   const { isMobileDetailActive } = useMobileDetailActive();
   const { user } = useAuth();
@@ -69,14 +66,6 @@ export function BottomDock() {
             >
               <item.icon className={cn("h-5 w-5 mb-0.5", currentItemIsActive ? "stroke-[2.25px]" : "stroke-[1.75px]")} />
               <span>{item.label}</span>
-              {item.href === "/dashboard/announcements" && unreadAnnouncementsCount > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="absolute top-1 right-1/2 translate-x-[20px] h-4 min-w-[1rem] px-1 flex items-center justify-center text-[10px] rounded-full"
-                >
-                  {unreadAnnouncementsCount}
-                </Badge>
-              )}
             </Link>
           );
         })}
