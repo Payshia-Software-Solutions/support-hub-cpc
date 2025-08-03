@@ -11,18 +11,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle, ZoomIn, RotateCw, ZoomOut, Mail, Phone } from "lucide-react"; 
+import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle, ZoomIn, RotateCw, ZoomOut, Mail, Phone, Loader2, Building, Home, MapPin } from "lucide-react"; 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"; 
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTicketMessages, createTicketMessage, updateTicketStatus, markTicketMessagesAsRead } from "@/lib/api";
+import { getTicketMessages, createTicketMessage, updateTicketStatus, markTicketMessagesAsRead, getStudentFullInfo } from "@/lib/api";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { Separator } from "../ui/separator";
+import { Skeleton } from "../ui/skeleton";
 
 interface TicketDetailClientProps {
   initialTicket: Ticket;
@@ -33,7 +34,6 @@ interface TicketDetailClientProps {
   staffAvatar?: string; 
   currentStaffUsername?: string;
   staffMembers?: StaffMember[];
-  studentInfo?: FullStudentData;
 }
 
 // Local attachment type with a unique ID for state management
@@ -89,6 +89,56 @@ const ImageViewerDialog = ({ imageUrl, onOpenChange }: { imageUrl: string | null
     );
 };
 
+const StudentInfoDisplay = ({ studentInfo }: { studentInfo: FullStudentData }) => {
+    const { studentInfo: details } = studentInfo;
+
+    const infoItem = (icon: React.ReactNode, label: string, value: string | undefined | null) => {
+        if (!value) return null;
+        return (
+            <div className="flex items-start text-sm">
+                <div className="text-muted-foreground w-6 h-6 flex items-center justify-center shrink-0">{icon}</div>
+                <div className="ml-3">
+                    <p className="font-medium text-card-foreground">{value}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-lg">Student Profile</CardTitle>
+                <CardDescription>{details.student_id}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-3">
+                    <h4 className="font-semibold text-sm">Personal</h4>
+                    {infoItem(<User className="h-4 w-4"/>, "Full Name", details.full_name)}
+                    {infoItem(<User className="h-4 w-4"/>, "Name with Initials", details.name_with_initials)}
+                    {infoItem(<User className="h-4 w-4"/>, "Name on Certificate", details.name_on_certificate)}
+                    {infoItem(<User className="h-4 w-4"/>, "NIC", details.nic)}
+                </div>
+                <Separator/>
+                <div className="space-y-3">
+                    <h4 className="font-semibold text-sm">Contact</h4>
+                    {infoItem(<Mail className="h-4 w-4"/>, "Email", details.e_mail)}
+                    {infoItem(<Phone className="h-4 w-4"/>, "Phone 1", details.telephone_1)}
+                    {infoItem(<Phone className="h-4 w-4"/>, "Phone 2", details.telephone_2)}
+                </div>
+                <Separator/>
+                <div className="space-y-3">
+                    <h4 className="font-semibold text-sm">Address</h4>
+                    {infoItem(<Home className="h-4 w-4"/>, "Address Line 1", details.address_line_1)}
+                    {infoItem(<Home className="h-4 w-4"/>, "Address Line 2", details.address_line_2)}
+                    {infoItem(<MapPin className="h-4 w-4"/>, "City", details.city)}
+                    {infoItem(<Building className="h-4 w-4"/>, "District", details.district)}
+                </div>
+            </CardContent>
+        </Card>
+    )
+};
+
 
 const TicketInfoContent = memo(({ 
   ticket, 
@@ -100,7 +150,6 @@ const TicketInfoContent = memo(({
   handleStatusChange,
   handleAssignmentChange,
   staffMembers = [],
-  studentInfo,
 }: {
   ticket: Ticket,
   userRole: 'student' | 'staff',
@@ -111,7 +160,6 @@ const TicketInfoContent = memo(({
   handleStatusChange: (newStatus: TicketStatus) => void,
   handleAssignmentChange: (staffId: string) => void,
   staffMembers?: StaffMember[];
-  studentInfo?: FullStudentData;
 }) => {
   
   const assignedStaffMember = staffMembers.find(s => s.username === ticket.assignedTo);
@@ -141,21 +189,6 @@ const TicketInfoContent = memo(({
           <CardTitle className="text-xl md:text-2xl font-headline">{ticket.subject}</CardTitle>
           <CardDescription>Ticket ID: {ticket.id}</CardDescription>
         </CardHeader>
-
-        {userRole === 'staff' && studentInfo && (
-            <Card className="mb-4">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Student Details</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm space-y-1">
-                    <p className="font-semibold text-card-foreground">{studentInfo.studentInfo.full_name}</p>
-                    <div className="text-muted-foreground">
-                        <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5"/>{studentInfo.studentInfo.e_mail}</p>
-                        <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5"/>{studentInfo.studentInfo.telephone_1}</p>
-                    </div>
-                </CardContent>
-            </Card>
-        )}
         
         <div className="space-y-4">
           <div>
@@ -311,9 +344,9 @@ const TicketDiscussionContent = ({
     });
 
     useEffect(() => {
-        if (messages && messages.length > 0) {
+        if (messages && messages.length > 0 && userRole === 'staff') {
             const unreadIds = messages
-                .filter(m => m.readStatus === 'Unread' && m.from !== userRole)
+                .filter(m => m.readStatus === 'Unread' && m.from === 'student')
                 .map(m => m.id);
 
             if (unreadIds.length > 0) {
@@ -500,15 +533,18 @@ const TicketDiscussionContent = ({
 };
 
 
-export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTicket, onUnlockTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffUsername, staffMembers, studentInfo }: TicketDetailClientProps) {
+export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTicket, onUnlockTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffUsername, staffMembers }: TicketDetailClientProps) {
   const [ticket, setTicket] = useState(initialTicket);
   const [newMessage, setNewMessage] = useState("");
   const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const [activeMobileTab, setActiveMobileTab] = useState<'info' | 'discussion'>('info');
+  const [activeMobileTab, setActiveMobileTab] = useState<'info' | 'discussion' | 'student'>('discussion');
   const queryClient = useQueryClient();
   const [isSending, setIsSending] = useState(false);
+
+  const [studentDetails, setStudentDetails] = useState<FullStudentData | null>(null);
+  const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   
   useEffect(() => {
     setTicket(initialTicket);
@@ -687,6 +723,23 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
       }
     }
   };
+  
+  const handleFetchStudentDetails = async () => {
+    if (!ticket.studentNumber) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No student number associated with this ticket.' });
+        return;
+    }
+    setIsFetchingDetails(true);
+    try {
+        const data = await getStudentFullInfo(ticket.studentNumber);
+        setStudentDetails(data);
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Failed to Fetch Details', description: error.message });
+        setStudentDetails(null);
+    } finally {
+        setIsFetchingDetails(false);
+    }
+  };
 
   const removeStagedAttachment = (idToRemove: string) => {
     setStagedAttachments(prev => prev.filter(att => att.id !== idToRemove));
@@ -712,9 +765,16 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
             <Button
               variant={activeMobileTab === 'discussion' ? 'default' : 'outline'}
               onClick={() => setActiveMobileTab('discussion')}
-              className="flex-1 rounded-l-none border-l-0"
+              className="flex-1 rounded-none border-l-0 border-r-0"
             >
               Discussion
+            </Button>
+            <Button
+              variant={activeMobileTab === 'student' ? 'default' : 'outline'}
+              onClick={() => setActiveMobileTab('student')}
+              className="flex-1 rounded-l-none"
+            >
+              Student
             </Button>
           </div>
         </div>
@@ -732,10 +792,24 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
                 handleStatusChange={handleStatusChange}
                 handleAssignmentChange={handleAssignmentChange}
                 staffMembers={staffMembers}
-                studentInfo={studentInfo}
               />
             </div>
           </ScrollArea>
+        )}
+        
+        {activeMobileTab === 'student' && (
+             <ScrollArea className="flex-1 bg-card">
+                <div className="p-4 space-y-4">
+                     {!studentDetails && (
+                        <Button onClick={handleFetchStudentDetails} disabled={isFetchingDetails} className="w-full">
+                            {isFetchingDetails ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <User className="mr-2 h-4 w-4"/>}
+                            Show Student Details
+                        </Button>
+                    )}
+                    {isFetchingDetails && <Skeleton className="h-64 w-full" />}
+                    {studentDetails && <StudentInfoDisplay studentInfo={studentDetails} />}
+                </div>
+            </ScrollArea>
         )}
 
         {activeMobileTab === 'discussion' && (
@@ -774,8 +848,20 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
             handleStatusChange={handleStatusChange}
             handleAssignmentChange={handleAssignmentChange}
             staffMembers={staffMembers}
-            studentInfo={studentInfo}
           />
+          <Separator className="my-6"/>
+          {userRole === 'staff' && (
+              <div className="space-y-4">
+                   {!studentDetails && (
+                        <Button onClick={handleFetchStudentDetails} disabled={isFetchingDetails} className="w-full">
+                            {isFetchingDetails ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <User className="mr-2 h-4 w-4"/>}
+                            Show Student Details
+                        </Button>
+                    )}
+                    {isFetchingDetails && <Skeleton className="h-64 w-full" />}
+                    {studentDetails && <StudentInfoDisplay studentInfo={studentDetails} />}
+              </div>
+          )}
       </div>
       <div className="flex-1 flex flex-col bg-background overflow-hidden">
         <TicketDiscussionContent 

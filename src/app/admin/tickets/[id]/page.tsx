@@ -39,12 +39,6 @@ export default function AdminTicketDetailPage() {
     staleTime: 1000 * 60 * 5, // Cache staff list for 5 minutes
   });
 
-  const { data: studentInfo, isLoading: isLoadingStudentInfo } = useQuery<FullStudentData>({
-    queryKey: ['studentFullInfo', ticket?.studentNumber],
-    queryFn: () => getStudentFullInfo(ticket!.studentNumber),
-    enabled: !!ticket?.studentNumber,
-  });
-
   const updateMutation = useMutation({
     mutationFn: updateTicket,
     onSuccess: (data) => {
@@ -152,7 +146,7 @@ export default function AdminTicketDetailPage() {
     }
   }, [ticket, user, assignMutation]);
 
-  if (isLoadingTicket || !user || isLoadingStaff || isLoadingStudentInfo) { 
+  if (isLoadingTicket || !user || isLoadingStaff) { 
     return (
       <div className="p-4 md:p-6 space-y-4">
         <Skeleton className="h-8 w-3/4" />
@@ -210,7 +204,6 @@ export default function AdminTicketDetailPage() {
           staffAvatar={user.avatar}
           currentStaffUsername={user.username}
           staffMembers={staffMembers || []}
-          studentInfo={studentInfo}
         />
       </div>
     </div>
