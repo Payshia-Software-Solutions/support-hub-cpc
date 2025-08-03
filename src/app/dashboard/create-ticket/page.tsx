@@ -96,21 +96,25 @@ export default function CreateTicketPage() {
           </div>
       )
   }
-
-  return (
-    <div className="w-full h-full overflow-y-auto">
-       {createTicketMutation.isPending ? (
+  
+  if (createTicketMutation.isPending) {
+    return (
         <div className="flex h-full flex-col items-center justify-center gap-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
             <p className="text-muted-foreground">Submitting your ticket...</p>
         </div>
-      ) : canCreateTicket ? (
+    )
+  }
+
+  return (
+    <div className="w-full h-full overflow-y-auto">
+       {canCreateTicket ? (
         <>
             <div className="p-4 md:px-6">
-                <Card className="border-blue-500 bg-blue-500/10">
+                <Card className="border-primary/50 bg-primary/10">
                     <CardHeader>
-                        <CardTitle className="text-blue-800">You can create {ticketsLeft} more ticket{ticketsLeft === 1 ? '' : 's'}.</CardTitle>
-                        <CardDescription className="text-blue-700">Please close your existing tickets before creating new ones if possible.</CardDescription>
+                        <CardTitle className="text-primary">You can create {ticketsLeft} more ticket{ticketsLeft === 1 ? '' : 's'}.</CardTitle>
+                        <CardDescription className="text-primary/80">Please close your existing tickets before creating new ones if possible.</CardDescription>
                     </CardHeader>
                 </Card>
             </div>
