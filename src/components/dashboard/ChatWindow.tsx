@@ -78,6 +78,12 @@ function ChatMessages({ chat, userRole, staffAvatar }: Pick<ChatWindowProps, 'ch
                 {isError && <p className="text-center text-destructive">Failed to load messages.</p>}
                 {!isLoading && messages?.map((message, index) => {
                     const isCurrentUserMessage = (message.from === 'student' && userRole === 'student') || (message.from === 'staff' && userRole === 'staff');
+                    const hasText = message.text && message.text.trim().length > 0;
+                    const hasAttachment = message.attachment?.url;
+
+                    if (!hasText && !hasAttachment) {
+                        return null;
+                    }
                     
                     return (
                         <div
@@ -99,14 +105,15 @@ function ChatMessages({ chat, userRole, staffAvatar }: Pick<ChatWindowProps, 'ch
                             </Avatar>
                             <div
                                 className={cn(
-                                    "p-3 rounded-xl shadow-sm",
+                                    "rounded-xl shadow-sm",
                                     isCurrentUserMessage
                                         ? "bg-primary/90 text-primary-foreground rounded-br-none"
-                                        : "bg-card border rounded-bl-none"
+                                        : "bg-card border rounded-bl-none",
+                                    !hasText && hasAttachment && 'p-1.5'
                                 )}
                             >
                                 {message.attachment?.type === 'image' && message.attachment.url && (
-                                    <div className="mb-2">
+                                    <div className={cn("mb-2", !hasText && "mb-0")}>
                                         <Image
                                             src={message.attachment.url}
                                             alt={message.attachment.name}
@@ -123,8 +130,8 @@ function ChatMessages({ chat, userRole, staffAvatar }: Pick<ChatWindowProps, 'ch
                                         <span className="text-sm text-secondary-foreground truncate">{message.attachment.name}</span>
                                     </div>
                                 )}
-                                {message.text && <p className="text-sm">{message.text}</p>}
-                                <p className="text-xs mt-1 text-right opacity-70">
+                                {hasText && <p className="text-sm p-3 pt-2 pb-1">{message.text}</p>}
+                                <p className={cn("text-xs mt-1 text-right opacity-70", hasText ? "pr-3 pb-2" : "p-0")}>
                                     {new Date(message.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                             </div>

@@ -353,7 +353,7 @@ const TicketDiscussionContent = ({
                             isCurrentUserMessage
                             ? "bg-primary/90 text-primary-foreground rounded-br-none"
                             : "bg-card border rounded-bl-none",
-                            hasText && "p-3"
+                            !hasText && hasAttachment && "p-1.5"
                         )}
                     >
                      {hasAttachment && message.attachments?.map((att, index) => att.type === 'image' && att.url && (
@@ -371,8 +371,8 @@ const TicketDiscussionContent = ({
                             </div>
                         </div>
                     ))}
-                    {hasText && <p className="text-sm">{message.text}</p>}
-                    <p className={cn("text-xs mt-1 text-right opacity-70", hasText ? "pr-1" : "p-2 pt-0")}>
+                    {hasText && <p className="text-sm p-3 pt-2 pb-1">{message.text}</p>}
+                    <p className={cn("text-xs mt-1 text-right opacity-70", hasText ? "pr-3 pb-2" : "p-0")}>
                         {new Date(message.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </p>
                     </div>
@@ -608,7 +608,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     const files = event.target.files;
     if (files) {
       Array.from(files).forEach((file, index) => {
-        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit per file
           toast({ variant: "destructive", title: "File too large", description: `"${file.name}" is over 5MB and won't be attached.` });
           return;
         }
@@ -619,13 +619,14 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
 
         const reader = new FileReader();
         reader.onloadend = () => {
-            setStagedAttachments(prev => [...prev, {
-                id: `${Date.now()}-${index}`,
+            const newAttachment: Attachment = {
+                id: `${Date.now()}-${index}-${Math.random()}`,
                 type: "image",
                 url: reader.result as string,
                 name: file.name,
                 file: file,
-            }]);
+            };
+            setStagedAttachments(prev => [...prev, newAttachment]);
         };
         reader.readAsDataURL(file);
       });
