@@ -309,6 +309,7 @@ const TicketInfoContent = memo(({
   handleStatusChange,
   handleAssignmentChange,
   staffMembers = [],
+  onViewImage,
 }: {
   ticket: Ticket,
   userRole: 'student' | 'staff',
@@ -319,6 +320,7 @@ const TicketInfoContent = memo(({
   handleStatusChange: (newStatus: TicketStatus) => void,
   handleAssignmentChange: (staffId: string) => void,
   staffMembers?: StaffMember[];
+  onViewImage: (url: string) => void;
 }) => {
   
   const assignedStaffMember = staffMembers.find(s => s.username === ticket.assignedTo);
@@ -448,6 +450,31 @@ const TicketInfoContent = memo(({
             <h4 className="text-sm font-medium mb-1">Description</h4>
             <p className="text-sm text-muted-foreground bg-secondary p-3 rounded-md whitespace-pre-line">{ticket.description}</p>
           </div>
+          {ticket.attachments && ticket.attachments.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium mb-2">Attachments</h4>
+              <div className="flex flex-wrap gap-2">
+                {ticket.attachments.map((att, index) => (
+                  <button
+                    key={index}
+                    onClick={() => onViewImage(att.url)}
+                    className="relative group w-20 h-20 rounded-md overflow-hidden border"
+                  >
+                    <Image
+                      src={att.url}
+                      alt={att.name}
+                      layout="fill"
+                      objectFit="cover"
+                      className="group-hover:scale-110 transition-transform duration-200"
+                    />
+                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ZoomIn className="h-6 w-6 text-white"/>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
     </>
   );
@@ -701,6 +728,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const [activeMobileTab, setActiveMobileTab] = useState<'info' | 'discussion' | 'student'>('discussion');
   const queryClient = useQueryClient();
   const [isSending, setIsSending] = useState(false);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
 
   const [studentDetails, setStudentDetails] = useState<FullStudentData | null>(null);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
@@ -920,6 +948,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   if (isMobile) {
     return (
       <div className="flex flex-col h-full w-full">
+        <ImageViewerDialog imageUrl={viewingImage} onOpenChange={(open) => !open && setViewingImage(null)} />
         <div className="p-2 border-b bg-card shrink-0">
           <div className="flex w-full">
             <Button
@@ -959,6 +988,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
                 handleStatusChange={handleStatusChange}
                 handleAssignmentChange={handleAssignmentChange}
                 staffMembers={staffMembers}
+                onViewImage={setViewingImage}
               />
             </div>
           </ScrollArea>
@@ -1004,6 +1034,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
 
   return (
     <div className="flex flex-col lg:flex-row h-full max-h-screen overflow-hidden">
+      <ImageViewerDialog imageUrl={viewingImage} onOpenChange={(open) => !open && setViewingImage(null)} />
       <div className="lg:w-1/3 lg:max-w-md xl:max-w-lg lg:border-r bg-card overflow-y-auto p-4 md:p-6">
         <TicketInfoContent 
             ticket={ticket}
@@ -1015,6 +1046,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
             handleStatusChange={handleStatusChange}
             handleAssignmentChange={handleAssignmentChange}
             staffMembers={staffMembers}
+            onViewImage={setViewingImage}
           />
           {userRole === 'staff' && (
               <div className="mt-6">

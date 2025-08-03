@@ -1,6 +1,5 @@
 
 
-
 import type { Ticket, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload, ApiStaffMember, StaffMember } from './types';
 
 // In a real app, you would move this to a .env file
@@ -113,14 +112,17 @@ function mapApiChatToChat(apiChat: ApiChat): Chat {
 }
 
 function mapApiTicketToTicket(apiTicket: any): Ticket {
-    // This needs to be adapted if the API returns a JSON string for attachments
     let attachments: Attachment[] = [];
-    if (typeof apiTicket.attachments === 'string') {
-        try {
-            attachments = JSON.parse(apiTicket.attachments);
-        } catch (e) {
-            console.error("Failed to parse attachments JSON from API:", e);
-        }
+    if (typeof apiTicket.attachments === 'string' && apiTicket.attachments) {
+        const attachmentUrls = apiTicket.attachments.split(',');
+        attachments = attachmentUrls.map((url: string) => {
+            const trimmedUrl = url.trim();
+            return {
+                type: 'image',
+                url: `${CONTENT_PROVIDER_URL}${trimmedUrl}`,
+                name: trimmedUrl.split('/').pop() || 'attachment.jpg'
+            };
+        });
     } else if (Array.isArray(apiTicket.attachments)) {
         attachments = apiTicket.attachments;
     }
