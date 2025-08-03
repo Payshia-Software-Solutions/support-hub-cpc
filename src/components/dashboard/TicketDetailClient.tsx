@@ -14,12 +14,10 @@ import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTicketMessages, createTicketMessage, updateTicketStatus } from "@/lib/api";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
-import { Skeleton } from "../ui/skeleton";
 import Image from "next/image";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
@@ -253,6 +251,7 @@ const TicketDiscussionContent = ({
         queryKey: ['ticketMessages', ticket.id],
         queryFn: () => getTicketMessages(ticket.id),
         enabled: !!ticket.id,
+        refetchInterval: 3000, // Refetch every 3 seconds
     });
 
     useEffect(() => {
@@ -323,13 +322,13 @@ const TicketDiscussionContent = ({
                     )}
                     >
                      {message.attachments?.map((att, index) => att.type === 'image' && att.url && (
-                        <div key={index} className="mb-2 group relative cursor-pointer" onClick={() => setViewingImage(att.url)}>
+                        <div key={index} className="mb-2 group relative" onClick={() => setViewingImage(att.url)}>
                             <Image
                                 src={att.url}
                                 alt={att.name}
                                 width={200}
                                 height={200}
-                                className="rounded-md object-cover"
+                                className="rounded-md object-cover cursor-pointer"
                                 data-ai-hint="attached image"
                             />
                              <div className="absolute inset-0 bg-black/40 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -404,7 +403,6 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const isMobile = useIsMobile();
   const [activeMobileTab, setActiveMobileTab] = useState<'info' | 'discussion'>('info');
   const queryClient = useQueryClient();
   
@@ -412,8 +410,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     setTicket(initialTicket);
   }, [initialTicket]);
 
-  const isTicketLockedByOther = ticket.isLocked && ticket.lockedByStaffId !== currentStaffUsername;
-  const isTicketLockedByCurrentUser = ticket.isLocked && ticket.lockedByStaffId === currentStaffUsername;
+  const isTicketLockedByOther = userRole === 'staff' && ticket.isLocked && ticket.lockedByStaffId !== currentStaffUsername;
+  const isTicketLockedByCurrentUser = userRole === 'staff' && ticket.isLocked && ticket.lockedByStaffId === currentStaffUsername;
 
   const sendMessageMutation = useMutation({
       mutationFn: (payload: {data: CreateTicketMessageClientPayload, ticketId: string}) => createTicketMessage(payload.data, payload.ticketId),
@@ -421,7 +419,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
           const { ticketId, text, attachments } = data;
           
           await queryClient.cancelQueries({ queryKey: ['ticketMessages', ticketId] });
-          const previousMessages = queryClient.getQueryData<Message[]>(['ticketMessages', ticketId]);
+          const previousMessages = queryClient.getQueryData<Message[]>(['ticketMessages', ticketId]) || [];
           
           const optimisticMessage: Message = {
               id: `optimistic-${Date.now()}`,
@@ -432,11 +430,11 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
               attachments: attachments,
           };
           queryClient.setQueryData<Message[]>(['ticketMessages', ticketId], (old) => 
-              old ? [...old, optimisticMessage] : [optimisticMessage]
+              [...(old || []), optimisticMessage]
           );
           return { previousMessages, ticketId };
       },
-      onError: (error: Error, variables, context) => {
+      onError: (error: Error, variables, context: any) => {
            if (context?.previousMessages) {
               queryClient.setQueryData(['ticketMessages', context.ticketId], context.previousMessages);
            }
@@ -476,16 +474,11 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
       });
     },
     onSuccess: (updatedTicket, variables) => {
-      // The API returns the full updated ticket. We can use it to update the query data directly.
       queryClient.setQueryData(['ticket', variables.ticketId], updatedTicket);
-      
-      // Invalidate queries to refetch fresh data for lists and the discussion.
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
       queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
       queryClient.invalidateQueries({ queryKey: ['ticketMessages', variables.ticketId] });
-
-      setTicket(updatedTicket); // Update local state with the definitive server response
-      
+      setTicket(updatedTicket); 
       toast({
         title: "Ticket Status Updated",
         description: `Ticket is now '${variables.newStatus}'.`,
@@ -502,7 +495,6 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const handleStatusChange = (newStatus: TicketStatus) => {
     if (userRole === 'staff' && isTicketLockedByOther) return;
     if (newStatus === ticket.status) return;
-
     updateStatusMutation.mutate({ ticketId: ticket.id, newStatus });
   };
 
@@ -557,11 +549,6 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     if (fileInputRef.current) {
         fileInputRef.current.value = "";
     }
-
-    toast({
-      title: userRole === 'staff' ? "Reply Sent" : "Message Sent",
-      description: "Your reply has been added to the ticket.",
-    });
   };
 
   const handleUnlockTicket = () => {
@@ -615,7 +602,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
 
   const lockerName = ticket.lockedByStaffId ? staffMembers?.find(s => s.username === ticket.lockedByStaffId)?.name : 'another staff member';
 
-  if (isMobile) {
+  if (typeof window !== 'undefined' && window.innerWidth < 768) {
     return (
       <div className="flex flex-col h-full w-full">
         <div className="p-2 border-b bg-card shrink-0">
