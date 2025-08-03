@@ -201,7 +201,7 @@ export default function AdminTicketDetailPage() {
           onUnlockTicket={handleUnlockTicket}
           userRole="staff" 
           staffAvatar={user.avatar}
-          currentStaffId={user.id}
+          currentStaffUsername={user.username}
           staffMembers={staffMembers || []}
         />
       </div>

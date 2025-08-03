@@ -30,7 +30,7 @@ interface TicketDetailClientProps {
   onUnlockTicket?: (ticketId: string) => void;
   userRole: 'student' | 'staff';
   staffAvatar?: string; 
-  currentStaffId?: string;
+  currentStaffUsername?: string;
   staffMembers?: StaffMember[];
 }
 
@@ -323,16 +323,16 @@ const TicketDiscussionContent = ({
                     )}
                     >
                      {message.attachments?.map((att, index) => att.type === 'image' && att.url && (
-                        <div key={index} className="mb-2 group relative" onClick={() => setViewingImage(att.url)}>
+                        <div key={index} className="mb-2 group relative cursor-pointer" onClick={() => setViewingImage(att.url)}>
                             <Image
                                 src={att.url}
                                 alt={att.name}
                                 width={200}
                                 height={200}
-                                className="rounded-md object-cover cursor-pointer"
+                                className="rounded-md object-cover"
                                 data-ai-hint="attached image"
                             />
-                             <div className="absolute inset-0 bg-black/40 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                             <div className="absolute inset-0 bg-black/40 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <ZoomIn className="h-8 w-8 text-white"/>
                             </div>
                         </div>
@@ -398,7 +398,7 @@ const TicketDiscussionContent = ({
 };
 
 
-export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTicket, onUnlockTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffId, staffMembers }: TicketDetailClientProps) {
+export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTicket, onUnlockTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffUsername, staffMembers }: TicketDetailClientProps) {
   const [ticket, setTicket] = useState(initialTicket);
   const [newMessage, setNewMessage] = useState("");
   const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([]);
@@ -412,8 +412,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     setTicket(initialTicket);
   }, [initialTicket]);
 
-  const isTicketLockedByOther = ticket.isLocked && ticket.lockedByStaffId !== currentStaffId;
-  const isTicketLockedByCurrentUser = ticket.isLocked && ticket.lockedByStaffId === currentStaffId;
+  const isTicketLockedByOther = ticket.isLocked && ticket.lockedByStaffId !== currentStaffUsername;
+  const isTicketLockedByCurrentUser = ticket.isLocked && ticket.lockedByStaffId === currentStaffUsername;
 
   const sendMessageMutation = useMutation({
       mutationFn: (payload: {data: CreateTicketMessageClientPayload, ticketId: string}) => createTicketMessage(payload.data, payload.ticketId),
@@ -519,7 +519,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
       handleUpdate(updates);
     } else {
         const selectedStaff = staffMembers?.find(s => s.id === staffId);
-        if (!selectedStaff || !currentStaffId) {
+        if (!selectedStaff || !currentStaffUsername) {
           toast({ variant: "destructive", title: "Error", description: "Invalid staff member or user context." });
           return;
         }
@@ -613,7 +613,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     }
   };
 
-  const lockerName = ticket.lockedByStaffId ? staffMembers?.find(s => s.id === ticket.lockedByStaffId)?.name : 'another staff member';
+  const lockerName = ticket.lockedByStaffId ? staffMembers?.find(s => s.username === ticket.lockedByStaffId)?.name : 'another staff member';
 
   if (isMobile) {
     return (
