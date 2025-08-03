@@ -8,6 +8,7 @@ import { createTicket } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import type { Ticket, Attachment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 
 export default function CreateTicketPage() {
   const router = useRouter();
@@ -76,7 +77,14 @@ export default function CreateTicketPage() {
 
   return (
     <div className="w-full h-full overflow-y-auto">
-      <TicketForm onSubmitTicket={handleTicketSubmit} isSubmitting={createTicketMutation.isPending} />
+       {createTicketMutation.isPending ? (
+        <div className="flex h-full flex-col items-center justify-center gap-4">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="text-muted-foreground">Submitting your ticket...</p>
+        </div>
+      ) : (
+        <TicketForm onSubmitTicket={handleTicketSubmit} isSubmitting={createTicketMutation.isPending} />
+      )}
     </div>
   );
 }
