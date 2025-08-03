@@ -245,11 +245,11 @@ export const assignTicket = async (ticketId: string, assignedTo: string, assigne
 
 
 export const updateTicketStatus = async (ticketId: string, newStatus: TicketStatus): Promise<Ticket> => {
-    const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketId}/status/`, {
+    const response = await apiFetch<{ message: string; ticket: any }>(`/tickets/${ticketId}/status/`, {
         method: 'POST',
         body: JSON.stringify({ newStatus: newStatus }),
     });
-    return mapApiTicketToTicket(updatedApiTicket);
+    return mapApiTicketToTicket(response.ticket);
 }
 
 export const createTicketMessage = async (messageData: CreateTicketMessageClientPayload, ticketId: string): Promise<Message> => {
