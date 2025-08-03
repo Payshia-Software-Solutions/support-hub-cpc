@@ -1,6 +1,6 @@
 
 
-import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload } from './types';
+import type { Ticket, Announcement, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, CreateAnnouncementPayload, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliveryOrderPayload, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload, ApiStaffMember, StaffMember } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = (process.env.NEXT_PUBLIC_CHAT_SERVER_URL || 'https://chat-server.pharmacollege.lk') + '/api';
@@ -162,8 +162,7 @@ function mapTicketToApiPayload(ticketData: Partial<Ticket>): any {
       apiPayload.attachments = JSON.stringify(ticketData.attachments.map(att => ({
         type: att.type,
         name: att.name,
-        // The URL is for client-side preview, the backend will handle the upload
-        // and generate its own URL. We send the data URI for now.
+        // The URL is for client-side preview, the data URI is sent for upload
         url: att.url,
       })));
     }
@@ -780,3 +779,21 @@ export const updateDeliveryOrderStatus = async (orderId: string, status: "Receiv
     }
     return response.json();
 }
+
+const mapApiStaffToStaffMember = (apiStaff: ApiStaffMember): StaffMember => ({
+  id: apiStaff.id,
+  name: `${apiStaff.fname} ${apiStaff.lname}`,
+  username: apiStaff.username,
+  email: apiStaff.email,
+  avatar: `https://placehold.co/40x40.png?text=${apiStaff.fname[0]}${apiStaff.lname[0]}`,
+});
+
+export const getStaffMembers = async (): Promise<StaffMember[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/users/staff/`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch staff members' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    const apiStaffList: ApiStaffMember[] = await response.json();
+    return apiStaffList.map(mapApiStaffToStaffMember);
+};

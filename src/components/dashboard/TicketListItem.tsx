@@ -14,12 +14,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { dummyStaffMembers } from "@/lib/dummy-data";
-
 
 interface TicketListItemProps {
   ticket: Ticket;
-  currentStaffId?: string; // Optional: for admin context
+  currentStaffId?: string; // Optional for admin context
+  staffMembers?: StaffMember[];
 }
 
 const priorityColors: Record<Ticket["priority"], string> = {
@@ -34,16 +33,16 @@ const statusColors: Record<Ticket["status"], string> = {
   Closed: "bg-gray-500 hover:bg-gray-600",
 };
 
-export function TicketListItem({ ticket, currentStaffId }: TicketListItemProps) {
+export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: TicketListItemProps) {
   const linkPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
     ? `/admin/tickets/${ticket.id}`
     : `/dashboard/tickets/${ticket.id}`;
 
   const locker = ticket.isLocked && ticket.lockedByStaffId 
-    ? dummyStaffMembers.find(s => s.id === ticket.lockedByStaffId) 
+    ? staffMembers.find(s => s.id === ticket.lockedByStaffId) 
     : null;
 
-  const assignedStaffMember = dummyStaffMembers.find(s => s.username === ticket.assignedTo);
+  const assignedStaffMember = staffMembers.find(s => s.username === ticket.assignedTo);
   const assignedStaffName = assignedStaffMember?.name || ticket.assignedTo;
   const fallback = (assignedStaffName || '').split(' ').filter(n => n).map(n => n[0]).join('').substring(0, 2) || 'S';
   

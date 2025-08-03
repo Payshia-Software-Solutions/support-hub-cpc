@@ -15,14 +15,13 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { dummyStaffMembers } from "@/lib/dummy-data"; 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTicketMessages, createTicketMessage, updateTicketStatus } from "@/lib/api";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { Skeleton } from "../ui/skeleton";
 import Image from "next/image";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface TicketDetailClientProps {
   initialTicket: Ticket;
@@ -32,6 +31,7 @@ interface TicketDetailClientProps {
   userRole: 'student' | 'staff';
   staffAvatar?: string; 
   currentStaffId?: string;
+  staffMembers?: StaffMember[];
 }
 
 // Local attachment type with a unique ID for state management
@@ -73,6 +73,7 @@ const TicketInfoContent = memo(({
   handleUnlockTicket,
   handleStatusChange,
   handleAssignmentChange,
+  staffMembers = [],
 }: {
   ticket: Ticket,
   userRole: 'student' | 'staff',
@@ -82,9 +83,10 @@ const TicketInfoContent = memo(({
   handleUnlockTicket: () => void,
   handleStatusChange: (newStatus: TicketStatus) => void,
   handleAssignmentChange: (staffId: string) => void,
+  staffMembers?: StaffMember[];
 }) => {
   
-  const assignedStaffMember = dummyStaffMembers.find(s => s.username === ticket.assignedTo);
+  const assignedStaffMember = staffMembers.find(s => s.username === ticket.assignedTo);
   const assignedStaffName = assignedStaffMember?.name || ticket.assignedTo;
   
   return (
@@ -149,7 +151,7 @@ const TicketInfoContent = memo(({
             <div>
               <Label htmlFor="ticket-assignment">Assigned To</Label>
               <Select
-                value={dummyStaffMembers.find(s => s.username === ticket.assignedTo)?.id || "unassigned"}
+                value={staffMembers.find(s => s.username === ticket.assignedTo)?.id || "unassigned"}
                 onValueChange={handleAssignmentChange}
                 name="ticket-assignment"
                 disabled={isTicketLockedByOther}
@@ -159,7 +161,7 @@ const TicketInfoContent = memo(({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {dummyStaffMembers.map(staff => (
+                  {staffMembers.map(staff => (
                     <SelectItem key={staff.id} value={staff.id}>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
@@ -321,16 +323,16 @@ const TicketDiscussionContent = ({
                     )}
                     >
                      {message.attachments?.map((att, index) => att.type === 'image' && att.url && (
-                        <div key={index} className="mb-2 group relative cursor-pointer" onClick={() => setViewingImage(att.url)}>
+                        <div key={index} className="mb-2 group relative" onClick={() => setViewingImage(att.url)}>
                             <Image
                                 src={att.url}
                                 alt={att.name}
                                 width={200}
                                 height={200}
-                                className="rounded-md object-cover"
+                                className="rounded-md object-cover cursor-pointer"
                                 data-ai-hint="attached image"
                             />
-                             <div className="absolute inset-0 bg-black/40 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                             <div className="absolute inset-0 bg-black/40 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                                 <ZoomIn className="h-8 w-8 text-white"/>
                             </div>
                         </div>
@@ -396,7 +398,7 @@ const TicketDiscussionContent = ({
 };
 
 
-export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTicket, onUnlockTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffId }: TicketDetailClientProps) {
+export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTicket, onUnlockTicket, userRole, staffAvatar = defaultStaffAvatar, currentStaffId, staffMembers }: TicketDetailClientProps) {
   const [ticket, setTicket] = useState(initialTicket);
   const [newMessage, setNewMessage] = useState("");
   const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([]);
@@ -516,7 +518,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
       };
       handleUpdate(updates);
     } else {
-        const selectedStaff = dummyStaffMembers.find(s => s.id === staffId);
+        const selectedStaff = staffMembers?.find(s => s.id === staffId);
         if (!selectedStaff || !currentStaffId) {
           toast({ variant: "destructive", title: "Error", description: "Invalid staff member or user context." });
           return;
@@ -587,20 +589,20 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
 
         const reader = new FileReader();
         reader.onloadend = () => {
-          setStagedAttachments(prev => [...prev, {
-            id: `${Date.now()}-${index}`,
-            type: "image",
-            url: reader.result as string,
-            name: file.name,
-            file: file,
-          }]);
+            setStagedAttachments(prev => [...prev, {
+                id: `${Date.now()}-${index}`,
+                type: "image",
+                url: reader.result as string,
+                name: file.name,
+                file: file,
+            }]);
         };
         reader.readAsDataURL(file);
       });
-    }
-    // Clear the input value to allow selecting the same file again
-    if (event.target) {
-        event.target.value = '';
+
+      if (event.target) {
+          event.target.value = '';
+      }
     }
   };
 
@@ -611,7 +613,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     }
   };
 
-  const lockerName = ticket.lockedByStaffId ? dummyStaffMembers.find(s => s.id === ticket.lockedByStaffId)?.name : 'another staff member';
+  const lockerName = ticket.lockedByStaffId ? staffMembers?.find(s => s.id === ticket.lockedByStaffId)?.name : 'another staff member';
 
   if (isMobile) {
     return (
@@ -647,6 +649,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
                 handleUnlockTicket={handleUnlockTicket}
                 handleStatusChange={handleStatusChange}
                 handleAssignmentChange={handleAssignmentChange}
+                staffMembers={staffMembers}
               />
             </div>
           </ScrollArea>
@@ -686,6 +689,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
             handleUnlockTicket={handleUnlockTicket}
             handleStatusChange={handleStatusChange}
             handleAssignmentChange={handleAssignmentChange}
+            staffMembers={staffMembers}
           />
       </div>
       <div className="flex-1 flex flex-col bg-background overflow-hidden">
@@ -707,5 +711,3 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     </div>
   );
 }
-
-    

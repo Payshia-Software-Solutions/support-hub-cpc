@@ -1,9 +1,12 @@
 
 
-
-
-
-
+export interface ApiStaffMember {
+  id: string;
+  fname: string;
+  lname: string;
+  username: string;
+  email: string;
+}
 
 export interface Attachment {
   type: 'image' | 'document';
