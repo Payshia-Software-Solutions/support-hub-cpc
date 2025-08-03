@@ -25,7 +25,7 @@ const navItems = [
   { href: "/admin/chat", label: "Manage Chats", icon: MessageSquare },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
   { href: "/admin/recordings", label: "Recordings", icon: Video },
-  { href: "/admin/quick-links", label: "Find", icon: Search },
+  { href: "/admin/quick-links", label: "Find Student", icon: Search },
   { href: "/admin/manage", label: "Manage", icon: Wrench },
 ];
 

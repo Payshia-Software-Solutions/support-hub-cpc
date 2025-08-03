@@ -2,10 +2,16 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search } from "lucide-react";
 import Link from "next/link";
 
 const managementTasks = [
+  {
+    title: "Find Student",
+    description: "Search for a student to get a full overview.",
+    icon: <Search className="w-6 h-6 text-primary" />,
+    href: "/admin/quick-links",
+  },
   {
     title: "Enroll Students",
     description: "Manage student course enrollments and batches.",

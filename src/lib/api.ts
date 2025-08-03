@@ -1,5 +1,6 @@
 
 
+
 import type { Ticket, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload, ApiStaffMember, StaffMember } from './types';
 
 // In a real app, you would move this to a .env file
@@ -366,9 +367,13 @@ export const unlockTicket = async (ticketId: string): Promise<Ticket> => {
 }
 
 // Student Search
-export const searchStudents = (query: string): Promise<StudentSearchResult[]> => {
+export const searchStudents = async (query: string): Promise<StudentSearchResult[]> => {
     if (!query) return Promise.resolve([]);
-    return apiFetch(`/students/search?query=${encodeURIComponent(query)}`);
+    const response = await fetch(`${QA_API_BASE_URL}/student-search-new/${encodeURIComponent(query)}`);
+    if (!response.ok) {
+        throw new Error('Failed to search students');
+    }
+    return response.json();
 };
 
 export const getAllUserFullDetails = async (): Promise<UserFullDetails[]> => {
@@ -469,7 +474,7 @@ export const getStudentFullInfo = async (studentNumber: string): Promise<FullStu
         throw new Error(errorData.message || 'Failed to fetch student full info');
     }
     const data = await response.json();
-    if (!data.studentInfo || !data.studentEnrollments) {
+    if (!data.studentInfo || !data.studentEnrollments || !data.studentBalance) {
         throw new Error('Incomplete student data received from API');
     }
     return data as FullStudentData;

@@ -13,104 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { searchStudents } from '@/lib/api';
-import type { StudentSearchResult } from '@/lib/types';
+import { searchStudents, getStudentFullInfo } from '@/lib/api';
+import type { StudentSearchResult, FullStudentData, StudentBalance, StudentEnrollment, DeliveryOrder, CertificateRecord } from '@/lib/types';
 
-
-// --- Type Definitions for the API response ---
-interface StudentInfo {
-    id: string;
-    student_id: string;
-    username: string;
-    full_name: string;
-    name_with_initials: string;
-    name_on_certificate: string;
-    e_mail: string;
-    telephone_1: string;
-    telephone_2: string;
-    address_line_1: string;
-    address_line_2: string;
-    city: string;
-    district: string;
-    postal_code: string;
-    nic: string;
-    gender: string;
-}
-
-interface ApiPaymentRecord {
-    id: string;
-    receipt_number: string;
-    course_code: string;
-    paid_amount: string;
-    payment_status: string;
-    payment_type: string;
-    paid_date: string;
-}
-
-interface StudentBalance {
-    totalPaymentAmount: number;
-    TotalStudentPaymentRecords: number;
-    studentBalance: number;
-    paymentRecords: Record<string, ApiPaymentRecord>;
-}
-
-interface AssignmentGrade {
-    assignment_id: string;
-    assignment_name: string;
-    grade: string;
-}
-
-interface DeliveryOrder {
-    id: string;
-    delivery_id: string;
-    tracking_number: string;
-    order_date: string;
-    current_status: string;
-    delivery_title: string;
-    active_status: string;
-}
-
-interface CertificateRecord {
-    id: string;
-    certificate_id: string;
-    print_date: string;
-    print_status: string;
-    type: string;
-    course_code: string;
-}
-
-interface CriteriaDetail {
-    id: string;
-    list_name: string;
-    moq: string;
-    evaluation: {
-        completed: boolean;
-        currentValue: number;
-        requiredValue: number;
-    };
-}
-
-interface StudentEnrollment {
-    id: string;
-    course_code: string;
-    batch_name: string;
-    parent_course_name: string;
-    assignment_grades: {
-        assignments: AssignmentGrade[];
-        average_grade: string;
-    };
-    deliveryOrders: DeliveryOrder[];
-    certificateRecords: CertificateRecord[];
-    studentBalance: number;
-    certificate_eligibility: boolean;
-    criteria_details: CriteriaDetail[];
-}
-
-interface FullStudentData {
-    studentInfo: StudentInfo;
-    studentBalance: StudentBalance;
-    studentEnrollments: Record<string, StudentEnrollment>;
-}
 
 // --- End Type Definitions ---
 
@@ -336,17 +241,8 @@ export default function AdminQuickLinksPage() {
         setStudentData(null);
 
         try {
-            const response = await fetch(`https://qa-api.pharmacollege.lk/get-student-full-info?loggedUser=${searchId.trim().toUpperCase()}`);
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: `Student not found or server error. Status: ${response.status}` }));
-                throw new Error(errorData.message || 'Student not found or API response is invalid.');
-            }
-            const data = await response.json();
-            if (data && data.studentInfo) {
-                setStudentData(data);
-            } else {
-                 throw new Error('Student not found or API response is invalid.');
-            }
+            const data = await getStudentFullInfo(searchId);
+            setStudentData(data);
         } catch (err: any) {
             setError(err.message || 'An unknown error occurred.');
             toast({ variant: 'destructive', title: 'Search Failed', description: err.message });

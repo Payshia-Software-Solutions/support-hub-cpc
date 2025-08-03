@@ -1,5 +1,6 @@
 
 
+
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -320,21 +321,69 @@ export interface PharmaHunterProInfo {
 }
 
 
-interface StudentInfo {
+// --- Types for Find Student Page ---
+export interface StudentInfo {
     id: string;
     student_id: string;
     username: string;
     full_name: string;
+    name_with_initials: string;
+    name_on_certificate: string;
     e_mail: string;
     telephone_1: string;
     telephone_2: string;
-    nic: string;
-    city: string;
-    district: string;
     address_line_1: string;
     address_line_2: string;
+    city: string;
+    district: string;
+    postal_code: string;
+    nic: string;
+    gender: string;
 }
-interface CriteriaDetail {
+
+export interface ApiPaymentRecord {
+    id: string;
+    receipt_number: string;
+    course_code: string;
+    paid_amount: string;
+    payment_status: string;
+    payment_type: string;
+    paid_date: string;
+}
+
+export interface StudentBalance {
+    totalPaymentAmount: number;
+    TotalStudentPaymentRecords: number;
+    studentBalance: number;
+    paymentRecords: Record<string, ApiPaymentRecord>;
+}
+
+export interface AssignmentGrade {
+    assignment_id: string;
+    assignment_name: string;
+    grade: string;
+}
+
+export interface DeliveryOrder {
+    id: string;
+    delivery_id: string;
+    tracking_number: string;
+    order_date: string;
+    current_status: string;
+    delivery_title: string;
+    active_status: string;
+}
+
+export interface CertificateRecord {
+    id: string;
+    certificate_id: string;
+    print_date: string;
+    print_status: string;
+    type: string;
+    course_code: string;
+}
+
+export interface CriteriaDetail {
     id: string;
     list_name: string;
     moq: string;
@@ -344,18 +393,18 @@ interface CriteriaDetail {
         requiredValue: number;
     };
 }
+
 export interface StudentEnrollment {
     id: string;
     course_code: string;
-    parent_course_id: string;
     batch_name: string;
     parent_course_name: string;
     assignment_grades: {
-        assignments: { assignment_id: string; assignment_name: string; grade: string; }[];
+        assignments: AssignmentGrade[];
         average_grade: string;
     };
-    deliveryOrders: { id: string; delivery_id: string; tracking_number: string; order_date: string; current_status: string; delivery_title: string; active_status: string; }[];
-    certificateRecords: { id: string; certificate_id: string; print_date: string; print_status: string; type: string; course_code: string; }[];
+    deliveryOrders: DeliveryOrder[];
+    certificateRecords: CertificateRecord[];
     studentBalance: number;
     certificate_eligibility: boolean;
     criteria_details: CriteriaDetail[];
@@ -366,13 +415,11 @@ export interface StudentEnrollment {
 
 export interface FullStudentData {
     studentInfo: StudentInfo;
+    studentBalance: StudentBalance;
     studentEnrollments: Record<string, StudentEnrollment>;
-    studentBalance?: {
-        studentBalance: number;
-        totalPaymentAmount: number;
-        paymentRecords: Record<string, any>;
-    };
 }
+// --- End Types for Find Student Page ---
+
 
 export interface UpdateConvocationCoursesPayload {
   registrationId: string;
@@ -407,19 +454,6 @@ export interface GenerateCertificatePayload {
   source: string;
 }
 
-export interface DeliveryOrder {
-  id: string;
-  delivery_id: string;
-  tracking_number: string;
-  index_number: string;
-  order_date: string;
-  packed_date: string | null;
-  send_date: string | null;
-  current_status: string; 
-  course_code: string;
-  order_recived_status: string | null;
-  received_date: string | null;
-}
 
 export interface StudentInBatch {
     student_course_id: string;
