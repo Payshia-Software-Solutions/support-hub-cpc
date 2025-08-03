@@ -5,9 +5,9 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Ticket, MessageSquare, CheckCircle, Users } from "lucide-react";
-import { getAdminTickets, getAdminChats } from "@/lib/api";
+import { getAdminTickets, getAdminChats, getStaffMembers } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Ticket as TicketType, Chat as ChatType } from "@/lib/types";
+import type { Ticket as TicketType, Chat as ChatType, StaffMember } from "@/lib/types";
 import { subDays, format, isSameDay } from "date-fns";
 import {
   BarChart,
@@ -23,7 +23,6 @@ import {
   Label,
 } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
-import { dummyStaffMembers } from "@/lib/dummy-data";
 
 export default function AdminDashboardPage() {
   const { data: tickets, isLoading: isLoadingTickets, isError: isErrorTickets, error: errorTickets } = useQuery<TicketType[]>({
@@ -36,7 +35,12 @@ export default function AdminDashboardPage() {
     queryFn: getAdminChats,
   });
 
-  const isLoading = isLoadingTickets || isLoadingChats;
+  const { data: staffMembers, isLoading: isLoadingStaff } = useQuery<StaffMember[]>({
+    queryKey: ['staffMembers-dashboard'],
+    queryFn: getStaffMembers,
+  });
+
+  const isLoading = isLoadingTickets || isLoadingChats || isLoadingStaff;
 
   const dashboardStats = useMemo(() => {
     const openTicketsCount = tickets?.filter(t => t.status === 'Open' || t.status === 'In Progress').length ?? 0;
@@ -93,31 +97,31 @@ export default function AdminDashboardPage() {
   };
 
   const staffHandlingData = useMemo(() => {
-    if (!tickets) return [];
-    return dummyStaffMembers.map(staff => {
-      const assignedTickets = tickets.filter(t => t.assignedTo === staff.name) ?? [];
+    if (!tickets || !staffMembers) return [];
+    return staffMembers.map(staff => {
+      const assignedTickets = tickets.filter(t => t.assignedTo === staff.username) ?? [];
       return {
-        name: staff.name,
+        name: staff.name.split(' ')[0], // Use first name for brevity
         Open: assignedTickets.filter(t => t.status === 'Open').length,
         InProgress: assignedTickets.filter(t => t.status === 'In Progress').length,
       };
     }).filter(d => d.Open > 0 || d.InProgress > 0);
-  }, [tickets]);
+  }, [tickets, staffMembers]);
   
   const closedChartConfig: ChartConfig = {
     Closed: { label: "Closed", color: "hsl(var(--chart-3))" },
   };
 
   const staffClosedData = useMemo(() => {
-    if (!tickets) return [];
-    return dummyStaffMembers.map(staff => {
-      const closedTickets = tickets.filter(t => t.assignedTo === staff.name && t.status === 'Closed').length ?? 0;
+    if (!tickets || !staffMembers) return [];
+    return staffMembers.map(staff => {
+      const closedTickets = tickets.filter(t => t.assignedTo === staff.username && t.status === 'Closed').length ?? 0;
       return {
-        name: staff.name,
+        name: staff.name.split(' ')[0], // Use first name for brevity
         Closed: closedTickets,
       };
     }).filter(d => d.Closed > 0);
-  }, [tickets]);
+  }, [tickets, staffMembers]);
   
   if (isErrorTickets || isErrorChats) {
     return (
