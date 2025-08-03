@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle, ZoomIn } from "lucide-react"; 
+import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle, ZoomIn, RotateCw, ZoomOut } from "lucide-react"; 
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; 
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +19,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTicketMessages, createTicketMessage, updateTicketStatus } from "@/lib/api";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import Image from "next/image";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 
 interface TicketDetailClientProps {
   initialTicket: Ticket;
@@ -49,12 +49,36 @@ const defaultStaffAvatar = "https://placehold.co/40x40.png?text=S";
 // --- Sub-components for better readability ---
 
 const ImageViewerDialog = ({ imageUrl, onOpenChange }: { imageUrl: string | null; onOpenChange: (open: boolean) => void }) => {
+    const [scale, setScale] = useState(1);
+    const [rotation, setRotation] = useState(0);
+
+    useEffect(() => {
+        // Reset state when a new image is opened
+        setScale(1);
+        setRotation(0);
+    }, [imageUrl]);
+
     if (!imageUrl) return null;
+
     return (
         <Dialog open={!!imageUrl} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl p-2 sm:p-4">
-                <div className="relative aspect-video w-full">
-                    <Image src={imageUrl} alt="Full size image view" layout="fill" objectFit="contain" />
+            <DialogContent className="max-w-5xl w-[95vw] h-[90vh] p-2 sm:p-4 flex flex-col">
+                <DialogHeader className="p-2 pb-0">
+                     <div className="flex items-center justify-center gap-2">
+                        <Button variant="outline" size="icon" onClick={() => setScale(s => s + 0.2)}><ZoomIn className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="icon" onClick={() => setScale(s => Math.max(0.2, s - 0.2))}><ZoomOut className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="icon" onClick={() => setRotation(r => r + 90)}><RotateCw className="h-4 w-4" /></Button>
+                    </div>
+                </DialogHeader>
+                <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center relative">
+                    <Image
+                        src={imageUrl}
+                        alt="Full size image view"
+                        layout="fill"
+                        objectFit="contain"
+                        className="transition-transform duration-200"
+                        style={{ transform: `scale(${scale}) rotate(${rotation}deg)` }}
+                    />
                 </div>
             </DialogContent>
         </Dialog>
@@ -149,7 +173,7 @@ const TicketInfoContent = memo(({
             <div>
               <Label htmlFor="ticket-assignment">Assigned To</Label>
               <Select
-                value={staffMembers.find(s => s.username === ticket.assignedTo)?.id || "unassigned"}
+                value={staffMembers.find(s => s.username === ticket.assignedTo)?.username || "unassigned"}
                 onValueChange={handleAssignmentChange}
                 name="ticket-assignment"
                 disabled={isTicketLockedByOther}
@@ -160,7 +184,7 @@ const TicketInfoContent = memo(({
                 <SelectContent>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
                   {staffMembers.map(staff => (
-                    <SelectItem key={staff.id} value={staff.id}>
+                    <SelectItem key={staff.id} value={staff.username}>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
                           <AvatarImage src={staff.avatar} alt={staff.name} data-ai-hint="staff avatar"/>
@@ -322,13 +346,13 @@ const TicketDiscussionContent = ({
                     )}
                     >
                      {message.attachments?.map((att, index) => att.type === 'image' && att.url && (
-                        <div key={index} className="mb-2 group relative" onClick={() => setViewingImage(att.url)}>
+                        <div key={index} className="mb-2 group relative cursor-pointer" onClick={() => setViewingImage(att.url)}>
                             <Image
                                 src={att.url}
                                 alt={att.name}
                                 width={200}
                                 height={200}
-                                className="rounded-md object-cover cursor-pointer"
+                                className="rounded-md object-cover"
                                 data-ai-hint="attached image"
                             />
                              <div className="absolute inset-0 bg-black/40 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -498,10 +522,10 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     updateStatusMutation.mutate({ ticketId: ticket.id, newStatus });
   };
 
-  const handleAssignmentChange = (staffId: string) => {
+  const handleAssignmentChange = (staffUsername: string) => {
     if (userRole === 'staff' && isTicketLockedByOther) return;
 
-    if (staffId === "unassigned") {
+    if (staffUsername === "unassigned") {
       const updates: Partial<Ticket> = { 
         assignedTo: undefined, 
         assigneeAvatar: undefined,
@@ -510,7 +534,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
       };
       handleUpdate(updates);
     } else {
-        const selectedStaff = staffMembers?.find(s => s.id === staffId);
+        const selectedStaff = staffMembers?.find(s => s.username === staffUsername);
         if (!selectedStaff || !currentStaffUsername) {
           toast({ variant: "destructive", title: "Error", description: "Invalid staff member or user context." });
           return;
