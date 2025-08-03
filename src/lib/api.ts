@@ -56,6 +56,7 @@ interface ApiMessage {
   avatar?: string;
   attachments?: Attachment[];
   img_url?: string;
+  read_status?: 'Read' | 'Unread';
 }
 
 function mapApiMessageToMessage(apiMsg: ApiMessage): Message {
@@ -82,6 +83,7 @@ function mapApiMessageToMessage(apiMsg: ApiMessage): Message {
         time: apiMsg.time,
         avatar: apiMsg.avatar,
         attachments: attachments,
+        readStatus: apiMsg.read_status,
     };
 }
 
@@ -232,6 +234,18 @@ export const updateTicketStatus = async (ticketId: string, newStatus: TicketStat
     });
     return mapApiTicketToTicket(response.ticket);
 }
+
+export const markTicketMessagesAsRead = async (messageIds: string[]): Promise<any> => {
+    if (messageIds.length === 0) {
+        return Promise.resolve({ success: true, message: 'No messages to mark as read.' });
+    }
+    // The API seems to expect one ID at a time. We'll send requests in parallel.
+    const promises = messageIds.map(id => 
+        apiFetch(`/ticket-messages/update-read-status/${id}/`, { method: 'PUT' })
+    );
+    return Promise.all(promises);
+};
+
 
 export const createTicketMessage = async (messageData: CreateTicketMessageClientPayload, ticketId: string): Promise<Message> => {
   const formData = new FormData();

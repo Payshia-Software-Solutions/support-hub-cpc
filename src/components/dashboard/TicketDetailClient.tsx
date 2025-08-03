@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTicketMessages, createTicketMessage, updateTicketStatus } from "@/lib/api";
+import { getTicketMessages, createTicketMessage, updateTicketStatus, markTicketMessagesAsRead } from "@/lib/api";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "@/components/ui/dialog";
@@ -279,6 +279,20 @@ const TicketDiscussionContent = ({
         enabled: !!ticket.id,
         refetchInterval: 3000, // Refetch every 3 seconds
     });
+
+    useEffect(() => {
+        if (messages && messages.length > 0) {
+            const unreadIds = messages
+                .filter(m => m.readStatus === 'Unread' && m.from !== userRole)
+                .map(m => m.id);
+
+            if (unreadIds.length > 0) {
+                markTicketMessagesAsRead(unreadIds).catch(err => {
+                    console.error("Failed to mark messages as read:", err);
+                });
+            }
+        }
+    }, [messages, userRole]);
 
     useEffect(() => {
         if (scrollAreaRef.current) {

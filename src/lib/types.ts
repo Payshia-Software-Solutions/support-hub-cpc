@@ -22,6 +22,7 @@ export interface Message {
   time: string; 
   avatar?: string;
   attachments?: Attachment[];
+  readStatus?: 'Read' | 'Unread';
 }
 
 export interface Chat {
