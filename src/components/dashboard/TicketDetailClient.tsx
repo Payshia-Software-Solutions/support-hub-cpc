@@ -318,13 +318,15 @@ const TicketDiscussionContent = ({
             {!isLoading && messages?.map((message) => {
               const isStaffMessage = message.from === 'staff';
               const isCurrentUserMessage = (message.from === 'student' && userRole === 'student') || (isStaffMessage && userRole === 'staff');
+              const isOptimistic = message.id.startsWith('optimistic-');
 
               return (
                 <div
                     key={message.id}
                     className={cn(
                     "flex items-end gap-2 max-w-[85%] sm:max-w-[75%]", 
-                    isCurrentUserMessage ? "ml-auto flex-row-reverse" : "mr-auto"
+                    isCurrentUserMessage ? "ml-auto flex-row-reverse" : "mr-auto",
+                    isOptimistic && "opacity-60"
                     )}
                 >
                     <Avatar className="h-8 w-8">
