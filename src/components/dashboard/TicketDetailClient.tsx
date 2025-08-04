@@ -349,7 +349,7 @@ const TicketInfoContent = memo(({
 
         <CardHeader className="px-0 pt-0 pb-4">
           <CardTitle className="text-xl md:text-2xl font-headline">{ticket.subject}</CardTitle>
-          <CardDescription>Ticket ID: {ticket.id}</CardDescription>
+          <CardDescription>Ticket ID: <span className="font-bold text-primary text-lg">TKT-{ticket.id}</span></CardDescription>
         </CardHeader>
         
         <div className="space-y-4">
