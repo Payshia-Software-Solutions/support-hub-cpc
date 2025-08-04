@@ -7,10 +7,15 @@ import { dummyStaffMembers } from "@/lib/dummy-data";
 import type { Ticket } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getAdminTickets } from '@/lib/api';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
 const CURRENT_STAFF_ID = dummyStaffMembers[0]?.id || 'staff1'; 
 
-export default function AdminTicketsPage() {
+function TicketsPageContent() {
+  const searchParams = useSearchParams();
+  const initialStatusFilter = searchParams.get('status') || 'all';
+
   const { data: tickets, isLoading, isError, error } = useQuery<Ticket[]>({
     queryKey: ['admin-tickets'],
     queryFn: getAdminTickets,
@@ -38,7 +43,22 @@ export default function AdminTicketsPage() {
 
   return (
     <div className="h-full overflow-y-auto w-full pb-20">
-      <TicketList tickets={tickets || []} currentStaffId={CURRENT_STAFF_ID} />
+      <TicketList 
+        tickets={tickets || []} 
+        currentStaffId={CURRENT_STAFF_ID}
+        initialStatusFilter={initialStatusFilter}
+      />
     </div>
   );
 }
+
+
+export default function AdminTicketsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <TicketsPageContent />
+    </Suspense>
+  )
+}
+
+      

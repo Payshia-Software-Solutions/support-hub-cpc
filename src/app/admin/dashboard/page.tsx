@@ -23,6 +23,7 @@ import {
   Label,
 } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
+import Link from "next/link";
 
 export default function AdminDashboardPage() {
   const { data: tickets, isLoading: isLoadingTickets, isError: isErrorTickets, error: errorTickets } = useQuery<TicketType[]>({
@@ -50,8 +51,8 @@ export default function AdminDashboardPage() {
     const newUsersCount = "23"; // Static placeholder
 
     return [
-      { title: "Open Tickets", value: openTicketsCount.toString(), icon: <Ticket className="w-6 h-6 text-primary" />, trend: "All open & in-progress" },
-      { title: "Active Chats", value: activeChatsCount.toString(), icon: <MessageSquare className="w-6 h-6 text-primary" />, trend: "Total active conversations" },
+      { title: "Open Tickets", value: openTicketsCount.toString(), icon: <Ticket className="w-6 h-6 text-primary" />, trend: "All open & in-progress", href: "/admin/tickets?status=Open" },
+      { title: "Active Chats", value: activeChatsCount.toString(), icon: <MessageSquare className="w-6 h-6 text-primary" />, trend: "Total active conversations", href: "/admin/chat" },
       { title: "Resolved Tickets (Month)", value: resolvedThisMonthCount.toString(), icon: <CheckCircle className="w-6 h-6 text-green-500" />, trend: "In the last 30 days" },
       { title: "New Users (Week)", value: newUsersCount, icon: <Users className="w-6 h-6 text-primary" />, trend: "Static placeholder" },
     ];
@@ -144,22 +145,33 @@ export default function AdminDashboardPage() {
       </header>
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        {dashboardStats.map((stat, index) => (
-          <Card key={index} className="shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              {stat.icon}
-            </CardHeader>
-            <CardContent>
-               {isLoading ? (
-                <Skeleton className="h-8 w-1/2" />
-              ) : (
-                <div className="text-2xl font-bold">{stat.value}</div>
-              )}
-              <p className="text-xs text-muted-foreground">{stat.trend}</p>
-            </CardContent>
-          </Card>
-        ))}
+        {dashboardStats.map((stat, index) => {
+           const card = (
+             <Card className="shadow-lg hover:shadow-xl transition-shadow h-full">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                {stat.icon}
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-1/2" />
+                ) : (
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                )}
+                <p className="text-xs text-muted-foreground">{stat.trend}</p>
+              </CardContent>
+            </Card>
+           );
+
+           if (stat.href) {
+            return (
+              <Link href={stat.href} key={index} className="block">
+                {card}
+              </Link>
+            )
+           }
+           return <div key={index}>{card}</div>;
+        })}
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -391,3 +403,5 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
+      

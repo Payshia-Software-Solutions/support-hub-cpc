@@ -19,13 +19,14 @@ import {
 interface TicketListProps {
   tickets: Ticket[];
   currentStaffId?: string; // Optional for admin context to check locks
+  initialStatusFilter?: string;
 }
 
 const ITEMS_PER_PAGE = 9; // Display 9 tickets per page (3x3 grid)
 
-export function TicketList({ tickets: initialTickets, currentStaffId }: TicketListProps) {
+export function TicketList({ tickets: initialTickets, currentStaffId, initialStatusFilter = "all" }: TicketListProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -38,7 +39,11 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
       (ticket.studentName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (ticket.assignedTo?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     )
-    .filter(ticket => statusFilter === "all" || ticket.status === statusFilter)
+    .filter(ticket => {
+        if (statusFilter === 'all') return true;
+        if (statusFilter === 'Open') return ticket.status === 'Open' || ticket.status === 'In Progress';
+        return ticket.status === statusFilter;
+    })
     .filter(ticket => priorityFilter === "all" || ticket.priority === priorityFilter)
     .sort((a, b) => { // Sort open/in progress tickets first, then by creation date
       if (a.status !== 'Closed' && b.status === 'Closed') return -1;
@@ -51,6 +56,10 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, priorityFilter]);
+  
+  useEffect(() => {
+    setStatusFilter(initialStatusFilter);
+  }, [initialStatusFilter]);
 
   const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE);
   const paginatedTickets = useMemo(() => {
@@ -99,8 +108,7 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="Open">Open</SelectItem>
-              <SelectItem value="In Progress">In Progress</SelectItem>
+              <SelectItem value="Open">Open & In Progress</SelectItem>
               <SelectItem value="Closed">Closed</SelectItem>
             </SelectContent>
           </Select>
@@ -157,3 +165,5 @@ export function TicketList({ tickets: initialTickets, currentStaffId }: TicketLi
     </div>
   );
 }
+
+      
