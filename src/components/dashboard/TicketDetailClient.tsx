@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle, ZoomIn, RotateCw, ZoomOut, Mail, Phone, Loader2, Building, Home, MapPin, CheckCircle, XCircle as XCircleEligibility } from "lucide-react"; 
+import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle, ZoomIn, RotateCw, ZoomOut, Mail, Phone, Loader2, Building, Home, MapPin, CheckCircle, XCircle as XCircleEligibility, Star } from "lucide-react"; 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"; 
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -526,6 +526,42 @@ const LinkifiedText = ({ text }: { text: string }) => {
   );
 };
 
+const StarRating = ({ onRate, messageId, disabled = false }: { onRate?: (rating: number) => void; messageId: string, disabled?: boolean }) => {
+    const [rating, setRating] = useState(0);
+    const [hoverRating, setHoverRating] = useState(0);
+
+    const handleRatingClick = (newRating: number) => {
+        if (disabled) return;
+        setRating(newRating);
+        if(onRate) onRate(newRating);
+        toast({
+            title: `Thank You!`,
+            description: `You've rated the service ${newRating} out of 5 stars.`,
+        });
+    }
+
+    return (
+        <div className="flex items-center gap-1 mt-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                    key={star}
+                    onClick={() => handleRatingClick(star)}
+                    onMouseEnter={() => !disabled && setHoverRating(star)}
+                    onMouseLeave={() => !disabled && setHoverRating(0)}
+                    disabled={disabled}
+                    className={cn("p-1 transition-colors", disabled ? "cursor-not-allowed" : "cursor-pointer hover:text-amber-400")}
+                >
+                    <Star
+                        className={cn("h-6 w-6 transition-colors", 
+                            (hoverRating || rating) >= star ? "text-amber-400 fill-amber-400" : "text-gray-400 fill-gray-400"
+                        )}
+                    />
+                </button>
+            ))}
+        </div>
+    );
+};
+
 
 const TicketDiscussionContent = ({ 
   ticket,
@@ -559,6 +595,7 @@ const TicketDiscussionContent = ({
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [viewingImage, setViewingImage] = useState<string | null>(null);
     const queryClient = useQueryClient();
+    const [submittedRatings, setSubmittedRatings] = useState<Record<string, number>>({});
 
     const { data: messages, isLoading, isError } = useQuery<Message[]>({
         queryKey: ['ticketMessages', ticket.id],
@@ -596,6 +633,10 @@ const TicketDiscussionContent = ({
     // Find the first unread message for the current user
     const firstUnreadIndex = messages?.findIndex(m => m.readStatus === 'Unread' && m.from !== userRole) ?? -1;
 
+    const handleRate = (messageId: string, rating: number) => {
+        setSubmittedRatings(prev => ({...prev, [messageId]: rating}));
+    };
+
     return (
     <div className="flex flex-col h-full bg-background">
         <ImageViewerDialog imageUrl={viewingImage} onOpenChange={(open) => !open && setViewingImage(null)} />
@@ -630,6 +671,7 @@ const TicketDiscussionContent = ({
               const isOptimistic = String(message.id).startsWith('optimistic-');
               const hasText = message.text && message.text.trim().length > 0;
               const hasAttachment = message.attachments && message.attachments.length > 0;
+              const isRatingRequest = message.text.includes("rate our service");
               
               if (!hasText && !hasAttachment) {
                 return null;
@@ -681,7 +723,18 @@ const TicketDiscussionContent = ({
                                 </div>
                             </div>
                         ))}
-                        {hasText && <p className="text-sm p-3 pt-2 pb-1 break-all"><LinkifiedText text={message.text} /></p>}
+                        {hasText && (
+                            <div className="p-3 pt-2 pb-1">
+                                <p className="text-sm break-all"><LinkifiedText text={message.text} /></p>
+                                {isRatingRequest && userRole === 'student' && (
+                                    <StarRating 
+                                        messageId={message.id}
+                                        onRate={(rating) => handleRate(message.id, rating)} 
+                                        disabled={!!submittedRatings[message.id]}
+                                    />
+                                )}
+                            </div>
+                        )}
                         <p className={cn("text-xs mt-1 text-right opacity-70", hasText ? "pr-3 pb-2" : "p-0")}>
                             {new Date(message.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </p>
