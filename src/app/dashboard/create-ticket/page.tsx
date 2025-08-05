@@ -153,13 +153,15 @@ export default function CreateTicketPage() {
             {openTickets.length > 0 && <div className="mt-4">{openTicketsSection}</div>}
         </div>
        
-        {canCreateTicket ? (
-            <TicketForm onSubmitTicket={handleTicketSubmit} isSubmitting={createTicketMutation.isPending} />
-        ) : (
-             <div className="p-4 md:px-6 text-center text-muted-foreground">
-                <p>Please manage your existing tickets to continue.</p>
-            </div>
-        )}
+        <div className="p-4 md:p-6">
+            {canCreateTicket ? (
+                <TicketForm onSubmitTicket={handleTicketSubmit} isSubmitting={createTicketMutation.isPending} />
+            ) : (
+                <div className="text-center text-muted-foreground">
+                    <p>Please manage your existing tickets to continue.</p>
+                </div>
+            )}
+        </div>
     </div>
   );
 }
