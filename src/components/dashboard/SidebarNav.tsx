@@ -38,6 +38,7 @@ const navItems = [
   // { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
   { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
+  { href: "/dashboard/certificate-order", label: "Certificate Order", icon: Award },
 ];
 
 const adminNavItem = { href: "/admin/dashboard", label: "Admin Panel", icon: Shield };

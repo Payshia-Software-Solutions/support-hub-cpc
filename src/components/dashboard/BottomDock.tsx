@@ -23,9 +23,9 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const baseNavItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  // { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
   { href: "/dashboard/announcements", label: "Alerts", icon: Megaphone },
+  { href: "/dashboard/certificate-order", label: "Certificate", icon: Award },
 ];
 
 const adminNavItem = { href: "/admin/dashboard", label: "Admin", icon: Shield };
