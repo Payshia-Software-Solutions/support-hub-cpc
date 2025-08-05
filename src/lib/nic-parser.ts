@@ -74,7 +74,13 @@ export function parseNIC(nic: string): ParseResult {
 
   // Step 5: Construct date from year and adjusted dayOfYear
   const date = new Date(year, 0, dayOfYear); 
-  const birthday = date.toISOString().split('T')[0];
+  
+  // CORRECTED: Manually build the YYYY-MM-DD string to avoid timezone issues with toISOString()
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+  const dd = String(date.getDate()).padStart(2, '0');
+  const birthday = `${yyyy}-${mm}-${dd}`;
+  
   const formattedDate = date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
   steps.push(`Calculated Date: ${formattedDate}.`);
 
