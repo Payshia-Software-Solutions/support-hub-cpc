@@ -575,44 +575,79 @@ export default function BatchDeliveryOrdersPage() {
                             </Card>
                         )}
                         {!isLoadingStudents && !isError && (
-                            <div className="relative w-full overflow-auto border rounded-lg">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Student ID</TableHead>
-                                            <TableHead>Full Name</TableHead>
-                                            <TableHead>Dispatch Status</TableHead>
-                                            <TableHead>Received Status</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {paginatedStudents.length > 0 ? paginatedStudents.map(student => (
-                                            <TableRow key={student.student_course_id}>
-                                                <TableCell className="font-medium">{student.username}</TableCell>
-                                                <TableCell>{student.full_name}</TableCell>
-                                                <TableCell>
+                            <>
+                                {/* Desktop Table */}
+                                <div className="relative w-full overflow-auto border rounded-lg hidden md:block">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Student ID</TableHead>
+                                                <TableHead>Full Name</TableHead>
+                                                <TableHead>Dispatch Status</TableHead>
+                                                <TableHead>Received Status</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {paginatedStudents.length > 0 ? paginatedStudents.map(student => (
+                                                <TableRow key={student.student_course_id}>
+                                                    <TableCell className="font-medium">{student.username}</TableCell>
+                                                    <TableCell>{student.full_name}</TableCell>
+                                                    <TableCell>
+                                                        <OrderStatusCell 
+                                                            student={student} 
+                                                            selectedBatch={selectedCourse!} 
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <ReceivedStatusCell
+                                                            student={student}
+                                                            selectedBatch={selectedCourse!}
+                                                        />
+                                                    </TableCell>
+                                                </TableRow>
+                                            )) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={4} className="text-center h-24">
+                                                        No students found matching your search.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                                
+                                {/* Mobile List */}
+                                <div className="md:hidden space-y-4">
+                                    {paginatedStudents.length > 0 ? paginatedStudents.map(student => (
+                                        <div key={student.student_course_id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
+                                            <div>
+                                                <p className="font-bold">{student.full_name}</p>
+                                                <p className="text-sm text-muted-foreground">{student.username}</p>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4 pt-3 border-t">
+                                                <div>
+                                                    <p className="text-xs font-semibold text-muted-foreground mb-1">Dispatch Status</p>
                                                     <OrderStatusCell 
                                                         student={student} 
                                                         selectedBatch={selectedCourse!} 
                                                     />
-                                                </TableCell>
-                                                <TableCell>
+                                                </div>
+                                                <div>
+                                                     <p className="text-xs font-semibold text-muted-foreground mb-1">Received Status</p>
                                                     <ReceivedStatusCell
                                                         student={student}
                                                         selectedBatch={selectedCourse!}
                                                     />
-                                                </TableCell>
-                                            </TableRow>
-                                        )) : (
-                                            <TableRow>
-                                                <TableCell colSpan={4} className="text-center h-24">
-                                                    No students found matching your search.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )) : (
+                                        <div className="text-center h-24 flex items-center justify-center">
+                                            <p>No students found matching your search.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
                         )}
                     </CardContent>
                     {totalPages > 1 && (
@@ -628,3 +663,4 @@ export default function BatchDeliveryOrdersPage() {
         </div>
     );
 }
+
