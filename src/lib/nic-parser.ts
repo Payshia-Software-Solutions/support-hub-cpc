@@ -4,17 +4,10 @@
  * - parseNIC - A function that extracts birthdate and gender from an NIC number.
  */
 
-// Helper function to check for leap years.
-// This will be kept internal to the module.
-function isLeap(y: number): boolean {
-  return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
-}
-
 interface ParseResult {
   birthday?: string;
   gender?: 'Male' | 'Female';
   error?: string;
-  dayOfYear?: number;
 }
 
 /**
@@ -23,39 +16,54 @@ interface ParseResult {
  * @param nic The NIC number as a string.
  */
 export function parseNIC(nic: string): ParseResult {
-  let yearStr, dddStr;
+  let yearStr, dayOfYearStr;
 
-  if (nic.length === 10) {
-    // Old format: e.g. "98025xxxxV"
-    yearStr = '19' + nic.slice(0, 2);
-    dddStr = nic.slice(2, 5);
-  } else if (nic.length === 12) {
-    // New format: e.g. "199880201032"
-    yearStr = nic.slice(0, 4);
-    dddStr = nic.slice(4, 7);
+  // Step 1: Determine format and extract year and day-of-year string
+  const cleanedNic = nic.trim().toUpperCase();
+  if (cleanedNic.length === 10 && cleanedNic.endsWith('V')) {
+    yearStr = '19' + cleanedNic.substring(0, 2);
+    dayOfYearStr = cleanedNic.substring(2, 5);
+  } else if (cleanedNic.length === 12 && /^\d+$/.test(cleanedNic)) {
+    yearStr = cleanedNic.substring(0, 4);
+    dayOfYearStr = cleanedNic.substring(4, 7);
   } else {
-    return { error: 'Invalid NIC length' };
+    return { error: 'Invalid NIC format.' };
   }
 
   const year = parseInt(yearStr, 10);
-  let dayOfYear = parseInt(dddStr, 10);
-  const gender = dayOfYear > 500 ? 'Female' : 'Male';
-  if (dayOfYear > 500) dayOfYear -= 500;
+  let dayOfYear = parseInt(dayOfYearStr, 10);
 
-  // Validate range
-  const maxDay = isLeap(year) ? 366 : 365;
-  if (dayOfYear < 1 || dayOfYear > maxDay) {
-    return { error: `Invalid day number for year ${year}` };
+  if (isNaN(year) || isNaN(dayOfYear)) {
+    return { error: 'NIC contains non-numeric characters.' };
   }
 
-  // If it's not a leap year, any day after the 59th day (Feb 28th) needs to be adjusted.
-  if (!isLeap(year) && dayOfYear > 59) {
+  // Step 2: Determine gender and adjust day number if female
+  const gender = dayOfYear > 500 ? 'Female' : 'Male';
+  if (gender === 'Female') {
+    dayOfYear -= 500;
+  }
+  
+  // Step 3: Check if the year is a leap year
+  const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+
+  // Step 4: Validate day of year
+  const maxDays = isLeapYear ? 366 : 365;
+  if (dayOfYear < 1 || dayOfYear > maxDays) {
+    return { error: `Invalid day number for year ${year}.` };
+  }
+
+  // Step 5: Adjust for non-leap years after Feb 28th
+  // In non-leap years, day 59 is Feb 28. Day 60 should also be Feb 28, and day 61 becomes Mar 1.
+  // This is achieved by decrementing the day number if it's past Feb 28th.
+  if (!isLeapYear && dayOfYear > 59) {
     dayOfYear--;
   }
 
-  // Construct actual birth date
-  const birthDate = new Date(year, 0, dayOfYear);
-  const birthday = birthDate.toISOString().split('T')[0];
+  // Step 6: Create date from year and adjusted dayOfYear
+  const date = new Date(year, 0); // Start with Jan 1st of the year
+  date.setDate(dayOfYear); // Add the calculated days
 
-  return { birthday, gender, dayOfYear };
+  const birthday = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+
+  return { birthday, gender };
 }
