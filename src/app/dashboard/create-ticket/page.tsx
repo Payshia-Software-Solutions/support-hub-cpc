@@ -142,7 +142,7 @@ export default function CreateTicketPage() {
     );
 
   return (
-    <div className="w-full h-full overflow-y-auto">
+    <div className="w-full">
         <header className="p-4 md:px-6">
              <Button onClick={() => router.back()} className="mb-4 h-auto p-2 bg-card text-card-foreground shadow-md hover:bg-muted">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back
