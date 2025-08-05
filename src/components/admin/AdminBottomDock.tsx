@@ -12,6 +12,7 @@ const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/tickets", label: "Tickets", icon: Ticket },
   { href: "/admin/chat", label: "Chats", icon: MessageSquare },
+  { href: "/admin/manage", label: "Manage", icon: Wrench },
   { href: "/admin/more", label: "More", icon: MoreHorizontal },
 ];
 
@@ -32,7 +33,7 @@ export function AdminBottomDock() {
         {navItems.map((item) => {
           const currentItemIsActive = item.href === '/admin/dashboard'
               ? pathname === item.href
-              : (item.href === '/admin/more' ? pathname.startsWith('/admin/more') || pathname.startsWith('/admin/manage') : pathname.startsWith(item.href));
+              : pathname.startsWith(item.href);
 
           return (
             <Link
