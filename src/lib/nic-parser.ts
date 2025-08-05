@@ -1,4 +1,3 @@
-
 /**
  * @fileOverview A utility for parsing Sri Lankan National Identity Card (NIC) numbers.
  *
@@ -41,6 +40,7 @@ export function parseNIC(nic: string): ParseResult {
 
   const year = parseInt(yearStr, 10);
   let dayOfYear = parseInt(dddStr, 10);
+  let originalDayOfYear = dayOfYear;
 
   if (isNaN(year) || isNaN(dayOfYear)) {
     return { error: 'NIC contains non-numeric characters.', steps };
@@ -51,14 +51,21 @@ export function parseNIC(nic: string): ParseResult {
   if (gender === 'Female') {
     dayOfYear -= 500;
   }
-  steps.push(`Gender: ${gender} (since ${dddStr} ${gender === 'Female' ? '>' : '<='} 500). Adjusted day: ${dayOfYear}.`);
-  steps.push(`Day number for calculation: ${dayOfYear}`);
+  steps.push(`Gender: ${gender} (since ${originalDayOfYear} ${gender === 'Female' ? '>' : '<='} 500).`);
+  
+  // Helper to check for leap years
+  const isLeapYear = (y: number) => (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+  const leap = isLeapYear(year);
+  steps.push(`Year ${year} is ${leap ? 'a leap year' : 'not a leap year'}.`);
 
-  // Step 3: Check if the year is a leap year
-  const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  // Step 3: Adjust day number for non-leap years after day 59
+  if (!leap && dayOfYear > 59) {
+    steps.push(`Since it's not a leap year, adjusting day number from ${dayOfYear} to ${dayOfYear - 1}.`);
+    dayOfYear--;
+  }
 
   // Step 4: Validate day of year
-  const maxDays = isLeapYear ? 366 : 365;
+  const maxDays = leap ? 366 : 365;
   if (dayOfYear < 1 || dayOfYear > maxDays) {
     const errorMsg = `Invalid day number for year ${year}.`;
     steps.push(`Error: ${errorMsg}`);
@@ -66,10 +73,8 @@ export function parseNIC(nic: string): ParseResult {
   }
 
   // Step 5: Construct date from year and adjusted dayOfYear
-  const date = new Date(year, 0); // Start with Jan 1st of the year
-  date.setDate(date.getDate() + dayOfYear - 1); // Add days (Date is 1-based, so subtract 1)
-
-  const birthday = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  const date = new Date(year, 0, dayOfYear); 
+  const birthday = date.toISOString().split('T')[0];
   const formattedDate = date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
   steps.push(`Calculated Date: ${formattedDate}.`);
 
