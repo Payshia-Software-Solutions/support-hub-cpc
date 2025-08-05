@@ -51,9 +51,13 @@ export default function LoginAsPage() {
 
     const filteredStudents = useMemo(() => {
         if (!students) return [];
+
+        const sortedStudents = [...students].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        
         const lowercasedFilter = searchTerm.toLowerCase();
-        if (!lowercasedFilter) return students;
-        return students.filter(student =>
+        if (!lowercasedFilter) return sortedStudents;
+
+        return sortedStudents.filter(student =>
             student.username?.toLowerCase().includes(lowercasedFilter) ||
             student.fname?.toLowerCase().includes(lowercasedFilter) ||
             student.lname?.toLowerCase().includes(lowercasedFilter)
@@ -212,4 +216,4 @@ export default function LoginAsPage() {
             </Card>
         </div>
     );
-}
+ 
