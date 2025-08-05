@@ -133,7 +133,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(adminProfile);
         sessionStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
         setIsImpersonating(false);
-        router.push('/admin/dashboard');
+        router.push('/admin/manage/login-as');
     }
   }, [router]);
 
