@@ -5,21 +5,13 @@ import Link from "next/link";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useIsMobile } from "@/hooks/use-mobile";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function MobileHeader() {
   const { isMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
-  const [time, setTime] = useState("");
-
-  useEffect(() => {
-    const updateClock = () => {
-      setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    };
-    updateClock();
-    const timerId = setInterval(updateClock, 1000);
-    return () => clearInterval(timerId);
-  }, []);
+  const { user } = useAuth();
 
   // Hide the header if a mobile detail view is active
   if (isMobile && isMobileDetailActive) {
@@ -36,9 +28,12 @@ export function MobileHeader() {
           </a>
         </Link>
       </div>
-      <div className="text-sm font-medium text-muted-foreground font-mono">
-        {time}
-      </div>
+      <Link href="/dashboard/more" passHref>
+        <Avatar className="h-9 w-9 cursor-pointer">
+            <AvatarImage src={user?.avatar} alt={user?.name} />
+            <AvatarFallback>{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
+        </Avatar>
+      </Link>
     </div>
   );
 }
