@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from 'react';
+import { cn } from "@/lib/utils";
 
 type ManagementTask = {
     title: string;
@@ -143,12 +144,18 @@ const managementTasks: ManagementTask[] = [
   },
 ];
 
+const categoryColors: Record<ManagementTask['category'], string> = {
+    'Student Management': 'from-blue-400 to-indigo-500',
+    'Certificates & Convocation': 'from-purple-400 to-pink-500',
+    'Financial': 'from-green-400 to-teal-500',
+    'Content & System': 'from-orange-400 to-rose-500',
+}
 
 const TaskCard = ({ task }: { task: ManagementTask }) => (
     <Link href={task.href} className="group block h-full">
         <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
             <CardContent className="p-4 flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500">
+                <div className={cn("p-3 rounded-lg bg-gradient-to-br", categoryColors[task.category])}>
                     {task.icon}
                 </div>
                 <div className="flex-1">
