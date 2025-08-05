@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -50,7 +51,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen" style={{'--header-height': '3.5rem'} as React.CSSProperties}>
       <MobileHeader /> 
       <div className="flex flex-1 overflow-hidden w-screen">
         <AdminSidebarNav />
@@ -86,3 +87,4 @@ export default function AdminLayout({
     </ProtectedRoute>
   );
 }
+

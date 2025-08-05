@@ -193,7 +193,7 @@ export default function AdminTicketDetailPage() {
           </Button>
         </div>
       )}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden h-[calc(100vh-var(--header-height,0px))]">
         <TicketDetailClient 
           key={ticket.id}
           initialTicket={ticket} 
@@ -209,3 +209,4 @@ export default function AdminTicketDetailPage() {
     </div>
   );
 }
+
