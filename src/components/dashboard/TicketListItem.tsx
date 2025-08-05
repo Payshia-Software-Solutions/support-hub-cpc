@@ -48,7 +48,7 @@ export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: Ti
                     <CardTitle className="text-base font-semibold group-hover:text-primary transition-colors">{ticket.subject}</CardTitle>
                     <Badge variant="secondary" className={cn(priorityColors[ticket.priority])}>{ticket.priority}</Badge>
                 </div>
-                 <CardDescription>ID: TKT-{ticket.id}</CardDescription>
+                 <CardDescription>Ticket ID: <span className="font-bold text-red-800 text-lg">TKT-{ticket.id}</span></CardDescription>
             </CardHeader>
             <CardContent className="flex-grow space-y-3">
                  <div className="flex justify-between items-center text-xs text-muted-foreground">
