@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
-import { format, addDays, startOfYear } from 'date-fns';
+import { format } from 'date-fns';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
@@ -94,13 +94,10 @@ export default function RegisterPage() {
   };
 
   const parseNicAndSetDob = (nic: string) => {
-    const isLeap = (y: number) => {
-      // Per user request, always treat February as having 29 days.
-      return true;
-    };
-
     let yearStr, dddStr;
     const steps: string[] = [];
+
+    const isLeap = (year: number) => (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
 
     if (nic.length === 10 && (nic.toUpperCase().endsWith('V') || nic.toUpperCase().endsWith('X'))) {
       steps.push("1. NIC format detected: Old (10-digit).");
@@ -133,18 +130,18 @@ export default function RegisterPage() {
     }
     steps.push(genderStep);
 
-    const maxDay = isLeap(year) ? 366 : 365;
-    if (dayOfYear < 1 || dayOfYear > maxDay) {
-      setDob(undefined);
-      steps.push(`Error: Invalid day number (${dayOfYear}) for year ${year}.`);
-      setCalculationSteps(steps);
-      return;
+    let dayForCalc = dayOfYear;
+
+    // In non-leap years, day 60+ is off by one because Feb has 28 days.
+    // Adjust by subtracting 1 for all days after Feb 29th's position.
+    if (!isLeap(year) && dayOfYear > 59) {
+      dayForCalc -= 1;
+       steps.push(`5. Non-leap year adjustment: Day number is > 59, so subtracting 1. Adjusted day for calculation: ${dayForCalc}`);
+    } else {
+       steps.push(`5. Day number for calculation: ${dayForCalc}`);
     }
 
-    // Adjust for zero-based index for JavaScript Date object.
-    const dayForCalc = dayOfYear;
-    steps.push(`5. Day number for calculation: ${dayForCalc}`);
-    
+    // Date constructor's third argument (day) is 1-based.
     const birthDate = new Date(year, 0, dayForCalc); 
 
     setDob(birthDate);
@@ -152,6 +149,7 @@ export default function RegisterPage() {
 
     setCalculationSteps(steps);
   };
+
 
   const handleNicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newNic = e.target.value;
