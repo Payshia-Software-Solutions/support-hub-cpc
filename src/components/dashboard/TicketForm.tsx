@@ -192,7 +192,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                                     key={cat.name}
                                     type="button"
                                     onClick={() => handleCategorySelect(cat.name)}
-                                    className="p-4 border rounded-lg flex flex-col items-center justify-center text-center gap-2 hover:bg-accent hover:text-accent-foreground hover:border-primary transition-all duration-200"
+                                    className="p-4 border bg-card shadow-sm rounded-lg flex flex-col items-center justify-center text-center gap-2 hover:bg-accent hover:text-accent-foreground hover:border-primary transition-all duration-200"
                                 >
                                     <cat.icon className="w-8 h-8 text-primary" />
                                     <span className="text-sm font-medium">{cat.name}</span>
