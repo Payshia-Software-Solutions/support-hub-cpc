@@ -70,7 +70,7 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
   }, [filteredTickets, currentPage]);
   
   return (
-    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
+    <div className="space-y-4 md:space-y-6 p-4 md:px-6">
        <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -87,7 +87,7 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
         </Tooltip>
       </TooltipProvider>
 
-      <div className="flex flex-col md:flex-row gap-4 justify-between md:items-center sticky top-0 bg-background/80 backdrop-blur-sm pb-4 z-10 -mx-4 -mt-4 px-4 border-b md:mx-0 md:mt-0 md:px-0 md:border-b-0">
+      <div className="flex flex-col md:flex-row gap-4 justify-between md:items-center sticky top-0 bg-background/80 backdrop-blur-sm z-10 -mx-4 px-4 border-b md:mx-0 md:px-0 md:border-b-0 pb-4">
         <div>
           <h1 className="text-2xl font-headline font-semibold">Support Tickets</h1>
           <p className="text-muted-foreground text-sm">Create or manage support tickets.</p>
