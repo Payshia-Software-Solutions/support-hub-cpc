@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -36,7 +37,7 @@ export default function LoginPage() {
   };
   
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+    <div className={cn("flex min-h-screen items-center justify-center p-4", "auth-background")}>
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">

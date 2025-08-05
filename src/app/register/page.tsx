@@ -132,7 +132,7 @@ export default function RegisterPage() {
   };
   
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+    <div className={cn("flex min-h-screen items-center justify-center p-4", "auth-background")}>
       <Card className="w-full max-w-lg shadow-2xl">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
