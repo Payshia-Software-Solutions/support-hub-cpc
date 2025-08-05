@@ -36,7 +36,7 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
 
     if (isLoading) {
         return (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 gap-4">
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
@@ -46,7 +46,7 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
     }
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 gap-4">
             {statCards.map(stat => (
                 <Card key={stat.title} className="shadow-lg hover:shadow-xl transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -100,29 +100,14 @@ export default function StudentDashboardPage() {
                                 <PlusCircle className="mr-2 h-4 w-4"/> Create Ticket
                             </Link>
                         </Button>
+                         <Button asChild variant="outline">
+                            <Link href="/dashboard/certificate-order">
+                                <Award className="mr-2 h-4 w-4"/> Order Certificate
+                            </Link>
+                        </Button>
                     </div>
                 </div>
             </Card>
-
-            {/* --- Quick Actions --- */}
-            <section>
-                <h2 className="text-2xl font-semibold font-headline mb-4">Quick Actions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Link href="/dashboard/certificate-order" className="group block">
-                        <Card className="shadow-lg hover:shadow-xl hover:border-primary/50 transition-all duration-200 h-full">
-                            <CardContent className="p-4 flex items-center gap-4">
-                                <div className="p-3 rounded-lg bg-gradient-to-br from-green-400 to-teal-500 text-white">
-                                    <Award className="w-8 h-8" />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-lg text-card-foreground group-hover:text-primary transition-colors">Certificate Order</h3>
-                                    <p className="text-sm text-muted-foreground">Request and track your official certificates.</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </Link>
-                </div>
-            </section>
             
             <section>
                 <h2 className="text-2xl font-semibold font-headline mb-4">Ticket Summary</h2>
