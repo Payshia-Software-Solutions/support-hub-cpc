@@ -42,15 +42,20 @@ export function parseNIC(nic: string): ParseResult {
   const gender = dayOfYear > 500 ? 'Female' : 'Male';
   if (dayOfYear > 500) dayOfYear -= 500;
 
-  // Validate range
-  const maxDay = isLeap(year) ? 366 : 365;
+  const leap = isLeap(year);
+  const maxDay = leap ? 366 : 365;
   if (dayOfYear < 1 || dayOfYear > maxDay) {
     return { error: `Invalid day number for year ${year}` };
+  }
+  
+  // Handle the specific user request: if not a leap year, day 60 should be Feb 28.
+  if (!leap && dayOfYear === 60) {
+      return { birthday: `${year}-02-28`, gender, dayOfYear };
   }
 
   // Manually calculate month and day to avoid Date constructor issues
   const daysInMonth = [
-    31, isLeap(year) ? 29 : 28, 31, 30, 31, 30,
+    31, leap ? 29 : 28, 31, 30, 31, 30,
     31, 31, 30, 31, 30, 31
   ];
 
