@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, MessageSquare, Award, Library } from "lucide-react";
+import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, Award, Library } from "lucide-react";
 import { UnreadBadge } from "@/components/dashboard/UnreadBadge";
 
 // --- Sub Components ---
@@ -20,7 +20,7 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
     const stats = useMemo(() => {
         if (!tickets) return { open: 0, inProgress: 0, closed: 0, all: 0 };
         return {
-            open: tickets.filter(t => t.status === 'Open').length,
+            open: tickets.filter(t => t.status === 'Open' || t.status === 'In Progress').length,
             inProgress: tickets.filter(t => t.status === 'In Progress').length,
             closed: tickets.filter(t => t.status === 'Closed').length,
             all: tickets.length
@@ -36,7 +36,7 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
 
     if (isLoading) {
         return (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
@@ -46,7 +46,7 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
     }
 
     return (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2">
             {statCards.map(stat => (
                 <Card key={stat.title} className="shadow-lg hover:shadow-xl transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -100,18 +100,35 @@ export default function StudentDashboardPage() {
                                 <PlusCircle className="mr-2 h-4 w-4"/> Create Ticket
                             </Link>
                         </Button>
-                         <Button asChild variant="outline">
-                            <Link href="/dashboard/certificate-order">
-                                <Award className="mr-2 h-4 w-4"/> Order Certificate
-                            </Link>
-                        </Button>
                     </div>
                 </div>
             </Card>
+
+            <section>
+                <h2 className="text-2xl font-semibold font-headline mb-4">Quick Actions</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Link href="/dashboard/certificate-order" className="group block">
+                      <Card className="hover:shadow-lg hover:border-primary/50 transition-all duration-200 h-full">
+                        <CardContent className="p-4 flex items-center gap-4">
+                          <div className="bg-primary/10 p-3 rounded-lg">
+                            <Award className="w-8 h-8 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">Order Certificate</h3>
+                            <p className="text-sm text-muted-foreground">Request official certificates for completed courses.</p>
+                          </div>
+                          <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
+                        </CardContent>
+                      </Card>
+                    </Link>
+                </div>
+            </section>
             
             <section>
                 <h2 className="text-2xl font-semibold font-headline mb-4">Ticket Summary</h2>
-                <TicketStats tickets={tickets || []} isLoading={isLoading} />
+                <div className="grid grid-cols-2 gap-4">
+                  <TicketStats tickets={tickets || []} isLoading={isLoading} />
+                </div>
             </section>
 
             <section>
@@ -134,7 +151,7 @@ export default function StudentDashboardPage() {
                                 <div className="flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                                     <div className="flex-shrink-0">
                                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                            <MessageSquare className="w-5 h-5 text-primary"/>
+                                            <TicketIcon className="w-5 h-5 text-primary"/>
                                         </div>
                                     </div>
                                     <div className="flex-1 min-w-0">
