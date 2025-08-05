@@ -188,15 +188,18 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                     {!selectedCategory ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {categoryOptions.map((cat) => (
-                                <button
+                                <Card
                                     key={cat.name}
-                                    type="button"
+                                    className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0 cursor-pointer group"
                                     onClick={() => handleCategorySelect(cat.name)}
-                                    className="p-4 border bg-card shadow-sm rounded-lg flex flex-col items-center justify-center text-center gap-2 hover:bg-accent hover:text-accent-foreground hover:border-primary transition-all duration-200"
                                 >
-                                    <cat.icon className="w-8 h-8 text-primary" />
-                                    <span className="text-sm font-medium">{cat.name}</span>
-                                </button>
+                                    <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2">
+                                        <div className="p-3 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500">
+                                          <cat.icon className="w-8 h-8 text-white" />
+                                        </div>
+                                        <span className="text-sm font-semibold text-card-foreground group-hover:text-primary transition-colors">{cat.name}</span>
+                                    </CardContent>
+                                </Card>
                             ))}
                         </div>
                     ) : (
