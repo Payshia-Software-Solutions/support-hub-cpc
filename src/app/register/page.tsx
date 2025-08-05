@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -21,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { parseNIC } from '@/lib/nic-parser';
 
 
 const STEPS = [
@@ -91,51 +91,30 @@ export default function RegisterPage() {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const parseNicAndSetDob = (nic: string) => {
-    let yearStr, dddStr;
-
-    const isLeap = (year: number) => (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-
-    if (nic.length === 10 && (nic.toUpperCase().endsWith('V') || nic.toUpperCase().endsWith('X'))) {
-      yearStr = '19' + nic.slice(0, 2);
-      dddStr = nic.slice(2, 5);
-    } else if (nic.length === 12) {
-      yearStr = nic.slice(0, 4);
-      dddStr = nic.slice(4, 7);
-    } else {
-      setDob(undefined);
-      setGender('');
-      return;
-    }
-
-    const year = parseInt(yearStr, 10);
-    let dayOfYear = parseInt(dddStr, 10);
-
-    const determinedGender = dayOfYear > 500 ? 'Female' : 'Male';
-    setGender(determinedGender);
-    
-    if (dayOfYear > 500) {
-      dayOfYear -= 500;
-    }
-
-    // In non-leap years, day 60+ is off by one because Feb has 28 days.
-    // Adjust by subtracting 1 for all days after Feb 29th's position.
-    let dayForCalc = dayOfYear;
-    if (!isLeap(year) && dayOfYear > 59) {
-      dayForCalc -= 1;
-    }
-
-    // Date constructor's third argument (day) is 1-based.
-    const birthDate = new Date(year, 0, dayForCalc); 
-    setDob(birthDate);
-  };
-
-
   const handleNicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newNic = e.target.value;
     setNic(newNic);
-    parseNicAndSetDob(newNic);
+    if (newNic.length >= 10) { // Only parse if it's a potentially valid length
+        const result = parseNIC(newNic);
+        if (result.error) {
+            setDob(undefined);
+            setGender('');
+        } else {
+            if (result.birthday) {
+                // The result from parser is a string 'YYYY-MM-DD', but new Date() needs to be handled carefully
+                // to avoid timezone issues. Adding a T00:00:00 makes it explicit.
+                setDob(new Date(`${result.birthday}T00:00:00`));
+            }
+            if (result.gender) {
+                setGender(result.gender);
+            }
+        }
+    } else {
+        setDob(undefined);
+        setGender('');
+    }
   };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,6 +238,7 @@ export default function RegisterPage() {
             )}
              {currentStep === 3 && (
                 <div className="space-y-4 animate-in fade-in-50">
+                    <div className="space-y-2"><Label>NIC Number</Label><Input value={nic} onChange={handleNicChange} required /></div>
                     <div className="space-y-2">
                       <Label>Gender</Label>
                       <Select value={gender} onValueChange={setGender} required>
@@ -272,8 +252,6 @@ export default function RegisterPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2"><Label>NIC Number</Label><Input value={nic} onChange={handleNicChange} required /></div>
-
                     <div className="space-y-2">
                         <Label>Date of Birth</Label>
                         <Popover>
