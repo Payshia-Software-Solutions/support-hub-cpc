@@ -57,10 +57,10 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <AdminSidebarNav />
         <main 
           className={cn(
-            "flex-1 flex flex-col overflow-hidden bg-background animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
+            "flex-1 flex flex-col bg-background animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
           )}
         >
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-y-auto">
             <SidebarInset 
                 className={cn(
                   "flex-1 flex flex-col",
