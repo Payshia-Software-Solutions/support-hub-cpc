@@ -42,37 +42,20 @@ export function parseNIC(nic: string): ParseResult {
   const gender = dayOfYear > 500 ? 'Female' : 'Male';
   if (dayOfYear > 500) dayOfYear -= 500;
 
-  const leap = isLeap(year);
-  const maxDay = leap ? 366 : 365;
+  // Validate range
+  const maxDay = isLeap(year) ? 366 : 365;
   if (dayOfYear < 1 || dayOfYear > maxDay) {
     return { error: `Invalid day number for year ${year}` };
   }
-  
-  // Handle the specific user request: if not a leap year, day 60 should be Feb 28.
-  if (!leap && dayOfYear === 60) {
-      return { birthday: `${year}-02-28`, gender, dayOfYear };
+
+  // If it's not a leap year, any day after the 59th day (Feb 28th) needs to be adjusted.
+  if (!isLeap(year) && dayOfYear > 59) {
+    dayOfYear--;
   }
 
-  // Manually calculate month and day to avoid Date constructor issues
-  const daysInMonth = [
-    31, leap ? 29 : 28, 31, 30, 31, 30,
-    31, 31, 30, 31, 30, 31
-  ];
-
-  let month = 0;
-  let dayOfMonth = dayOfYear;
-  
-  while (month < 12 && dayOfMonth > daysInMonth[month]) {
-    dayOfMonth -= daysInMonth[month];
-    month++;
-  }
-
-  month += 1; // Adjust month to be 1-based (January is 1)
-  
-  const monthStr = month < 10 ? '0' + month : String(month);
-  const dayStr = dayOfMonth < 10 ? '0' + dayOfMonth : String(dayOfMonth);
-  
-  const birthday = `${year}-${monthStr}-${dayStr}`;
+  // Construct actual birth date
+  const birthDate = new Date(year, 0, dayOfYear);
+  const birthday = birthDate.toISOString().split('T')[0];
 
   return { birthday, gender, dayOfYear };
 }
