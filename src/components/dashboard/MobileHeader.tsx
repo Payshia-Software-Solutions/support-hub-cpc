@@ -7,11 +7,21 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal, Shield, LogOut } from "lucide-react";
 
 export function MobileHeader() {
   const { isMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   // Hide the header if a mobile detail view is active
   if (isMobile && isMobileDetailActive) {
@@ -28,12 +38,42 @@ export function MobileHeader() {
           </a>
         </Link>
       </div>
-      <Link href="/dashboard/more" passHref>
-        <Avatar className="h-9 w-9 cursor-pointer">
-            <AvatarImage src={user?.avatar} alt={user?.name} />
-            <AvatarFallback>{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
-        </Avatar>
-      </Link>
+      
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-10 w-10 rounded-full">
+            <Avatar className="h-9 w-9 cursor-pointer">
+                <AvatarImage src={user?.avatar} alt={user?.name} />
+                <AvatarFallback>{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <span className="sr-only">Open user menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+           <DropdownMenuItem asChild>
+            <Link href="/dashboard/more">
+              <MoreHorizontal className="mr-2 h-4 w-4" />
+              <span>More Options</span>
+            </Link>
+          </DropdownMenuItem>
+          {user?.role === 'staff' && (
+            <DropdownMenuItem asChild>
+                <Link href="/admin/dashboard">
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>Admin Panel</span>
+                </Link>
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+           <DropdownMenuItem onClick={logout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Logout</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
     </div>
   );
 }
