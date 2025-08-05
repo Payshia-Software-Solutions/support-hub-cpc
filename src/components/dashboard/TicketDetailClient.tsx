@@ -840,7 +840,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const [activeMobileTab, setActiveMobileTab] = useState<'discussion' | 'info' | 'student'>('discussion');
+  const [activeMobileTab, setActiveMobileTab] = useState<'discussion' | 'info'>('discussion');
   const queryClient = useQueryClient();
   const [isSending, setIsSending] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
@@ -1078,10 +1078,10 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
             onValueChange={(value) => setActiveMobileTab(value as any)}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className={cn("grid w-full", userRole === 'staff' ? "grid-cols-3" : "grid-cols-2")}>
               <TabsTrigger value="info">Info</TabsTrigger>
               <TabsTrigger value="discussion">Discussion</TabsTrigger>
-              <TabsTrigger value="student">Student</TabsTrigger>
+              {userRole === 'staff' && <TabsTrigger value="student">Student</TabsTrigger>}
             </TabsList>
           </Tabs>
         </div>
@@ -1105,7 +1105,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
           </ScrollArea>
         )}
         
-        {activeMobileTab === 'student' && (
+        {activeMobileTab === 'student' && userRole === 'staff' && (
              <ScrollArea className="flex-1 bg-card">
                 <div className="p-4 space-y-4">
                      {!studentDetails && (
