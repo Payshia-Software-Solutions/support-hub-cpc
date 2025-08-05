@@ -54,8 +54,6 @@ export default function RegisterPage() {
   const [gender, setGender] = useState('');
   const [dob, setDob] = useState<Date | undefined>();
   const [nic, setNic] = useState('');
-  const [calculationSteps, setCalculationSteps] = useState<string[]>([]);
-
 
   const [phone1, setPhone1] = useState('');
   const [phone2, setPhone2] = useState('');
@@ -95,59 +93,41 @@ export default function RegisterPage() {
 
   const parseNicAndSetDob = (nic: string) => {
     let yearStr, dddStr;
-    const steps: string[] = [];
 
     const isLeap = (year: number) => (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
 
     if (nic.length === 10 && (nic.toUpperCase().endsWith('V') || nic.toUpperCase().endsWith('X'))) {
-      steps.push("1. NIC format detected: Old (10-digit).");
       yearStr = '19' + nic.slice(0, 2);
       dddStr = nic.slice(2, 5);
     } else if (nic.length === 12) {
-      steps.push("1. NIC format detected: New (12-digit).");
       yearStr = nic.slice(0, 4);
       dddStr = nic.slice(4, 7);
     } else {
       setDob(undefined);
       setGender('');
-      setCalculationSteps([]);
       return;
     }
 
     const year = parseInt(yearStr, 10);
-    steps.push(`2. Extracted Year: ${year}`);
-    
     let dayOfYear = parseInt(dddStr, 10);
-    steps.push(`3. Extracted Day Number: ${dayOfYear}`);
 
     const determinedGender = dayOfYear > 500 ? 'Female' : 'Male';
     setGender(determinedGender);
     
-    let genderStep = `4. Gender: ${determinedGender}`;
     if (dayOfYear > 500) {
       dayOfYear -= 500;
-      genderStep += ` (since ${dddStr} > 500). Adjusted day: ${dayOfYear}.`;
     }
-    steps.push(genderStep);
-
-    let dayForCalc = dayOfYear;
 
     // In non-leap years, day 60+ is off by one because Feb has 28 days.
     // Adjust by subtracting 1 for all days after Feb 29th's position.
+    let dayForCalc = dayOfYear;
     if (!isLeap(year) && dayOfYear > 59) {
       dayForCalc -= 1;
-       steps.push(`5. Non-leap year adjustment: Day number is > 59, so subtracting 1. Adjusted day for calculation: ${dayForCalc}`);
-    } else {
-       steps.push(`5. Day number for calculation: ${dayForCalc}`);
     }
 
     // Date constructor's third argument (day) is 1-based.
     const birthDate = new Date(year, 0, dayForCalc); 
-
     setDob(birthDate);
-    steps.push(`6. Calculated Date: ${format(birthDate, "MMMM do, yyyy")}.`);
-
-    setCalculationSteps(steps);
   };
 
 
@@ -293,18 +273,6 @@ export default function RegisterPage() {
                       </Select>
                     </div>
                     <div className="space-y-2"><Label>NIC Number</Label><Input value={nic} onChange={handleNicChange} required /></div>
-                    
-                    {calculationSteps.length > 0 && (
-                        <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-900">
-                          <Info className="h-4 w-4 !text-blue-900"/>
-                          <AlertTitle>NIC Calculation</AlertTitle>
-                          <AlertDescription asChild>
-                            <ul className="list-none space-y-1 text-xs">
-                                {calculationSteps.map((step, index) => <li key={index} className="flex items-start"><span className="mr-2">&raquo;</span><span>{step}</span></li>)}
-                            </ul>
-                          </AlertDescription>
-                        </Alert>
-                    )}
 
                     <div className="space-y-2">
                         <Label>Date of Birth</Label>
