@@ -1,6 +1,7 @@
 
 'use client';
 
+import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,7 @@ import Link from 'next/link';
 import { Loader2, ArrowLeft, ArrowRight, User, MapPin, Calendar as CalendarIcon, Phone, BookOpen, Upload, ChevronsUpDown, Check, Info } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandInput } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -141,7 +142,7 @@ export default function RegisterPage() {
     }
 
     // Adjust for zero-based index for JavaScript Date object.
-    const dayForCalc = dayOfYear -1;
+    const dayForCalc = dayOfYear - 1;
     steps.push(`5. Adjusting day for calculation (Day - 1): ${dayForCalc}`);
     
     const birthDate = new Date(year, 0, 1); // Start with Jan 1st of the year
