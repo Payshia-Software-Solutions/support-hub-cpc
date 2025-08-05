@@ -4,22 +4,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
-  Home,
+  LayoutDashboard,
   MessageCircle,
   Ticket,
   Megaphone,
-  User
+  Award
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 
 const navItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
-  { href: "/dashboard/announcements", label: "Updates", icon: Megaphone },
-  { href: "/dashboard", label: "Home", icon: Home },
   { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
-  { href: "/dashboard/profile", label: "Profile", icon: User },
+  { href: "/dashboard/announcements", label: "Updates", icon: Megaphone },
+  { href: "/dashboard/certificate-order", label: "Certificate", icon: Award },
 ];
 
 export function BottomDock() {
@@ -36,7 +36,9 @@ export function BottomDock() {
       <div className="relative flex justify-around items-end h-16 pt-1">
         <div className="absolute top-0 left-0 h-full w-full bg-gradient-to-t from-card via-card/80 to-transparent pointer-events-none"></div>
         {navItems.map((item) => {
-          const currentItemIsActive = pathname === item.href;
+          const currentItemIsActive = item.href === '/dashboard' 
+              ? pathname === item.href 
+              : pathname.startsWith(item.href);
 
           return (
             <Link
