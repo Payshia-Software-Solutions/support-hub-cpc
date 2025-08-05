@@ -15,6 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
 
 const STEPS = [
   { id: 1, title: 'Basic Information', icon: User },
@@ -41,8 +42,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const [address1, setAddress1] = useState('');
-  const [address2, setAddress2] = useState('');
+  const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   
   const [gender, setGender] = useState('');
@@ -137,8 +137,7 @@ export default function RegisterPage() {
             )}
             {currentStep === 2 && (
                 <div className="space-y-4 animate-in fade-in-50">
-                    <div className="space-y-2"><Label>Address Line 1</Label><Input value={address1} onChange={(e) => setAddress1(e.target.value)} required /></div>
-                    <div className="space-y-2"><Label>Address Line 2</Label><Input value={address2} onChange={(e) => setAddress2(e.target.value)} /></div>
+                    <div className="space-y-2"><Label>Street Address</Label><Textarea value={address} onChange={(e) => setAddress(e.target.value)} required /></div>
                      <div className="space-y-2">
                         <Label>City</Label>
                          <Popover open={isCityPopoverOpen} onOpenChange={setIsCityPopoverOpen}>
