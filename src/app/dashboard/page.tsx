@@ -36,7 +36,7 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
 
     if (isLoading) {
         return (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
@@ -46,7 +46,7 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
     }
 
     return (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {statCards.map(stat => (
                 <Card key={stat.title} className="shadow-lg hover:shadow-xl transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -94,13 +94,6 @@ export default function StudentDashboardPage() {
                         <h1 className="text-2xl font-bold font-headline">Welcome back, {user?.name?.split(' ')[0]}!</h1>
                         <p className="text-muted-foreground">Here's a summary of your support tickets.</p>
                     </div>
-                     <div className="flex flex-col sm:flex-row gap-2">
-                         <Button asChild>
-                            <Link href="/dashboard/create-ticket">
-                                <PlusCircle className="mr-2 h-4 w-4"/> Create Ticket
-                            </Link>
-                        </Button>
-                    </div>
                 </div>
             </Card>
 
@@ -121,12 +114,26 @@ export default function StudentDashboardPage() {
                         </CardContent>
                       </Card>
                     </Link>
+                    <Link href="/dashboard/create-ticket" className="group block">
+                        <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
+                            <CardContent className="p-4 flex items-center gap-4">
+                                <div className="p-3 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500">
+                                    <PlusCircle className="w-8 h-8 text-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">Create Ticket</h3>
+                                    <p className="text-sm text-muted-foreground">Open a new support request for any issue.</p>
+                                </div>
+                                <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
+                            </CardContent>
+                        </Card>
+                    </Link>
                 </div>
             </section>
             
             <section>
                 <h2 className="text-2xl font-semibold font-headline mb-4">Ticket Summary</h2>
-                <div className="grid grid-cols-2 w-full gap-2">
+                <div className="w-full">
                     <TicketStats tickets={tickets || []} isLoading={isLoading} />
                 </div>
             </section>
