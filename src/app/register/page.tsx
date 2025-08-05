@@ -10,13 +10,15 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, ArrowRight, User, MapPin, Calendar, Phone, BookOpen, Upload, ChevronsUpDown, Check } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, User, MapPin, Calendar as CalendarIcon, Phone, BookOpen, Upload, ChevronsUpDown, Check } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 
 
 const STEPS = [
@@ -48,7 +50,7 @@ export default function RegisterPage() {
   const [city, setCity] = useState('');
   
   const [gender, setGender] = useState('');
-  const [dob, setDob] = useState('');
+  const [dob, setDob] = useState<Date | undefined>();
   const [nic, setNic] = useState('');
 
   const [phone1, setPhone1] = useState('');
@@ -199,7 +201,34 @@ export default function RegisterPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2"><Label>Date of Birth</Label><Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} required /></div>
+                     <div className="space-y-2">
+                        <Label>Date of Birth</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !dob && "text-muted-foreground"
+                                )}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {dob ? format(dob, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    captionLayout="dropdown-buttons"
+                                    fromYear={1960}
+                                    toYear={2010}
+                                    selected={dob}
+                                    onSelect={setDob}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                     <div className="space-y-2"><Label>NIC Number</Label><Input value={nic} onChange={(e) => setNic(e.target.value)} required /></div>
                 </div>
             )}
@@ -221,7 +250,6 @@ export default function RegisterPage() {
                     </div>
                 </div>
             )}
-
             <div className="flex justify-between items-center pt-4">
                  <Button type="button" variant="outline" onClick={handlePrevStep} disabled={currentStep === 1 || isRegistering}>
                     <ArrowLeft className="mr-2 h-4 w-4"/> Back
@@ -239,7 +267,7 @@ export default function RegisterPage() {
             </div>
           </form>
         </CardContent>
-        <CardFooter className="text-center text-sm text-muted-foreground">
+         <CardFooter className="text-center text-sm text-muted-foreground">
             <p className="w-full">
                 Already have an account?{' '}
                 <Link href="/login" className="text-primary font-semibold hover:underline">
