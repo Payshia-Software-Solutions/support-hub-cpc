@@ -48,9 +48,26 @@ export function parseNIC(nic: string): ParseResult {
     return { error: `Invalid day number for year ${year}` };
   }
 
-  // Construct actual birth date
-  const birthDate = new Date(year, 0, dayOfYear);
-  const birthday = birthDate.toISOString().split('T')[0];
+  // Manually calculate month and day to avoid Date constructor issues
+  const daysInMonth = [
+    31, isLeap(year) ? 29 : 28, 31, 30, 31, 30,
+    31, 31, 30, 31, 30, 31
+  ];
+
+  let month = 0;
+  let dayOfMonth = dayOfYear;
+  
+  while (month < 12 && dayOfMonth > daysInMonth[month]) {
+    dayOfMonth -= daysInMonth[month];
+    month++;
+  }
+
+  month += 1; // Adjust month to be 1-based (January is 1)
+  
+  const monthStr = month < 10 ? '0' + month : String(month);
+  const dayStr = dayOfMonth < 10 ? '0' + dayOfMonth : String(dayOfMonth);
+  
+  const birthday = `${year}-${monthStr}-${dayStr}`;
 
   return { birthday, gender, dayOfYear };
 }
