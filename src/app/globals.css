@@ -5,42 +5,42 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;      /* very light blue */
-    --foreground: 210 10% 30%;      /* dark grey-blue for text */
+    --background: 130 50% 96%;          /* Mint green background from image */
+    --foreground: 145 50% 25%;           /* Darker green for text */
     --card: 0 0% 100%;
     --card-foreground: 210 10% 30%;
     --popover: 0 0% 100%;
     --popover-foreground: 210 10% 30%;
-    --primary: 207 88% 69%;          /* calming blue #64B5F6 */
+    --primary: 145 63% 42%;              /* Vibrant Green from image */
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 93%;       /* lighter blue */
     --secondary-foreground: 210 10% 40%;
     --muted: 210 40% 93%;
     --muted-foreground: 210 10% 50%;
-    --accent: 259 40% 64%;           /* soft violet #9575CD */
+    --accent: 145 63% 42%;               /* Using primary green for accent */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 210 20% 88%;
     --input: 210 30% 96%;
-    --ring: 207 88% 65%;
-    --chart-1: 207 80% 55%;
-    --chart-2: 259 50% 55%;
-    --chart-3: 30 80% 60%;
-    --chart-4: 170 50% 55%;
-    --chart-5: 290 60% 65%;
-    --radius: 0.5rem;
+    --ring: 145 63% 42%;
+    --chart-1: 145 70% 45%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 175 65% 40%;
+    --chart-4: 190 70% 40%;
+    --chart-5: 205 75% 45%;
+    --radius: 0.8rem; /* Slightly larger radius to match design */
     --blue-progress: 217 91% 60%;
 
     /* Sidebar specific theme variables */
     --sidebar-background: 210 25% 15%;
     --sidebar-foreground: 210 20% 90%;
-    --sidebar-primary: 207 88% 69%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 145 63% 46%;      
+    --sidebar-primary-foreground: 0 0% 100%; 
     --sidebar-accent: 210 25% 25%;
     --sidebar-accent-foreground: 210 20% 95%;
     --sidebar-border: 210 25% 20%;
-    --sidebar-ring: 207 88% 65%;
+    --sidebar-ring: 145 63% 42%;
   }
 
   .dark {
@@ -50,35 +50,35 @@
     --card-foreground: 210 20% 90%;
     --popover: 210 20% 12%;
     --popover-foreground: 210 20% 90%;
-    --primary: 207 88% 69%; 
-    --primary-foreground: 0 0% 10%;
+    --primary: 145 63% 46%; 
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 20% 20%;
     --secondary-foreground: 210 20% 90%;
     --muted: 210 20% 25%;
     --muted-foreground: 210 20% 70%;
-    --accent: 259 40% 64%; 
+    --accent: 145 63% 46%; 
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
     --border: 210 20% 30%;
     --input: 210 20% 25%;
-    --ring: 207 88% 65%;
-    --chart-1: 207 80% 55%;
-    --chart-2: 259 50% 55%;
-    --chart-3: 30 80% 60%;
-    --chart-4: 170 50% 55%;
-    --chart-5: 290 60% 65%;
+    --ring: 145 63% 42%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
     --blue-progress: 217 91% 60%;
 
     /* Sidebar specific theme variables for dark mode */
-    --sidebar-background: 210 25% 15%;
-    --sidebar-foreground: 210 20% 90%;
-    --sidebar-primary: 207 88% 69%;
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 210 25% 25%;
-    --sidebar-accent-foreground: 210 20% 95%;
-    --sidebar-border: 210 25% 20%;
-    --sidebar-ring: 207 88% 65%;
+    --sidebar-background: 174 88% 18%;   /* Even darker Teal for dark sidebar */
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 145 63% 46%;      /* WhatsApp Green */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 174 88% 28%;       /* Dark Teal for hover */
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 174 88% 15%;
+    --sidebar-ring: 145 63% 42%;
   }
 }
 
