@@ -25,7 +25,6 @@ export function BottomDock() {
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
-    { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
     { href: "/dashboard/announcements", label: "Updates", icon: Megaphone },
   ];
   
