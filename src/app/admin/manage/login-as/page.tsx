@@ -101,7 +101,7 @@ export default function LoginAsPage() {
                         <div>
                             <CardTitle>Select a Student</CardTitle>
                             <CardDescription>
-                                Showing {paginatedStudents.length} of {filteredStudents.length} students.
+                                Showing {isLoading ? 0 : paginatedStudents.length} of {isLoading ? 0 : filteredStudents.length} students.
                             </CardDescription>
                         </div>
                         <div className="relative w-full md:w-auto md:max-w-xs">
@@ -117,81 +117,83 @@ export default function LoginAsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                     {isLoading && (
+                     {isLoading ? (
                         <div className="space-y-2">
                            <Skeleton className="h-12 w-full" />
                            <Skeleton className="h-12 w-full" />
                            <Skeleton className="h-12 w-full" />
                         </div>
-                    )}
-                    
-                    <div className="relative w-full overflow-auto border rounded-lg hidden md:block">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Student</TableHead>
-                                    <TableHead>Username</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {paginatedStudents.length > 0 ? paginatedStudents.map((student) => (
-                                    <TableRow key={student.id}>
-                                        <TableCell className="font-medium flex items-center gap-3">
-                                            <Avatar className="h-9 w-9">
-                                                <AvatarImage src={`https://placehold.co/40x40.png?text=${student.fname[0]}${student.lname[0]}`} alt={student.fname} />
-                                                <AvatarFallback>{student.fname[0]}{student.lname[0]}</AvatarFallback>
-                                            </Avatar>
-                                            <span>{student.fname} {student.lname}</span>
-                                        </TableCell>
-                                        <TableCell>{student.username}</TableCell>
-                                        <TableCell className="text-right">
-                                           <Button size="sm" onClick={() => handleLoginAs(student)}>
-                                                <UserCheck className="h-4 w-4 mr-2" />
-                                                Login As
-                                           </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                )) : (
-                                    <TableRow>
-                                        <TableCell colSpan={3} className="text-center h-24">No students found.</TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
+                    ) : (
+                        <>
+                            <div className="relative w-full overflow-auto border rounded-lg hidden md:block">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Student</TableHead>
+                                            <TableHead>Username</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {paginatedStudents.length > 0 ? paginatedStudents.map((student) => (
+                                            <TableRow key={student.id}>
+                                                <TableCell className="font-medium flex items-center gap-3">
+                                                    <Avatar className="h-9 w-9">
+                                                        <AvatarImage src={`https://placehold.co/40x40.png?text=${student.fname[0]}${student.lname[0]}`} alt={student.fname} />
+                                                        <AvatarFallback>{student.fname[0]}{student.lname[0]}</AvatarFallback>
+                                                    </Avatar>
+                                                    <span>{student.fname} {student.lname}</span>
+                                                </TableCell>
+                                                <TableCell>{student.username}</TableCell>
+                                                <TableCell className="text-right">
+                                                   <Button size="sm" onClick={() => handleLoginAs(student)}>
+                                                        <UserCheck className="h-4 w-4 mr-2" />
+                                                        Login As
+                                                   </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        )) : (
+                                            <TableRow>
+                                                <TableCell colSpan={3} className="text-center h-24">No students found.</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
 
-                    <div className="md:hidden space-y-4">
-                       {paginatedStudents.length > 0 ? paginatedStudents.map((student) => (
-                         <div key={student.id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
-                            <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10">
-                                    <AvatarImage src={`https://placehold.co/40x40.png?text=${student.fname[0]}${student.lname[0]}`} alt={student.fname} />
-                                    <AvatarFallback>{student.fname[0]}{student.lname[0]}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-semibold">{student.fname} {student.lname}</p>
-                                    <p className="text-sm text-muted-foreground">{student.username}</p>
+                            <div className="md:hidden space-y-4">
+                               {paginatedStudents.length > 0 ? paginatedStudents.map((student) => (
+                                 <div key={student.id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-10 w-10">
+                                            <AvatarImage src={`https://placehold.co/40x40.png?text=${student.fname[0]}${student.lname[0]}`} alt={student.fname} />
+                                            <AvatarFallback>{student.fname[0]}{student.lname[0]}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-semibold">{student.fname} {student.lname}</p>
+                                            <p className="text-sm text-muted-foreground">{student.username}</p>
+                                        </div>
+                                    </div>
+                                    <Button className="w-full" onClick={() => handleLoginAs(student)}>
+                                        <UserCheck className="h-4 w-4 mr-2" />
+                                        Login As
+                                   </Button>
                                 </div>
+                                )) : (
+                                    <div className="text-center h-24 flex items-center justify-center">
+                                        <p>No students found.</p>
+                                    </div>
+                                )}
                             </div>
-                            <Button className="w-full" onClick={() => handleLoginAs(student)}>
-                                <UserCheck className="h-4 w-4 mr-2" />
-                                Login As
-                           </Button>
-                        </div>
-                        )) : (
-                            <div className="text-center h-24 flex items-center justify-center">
-                                <p>No students found.</p>
-                            </div>
-                        )}
-                    </div>
+                        </>
+                    )}
                 </CardContent>
                  <CardFooter className="flex items-center justify-center space-x-2 pt-4">
                      <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
+                        disabled={currentPage === 1 || isLoading}
                      >
                         Previous
                      </Button>
@@ -202,7 +204,7 @@ export default function LoginAsPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages || totalPages === 0}
+                        disabled={currentPage === totalPages || totalPages === 0 || isLoading}
                      >
                         Next
                      </Button>
