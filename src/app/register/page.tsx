@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -41,6 +42,7 @@ export default function RegisterPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [cities, setCities] = useState<City[]>([]);
   const [isCityPopoverOpen, setIsCityPopoverOpen] = useState(false);
+  const [calculationSteps, setCalculationSteps] = useState<string[]>([]);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -96,9 +98,10 @@ export default function RegisterPage() {
     setNic(newNic);
     if (newNic.length >= 10) { // Only parse if it's a potentially valid length
         const result = parseNIC(newNic);
+        setCalculationSteps(result.steps || []);
         if (result.error) {
             setDob(undefined);
-            setGender('');
+            setGender(result.gender || '');
         } else {
             if (result.birthday) {
                 // The result from parser is a string 'YYYY-MM-DD', but new Date() needs to be handled carefully
@@ -112,6 +115,7 @@ export default function RegisterPage() {
     } else {
         setDob(undefined);
         setGender('');
+        setCalculationSteps([]);
     }
   };
 
@@ -238,7 +242,21 @@ export default function RegisterPage() {
             )}
              {currentStep === 3 && (
                 <div className="space-y-4 animate-in fade-in-50">
-                    <div className="space-y-2"><Label>NIC Number</Label><Input value={nic} onChange={handleNicChange} required /></div>
+                    <div className="space-y-2">
+                        <Label>NIC Number</Label>
+                        <Input value={nic} onChange={handleNicChange} required />
+                         {calculationSteps.length > 0 && (
+                            <Alert variant="default" className="mt-2 text-xs bg-muted/50">
+                                <Info className="h-4 w-4" />
+                                <AlertTitle>NIC Calculation</AlertTitle>
+                                <AlertDescription asChild>
+                                    <ul className="list-disc pl-4 space-y-1">
+                                        {calculationSteps.map((step, i) => <li key={i}>{step}</li>)}
+                                    </ul>
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                    </div>
                     <div className="space-y-2">
                       <Label>Gender</Label>
                       <Select value={gender} onValueChange={setGender} required>
