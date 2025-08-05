@@ -9,7 +9,9 @@ import { BottomDock } from "@/components/dashboard/BottomDock";
 import { MobileDetailActiveProvider, useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { ProtectedRoute } from "@/contexts/AuthContext";
+import { ProtectedRoute, useAuth } from "@/contexts/AuthContext";
+import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
+
 
 // We need a sub-component to access the context values for conditional styling
 function LayoutContent({ children }: { children: React.ReactNode }) {

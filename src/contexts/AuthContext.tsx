@@ -6,8 +6,8 @@ import type { UserProfile } from '@/lib/types';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { dummyUsers } from '@/lib/dummy-data'; // We'll use this for mock auth
 import { Preloader } from '@/components/ui/preloader';
+import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -15,17 +15,22 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
+  loginAsStudent: (studentProfile: UserProfile) => void;
+  stopImpersonating: () => void;
+  isImpersonating: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const USER_STORAGE_KEY = 'auth_user';
+const ADMIN_SESSION_STORAGE_KEY = 'admin_original_session';
 const LMS_API_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isImpersonating, setIsImpersonating] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -33,6 +38,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const storedUser = localStorage.getItem(USER_STORAGE_KEY);
       if (storedUser) {
         setUser(JSON.parse(storedUser));
+      }
+      const adminSession = sessionStorage.getItem(ADMIN_SESSION_STORAGE_KEY);
+      if (adminSession) {
+        setIsImpersonating(true);
       }
     } catch (error) {
       console.error("Failed to parse user from localStorage", error);
@@ -100,8 +109,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem(USER_STORAGE_KEY);
+    sessionStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
+    setIsImpersonating(false);
     router.push('/login');
   }, [router]);
+
+  const loginAsStudent = useCallback((studentProfile: UserProfile) => {
+    if (user?.role !== 'staff') {
+        throw new Error("Only staff members can impersonate students.");
+    }
+    sessionStorage.setItem(ADMIN_SESSION_STORAGE_KEY, JSON.stringify(user));
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(studentProfile));
+    setUser(studentProfile);
+    setIsImpersonating(true);
+    router.push('/dashboard');
+  }, [user, router]);
+
+  const stopImpersonating = useCallback(() => {
+    const adminSession = sessionStorage.getItem(ADMIN_SESSION_STORAGE_KEY);
+    if (adminSession) {
+        const adminProfile = JSON.parse(adminSession);
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(adminProfile));
+        setUser(adminProfile);
+        sessionStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
+        setIsImpersonating(false);
+        router.push('/admin/dashboard');
+    }
+  }, [router]);
+
 
   const value = {
     user,
@@ -109,10 +144,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
     isLoading,
     isAuthenticated: !!user,
+    loginAsStudent,
+    stopImpersonating,
+    isImpersonating,
   };
 
   return (
     <AuthContext.Provider value={value}>
+      {isImpersonating && <ImpersonationBanner onSwitchBack={stopImpersonating} studentName={user?.name || 'student'} />}
       {children}
     </AuthContext.Provider>
   );

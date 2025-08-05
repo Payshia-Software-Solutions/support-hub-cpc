@@ -33,7 +33,7 @@ const studentViewItem = { href: "/dashboard", label: "Student View", icon: Home 
 
 export function AdminSidebarNav() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, logout, isImpersonating } = useAuth();
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -65,6 +65,7 @@ export function AdminSidebarNav() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+           {!isImpersonating && (
             <SidebarMenuItem>
                  <SidebarMenuButton
                     asChild
@@ -78,6 +79,7 @@ export function AdminSidebarNav() {
                     </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
+           )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-2 border-t">

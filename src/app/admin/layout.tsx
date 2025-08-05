@@ -12,27 +12,42 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { AdminBottomDock } from "@/components/admin/AdminBottomDock";
+import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
+
 
 // We need a sub-component to access the context values for conditional styling
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const { isMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isImpersonating, stopImpersonating } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!isLoading && user?.role !== 'staff') {
-      router.replace('/dashboard/chat'); // Redirect non-staff users away
+      // If the user is impersonating, they can be a 'student'. We don't want to redirect them.
+      if (!isImpersonating) {
+         router.replace('/dashboard'); // Redirect non-staff users away
+      }
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, isImpersonating]);
 
-  if (isLoading || !user || user.role !== 'staff') {
+  if (isLoading) {
     return (
+        <div className="flex h-screen w-screen items-center justify-center">
+            <p>Loading Admin Dashboard...</p>
+        </div>
+    );
+  }
+
+  // A non-staff user who is not impersonating should not see the admin layout.
+  if (user?.role !== 'staff' && !isImpersonating) {
+     return (
         <div className="flex h-screen w-screen items-center justify-center">
             <p>Access Denied. Redirecting...</p>
         </div>
     );
   }
+
 
   return (
     <div className="flex flex-col h-screen">

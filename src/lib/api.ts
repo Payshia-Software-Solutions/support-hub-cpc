@@ -389,6 +389,17 @@ export const getAllUserFullDetails = async (): Promise<UserFullDetails[]> => {
     return response.json();
 }
 
+export const getAllStudents = async (): Promise<ApiStaffMember[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/users`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch students' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    const users = await response.json();
+    return users.filter((user: any) => user.userlevel === 'Student');
+};
+
+
 export const updateCertificateName = async (payload: UpdateCertificateNamePayload): Promise<any> => {
     const { student_number } = payload;
     const response = await fetch(`${QA_API_BASE_URL}/userFullDetails/update-certificate-name/${student_number}`, {

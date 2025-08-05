@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck } from "lucide-react";
 import Link from "next/link";
 
 const managementTasks = [
@@ -95,6 +95,12 @@ const managementTasks = [
     description: "Reset a student's account password.",
     icon: <KeyRound className="w-6 h-6 text-primary" />,
     href: "/admin/manage/password-reset",
+  },
+   {
+    title: "Login As Student",
+    description: "View the dashboard as a specific student.",
+    icon: <UserCheck className="w-6 h-6 text-primary" />,
+    href: "/admin/manage/login-as",
   },
   {
     title: "General Settings",
