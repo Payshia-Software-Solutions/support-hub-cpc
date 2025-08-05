@@ -11,25 +11,22 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, ArrowRight, User, MapPin, Calendar as CalendarIcon, Phone, BookOpen, Upload, ChevronsUpDown, Check, Info } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Loader2, ArrowLeft, ArrowRight, User, MapPin, BookOpen, Upload, ChevronsUpDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
+import { Calendar } from "@/components/ui/calendar";
 import { format } from 'date-fns';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { parseNIC } from '@/lib/nic-parser';
 
 
 const STEPS = [
-  { id: 1, title: 'Basic Information', icon: User },
-  { id: 2, title: 'Address Details', icon: MapPin },
-  { id: 3, title: 'Personal Details', icon: CalendarIcon },
-  { id: 4, title: 'Contact Details', icon: Phone },
-  { id: 5, title: 'Course & Payment', icon: BookOpen },
+  { id: 1, title: 'Personal Info', icon: User },
+  { id: 2, title: 'Contact Info', icon: MapPin },
+  { id: 3, title: 'Course & Payment', icon: BookOpen },
 ];
 
 interface City {
@@ -43,22 +40,21 @@ export default function RegisterPage() {
   const [cities, setCities] = useState<City[]>([]);
   const [isCityPopoverOpen, setIsCityPopoverOpen] = useState(false);
 
+  // Step 1 State
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  
+  const [nic, setNic] = useState('');
   const [gender, setGender] = useState('');
   const [dob, setDob] = useState<Date | undefined>();
-  const [nic, setNic] = useState('');
 
+  // Step 2 State
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
   const [phone1, setPhone1] = useState('');
   const [phone2, setPhone2] = useState('');
-
+  
+  // Step 3 State
   const [course, setCourse] = useState('');
   const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
 
@@ -82,8 +78,6 @@ export default function RegisterPage() {
     fetchCities();
   }, []);
 
-  const progressValue = (currentStep / STEPS.length) * 100;
-
   const handleNextStep = () => {
     setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
   };
@@ -102,10 +96,7 @@ export default function RegisterPage() {
             setGender(result.gender || '');
         } else {
             if (result.birthday) {
-                // Correctly parse the date string to avoid timezone issues.
-                // Split 'YYYY-MM-DD' and pass as numbers to new Date()
                 const [year, month, day] = result.birthday.split('-').map(Number);
-                // JavaScript's Date month is 0-indexed, so we subtract 1.
                 setDob(new Date(year, month - 1, day));
             }
             if (result.gender) {
@@ -188,8 +179,53 @@ export default function RegisterPage() {
                         <div className="space-y-2"><Label>Last Name</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} required /></div>
                      </div>
                      <div className="space-y-2"><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-                     <div className="space-y-2"><Label>Password</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
-                     <div className="space-y-2"><Label>Confirm Password</Label><Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required /></div>
+                     <div className="space-y-2">
+                        <Label>NIC Number</Label>
+                        <Input value={nic} onChange={handleNicChange} required />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                        <Label>Gender</Label>
+                        <Select value={gender} onValueChange={setGender} required>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Select your gender" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="Male">Male</SelectItem>
+                            <SelectItem value="Female">Female</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Date of Birth</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full justify-start text-left font-normal",
+                                        !dob && "text-muted-foreground"
+                                    )}
+                                    >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {dob ? format(dob, "PPP") : <span>Pick a date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        captionLayout="dropdown-buttons"
+                                        fromYear={1960}
+                                        toYear={new Date().getFullYear()}
+                                        selected={dob}
+                                        onSelect={setDob}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    </div>
                 </div>
             )}
             {currentStep === 2 && (
@@ -237,64 +273,11 @@ export default function RegisterPage() {
                             </PopoverContent>
                         </Popover>
                     </div>
-                </div>
-            )}
-             {currentStep === 3 && (
-                <div className="space-y-4 animate-in fade-in-50">
-                    <div className="space-y-2">
-                        <Label>NIC Number</Label>
-                        <Input value={nic} onChange={handleNicChange} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Gender</Label>
-                      <Select value={gender} onValueChange={setGender} required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your gender" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Male">Male</SelectItem>
-                          <SelectItem value="Female">Female</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Date of Birth</Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !dob && "text-muted-foreground"
-                                )}
-                                >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {dob ? format(dob, "PPP") : <span>Pick a date</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                    mode="single"
-                                    captionLayout="dropdown-buttons"
-                                    fromYear={1960}
-                                    toYear={new Date().getFullYear()}
-                                    selected={dob}
-                                    onSelect={setDob}
-                                    initialFocus
-                                />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                </div>
-            )}
-             {currentStep === 4 && (
-                <div className="space-y-4 animate-in fade-in-50">
-                    <div className="space-y-2"><Label>Primary Phone Number</Label><Input type="tel" value={phone1} onChange={(e) => setPhone1(e.target.value)} required /></div>
+                     <div className="space-y-2"><Label>Primary Phone Number</Label><Input type="tel" value={phone1} onChange={(e) => setPhone1(e.target.value)} required /></div>
                     <div className="space-y-2"><Label>Secondary Phone (Optional)</Label><Input type="tel" value={phone2} onChange={(e) => setPhone2(e.target.value)} /></div>
                 </div>
             )}
-            {currentStep === 5 && (
+            {currentStep === 3 && (
                 <div className="space-y-4 animate-in fade-in-50">
                     <div className="space-y-2"><Label>Select Course</Label><Input value={course} onChange={(e) => setCourse(e.target.value)} placeholder="e.g. Certificate Course in Pharmacy Practice" required /></div>
                     <div className="space-y-2">
