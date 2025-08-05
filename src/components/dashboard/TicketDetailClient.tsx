@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle, ZoomIn, RotateCw, ZoomOut, Mail, Phone, Loader2, Building, Home, MapPin, CheckCircle, XCircle as XCircleEligibility, Star } from "lucide-react"; 
+import { Paperclip, SendHorizonal, CalendarDays, User, ShieldCheck, MessageSquare, UserCog, Lock, Unlock, Tag, FileText, XCircle, ZoomIn, RotateCw, ZoomOut, Mail, Phone, Loader2, Building, Home, MapPin, CheckCircle, XCircle as XCircleEligibility, Star, Smile } from "lucide-react"; 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"; 
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +29,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
+import { Input } from "../ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 
 
 interface TicketDetailClientProps {
@@ -577,6 +580,7 @@ const TicketDiscussionContent = ({
   fileInputRef,
   handleFileSelect,
   isSending,
+  handleEmojiClick
  }: {
     ticket: Ticket,
     userRole: 'student' | 'staff',
@@ -591,11 +595,13 @@ const TicketDiscussionContent = ({
     fileInputRef: React.RefObject<HTMLInputElement>,
     handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void,
     isSending: boolean,
+    handleEmojiClick: (emojiData: EmojiClickData) => void
  }) => {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [viewingImage, setViewingImage] = useState<string | null>(null);
     const queryClient = useQueryClient();
     const [submittedRatings, setSubmittedRatings] = useState<Record<string, number>>({});
+    const inputRef = useRef<HTMLTextAreaElement>(null);
 
     const { data: messages, isLoading, isError } = useQuery<Message[]>({
         queryKey: ['ticketMessages', ticket.id],
@@ -763,7 +769,7 @@ const TicketDiscussionContent = ({
         </div>
         </ScrollArea>
 
-        <footer className="px-4 py-3 border-t bg-card shrink-0">
+        <footer className="p-4 border-t bg-card shrink-0">
           {stagedAttachments.length > 0 && (
             <ScrollArea className="max-h-32 w-full mb-2">
               <div className="flex gap-2 p-1">
@@ -784,26 +790,41 @@ const TicketDiscussionContent = ({
               </div>
             </ScrollArea>
           )}
-          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={(userRole === 'staff' && isTicketLockedByOther)}>
+                    <Smile className="h-5 w-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 border-0 bg-transparent shadow-none mb-2">
+                  <EmojiPicker 
+                    onEmojiClick={handleEmojiClick}
+                    height={350}
+                    width="100%"
+                    lazyLoadEmojis={true}
+                  />
+                </PopoverContent>
+              </Popover>
               <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={(userRole === 'staff' && isTicketLockedByOther)} onClick={handleAttachmentClick}>
               <Paperclip className="h-5 w-5" />
               </Button>
               <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" multiple />
-              <Textarea
-              placeholder="Type your reply..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                  }
-              }}
-              className="flex-1 rounded-lg px-4 py-2 focus-visible:ring-primary min-h-[40px] max-h-[120px] resize-none"
-              rows={1}
-              disabled={userRole === 'staff' && isTicketLockedByOther}
+              <Input
+                ref={inputRef as React.Ref<HTMLInputElement>}
+                placeholder="Type your reply..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                    }
+                }}
+                className="flex-1 rounded-full px-4 py-2 focus-visible:ring-primary h-10"
+                disabled={(userRole === 'staff' && isTicketLockedByOther) || (stagedAttachments.length > 0 && !newMessage)}
               />
-              <Button size="icon" onClick={handleSendMessage} className="rounded-full bg-primary hover:bg-primary/90 self-end" disabled={userRole === 'staff' && isTicketLockedByOther}>
+              <Button size="icon" onClick={handleSendMessage} className="rounded-full bg-primary hover:bg-primary/90 self-end" disabled={(userRole === 'staff' && isTicketLockedByOther)}>
               <SendHorizonal className="h-5 w-5" />
               </Button>
           </div>
@@ -829,6 +850,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const [isStudentInfoDialogOpen, setIsStudentInfoDialogOpen] = useState(false);
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   
   useEffect(() => {
     setTicket(initialTicket);
@@ -974,6 +996,11 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   
   const handleAttachmentClick = () => {
     fileInputRef.current?.click();
+  };
+  
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    setNewMessage((prevMessage) => prevMessage + emojiData.emoji);
+    inputRef.current?.focus();
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1121,6 +1148,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
                 fileInputRef={fileInputRef}
                 handleFileSelect={handleFileSelect}
                 isSending={isSending}
+                handleEmojiClick={handleEmojiClick}
             />
           </div>
         )}
@@ -1182,6 +1210,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
             fileInputRef={fileInputRef}
             handleFileSelect={handleFileSelect}
             isSending={isSending}
+            handleEmojiClick={handleEmojiClick}
         />
       </div>
     </div>
