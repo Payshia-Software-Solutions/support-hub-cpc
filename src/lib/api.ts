@@ -426,6 +426,19 @@ export const getCertificateOrders = async (): Promise<CertificateOrder[]> => {
     return response.json();
 };
 
+export const getCertificateOrdersByStudent = async (studentNumber: string): Promise<CertificateOrder[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/certificate-orders/student/${studentNumber}`);
+    if (response.status === 404) {
+        return []; // No orders found is not an error
+    }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to fetch certificate orders for ${studentNumber}` }));
+        throw new Error(errorData.message || `Request failed`);
+    }
+    return response.json();
+}
+
+
 export const createCertificateOrder = async (payload: FormData): Promise<{ reference_number: string; id: string; }> => {
     const response = await fetch(`${QA_API_BASE_URL}/certificate-orders/`, {
         method: 'POST',

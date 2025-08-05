@@ -1,11 +1,12 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getStudentFullInfo, createCertificateOrder } from '@/lib/api';
-import type { FullStudentData, StudentEnrollment } from '@/lib/types';
+import { getStudentFullInfo, createCertificateOrder, getCertificateOrdersByStudent } from '@/lib/api';
+import type { FullStudentData, StudentEnrollment, CertificateOrder } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, Search } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, Search, ListOrdered, PlusCircle } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -22,6 +23,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -137,6 +139,12 @@ export default function CertificateOrderPage() {
     queryFn: () => getStudentFullInfo(activeStudentId!),
     enabled: !!activeStudentId,
     retry: 1,
+  });
+  
+  const { data: previousOrders, isLoading: isLoadingOrders } = useQuery<CertificateOrder[]>({
+    queryKey: ['previousCertificateOrders', activeStudentId],
+    queryFn: () => getCertificateOrdersByStudent(activeStudentId!),
+    enabled: !!activeStudentId,
   });
 
   const allEnrollments = useMemo(() => {
@@ -547,6 +555,15 @@ export default function CertificateOrderPage() {
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+        case 'pending': return <Badge variant="secondary">Pending</Badge>;
+        case 'printed': return <Badge variant="default" className="bg-blue-500">Printed</Badge>;
+        case 'delivered': return <Badge variant="default" className="bg-green-600">Delivered</Badge>;
+        default: return <Badge variant="outline">{status}</Badge>;
+    }
+  }
+
   return (
     <div className="p-4 md:p-8 space-y-8 pb-20">
        <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
@@ -575,15 +592,48 @@ export default function CertificateOrderPage() {
            )}
         </header>
 
-      <Card className="shadow-lg w-full">
-        {user?.role === 'student' ? renderContent() : (
-            <CardContent className="p-10 text-center">
-                <p className="text-muted-foreground">Admins cannot order certificates from this page. Please use the admin management tools.</p>
-            </CardContent>
+         {previousOrders && previousOrders.length > 0 && (
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><ListOrdered className="h-5 w-5 text-primary" /> Your Order History</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {previousOrders.map(order => (
+                            <div key={order.id} className="p-4 border rounded-lg">
+                                <div className="flex flex-col sm:flex-row justify-between sm:items-center">
+                                    <p className="font-semibold text-card-foreground">Order ID: {order.id}</p>
+                                    <p className="text-sm text-muted-foreground">{format(new Date(order.created_at), 'PPP')}</p>
+                                </div>
+                                <div className="mt-2 pt-2 border-t">
+                                    <p className="text-sm"><strong className="text-muted-foreground">Courses:</strong> {order.course_code}</p>
+                                    <p className="text-sm"><strong className="text-muted-foreground">Status:</strong> {getStatusBadge(order.certificate_status)}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
         )}
-      </Card>
+
+      <Collapsible defaultOpen={!previousOrders || previousOrders.length === 0}>
+         <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full text-lg py-6">
+                <PlusCircle className="mr-2 h-5 w-5" />
+                Create New Certificate Request
+                <ChevronDown className="ml-auto h-5 w-5" />
+            </Button>
+         </CollapsibleTrigger>
+         <CollapsibleContent>
+            <Card className="shadow-lg w-full mt-4">
+                {user?.role === 'student' ? renderContent() : (
+                    <CardContent className="p-10 text-center">
+                        <p className="text-muted-foreground">Admins cannot order certificates from this page. Please use the admin management tools.</p>
+                    </CardContent>
+                )}
+            </Card>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
-
-    
