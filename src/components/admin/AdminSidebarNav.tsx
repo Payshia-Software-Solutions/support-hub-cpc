@@ -24,7 +24,7 @@ const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/tickets", label: "Tickets", icon: Ticket },
   { href: "/admin/chat", label: "Chats", icon: MessageSquare },
-  { href: "/admin/manage", label: "More", icon: MoreHorizontal },
+  { href: "/admin/more", label: "More", icon: MoreHorizontal },
 ];
 
 const studentViewItem = { href: "/dashboard", label: "Student View", icon: Home };
@@ -57,7 +57,7 @@ export function AdminSidebarNav() {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === item.href || (item.href !== "/admin/dashboard" && pathname.startsWith(item.href))}
+                isActive={pathname === item.href || (item.href !== "/admin/dashboard" && item.href !== "/admin/more" && pathname.startsWith(item.href)) || (item.href === "/admin/more" && pathname.startsWith("/admin/manage"))}
                 tooltip={{ children: item.label, side: "right" }}
                 className="justify-start"
               >
