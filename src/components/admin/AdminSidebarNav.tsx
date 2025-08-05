@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeSwitcher } from "../ui/ThemeSwitcher";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -34,6 +35,11 @@ const studentViewItem = { href: "/dashboard", label: "Student View", icon: Home 
 export function AdminSidebarNav() {
   const pathname = usePathname();
   const { user, logout, isImpersonating } = useAuth();
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return null;
+  }
 
   return (
     <Sidebar collapsible="icon" className="border-r">
