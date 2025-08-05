@@ -4,69 +4,62 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
-  MessageSquare, 
-  Ticket, 
-  LayoutDashboard, 
-  Megaphone, 
-  Shield,
-  FileText,
-  ClipboardCheck,
-  Award,
+  Home,
+  MessageCircle,
   CreditCard,
-  Video
+  GraduationCap,
+  UserPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
-import { useAuth } from "@/contexts/AuthContext";
 
-const baseNavItems = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
-  { href: "/dashboard/announcements", label: "Alerts", icon: Megaphone },
-  { href: "/dashboard/certificate-order", label: "Certificate", icon: Award },
+const navItems = [
+  { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
+  { href: "/dashboard/certificate-order", label: "Registration", icon: UserPlus },
+  { href: "/dashboard", label: "Home", icon: Home },
+  { href: "/dashboard/exam", label: "Graduation", icon: GraduationCap },
+  { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
 ];
-
-const adminNavItem = { href: "/admin/dashboard", label: "Admin", icon: Shield };
 
 export function BottomDock() {
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const { isMobileDetailActive } = useMobileDetailActive();
-  const { user } = useAuth();
 
-  // Hide the BottomDock if a mobile detail view is active
-  if (isMobile && isMobileDetailActive) {
+  if (!isMobile || isMobileDetailActive) {
     return null;
   }
-  
-  const navItems = user?.role === 'staff' ? [...baseNavItems, adminNavItem] : baseNavItems;
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-[0_-2px_10px_-3px_rgba(0,0,0,0.1)]">
-      <div className="flex justify-around items-stretch h-16">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-sm border-t">
+      <div className="relative flex justify-around items-end h-16 pt-1">
+        <div className="absolute top-0 left-0 h-full w-full bg-gradient-to-t from-card via-card/80 to-transparent pointer-events-none"></div>
         {navItems.map((item) => {
-          let currentItemIsActive = false;
-          if (item.href === "/dashboard") {
-            currentItemIsActive = pathname === item.href;
-          } else {
-            currentItemIsActive = pathname.startsWith(item.href);
-          }
+          const currentItemIsActive = pathname === item.href;
 
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center text-xs w-full p-1 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 focus:ring-offset-card rounded-sm relative",
-                currentItemIsActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                "flex flex-col items-center justify-start text-xs font-medium w-full p-1 transition-all duration-300 ease-in-out focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-1 focus:ring-offset-card rounded-md relative",
+                currentItemIsActive ? "text-primary -translate-y-2" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <item.icon className={cn("h-5 w-5 mb-0.5", currentItemIsActive ? "stroke-[2.25px]" : "stroke-[1.75px]")} />
-              <span>{item.label}</span>
+              <div className={cn(
+                "flex items-center justify-center transition-all duration-300 ease-in-out mb-1",
+                currentItemIsActive ? "w-12 h-12 bg-primary text-primary-foreground rounded-xl shadow-lg" : "w-8 h-8"
+              )}>
+                <item.icon className={cn("h-6 w-6 transition-transform", currentItemIsActive && "scale-110")} />
+              </div>
+              <span className="relative">
+                {item.label}
+                <div className={cn(
+                  "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary transition-transform duration-300 ease-in-out",
+                  currentItemIsActive ? "scale-x-100" : "scale-x-0"
+                )}></div>
+              </span>
             </Link>
           );
         })}

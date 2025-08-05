@@ -33,14 +33,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               "flex flex-col flex-1 overflow-y-auto bg-background",
               // Apply pb-16 for bottom dock space only if mobile and not in detail view
               isMobile ? (isMobileDetailActive ? "" : "pb-16") : "",
-              !hideFooter && "pb-6"
             )}
           >
             <SidebarInset className="flex-1">
               {children}
             </SidebarInset>
           </main>
-          {!hideFooter && (
+          {!hideFooter && isMobile && (
               <footer className="flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground p-2 gap-2 sm:gap-4 shrink-0 bg-background border-t">
                 <p>&copy; 2025 SOS App. All rights reserved.</p>
                 <p>
