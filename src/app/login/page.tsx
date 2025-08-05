@@ -6,10 +6,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -73,6 +74,14 @@ export default function LoginPage() {
             </Button>
           </form>
         </CardContent>
+         <CardFooter className="text-center text-sm text-muted-foreground">
+            <p className="w-full">
+                Don&apos;t have an account?{' '}
+                <Link href="/register" className="text-primary font-semibold hover:underline">
+                    Sign Up
+                </Link>
+            </p>
+        </CardFooter>
       </Card>
     </div>
   );
