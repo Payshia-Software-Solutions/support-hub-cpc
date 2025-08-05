@@ -57,7 +57,7 @@ export function AdminSidebarNav() {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === item.href || (item.href !== "/admin/dashboard" && item.href !== "/admin/more" && pathname.startsWith(item.href)) || (item.href === "/admin/more" && pathname.startsWith("/admin/manage"))}
+                isActive={pathname === item.href || (item.href !== "/admin/dashboard" && pathname.startsWith(item.href)) || (item.href === "/admin/more" && pathname.startsWith("/admin/manage"))}
                 tooltip={{ children: item.label, side: "right" }}
                 className="justify-start"
               >
