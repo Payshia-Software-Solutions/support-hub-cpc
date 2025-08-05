@@ -105,7 +105,7 @@ export default function RegisterPage() {
         } else {
             if (result.birthday) {
                 // Correctly parse the date string to avoid timezone issues.
-                // Split 'YYYY-MM-DD' and pass as numbers to new Date()
+                // Split 'YYYY-MM-DD' and pass as numbers to new Date() to ensure local timezone.
                 const [year, month, day] = result.birthday.split('-').map(Number);
                 // JavaScript's Date month is 0-indexed, so we subtract 1.
                 setDob(new Date(year, month - 1, day));
