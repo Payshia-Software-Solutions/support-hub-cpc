@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview A utility for parsing Sri Lankan National Identity Card (NIC) numbers.
  *
@@ -16,22 +17,23 @@ interface ParseResult {
  * @param nic The NIC number as a string.
  */
 export function parseNIC(nic: string): ParseResult {
-  let yearStr, dayOfYearStr;
+  let yearStr, dddStr;
+
+  const cleanedNic = nic.trim().toUpperCase();
 
   // Step 1: Determine format and extract year and day-of-year string
-  const cleanedNic = nic.trim().toUpperCase();
   if (cleanedNic.length === 10 && cleanedNic.endsWith('V')) {
     yearStr = '19' + cleanedNic.substring(0, 2);
-    dayOfYearStr = cleanedNic.substring(2, 5);
+    dddStr = cleanedNic.substring(2, 5);
   } else if (cleanedNic.length === 12 && /^\d+$/.test(cleanedNic)) {
     yearStr = cleanedNic.substring(0, 4);
-    dayOfYearStr = cleanedNic.substring(4, 7);
+    dddStr = cleanedNic.substring(4, 7);
   } else {
     return { error: 'Invalid NIC format.' };
   }
 
   const year = parseInt(yearStr, 10);
-  let dayOfYear = parseInt(dayOfYearStr, 10);
+  let dayOfYear = parseInt(dddStr, 10);
 
   if (isNaN(year) || isNaN(dayOfYear)) {
     return { error: 'NIC contains non-numeric characters.' };
@@ -53,15 +55,13 @@ export function parseNIC(nic: string): ParseResult {
   }
 
   // Step 5: Adjust for non-leap years after Feb 28th
-  // In non-leap years, day 59 is Feb 28. Day 60 should also be Feb 28, and day 61 becomes Mar 1.
-  // This is achieved by decrementing the day number if it's past Feb 28th.
   if (!isLeapYear && dayOfYear > 59) {
     dayOfYear--;
   }
 
   // Step 6: Create date from year and adjusted dayOfYear
   const date = new Date(year, 0); // Start with Jan 1st of the year
-  date.setDate(dayOfYear); // Add the calculated days
+  date.setDate(dayOfYear);       // Add the calculated days. This correctly handles all months and leap years.
 
   const birthday = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
 
