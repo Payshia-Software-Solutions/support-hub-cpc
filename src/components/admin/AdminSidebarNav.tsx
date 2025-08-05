@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Ticket, LayoutDashboard, LogOut, Search, Wrench, Megaphone, Video, Home } from "lucide-react";
+import { MessageSquare, Ticket, LayoutDashboard, LogOut, Search, Wrench, Megaphone, Video, Home, MoreHorizontal } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
@@ -22,12 +22,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/tickets", label: "Manage Tickets", icon: Ticket },
-  { href: "/admin/chat", label: "Manage Chats", icon: MessageSquare },
-  { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
-  { href: "/admin/recordings", label: "Recordings", icon: Video },
-  { href: "/admin/quick-links", label: "Find Student", icon: Search },
-  { href: "/admin/manage", label: "Manage", icon: Wrench },
+  { href: "/admin/tickets", label: "Tickets", icon: Ticket },
+  { href: "/admin/chat", label: "Chats", icon: MessageSquare },
+  { href: "/admin/manage", label: "More", icon: MoreHorizontal },
 ];
 
 const studentViewItem = { href: "/dashboard", label: "Student View", icon: Home };

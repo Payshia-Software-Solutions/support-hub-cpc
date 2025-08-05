@@ -2,10 +2,16 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone } from "lucide-react";
 import Link from "next/link";
 
 const managementTasks = [
+  {
+    title: "Announcements",
+    description: "Create, edit, and publish announcements.",
+    icon: <Megaphone className="w-6 h-6 text-primary" />,
+    href: "/admin/announcements",
+  },
   {
     title: "Find Student",
     description: "Search for a student to get a full overview.",
