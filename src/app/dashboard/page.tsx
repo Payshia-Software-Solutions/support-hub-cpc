@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, MessageSquare } from "lucide-react";
+import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, MessageSquare, Award } from "lucide-react";
 import { UnreadBadge } from "@/components/dashboard/UnreadBadge";
 
 // --- Sub Components ---
@@ -91,11 +91,18 @@ export default function StudentDashboardPage() {
                         <h1 className="text-2xl font-bold font-headline">Welcome back, {user?.name?.split(' ')[0]}!</h1>
                         <p className="text-muted-foreground">Here's a summary of your support tickets.</p>
                     </div>
-                     <Button asChild>
-                        <Link href="/dashboard/create-ticket">
-                            <PlusCircle className="mr-2 h-4 w-4"/> Create New Ticket
-                        </Link>
-                    </Button>
+                     <div className="flex flex-col sm:flex-row gap-2">
+                         <Button asChild>
+                            <Link href="/dashboard/certificate-order">
+                                <Award className="mr-2 h-4 w-4"/> Order Certificate
+                            </Link>
+                        </Button>
+                        <Button asChild>
+                            <Link href="/dashboard/create-ticket">
+                                <PlusCircle className="mr-2 h-4 w-4"/> Create New Ticket
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
             </Card>
             
