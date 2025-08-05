@@ -12,17 +12,18 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, MessageSquare, Award } from "lucide-react";
+import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, MessageSquare, Award, Library } from "lucide-react";
 import { UnreadBadge } from "@/components/dashboard/UnreadBadge";
 
 // --- Sub Components ---
 const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boolean }) => {
     const stats = useMemo(() => {
-        if (!tickets) return { open: 0, inProgress: 0, closed: 0 };
+        if (!tickets) return { open: 0, inProgress: 0, closed: 0, all: 0 };
         return {
             open: tickets.filter(t => t.status === 'Open').length,
             inProgress: tickets.filter(t => t.status === 'In Progress').length,
             closed: tickets.filter(t => t.status === 'Closed').length,
+            all: tickets.length
         };
     }, [tickets]);
 
@@ -30,11 +31,13 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
         { title: "Open Tickets", value: stats.open, icon: <TicketIcon className="w-6 h-6 text-primary" /> },
         { title: "In Progress", value: stats.inProgress, icon: <Clock className="w-6 h-6 text-purple-500" /> },
         { title: "Closed Tickets", value: stats.closed, icon: <CheckCircle className="w-6 h-6 text-green-500" /> },
+        { title: "All Tickets", value: stats.all, icon: <Library className="w-6 h-6 text-gray-500" /> },
     ];
 
     if (isLoading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
@@ -43,7 +46,7 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {statCards.map(stat => (
                 <Card key={stat.title} className="shadow-lg hover:shadow-xl transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
