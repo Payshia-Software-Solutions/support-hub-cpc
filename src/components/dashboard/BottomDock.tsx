@@ -6,20 +6,20 @@ import { usePathname } from "next/navigation";
 import { 
   Home,
   MessageCircle,
-  CreditCard,
-  GraduationCap,
-  UserPlus
+  Ticket,
+  Megaphone,
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 
 const navItems = [
-  { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
-  { href: "/dashboard/certificate-order", label: "Registration", icon: UserPlus },
+  { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
+  { href: "/dashboard/announcements", label: "Updates", icon: Megaphone },
   { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/dashboard/exam", label: "Graduation", icon: GraduationCap },
   { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
+  { href: "/dashboard/profile", label: "Profile", icon: User },
 ];
 
 export function BottomDock() {
