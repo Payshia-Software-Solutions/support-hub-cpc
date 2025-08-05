@@ -43,7 +43,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               <footer className="flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground p-2 gap-2 sm:gap-4 shrink-0 bg-background border-t">
                 <p>&copy; 2025 SOS App. All rights reserved.</p>
                 <p>
-                  Powered by <a href="https://payshia.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">Payshia Software Solutions</a>
+                  Powered by <a href="https://pharmacollege.lk" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">Ceylon Pharma College</a>
                 </p>
               </footer>
           )}

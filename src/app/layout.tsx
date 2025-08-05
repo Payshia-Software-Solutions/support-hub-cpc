@@ -19,8 +19,8 @@ const ptSans = PT_Sans({
 
 
 export const metadata: Metadata = {
-  title: 'Student Support Hub',
-  description: 'Student Support Hub by Drivo',
+  title: 'SOS App',
+  description: 'Student Support Hub by Ceylon Pharma College',
   manifest: '/manifest.json',
 };
 
@@ -33,10 +33,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* PWA Meta Tags */}
-        <meta name="application-name" content="Student Support Hub" />
+        <meta name="application-name" content="SOS App" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Student Support Hub" />
+        <meta name="apple-mobile-web-app-title" content="SOS App" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#64B5F6" />
