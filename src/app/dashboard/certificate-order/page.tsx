@@ -38,7 +38,7 @@ export default function CertificateOrderHistoryPage() {
         <div className="p-4 md:p-8 space-y-8 pb-20">
             <header className="flex flex-col md:flex-row justify-between md:items-start gap-4">
                 <div>
-                     <Button variant="ghost" onClick={() => router.back()} className="w-fit h-auto p-0 mb-4 text-sm text-muted-foreground hover:text-foreground">
+                     <Button onClick={() => router.back()} className="mb-4 h-auto">
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back
                     </Button>
                     <h1 className="text-3xl font-headline font-semibold">Certificate Orders</h1>
