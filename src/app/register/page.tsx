@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,8 +10,11 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, ArrowRight, User, MapPin, Calendar, Phone, BookOpen, Upload } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, User, MapPin, Calendar, Phone, BookOpen, Upload, ChevronsUpDown, Check } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 const STEPS = [
   { id: 1, title: 'Basic Information', icon: User },
@@ -21,9 +24,16 @@ const STEPS = [
   { id: 5, title: 'Course & Payment', icon: BookOpen },
 ];
 
+interface City {
+  id: string;
+  name_en: string;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const [cities, setCities] = useState<City[]>([]);
+  const [isCityPopoverOpen, setIsCityPopoverOpen] = useState(false);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -34,8 +44,7 @@ export default function RegisterPage() {
   const [address1, setAddress1] = useState('');
   const [address2, setAddress2] = useState('');
   const [city, setCity] = useState('');
-  const [district, setDistrict] = useState('');
-
+  
   const [gender, setGender] = useState('');
   const [dob, setDob] = useState('');
   const [nic, setNic] = useState('');
@@ -48,6 +57,24 @@ export default function RegisterPage() {
 
   const [isRegistering, setIsRegistering] = useState(false);
   
+  useEffect(() => {
+    async function fetchCities() {
+      try {
+        const response = await fetch('https://qa-api.pharmacollege.lk/cities');
+        const data = await response.json();
+        const cityList = Object.values(data).map((c: any) => ({ id: c.id, name_en: c.name_en }));
+        setCities(cityList);
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Failed to load cities',
+          description: 'Could not fetch the list of cities. Please try again later.'
+        });
+      }
+    }
+    fetchCities();
+  }, []);
+
   const progressValue = (currentStep / STEPS.length) * 100;
 
   const handleNextStep = () => {
@@ -112,9 +139,47 @@ export default function RegisterPage() {
                 <div className="space-y-4 animate-in fade-in-50">
                     <div className="space-y-2"><Label>Address Line 1</Label><Input value={address1} onChange={(e) => setAddress1(e.target.value)} required /></div>
                     <div className="space-y-2"><Label>Address Line 2</Label><Input value={address2} onChange={(e) => setAddress2(e.target.value)} /></div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label>City</Label><Input value={city} onChange={(e) => setCity(e.target.value)} required /></div>
-                        <div className="space-y-2"><Label>District</Label><Input value={district} onChange={(e) => setDistrict(e.target.value)} required /></div>
+                     <div className="space-y-2">
+                        <Label>City</Label>
+                         <Popover open={isCityPopoverOpen} onOpenChange={setIsCityPopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={isCityPopoverOpen}
+                                className="w-full justify-between"
+                                >
+                                {city ? cities.find(c => c.name_en === city)?.name_en : "Select city..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                <Command>
+                                    <CommandInput placeholder="Search city..." />
+                                    <CommandEmpty>No city found.</CommandEmpty>
+                                    <CommandGroup className="max-h-60 overflow-y-auto">
+                                        {cities.map((c) => (
+                                        <CommandItem
+                                            key={c.id}
+                                            value={c.name_en}
+                                            onSelect={(currentValue) => {
+                                                setCity(currentValue === city ? "" : c.name_en)
+                                                setIsCityPopoverOpen(false)
+                                            }}
+                                        >
+                                            <Check
+                                            className={cn(
+                                                "mr-2 h-4 w-4",
+                                                city === c.name_en ? "opacity-100" : "opacity-0"
+                                            )}
+                                            />
+                                            {c.name_en}
+                                        </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                     </div>
                 </div>
             )}
