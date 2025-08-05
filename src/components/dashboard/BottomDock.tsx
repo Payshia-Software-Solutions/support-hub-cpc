@@ -8,24 +8,31 @@ import {
   MessageCircle,
   Ticket,
   Megaphone,
-  Award
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
+import { useAuth } from "@/contexts/AuthContext";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
-  { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
-  { href: "/dashboard/announcements", label: "Updates", icon: Megaphone },
-  { href: "/dashboard/certificate-order", label: "Certificate", icon: Award },
-];
 
 export function BottomDock() {
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const { isMobileDetailActive } = useMobileDetailActive();
+  const { user } = useAuth();
+
+  const navItems = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
+    { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
+    { href: "/dashboard/announcements", label: "Updates", icon: Megaphone },
+  ];
+  
+  const adminNavItem = { href: "/admin/dashboard", label: "Admin", icon: Shield };
+
+  const finalNavItems = user?.role === 'staff' ? [...navItems, adminNavItem] : navItems;
+
 
   if (!isMobile || isMobileDetailActive) {
     return null;
@@ -35,7 +42,7 @@ export function BottomDock() {
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-sm border-t">
       <div className="relative flex justify-around items-end h-16 pt-1">
         <div className="absolute top-0 left-0 h-full w-full bg-gradient-to-t from-card via-card/80 to-transparent pointer-events-none"></div>
-        {navItems.map((item) => {
+        {finalNavItems.map((item) => {
           const currentItemIsActive = item.href === '/dashboard' 
               ? pathname === item.href 
               : pathname.startsWith(item.href);
@@ -45,7 +52,7 @@ export function BottomDock() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-start text-xs font-medium w-full p-1 transition-all duration-300 ease-in-out focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-1 focus:ring-offset-card rounded-md relative",
+                "flex flex-col items-center justify-start text-xs font-medium w-full p-1 transition-all duration-300 ease-in-out focus:outline-none rounded-md relative",
                 currentItemIsActive ? "text-primary -translate-y-2" : "text-muted-foreground hover:text-foreground"
               )}
             >
