@@ -60,10 +60,10 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             "flex-1 flex flex-col overflow-hidden bg-background animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
           )}
         >
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 flex flex-col overflow-hidden">
             <SidebarInset 
                 className={cn(
-                  "flex-1",
+                  "flex-1 flex flex-col",
                   isMobile ? (isMobileDetailActive ? "pb-0" : "pb-16") : "pb-0"
                 )}
             >
@@ -92,4 +92,3 @@ export default function AdminLayout({
     </ProtectedRoute>
   );
 }
-

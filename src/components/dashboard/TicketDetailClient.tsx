@@ -840,7 +840,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const [activeMobileTab, setActiveMobileTab] = useState<'info' | 'discussion' | 'student'>('discussion');
+  const [activeMobileTab, setActiveMobileTab] = useState<'discussion' | 'info' | 'student'>('discussion');
   const queryClient = useQueryClient();
   const [isSending, setIsSending] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
@@ -1073,29 +1073,17 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
       <div className="flex flex-col h-full w-full">
         <ImageViewerDialog imageUrl={viewingImage} onOpenChange={(open) => !open && setViewingImage(null)} />
         <div className="p-2 border-b bg-card shrink-0">
-          <div className="flex w-full">
-            <Button
-              variant={activeMobileTab === 'info' ? 'default' : 'outline'}
-              onClick={() => setActiveMobileTab('info')}
-              className="flex-1 rounded-r-none"
-            >
-              Info
-            </Button>
-            <Button
-              variant={activeMobileTab === 'discussion' ? 'default' : 'outline'}
-              onClick={() => setActiveMobileTab('discussion')}
-              className="flex-1 rounded-none border-l-0 border-r-0"
-            >
-              Discussion
-            </Button>
-            <Button
-              variant={activeMobileTab === 'student' ? 'default' : 'outline'}
-              onClick={() => setActiveMobileTab('student')}
-              className="flex-1 rounded-l-none"
-            >
-              Student
-            </Button>
-          </div>
+          <Tabs
+            value={activeMobileTab}
+            onValueChange={(value) => setActiveMobileTab(value as any)}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="info">Info</TabsTrigger>
+              <TabsTrigger value="discussion">Discussion</TabsTrigger>
+              <TabsTrigger value="student">Student</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {activeMobileTab === 'info' && (
