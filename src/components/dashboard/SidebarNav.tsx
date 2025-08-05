@@ -34,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeSwitcher } from "../ui/ThemeSwitcher";
 import { useIsMobile } from "@/hooks/use-mobile";
+import Image from "next/image";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -59,11 +60,7 @@ export function SidebarNav() {
     <Sidebar collapsible="icon" className="border-r">
       <SidebarHeader className="p-4 flex items-center gap-2 justify-between">
         <div className="flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-8 h-8 text-primary hidden md:block">
-            <circle cx="12" cy="12" r="10" fill="currentColor"/>
-            <path d="M12 17V15" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-            <path d="M12 7V12" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
+          <Image src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png" alt="SOS App Logo" width={32} height={32} className="w-8 h-8 hidden md:block" />
            <h1 className="text-xl font-headline font-semibold group-data-[collapsible=icon]:hidden hidden md:block">SOS App</h1>
         </div>
          <Button variant="ghost" size="icon" className="hidden md:flex" asChild>

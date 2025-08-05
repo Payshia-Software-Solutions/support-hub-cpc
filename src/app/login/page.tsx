@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -42,11 +43,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-12 h-12 text-primary">
-                  <circle cx="12" cy="12" r="10" fill="currentColor"/>
-                  <path d="M12 17V15" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M12 7V12" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
+                <Image src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png" alt="SOS App Logo" width={64} height={64} className="w-16 h-16" />
             </div>
           <CardTitle className="text-2xl font-headline">Welcome to SOS App</CardTitle>
           <CardDescription>Enter your credentials to access your dashboard.</CardDescription>

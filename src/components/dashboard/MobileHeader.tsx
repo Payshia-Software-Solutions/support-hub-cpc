@@ -4,10 +4,22 @@
 import Link from "next/link";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useIsMobile } from "@/hooks/use-mobile";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 export function MobileHeader() {
   const { isMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
+  const [time, setTime] = useState("");
+
+  useEffect(() => {
+    const updateClock = () => {
+      setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    };
+    updateClock();
+    const timerId = setInterval(updateClock, 1000);
+    return () => clearInterval(timerId);
+  }, []);
 
   // Hide the header if a mobile detail view is active
   if (isMobile && isMobileDetailActive) {
@@ -19,16 +31,14 @@ export function MobileHeader() {
       <div className="flex items-center gap-2">
         <Link href="/dashboard" legacyBehavior passHref>
           <a className="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 text-primary">
-              <circle cx="12" cy="12" r="10" fill="currentColor"/>
-              <path d="M12 17V15" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M12 7V12" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
+            <Image src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png" alt="SOS App Logo" width={28} height={28} className="w-7 h-7" />
             <span className="text-lg font-headline font-semibold text-card-foreground">SOS App</span>
           </a>
         </Link>
       </div>
-      {/* Future mobile-specific actions could go here */}
+      <div className="text-sm font-medium text-muted-foreground font-mono">
+        {time}
+      </div>
     </div>
   );
 }
