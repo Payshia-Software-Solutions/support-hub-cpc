@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
+import { format, addDays, startOfYear } from 'date-fns';
 
 
 const STEPS = [
@@ -82,7 +82,6 @@ export default function RegisterPage() {
   const progressValue = (currentStep / STEPS.length) * 100;
 
   const handleNextStep = () => {
-    // Add validation logic for each step before proceeding
     setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
   };
   
@@ -90,10 +89,44 @@ export default function RegisterPage() {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
+  const parseNicAndSetDob = (nicValue: string) => {
+    const nic = nicValue.trim().toUpperCase();
+    let year: number;
+    let dayOfYear: number;
+
+    if (nic.length === 10 && (nic.endsWith('V') || nic.endsWith('X'))) {
+        // Old NIC format: YYDDDXXXX(V/X)
+        const yearDigits = parseInt(nic.substring(0, 2), 10);
+        year = 1900 + yearDigits;
+        dayOfYear = parseInt(nic.substring(2, 5), 10);
+    } else if (nic.length === 12) {
+        // New NIC format: YYYYDDDXXXXX
+        year = parseInt(nic.substring(0, 4), 10);
+        dayOfYear = parseInt(nic.substring(4, 7), 10);
+    } else {
+        return; // Not a valid NIC format
+    }
+    
+    // Adjust for female NICs
+    if (dayOfYear > 500) {
+        dayOfYear -= 500;
+    }
+
+    if (year && dayOfYear && dayOfYear > 0 && dayOfYear <= 366) {
+        const date = addDays(startOfYear(new Date(year, 0, 1)), dayOfYear - 1);
+        setDob(date);
+    }
+  };
+
+  const handleNicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newNic = e.target.value;
+    setNic(newNic);
+    parseNicAndSetDob(newNic);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Final validation before submit
     if (currentStep !== STEPS.length) {
       toast({ variant: "destructive", title: "Incomplete Form", description: "Please complete all steps before submitting." });
       return;
@@ -101,7 +134,6 @@ export default function RegisterPage() {
 
     setIsRegistering(true);
     
-    // In a real app, this would call an API endpoint.
     setTimeout(() => {
         console.log("Registering user with all details");
         toast({
@@ -201,6 +233,7 @@ export default function RegisterPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-2"><Label>NIC Number</Label><Input value={nic} onChange={handleNicChange} required /></div>
                      <div className="space-y-2">
                         <Label>Date of Birth</Label>
                         <Popover>
@@ -221,7 +254,7 @@ export default function RegisterPage() {
                                     mode="single"
                                     captionLayout="dropdown-buttons"
                                     fromYear={1960}
-                                    toYear={2010}
+                                    toYear={new Date().getFullYear()}
                                     selected={dob}
                                     onSelect={setDob}
                                     initialFocus
@@ -229,7 +262,6 @@ export default function RegisterPage() {
                             </PopoverContent>
                         </Popover>
                     </div>
-                    <div className="space-y-2"><Label>NIC Number</Label><Input value={nic} onChange={(e) => setNic(e.target.value)} required /></div>
                 </div>
             )}
              {currentStep === 4 && (
@@ -250,31 +282,23 @@ export default function RegisterPage() {
                     </div>
                 </div>
             )}
-            <div className="flex justify-between items-center pt-4">
-                 <Button type="button" variant="outline" onClick={handlePrevStep} disabled={currentStep === 1 || isRegistering}>
+          </form>
+        </CardContent>
+         <CardFooter className="flex justify-between items-center pt-4">
+                <Button type="button" variant="outline" onClick={handlePrevStep} disabled={currentStep === 1 || isRegistering}>
                     <ArrowLeft className="mr-2 h-4 w-4"/> Back
                 </Button>
                 {currentStep < STEPS.length ? (
                     <Button type="button" onClick={handleNextStep}>
-                        Next <ArrowRight className="ml-2 h-4 w-4"/>
+                        Next Step <ArrowRight className="ml-2 h-4 w-4"/>
                     </Button>
                 ) : (
-                    <Button type="submit" disabled={isRegistering}>
+                    <Button type="submit" form="registration-form" disabled={isRegistering}>
                         {isRegistering ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
                         {isRegistering ? 'Submitting...' : 'Complete Registration'}
                     </Button>
                 )}
-            </div>
-          </form>
-        </CardContent>
-         <CardFooter className="text-center text-sm text-muted-foreground">
-            <p className="w-full">
-                Already have an account?{' '}
-                <Link href="/login" className="text-primary font-semibold hover:underline">
-                    Log In
-                </Link>
-            </p>
-        </CardFooter>
+            </CardFooter>
       </Card>
     </div>
   );
