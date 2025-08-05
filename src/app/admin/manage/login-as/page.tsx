@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -186,6 +186,27 @@ export default function LoginAsPage() {
                         )}
                     </div>
                 </CardContent>
+                 <CardFooter className="flex items-center justify-center space-x-2 pt-4">
+                     <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                     >
+                        Previous
+                     </Button>
+                     <span className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages || 1}
+                     </span>
+                     <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages || totalPages === 0}
+                     >
+                        Next
+                     </Button>
+                </CardFooter>
             </Card>
         </div>
     );
