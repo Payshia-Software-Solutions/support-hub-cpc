@@ -14,6 +14,7 @@ import type { ApiStaffMember, UserProfile } from '@/lib/types';
 import { getAllStudents } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 export default function LoginAsPage() {
