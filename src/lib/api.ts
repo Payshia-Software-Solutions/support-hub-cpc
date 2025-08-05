@@ -1,6 +1,6 @@
 
 
-import type { Ticket, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload, ApiStaffMember, StaffMember } from './types';
+import type { Ticket, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload, ApiStaffMember, StaffMember, Announcement } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = (process.env.NEXT_PUBLIC_CHAT_SERVER_URL || 'https://chat-server.pharmacollege.lk') + '/api';
@@ -839,4 +839,29 @@ export const getStaffMembers = async (): Promise<StaffMember[]> => {
     }
     const apiStaffList: ApiStaffMember[] = await response.json();
     return apiStaffList.map(mapApiStaffToStaffMember);
+};
+
+// Announcements
+export const getAnnouncements = async (): Promise<Announcement[]> => {
+    return apiFetch<Announcement[]>('/announcements');
+};
+
+export const createAnnouncement = async (data: Omit<Announcement, 'id' | 'createdAt'>): Promise<Announcement> => {
+    return apiFetch<Announcement>('/announcements', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+};
+
+export const updateAnnouncement = async (id: string, data: Partial<Omit<Announcement, 'id' | 'createdAt'>>): Promise<Announcement> => {
+    return apiFetch<Announcement>(`/announcements/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
+};
+
+export const deleteAnnouncement = async (id: string): Promise<void> => {
+    await apiFetch<null>(`/announcements/${id}`, {
+        method: 'DELETE',
+    });
 };

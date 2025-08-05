@@ -591,3 +591,12 @@ export interface StudentBalanceData {
   TotalRegistrationFee: number;
   paymentRecords: Record<string, ApiPaymentRecord>;
 }
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  author: string;
+  createdAt: string;
+  imageUrl?: string;
+}
