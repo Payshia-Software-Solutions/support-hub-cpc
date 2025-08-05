@@ -19,7 +19,7 @@ const ptSans = PT_Sans({
 
 
 export const metadata: Metadata = {
-  title: 'SOS App',
+  title: 'SOS App | Ceylon Pharma College',
   description: 'Student Support Hub by Ceylon Pharma College',
   manifest: '/manifest.json',
 };
