@@ -30,7 +30,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <div className="flex flex-1 flex-col overflow-hidden">
           <main 
             className={cn(
-              "flex flex-col flex-1 overflow-y-auto bg-background",
+              "flex flex-col flex-1 overflow-y-auto bg-background animate-in fade-in-50 slide-in-from-bottom-4 duration-500",
               // Apply pb-16 for bottom dock space only if mobile and not in detail view
               isMobile ? (isMobileDetailActive ? "" : "pb-16") : "",
             )}

@@ -47,8 +47,12 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
 
     return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {statCards.map(stat => (
-                <Card key={stat.title} className="shadow-lg hover:shadow-xl transition-shadow">
+            {statCards.map((stat, index) => (
+                <Card 
+                    key={stat.title} 
+                    className="shadow-lg hover:shadow-xl transition-shadow animate-in fade-in-50 slide-in-from-bottom-4"
+                    style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'backwards' }}
+                >
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
                         {stat.icon}
@@ -84,7 +88,7 @@ export default function StudentDashboardPage() {
         <div className="space-y-8 p-4 md:p-8 bg-background pb-20">
 
             {/* --- Profile Header --- */}
-            <Card className="shadow-lg overflow-hidden">
+            <Card className="shadow-lg overflow-hidden animate-in fade-in-50">
                 <div className="bg-card p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
                     <Avatar className="w-20 h-20 text-3xl border-4 border-primary/50 shrink-0" data-ai-hint="student avatar">
                         <AvatarImage src={user?.avatar} alt={user?.name} />
@@ -97,7 +101,7 @@ export default function StudentDashboardPage() {
                 </div>
             </Card>
 
-            <section>
+            <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-150">
                 <h2 className="text-2xl font-semibold font-headline mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                      <Link href="/dashboard/create-ticket" className="group block">
@@ -131,14 +135,14 @@ export default function StudentDashboardPage() {
                 </div>
             </section>
             
-            <section>
+            <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-300">
                 <h2 className="text-2xl font-semibold font-headline mb-4">Ticket Summary</h2>
                 <div className="w-full">
                     <TicketStats tickets={tickets || []} isLoading={isLoading} />
                 </div>
             </section>
 
-            <section>
+            <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-500">
                  <h2 className="text-2xl font-semibold font-headline mb-4">Recent Tickets</h2>
                  <Card className="shadow-lg">
                     <CardContent className="p-4 md:p-6">

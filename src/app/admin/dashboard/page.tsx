@@ -147,7 +147,10 @@ export default function AdminDashboardPage() {
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {dashboardStats.map((stat, index) => {
            const card = (
-             <Card className="shadow-lg hover:shadow-xl transition-shadow h-full">
+             <Card 
+                className="shadow-lg hover:shadow-xl transition-shadow h-full animate-in fade-in-50 slide-in-from-bottom-4"
+                style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'backwards' }}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
                 {stat.icon}
@@ -175,7 +178,7 @@ export default function AdminDashboardPage() {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="shadow-lg">
+        <Card className="shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 delay-200">
           <CardHeader>
             <CardTitle>Ticket Volume</CardTitle>
             <CardDescription>Last 7 days</CardDescription>
@@ -213,7 +216,7 @@ export default function AdminDashboardPage() {
             )}
           </CardContent>
         </Card>
-        <Card className="shadow-lg">
+        <Card className="shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 delay-300">
           <CardHeader>
             <CardTitle>Ticket Status Distribution</CardTitle>
             <CardDescription>Current snapshot</CardDescription>
@@ -298,7 +301,7 @@ export default function AdminDashboardPage() {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="shadow-lg">
+        <Card className="shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 delay-400">
           <CardHeader>
             <CardTitle>Active Tickets by Staff</CardTitle>
             <CardDescription>Open and In-Progress tickets per staff member</CardDescription>
@@ -339,7 +342,7 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
         
-        <Card className="shadow-lg">
+        <Card className="shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 delay-500">
           <CardHeader>
             <CardTitle>Resolved Tickets by Staff</CardTitle>
             <CardDescription>Total tickets closed by each staff member</CardDescription>
@@ -384,7 +387,7 @@ export default function AdminDashboardPage() {
         </Card>
       </section>
       
-      <section>
+      <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-600">
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
@@ -403,5 +406,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
-      
