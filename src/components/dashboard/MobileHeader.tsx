@@ -16,12 +16,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Shield, LogOut } from "lucide-react";
+import { MoreHorizontal, Shield, LogOut, Home } from "lucide-react";
 
 export function MobileHeader() {
   const { isMobileDetailActive } = useMobileDetailActive();
   const isMobile = useIsMobile();
-  const { user, logout } = useAuth();
+  const { user, logout, isImpersonating } = useAuth();
 
   // Hide the header if a mobile detail view is active
   if (isMobile && isMobileDetailActive) {
@@ -58,6 +58,14 @@ export function MobileHeader() {
               <span>More Options</span>
             </Link>
           </DropdownMenuItem>
+          {user?.role === 'staff' && !isImpersonating && (
+             <DropdownMenuItem asChild>
+                <Link href="/dashboard">
+                    <Home className="mr-2 h-4 w-4" />
+                    <span>Student View</span>
+                </Link>
+            </DropdownMenuItem>
+          )}
           {user?.role === 'staff' && (
             <DropdownMenuItem asChild>
                 <Link href="/admin/dashboard">
