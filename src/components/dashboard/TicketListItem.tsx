@@ -76,7 +76,7 @@ export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: Ti
             </div>
           </div>
           <div className="text-sm text-muted-foreground">
-            Ticket ID: <span className="font-bold text-primary text-lg">TKT-{ticket.id}</span>
+            Ticket ID: <span className="font-bold text-red-800 text-lg">TKT-{ticket.id}</span>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 flex-grow">
