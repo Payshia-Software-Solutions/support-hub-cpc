@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/tooltip";
 import { UnreadBadge } from "./UnreadBadge";
 import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
+
 
 interface TicketListItemProps {
   ticket: Ticket;
@@ -23,10 +25,10 @@ interface TicketListItemProps {
   staffMembers?: StaffMember[];
 }
 
-const statusColors: Record<Ticket["status"], string> = {
-  Open: "bg-blue-500 hover:bg-blue-600",
-  "In Progress": "bg-purple-500 hover:bg-purple-600",
-  Closed: "bg-gray-500 hover:bg-gray-600",
+const priorityColors: Record<Ticket["priority"], string> = {
+  High: "bg-red-500 text-white",
+  Medium: "bg-yellow-500 text-white",
+  Low: "bg-green-500 text-white",
 };
 
 export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: TicketListItemProps) {
@@ -34,26 +36,53 @@ export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: Ti
   const linkPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
     ? `/admin/tickets/${ticket.id}`
     : `/dashboard/tickets/${ticket.id}`;
+    
+  const assignedStaffMember = staffMembers.find(s => s.username === ticket.assignedTo);
+  const assignedStaffName = assignedStaffMember?.name || ticket.assignedTo;
   
   return (
     <Link href={linkPath} className="group block h-full">
-        <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
-            <CardContent className="p-4 flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500">
-                    <TicketIcon className="w-8 h-8 text-white" />
+        <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full flex flex-col">
+            <CardHeader>
+                <div className="flex justify-between items-start gap-2">
+                    <CardTitle className="text-base font-semibold group-hover:text-primary transition-colors">{ticket.subject}</CardTitle>
+                    <Badge variant="secondary" className={cn(priorityColors[ticket.priority])}>{ticket.priority}</Badge>
                 </div>
-                <div className="flex-1">
-                    <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{ticket.subject}</h3>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                        <Badge variant={ticket.status === 'Closed' ? 'secondary' : 'default'}>{ticket.status}</Badge>
-                        <span className="truncate">ID: TKT-{ticket.id}</span>
+                 <CardDescription>ID: TKT-{ticket.id}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-3">
+                 <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                        {ticket.assignedTo && (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Avatar className="h-6 w-6">
+                                            <AvatarImage src={ticket.assigneeAvatar} alt={assignedStaffName || ''} />
+                                            <AvatarFallback>{(assignedStaffName || 'S').charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Assigned to {assignedStaffName}</p></TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
+                        <span className="font-medium">{assignedStaffName || 'Unassigned'}</span>
                     </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
-                  <UnreadBadge ticketId={ticket.id} userRole={user?.role || 'student'} />
-                </div>
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                   {ticket.lastMessagePreview || "No messages yet."}
+                </p>
             </CardContent>
+            <CardFooter className="flex justify-between items-center text-xs text-muted-foreground p-4 bg-muted/50">
+                 <div className="flex gap-2">
+                    <Badge variant={ticket.status === 'Closed' ? 'outline' : 'default'}>{ticket.status}</Badge>
+                    <Badge variant="outline">{ticket.category}</Badge>
+                </div>
+                 <div className="flex items-center gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    <span>{format(new Date(ticket.createdAt), "dd/MM/yyyy")}</span>
+                </div>
+            </CardFooter>
         </Card>
     </Link>
   );
