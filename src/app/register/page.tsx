@@ -289,23 +289,33 @@ export default function RegisterPage() {
                     </div>
                 </div>
             )}
-          </form>
-        </CardContent>
-         <CardFooter className="flex justify-between items-center pt-4">
-                <Button type="button" variant="outline" onClick={handlePrevStep} disabled={currentStep === 1 || isRegistering}>
-                    <ArrowLeft className="mr-2 h-4 w-4"/> Back
-                </Button>
+            <CardFooter className="flex items-center gap-2 pt-4 px-0">
+                {currentStep > 1 && (
+                    <Button type="button" variant="outline" size="icon" onClick={handlePrevStep} disabled={isRegistering}>
+                        <ArrowLeft className="h-4 w-4"/>
+                    </Button>
+                )}
                 {currentStep < STEPS.length ? (
-                    <Button type="button" onClick={handleNextStep}>
+                    <Button type="button" onClick={handleNextStep} className="flex-grow">
                         Next Step <ArrowRight className="ml-2 h-4 w-4"/>
                     </Button>
                 ) : (
-                    <Button type="submit" form="registration-form" disabled={isRegistering} onClick={handleSubmit}>
+                    <Button type="submit" form="registration-form" disabled={isRegistering} onClick={handleSubmit} className="flex-grow">
                         {isRegistering ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
                         {isRegistering ? 'Submitting...' : 'Complete Registration'}
                     </Button>
                 )}
             </CardFooter>
+          </form>
+        </CardContent>
+        <CardFooter className="text-center text-sm text-muted-foreground">
+            <p className="w-full">
+                Already have an account?{' '}
+                <Link href="/login" className="text-primary font-semibold hover:underline">
+                    Log In
+                </Link>
+            </p>
+        </CardFooter>
       </Card>
     </div>
   );
