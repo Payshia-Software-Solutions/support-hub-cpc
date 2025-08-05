@@ -9,10 +9,12 @@ import { createTicket, getTickets } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import type { Ticket, Attachment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, AlertCircle, ArrowRight } from "lucide-react";
+import { Loader2, AlertCircle, ArrowRight, ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 const MAX_OPEN_TICKETS = 3;
 
@@ -107,16 +109,14 @@ export default function CreateTicketPage() {
   }
 
   const messageCard = (
-        <Card className={canCreateTicket ? "border-primary/50 bg-primary/10" : "border-destructive bg-destructive/10"}>
-            <CardHeader>
-                <CardTitle className={canCreateTicket ? "text-primary" : "text-destructive"}>
-                    {canCreateTicket ? `You can create ${ticketsLeft} more ticket${ticketsLeft === 1 ? '' : 's'}.` : 'You have reached the maximum number of open tickets.'}
-                </CardTitle>
-                <CardDescription className={canCreateTicket ? "text-primary/80" : "text-destructive/90"}>
-                    Please close your existing tickets before creating new ones if possible.
-                </CardDescription>
-            </CardHeader>
-        </Card>
+        <Alert className={canCreateTicket ? "border-primary/50 bg-primary/10" : "border-destructive bg-destructive/10"}>
+            <AlertTitle className={canCreateTicket ? "text-primary" : "text-destructive"}>
+                {canCreateTicket ? `You can create ${ticketsLeft} more ticket${ticketsLeft === 1 ? '' : 's'}.` : 'You have reached the maximum number of open tickets.'}
+            </AlertTitle>
+            <CardDescription className={canCreateTicket ? "text-primary/80" : "text-destructive/90"}>
+                Please close your existing tickets before creating new ones if possible.
+            </CardDescription>
+        </Alert>
     );
 
     const openTicketsSection = (
@@ -143,7 +143,12 @@ export default function CreateTicketPage() {
 
   return (
     <div className="w-full h-full overflow-y-auto">
-        <div className="p-4 md:px-6">
+        <header className="p-4 md:px-6">
+             <Button onClick={() => router.back()} className="mb-4 h-auto p-2 bg-card text-card-foreground shadow-md hover:bg-muted">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back
+            </Button>
+        </header>
+        <div className="px-4 md:px-6">
             {messageCard}
             {openTickets.length > 0 && <div className="mt-4">{openTicketsSection}</div>}
         </div>
