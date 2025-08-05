@@ -10,21 +10,22 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, ArrowRight, User, MapPin, Calendar as CalendarIcon, Phone, BookOpen, Upload, ChevronsUpDown, Check } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, User, MapPin, Calendar as CalendarIcon, Phone, BookOpen, Upload, ChevronsUpDown, Check, Info } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { format, addDays, startOfYear } from 'date-fns';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const STEPS = [
   { id: 1, title: 'Basic Information', icon: User },
   { id: 2, title: 'Address Details', icon: MapPin },
-  { id: 3, title: 'Personal Details', icon: Calendar },
+  { id: 3, title: 'Personal Details', icon: CalendarIcon },
   { id: 4, title: 'Contact Details', icon: Phone },
   { id: 5, title: 'Course & Payment', icon: BookOpen },
 ];
@@ -52,6 +53,8 @@ export default function RegisterPage() {
   const [gender, setGender] = useState('');
   const [dob, setDob] = useState<Date | undefined>();
   const [nic, setNic] = useState('');
+  const [calculationSteps, setCalculationSteps] = useState<string[]>([]);
+
 
   const [phone1, setPhone1] = useState('');
   const [phone2, setPhone2] = useState('');
@@ -89,33 +92,65 @@ export default function RegisterPage() {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const parseNicAndSetDob = (nicValue: string) => {
-    const nic = nicValue.trim().toUpperCase();
-    let year: number;
-    let dayOfYear: number;
+  const parseNicAndSetDob = (nic: string) => {
+    const isLeap = (y: number) => {
+      // Per user request, always treat February as having 29 days.
+      return true;
+    };
 
-    if (nic.length === 10 && (nic.endsWith('V') || nic.endsWith('X'))) {
-        // Old NIC format: YYDDDXXXX(V/X)
-        const yearDigits = parseInt(nic.substring(0, 2), 10);
-        year = 1900 + yearDigits;
-        dayOfYear = parseInt(nic.substring(2, 5), 10);
+    let yearStr, dddStr;
+    const steps: string[] = [];
+
+    if (nic.length === 10 && (nic.toUpperCase().endsWith('V') || nic.toUpperCase().endsWith('X'))) {
+      steps.push("1. NIC format detected: Old (10-digit).");
+      yearStr = '19' + nic.slice(0, 2);
+      dddStr = nic.slice(2, 5);
     } else if (nic.length === 12) {
-        // New NIC format: YYYYDDDXXXXX
-        year = parseInt(nic.substring(0, 4), 10);
-        dayOfYear = parseInt(nic.substring(4, 7), 10);
+      steps.push("1. NIC format detected: New (12-digit).");
+      yearStr = nic.slice(0, 4);
+      dddStr = nic.slice(4, 7);
     } else {
-        return; // Not a valid NIC format
-    }
-    
-    // Adjust for female NICs
-    if (dayOfYear > 500) {
-        dayOfYear -= 500;
+      setDob(undefined);
+      setGender('');
+      setCalculationSteps([]);
+      return;
     }
 
-    if (year && dayOfYear && dayOfYear > 0 && dayOfYear <= 366) {
-        const date = addDays(startOfYear(new Date(year, 0, 1)), dayOfYear - 1);
-        setDob(date);
+    const year = parseInt(yearStr, 10);
+    steps.push(`2. Extracted Year: ${year}`);
+    
+    let dayOfYear = parseInt(dddStr, 10);
+    steps.push(`3. Extracted Day Number: ${dayOfYear}`);
+
+    const determinedGender = dayOfYear > 500 ? 'Female' : 'Male';
+    setGender(determinedGender);
+    
+    let genderStep = `4. Gender: ${determinedGender}`;
+    if (dayOfYear > 500) {
+      dayOfYear -= 500;
+      genderStep += ` (since ${dddStr} > 500). Adjusted day number: ${dayOfYear}.`;
     }
+    steps.push(genderStep);
+
+    const maxDay = isLeap(year) ? 366 : 365;
+    if (dayOfYear < 1 || dayOfYear > maxDay) {
+      setDob(undefined);
+      steps.push(`Error: Invalid day number (${dayOfYear}) for year ${year}.`);
+      setCalculationSteps(steps);
+      return;
+    }
+
+    // Adjust for zero-based index for JavaScript Date object.
+    const dayForCalc = dayOfYear -1;
+    steps.push(`5. Adjusting day for calculation (Day - 1): ${dayForCalc}`);
+    
+    const birthDate = new Date(year, 0, 1); // Start with Jan 1st of the year
+    birthDate.setDate(birthDate.getDate() + dayForCalc); // Add the remaining days
+
+    setDob(birthDate);
+    steps.push(`6. Calculated Date: ${format(birthDate, "MMMM do, yyyy")}.`);
+
+    setCalculationSteps(steps);
   };
 
   const handleNicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,10 +188,36 @@ export default function RegisterPage() {
                 <Image src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png" alt="SOS App Logo" width={64} height={64} className="w-16 h-16" />
             </div>
           <CardTitle className="text-2xl font-headline">Create an Account</CardTitle>
-          <CardDescription>
-            Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1].title}
-          </CardDescription>
-           <Progress value={progressValue} className="w-full mt-4" />
+          <div className="flex items-center justify-between pt-4">
+            {STEPS.map((step, index) => (
+                <React.Fragment key={step.id}>
+                    <div className="flex flex-col items-center gap-2">
+                        <div
+                            className={cn(
+                                'h-10 w-10 rounded-full flex items-center justify-center transition-colors',
+                                currentStep > step.id ? 'bg-green-500 text-white' : '',
+                                currentStep === step.id ? 'bg-primary text-primary-foreground' : '',
+                                currentStep < step.id ? 'bg-muted border' : ''
+                            )}
+                        >
+                            <step.icon className="h-5 w-5" />
+                        </div>
+                        <p className={cn(
+                            'text-xs text-center',
+                            currentStep === step.id ? 'font-semibold text-primary' : 'text-muted-foreground'
+                        )}>
+                            {step.title}
+                        </p>
+                    </div>
+                    {index < STEPS.length - 1 && (
+                        <div className={cn(
+                            'flex-1 h-1 mb-6 rounded-full transition-colors',
+                             currentStep > index + 1 ? 'bg-green-500' : 'bg-muted'
+                        )} />
+                    )}
+                </React.Fragment>
+            ))}
+           </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -234,7 +295,20 @@ export default function RegisterPage() {
                       </Select>
                     </div>
                     <div className="space-y-2"><Label>NIC Number</Label><Input value={nic} onChange={handleNicChange} required /></div>
-                     <div className="space-y-2">
+                    
+                    {calculationSteps.length > 0 && (
+                        <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-900">
+                          <Info className="h-4 w-4 !text-blue-900"/>
+                          <AlertTitle>NIC Calculation</AlertTitle>
+                          <AlertDescription asChild>
+                            <ul className="list-none space-y-1 text-xs">
+                                {calculationSteps.map((step, index) => <li key={index} className="flex items-start"><span className="mr-2">&raquo;</span><span>{step}</span></li>)}
+                            </ul>
+                          </AlertDescription>
+                        </Alert>
+                    )}
+
+                    <div className="space-y-2">
                         <Label>Date of Birth</Label>
                         <Popover>
                             <PopoverTrigger asChild>
@@ -293,7 +367,7 @@ export default function RegisterPage() {
                         Next Step <ArrowRight className="ml-2 h-4 w-4"/>
                     </Button>
                 ) : (
-                    <Button type="submit" form="registration-form" disabled={isRegistering}>
+                    <Button type="submit" form="registration-form" disabled={isRegistering} onClick={handleSubmit}>
                         {isRegistering ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
                         {isRegistering ? 'Submitting...' : 'Complete Registration'}
                     </Button>
