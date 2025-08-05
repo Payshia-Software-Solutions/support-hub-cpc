@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, ListOrdered, PlusCircle } from 'lucide-react';
+import { AlertCircle, ListOrdered, PlusCircle, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -25,6 +26,7 @@ const getStatusBadge = (status: string) => {
 
 export default function CertificateOrderHistoryPage() {
     const { user } = useAuth();
+    const router = useRouter();
 
     const { data: previousOrders, isLoading, isError, error } = useQuery<CertificateOrder[]>({
         queryKey: ['previousCertificateOrders', user?.username],
@@ -34,12 +36,15 @@ export default function CertificateOrderHistoryPage() {
     
     return (
         <div className="p-4 md:p-8 space-y-8 pb-20">
-            <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+            <header className="flex flex-col md:flex-row justify-between md:items-start gap-4">
                 <div>
+                     <Button variant="ghost" onClick={() => router.back()} className="w-fit h-auto p-0 mb-4 text-sm text-muted-foreground hover:text-foreground">
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    </Button>
                     <h1 className="text-3xl font-headline font-semibold">Certificate Orders</h1>
                     <p className="text-muted-foreground">View your order history or create a new request.</p>
                 </div>
-                <Button asChild>
+                <Button asChild className="mt-2">
                     <Link href="/dashboard/certificate-order/create">
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Create New Order
