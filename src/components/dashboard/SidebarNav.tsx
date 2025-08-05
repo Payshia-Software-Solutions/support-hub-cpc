@@ -32,6 +32,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeSwitcher } from "../ui/ThemeSwitcher";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -45,8 +46,13 @@ const adminNavItem = { href: "/admin/dashboard", label: "Admin Panel", icon: Shi
 export function SidebarNav() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const isMobile = useIsMobile();
   
   const currentNavItems = user?.role === 'staff' ? [...navItems, adminNavItem] : navItems;
+
+  if (isMobile) {
+    return null;
+  }
 
   return (
     <Sidebar collapsible="icon" className="border-r">

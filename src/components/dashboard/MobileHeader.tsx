@@ -1,7 +1,6 @@
 
 "use client";
 
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -18,7 +17,6 @@ export function MobileHeader() {
   return (
     <div className="md:hidden flex items-center justify-between p-2 h-14 border-b bg-card sticky top-0 z-30">
       <div className="flex items-center gap-2">
-        <SidebarTrigger />
         <Link href="/dashboard" legacyBehavior passHref>
           <a className="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 text-primary">
