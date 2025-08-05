@@ -176,7 +176,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                         </>
                     ) : (
                          <>
-                            <Button variant="ghost" onClick={handleGoBack} className="w-fit h-auto mb-2 pl-1 text-sm text-muted-foreground hover:text-foreground" disabled={isSubmitting}>
+                            <Button variant="ghost" onClick={handleGoBack} className="w-fit h-auto mb-2 pl-0 text-sm text-muted-foreground hover:text-foreground" disabled={isSubmitting}>
                                 <ArrowLeft className="mr-2 h-4 w-4" /> Change Category
                             </Button>
                             <CardTitle className="text-2xl font-headline">Describe Your Issue</CardTitle>
@@ -184,7 +184,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                          </>
                     )}
                 </CardHeader>
-                <CardContent className="px-6">
+                <CardContent className="p-6">
                     {!selectedCategory ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {categoryOptions.map((cat) => (
@@ -251,7 +251,7 @@ export function TicketForm({ onSubmitTicket, isSubmitting }: TicketFormProps) {
                     )}
                 </CardContent>
                 {selectedCategory && (
-                     <CardFooter className="px-6">
+                     <CardFooter className="p-6">
                         <Button type="submit" disabled={isSubmitting}>
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         {isSubmitting ? "Submitting..." : "Submit Ticket"}
