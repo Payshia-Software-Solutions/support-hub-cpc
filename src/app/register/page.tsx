@@ -16,6 +16,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 const STEPS = [
   { id: 1, title: 'Basic Information', icon: User },
@@ -184,7 +186,19 @@ export default function RegisterPage() {
             )}
              {currentStep === 3 && (
                 <div className="space-y-4 animate-in fade-in-50">
-                    <div className="space-y-2"><Label>Gender</Label><Input value={gender} onChange={(e) => setGender(e.target.value)} placeholder="e.g. Male/Female" required /></div>
+                    <div className="space-y-2">
+                      <Label>Gender</Label>
+                      <Select value={gender} onValueChange={setGender} required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="space-y-2"><Label>Date of Birth</Label><Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} required /></div>
                     <div className="space-y-2"><Label>NIC Number</Label><Input value={nic} onChange={(e) => setNic(e.target.value)} required /></div>
                 </div>
