@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { Loader2, ArrowLeft, ArrowRight, User, MapPin, Calendar as CalendarIcon, Phone, BookOpen, Upload, ChevronsUpDown, Check, Info } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandInput } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -129,7 +129,7 @@ export default function RegisterPage() {
     let genderStep = `4. Gender: ${determinedGender}`;
     if (dayOfYear > 500) {
       dayOfYear -= 500;
-      genderStep += ` (since ${dddStr} > 500). Adjusted day number: ${dayOfYear}.`;
+      genderStep += ` (since ${dddStr} > 500). Adjusted day: ${dayOfYear}.`;
     }
     steps.push(genderStep);
 
@@ -142,11 +142,10 @@ export default function RegisterPage() {
     }
 
     // Adjust for zero-based index for JavaScript Date object.
-    const dayForCalc = dayOfYear - 1;
-    steps.push(`5. Adjusting day for calculation (Day - 1): ${dayForCalc}`);
+    const dayForCalc = dayOfYear;
+    steps.push(`5. Day number for calculation: ${dayForCalc}`);
     
-    const birthDate = new Date(year, 0, 1); // Start with Jan 1st of the year
-    birthDate.setDate(birthDate.getDate() + dayForCalc); // Add the remaining days
+    const birthDate = new Date(year, 0, dayForCalc); 
 
     setDob(birthDate);
     steps.push(`6. Calculated Date: ${format(birthDate, "MMMM do, yyyy")}.`);
