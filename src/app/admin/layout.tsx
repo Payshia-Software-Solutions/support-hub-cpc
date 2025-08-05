@@ -57,14 +57,19 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <AdminSidebarNav />
         <main 
           className={cn(
-            "flex-1 overflow-y-auto bg-background animate-in fade-in-50 slide-in-from-bottom-4 duration-500",
-            // Apply pb-16 for bottom dock space only if mobile and not in detail view
-            isMobile ? (isMobileDetailActive ? "pb-0" : "pb-16") : "pb-0",
+            "flex-1 flex flex-col overflow-hidden bg-background animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
           )}
         >
-          <SidebarInset>
-            {children}
-          </SidebarInset>
+          <div className="flex-1 overflow-y-auto">
+            <SidebarInset 
+                className={cn(
+                  "flex-1",
+                  isMobile ? (isMobileDetailActive ? "pb-0" : "pb-16") : "pb-0"
+                )}
+            >
+              {children}
+            </SidebarInset>
+          </div>
         </main>
       </div>
       <AdminBottomDock />
