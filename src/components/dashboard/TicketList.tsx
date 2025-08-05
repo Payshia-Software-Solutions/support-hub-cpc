@@ -70,7 +70,7 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
   }, [filteredTickets, currentPage]);
   
   return (
-    <div className="space-y-6 p-0 md:p-6">
+    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
        <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -87,7 +87,7 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
         </Tooltip>
       </TooltipProvider>
 
-      <div className="flex flex-col md:flex-row gap-4 justify-between md:items-center sticky top-0 bg-background py-4 z-10 border-b px-4 md:px-6">
+      <div className="flex flex-col md:flex-row gap-4 justify-between md:items-center sticky top-0 bg-background/80 backdrop-blur-sm pt-2 pb-4 z-10 -mx-4 -mt-4 px-4 border-b md:mx-0 md:mt-0 md:px-0 md:border-b-0">
         <div>
           <h1 className="text-2xl font-headline font-semibold">Support Tickets</h1>
           <p className="text-muted-foreground text-sm">Create or manage support tickets.</p>
@@ -97,13 +97,13 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by ID, subject, user..."
-              className="pl-10 w-full md:w-64"
+              className="pl-10 w-full md:w-64 bg-card"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px] bg-card">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
@@ -113,7 +113,7 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
             </SelectContent>
           </Select>
           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px] bg-card">
               <SelectValue placeholder="Filter by priority" />
             </SelectTrigger>
             <SelectContent>
@@ -128,13 +128,13 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
 
       {paginatedTickets.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-0 pb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {paginatedTickets.map((ticket) => (
               <TicketListItem key={ticket.id} ticket={ticket} currentStaffId={currentStaffId} />
             ))}
           </div>
           {totalPages > 1 && (
-             <div className="flex items-center justify-center space-x-2 pt-4 px-4 md:px-0">
+             <div className="flex items-center justify-center space-x-2 pt-4">
                 <Button
                     variant="outline"
                     size="sm"
@@ -158,12 +158,10 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
           )}
         </>
       ) : (
-        <div className="text-center py-10 px-4 md:px-0">
+        <div className="text-center py-10">
           <p className="text-muted-foreground text-lg">No tickets match your filters.</p>
         </div>
       )}
     </div>
   );
 }
-
-      
