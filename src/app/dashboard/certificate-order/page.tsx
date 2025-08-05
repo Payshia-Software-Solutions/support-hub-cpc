@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -114,8 +113,6 @@ export default function CertificateOrderPage() {
   const [districtName, setDistrictName] = useState('');
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   
-  // For admin search
-  const [searchStudentId, setSearchStudentId] = useState('');
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
 
   const form = useForm<AddressFormValues>({
@@ -130,12 +127,12 @@ export default function CertificateOrderPage() {
   });
   
   useEffect(() => {
-    if (user?.role !== 'staff') {
-        setActiveStudentId(user?.username || null);
+    if (user?.role !== 'staff' && user?.username) {
+        setActiveStudentId(user.username);
     }
   }, [user]);
 
-  const { data: studentData, isLoading: isLoadingStudent, isError, error, refetch } = useQuery<FullStudentData>({
+  const { data: studentData, isLoading: isLoadingStudent, isError, error } = useQuery<FullStudentData>({
     queryKey: ['studentFullInfoForCertOrder', activeStudentId],
     queryFn: () => getStudentFullInfo(activeStudentId!),
     enabled: !!activeStudentId,
@@ -236,15 +233,6 @@ export default function CertificateOrderPage() {
         setStep('form');
     }
   };
-  
-   const handleAdminSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        const trimmedId = searchStudentId.trim();
-        if (trimmedId) {
-            const finalId = trimmedId.toLowerCase() === 'admin' ? trimmedId : trimmedId.toUpperCase();
-            setActiveStudentId(finalId);
-        }
-    };
 
   const handleFormSubmit = (values: AddressFormValues) => {
     setAddressData(values);
@@ -581,35 +569,21 @@ export default function CertificateOrderPage() {
        <header>
           <h1 className="text-3xl font-headline font-semibold">Request a Certificate</h1>
            {user?.role === 'staff' ? (
-                <p className="text-muted-foreground">Search for a student to order a certificate on their behalf.</p>
+                <p className="text-muted-foreground">This page is only available for students.</p>
            ) : (
                 <p className="text-muted-foreground">Follow the steps to order your course certificates. Your student number is {user?.username}.</p>
            )}
         </header>
 
-        {user?.role === 'staff' && (
-            <Card className="shadow-lg">
-                 <CardContent className="p-6">
-                    <form onSubmit={handleAdminSearch} className="flex flex-col sm:flex-row gap-4">
-                        <Input
-                            placeholder="Enter Student ID..."
-                            value={searchStudentId}
-                            onChange={(e) => setSearchStudentId(e.target.value)}
-                            className="flex-grow"
-                        />
-                        <Button type="submit" disabled={isLoadingStudent}>
-                             {isLoadingStudent ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                            Search
-                        </Button>
-                    </form>
-                </CardContent>
-            </Card>
-        )}
-
       <Card className="shadow-lg w-full">
-        {renderContent()}
+        {user?.role === 'student' ? renderContent() : (
+            <CardContent className="p-10 text-center">
+                <p className="text-muted-foreground">Admins cannot order certificates from this page. Please use the admin management tools.</p>
+            </CardContent>
+        )}
       </Card>
     </div>
   );
 }
 
+    
