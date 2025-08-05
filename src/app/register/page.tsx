@@ -104,9 +104,10 @@ export default function RegisterPage() {
             setGender(result.gender || '');
         } else {
             if (result.birthday) {
-                // The result from parser is a string 'YYYY-MM-DD', but new Date() needs to be handled carefully
-                // to avoid timezone issues. Adding a T00:00:00 makes it explicit.
-                setDob(new Date(`${result.birthday}T00:00:00`));
+                // Correctly parse the date string to avoid timezone issues.
+                const [year, month, day] = result.birthday.split('-').map(Number);
+                // JavaScript's Date month is 0-indexed, so we subtract 1.
+                setDob(new Date(year, month - 1, day));
             }
             if (result.gender) {
                 setGender(result.gender);
