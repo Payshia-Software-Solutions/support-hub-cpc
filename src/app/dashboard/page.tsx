@@ -36,7 +36,7 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
 
     if (isLoading) {
         return (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
@@ -46,7 +46,7 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
     }
 
     return (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {statCards.map(stat => (
                 <Card key={stat.title} className="shadow-lg hover:shadow-xl transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -126,9 +126,7 @@ export default function StudentDashboardPage() {
             
             <section>
                 <h2 className="text-2xl font-semibold font-headline mb-4">Ticket Summary</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <TicketStats tickets={tickets || []} isLoading={isLoading} />
-                </div>
+                <TicketStats tickets={tickets || []} isLoading={isLoading} />
             </section>
 
             <section>
