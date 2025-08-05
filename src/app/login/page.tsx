@@ -42,8 +42,10 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12 text-primary">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 7h2v6h-2zm0 8h2v2h-2z"/>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-12 h-12 text-primary">
+                  <circle cx="12" cy="12" r="10" fill="currentColor"/>
+                  <path d="M12 17V15" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M12 7V12" stroke="white" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
             </div>
           <CardTitle className="text-2xl font-headline">Welcome to SOS App</CardTitle>
