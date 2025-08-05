@@ -34,10 +34,6 @@ export default function LoginPage() {
     }
   };
   
-  // Example users to guide the user
-  const studentExample = "PA0107";
-  const adminExample = "jane.staff@example.com";
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-md shadow-2xl">
@@ -76,11 +72,6 @@ export default function LoginPage() {
               {isLoggingIn ? 'Logging In...' : 'Log In'}
             </Button>
           </form>
-            <div className="mt-6 text-center text-sm text-muted-foreground">
-                <p className="font-semibold">Demo Users:</p>
-                <p>Student: <button onClick={() => setUsername(studentExample)} className="text-primary hover:underline">{studentExample}</button></p>
-                <p>Admin: <button onClick={() => setUsername(adminExample)} className="text-primary hover:underline">{adminExample}</button></p>
-            </div>
         </CardContent>
       </Card>
     </div>
