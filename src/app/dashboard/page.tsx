@@ -132,7 +132,7 @@ export default function StudentDashboardPage() {
                         </CardContent>
                       </Card>
                     </Link>
-                    <a href="https://bnf.nice.org.uk/" target="_blank" rel="noopener noreferrer" className="group block">
+                    <Link href="/dashboard/bnf" className="group block">
                         <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
                             <CardContent className="p-4 flex items-center gap-4">
                                 <div className="p-3 rounded-lg bg-gradient-to-br from-red-400 to-rose-500">
@@ -140,12 +140,12 @@ export default function StudentDashboardPage() {
                                 </div>
                                 <div className="flex-1">
                                     <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">BNF</h3>
-                                    <p className="text-sm text-muted-foreground">Access the British National Formulary.</p>
+                                    <p className="text-sm text-muted-foreground">Access the British National Formulary tasks.</p>
                                 </div>
                                 <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
                             </CardContent>
                         </Card>
-                    </a>
+                    </Link>
                 </div>
             </section>
             

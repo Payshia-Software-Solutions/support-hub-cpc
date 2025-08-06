@@ -16,7 +16,8 @@ import {
   ClipboardCheck,
   Award,
   CreditCard,
-  MoreHorizontal
+  MoreHorizontal,
+  BookOpen
 } from "lucide-react";
 import {
   Sidebar,
@@ -40,6 +41,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
   { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
+  { href: "/dashboard/bnf", label: "BNF", icon: BookOpen },
   { href: "/dashboard/more", label: "More", icon: MoreHorizontal },
 ];
 
