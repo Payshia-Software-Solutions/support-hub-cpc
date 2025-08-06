@@ -64,7 +64,6 @@ function BnfForm({
 
     const formSchema = isPage ? pageSchema : chapterSchema;
     
-    // Set default values carefully
     const defaultValues = useMemo(() => {
         if (data) return data;
         return isPage ? { chapter_id: allChapters[0]?.id } : { title: '' };
@@ -72,17 +71,20 @@ function BnfForm({
 
     const form = useForm({
         resolver: zodResolver(formSchema),
-        defaultValues: defaultValues,
+        defaultValues: defaultValues as any,
     });
     
     useEffect(() => {
        if (data) form.reset(data);
-    }, [data, form, form.reset]);
+    }, [data, form]);
 
 
     const chapterMutation = useMutation({
-        mutationFn: (chapterData: BnfChapter) => {
-            return mode === 'edit' ? updateBnfChapter(chapterData.id!, chapterData) : createBnfChapter(chapterData);
+        mutationFn: (chapterData: Partial<BnfChapter> & { id?: number }) => {
+            if (mode === 'edit' && chapterData.id) {
+                return updateBnfChapter(chapterData.id, chapterData);
+            }
+            return createBnfChapter(chapterData as BnfChapter);
         },
         onSuccess: () => {
             toast({ title: "Success", description: `BNF chapter has been saved.` });
@@ -95,8 +97,11 @@ function BnfForm({
     });
 
     const pageMutation = useMutation({
-        mutationFn: (pageData: BnfPage) => {
-            return mode === 'edit' ? updateBnfPage(pageData.id!, pageData) : createBnfPage(pageData);
+        mutationFn: (pageData: Partial<BnfPage> & { id?: number }) => {
+             if (mode === 'edit' && pageData.id) {
+                return updateBnfPage(pageData.id, pageData as BnfPage);
+            }
+            return createBnfPage(pageData as BnfPage);
         },
         onSuccess: (data) => {
             toast({ title: "Success", description: `BNF page has been saved.` });
@@ -111,13 +116,13 @@ function BnfForm({
     const mutation = isPage ? pageMutation : chapterMutation;
 
     const onSubmit = (formData: any) => {
-        const payload = mode === 'edit' && data ? { ...data, ...formData } : formData;
-        if(type === 'chapter' && mode === 'edit' && data) {
-            chapterMutation.mutate({ id: (data as BnfChapter).id, ...formData });
+        if (mode === 'edit' && data?.id) {
+            mutation.mutate({ ...formData, id: data.id });
         } else {
-            mutation.mutate(payload);
+            mutation.mutate(formData);
         }
     };
+
 
     return (
         <form onSubmit={form.handleSubmit(onSubmit)}>
