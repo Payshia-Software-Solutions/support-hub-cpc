@@ -146,7 +146,7 @@ export default function BnfPage() {
             case 'page':
                 const currentPageData = allPages[selectedPageIndex];
                 return (
-                    <article className="max-w-5xl mx-auto p-4 md:p-8 font-serif text-foreground flex flex-col flex-1 w-full">
+                    <article className="max-w-5xl mx-auto p-4 md:p-8 font-serif text-foreground w-full">
                         {/* Header with Word Index */}
                         <header className="flex justify-between items-center mb-4 border-b-2 pb-2 shrink-0">
                             <Button variant="link" onClick={handleBackToContents} className="font-sans text-muted-foreground pl-0">
@@ -155,7 +155,7 @@ export default function BnfPage() {
                             <h3 className="text-sm font-sans font-semibold text-muted-foreground">{currentPageData.indexWords}</h3>
                         </header>
 
-                        <div className="flex-1 overflow-y-auto pr-4 -mr-4">
+                        <div>
                             <div className="space-y-6">
                                 <div>
                                     <h1 className="text-4xl font-bold text-foreground leading-tight">
