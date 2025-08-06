@@ -872,10 +872,16 @@ export const getBnfPage = (id: number): Promise<BnfPage> => apiFetch(`/bnf/pages
 export const getBnfPagesForChapter = (chapterId: number): Promise<BnfPage[]> => apiFetch(`/bnf/pages/chapter/${chapterId}/`);
 export const getBnfWordIndex = (): Promise<BnfWordIndexEntry[]> => apiFetch('/bnf/word-index/');
 
-export const createBnfChapter = (data: Omit<BnfChapter, 'id'>): Promise<BnfChapter> => apiFetch('/bnf/chapters/', { method: 'POST', body: JSON.stringify(data) });
-export const updateBnfChapter = (id: number, data: Partial<BnfChapter>): Promise<BnfChapter> => apiFetch(`/bnf/chapters/${id}/`, { method: 'PUT', body: JSON.stringify(data) });
+export const createBnfChapter = (data: Partial<BnfChapter>): Promise<BnfChapter> => apiFetch('/bnf/chapters/', { method: 'POST', body: JSON.stringify(data) });
+export const updateBnfChapter = (id: number, data: Partial<BnfChapter>): Promise<BnfChapter> => {
+    const { id: chapterId, ...payload } = data;
+    return apiFetch(`/bnf/chapters/${id}/`, { method: 'PUT', body: JSON.stringify(payload) });
+};
 export const deleteBnfChapter = (id: number): Promise<void> => apiFetch(`/bnf/chapters/${id}/`, { method: 'DELETE' });
 
-export const createBnfPage = (data: Omit<BnfPage, 'id'>): Promise<BnfPage> => apiFetch('/bnf/pages/', { method: 'POST', body: JSON.stringify(data) });
-export const updateBnfPage = (id: number, data: Partial<BnfPage>): Promise<BnfPage> => apiFetch(`/bnf/pages/${id}/`, { method: 'PUT', body: JSON.stringify(data) });
+export const createBnfPage = (data: Partial<BnfPage>): Promise<BnfPage> => apiFetch('/bnf/pages/', { method: 'POST', body: JSON.stringify(data) });
+export const updateBnfPage = (id: number, data: Partial<BnfPage>): Promise<BnfPage> => {
+    const { id: pageId, ...payload } = data;
+    return apiFetch(`/bnf/pages/${id}/`, { method: 'PUT', body: JSON.stringify(payload) });
+};
 export const deleteBnfPage = (id: number): Promise<void> => apiFetch(`/bnf/pages/${id}/`, { method: 'DELETE' });

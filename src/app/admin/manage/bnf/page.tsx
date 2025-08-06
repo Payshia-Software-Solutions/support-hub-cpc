@@ -32,12 +32,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 // --- SCHEMA DEFINITIONS ---
 const chapterSchema = z.object({
-    id: z.number().optional(),
     title: z.string().min(3, "Chapter title must be at least 3 characters long."),
 });
 
 const pageSchema = z.object({
-    id: z.number().optional(),
     chapter_id: z.coerce.number({ required_error: "You must select a chapter." }),
     title: z.string().min(3, "Page title is required."),
     index_words: z.string().min(1, "At least one index word is required."),
@@ -84,7 +82,7 @@ function BnfForm({
             if (mode === 'edit' && chapterData.id) {
                 return updateBnfChapter(chapterData.id, chapterData);
             }
-            return createBnfChapter(chapterData as BnfChapter);
+            return createBnfChapter(chapterData);
         },
         onSuccess: () => {
             toast({ title: "Success", description: `BNF chapter has been saved.` });
@@ -99,9 +97,9 @@ function BnfForm({
     const pageMutation = useMutation({
         mutationFn: (pageData: Partial<BnfPage> & { id?: number }) => {
              if (mode === 'edit' && pageData.id) {
-                return updateBnfPage(pageData.id, pageData as BnfPage);
+                return updateBnfPage(pageData.id, pageData);
             }
-            return createBnfPage(pageData as BnfPage);
+            return createBnfPage(pageData);
         },
         onSuccess: (data) => {
             toast({ title: "Success", description: `BNF page has been saved.` });
@@ -116,11 +114,11 @@ function BnfForm({
     const mutation = isPage ? pageMutation : chapterMutation;
 
     const onSubmit = (formData: any) => {
+        const payload = { ...formData };
         if (mode === 'edit' && data?.id) {
-            mutation.mutate({ ...formData, id: data.id });
-        } else {
-            mutation.mutate(formData);
+            payload.id = data.id;
         }
+        mutation.mutate(payload);
     };
 
 
@@ -301,7 +299,8 @@ export default function BnfManagementPage() {
     
     const renderForm = () => {
         if (!formData) return null;
-        return <BnfForm mode={formData.mode} type={formData.type} data={formData.data} allChapters={chapters} onCancel={handleCancelForm} />
+        const formChapters = chapters ?? [];
+        return <BnfForm mode={formData.mode} type={formData.type} data={formData.data} allChapters={formChapters} onCancel={handleCancelForm} />
     }
 
     const deleteMutation = itemToDelete?.type === 'chapter' ? deleteChapterMutation : deletePageMutation;
