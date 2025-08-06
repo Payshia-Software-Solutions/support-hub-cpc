@@ -3,10 +3,9 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, BookOpen, List, Search, ListOrdered } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { ArrowLeft, ArrowRight, ListOrdered, Search } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 
 // --- Data Structure for BNF Pages ---
 
@@ -147,13 +146,13 @@ export default function BnfPage() {
             case 'page':
                 const currentPageData = allPages[selectedPageIndex];
                 return (
-                    <article className="max-w-5xl mx-auto p-4 md:p-8 font-serif text-gray-800 flex flex-col flex-1 w-full">
+                    <article className="max-w-5xl mx-auto p-4 md:p-8 font-serif text-foreground flex flex-col flex-1 w-full">
                         {/* Header with Word Index */}
                         <header className="flex justify-between items-center mb-4 border-b-2 pb-2 shrink-0">
-                            <Button variant="link" onClick={handleBackToContents} className="font-sans text-gray-600 pl-0">
+                            <Button variant="link" onClick={handleBackToContents} className="font-sans text-muted-foreground pl-0">
                                 <ArrowLeft className="mr-2 h-4 w-4"/> Back to Contents
                             </Button>
-                            <h3 className="text-sm font-sans font-semibold text-gray-600">{currentPageData.indexWords}</h3>
+                            <h3 className="text-sm font-sans font-semibold text-muted-foreground">{currentPageData.indexWords}</h3>
                         </header>
 
                         <div className="flex-1 overflow-y-auto pr-4 -mr-4">
@@ -161,7 +160,7 @@ export default function BnfPage() {
                                 {/* Left Column */}
                                 <div className="space-y-6">
                                     <div>
-                                        <h1 className="text-4xl font-bold text-gray-900 leading-tight">
+                                        <h1 className="text-4xl font-bold text-foreground leading-tight">
                                             {currentPageData.leftContent.heading}
                                         </h1>
                                     </div>
@@ -170,7 +169,7 @@ export default function BnfPage() {
                                     </div>
                                     {currentPageData.leftContent.subHeading && (
                                          <div>
-                                            <h2 className="text-2xl font-bold text-gray-900 mt-8">
+                                            <h2 className="text-2xl font-bold text-foreground mt-8">
                                                 {currentPageData.leftContent.subHeading}
                                             </h2>
                                         </div>
@@ -187,7 +186,7 @@ export default function BnfPage() {
                                         ))}
                                     </ul>
                                     {currentPageData.rightContent.note && (
-                                         <p className="text-sm text-gray-600 pt-8">
+                                         <p className="text-sm text-muted-foreground pt-8">
                                             {currentPageData.rightContent.note}
                                         </p>
                                     )}
@@ -195,7 +194,7 @@ export default function BnfPage() {
                             </div>
                         </div>
                         
-                        <footer className="flex justify-between items-center text-center mt-4 pt-4 border-t-2 text-sm text-gray-500 font-sans shrink-0">
+                        <footer className="flex justify-between items-center text-center mt-4 pt-4 border-t-2 text-sm text-muted-foreground font-sans shrink-0">
                             <Button variant="outline" onClick={handlePrevPage} disabled={selectedPageIndex === 0}>
                                 <ArrowLeft className="mr-2 h-4 w-4" /> Previous
                             </Button>
@@ -249,9 +248,9 @@ export default function BnfPage() {
             case 'contents':
             default:
                 return (
-                    <div className="p-4 md:p-8 space-y-8 pb-20 max-w-4xl mx-auto">
+                    <div className="p-4 md:p-8 space-y-8 pb-20 max-w-4xl mx-auto h-full flex flex-col">
                         <header className="text-center">
-                            <h1 className="text-4xl font-serif font-bold">Table of Contents</h1>
+                            <h1 className="text-4xl font-serif font-bold text-foreground">Table of Contents</h1>
                         </header>
                         <div className="flex flex-col sm:flex-row items-center gap-4">
                             <div className="relative flex-grow w-full">
@@ -267,19 +266,19 @@ export default function BnfPage() {
                                 <ListOrdered className="mr-2 h-4 w-4" /> Word Index
                             </Button>
                         </div>
-                        <div className="space-y-6 font-serif">
+                        <div className="space-y-6 font-serif flex-1 overflow-y-auto pr-4 -mr-4">
                             {filteredChapters.map(chapter => (
                                 <div key={chapter.id}>
-                                    <h2 className="font-bold text-xl mb-2 flex justify-between items-baseline">
+                                    <h2 className="font-bold text-xl mb-2 flex justify-between items-baseline text-foreground">
                                         <span>{chapter.title}</span>
                                         <span className="text-sm font-sans font-normal text-muted-foreground">Page {chapter.pages[0].id}</span>
                                     </h2>
-                                    <ul className="space-y-1 border-l-2 pl-4 ml-2">
+                                    <ul className="space-y-1 border-l-2 pl-4 ml-2 border-border">
                                         {chapter.pages.map(page => (
                                             <li key={page.id}>
                                                 <button
                                                     onClick={() => handleSelectPage(page.id)}
-                                                    className="w-full text-left p-2 rounded-md hover:bg-accent/50 transition-colors flex justify-between items-baseline"
+                                                    className="w-full text-left p-2 rounded-md hover:bg-accent/50 transition-colors flex justify-between items-baseline text-muted-foreground"
                                                 >
                                                     <span>{page.title}</span>
                                                     <span className="text-sm font-sans text-muted-foreground">Page {page.id}</span>
@@ -300,7 +299,7 @@ export default function BnfPage() {
 
 
   return (
-    <div className="bg-white h-full flex flex-col">
+    <div className="h-full flex flex-col">
         {renderView()}
     </div>
   );
