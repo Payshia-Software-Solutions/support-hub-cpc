@@ -170,54 +170,56 @@ export default function BnfPage() {
     const currentPageData = allPages[selectedPageIndex];
 
   return (
-    <div className="bg-white min-h-full">
-        <article className="max-w-5xl mx-auto p-8 md:p-12 font-serif text-gray-800">
+    <div className="bg-white h-full flex flex-col">
+        <article className="max-w-5xl mx-auto p-4 md:p-8 font-serif text-gray-800 flex flex-col flex-1 w-full">
             {/* Header with Word Index */}
-            <header className="flex justify-between items-center mb-8 border-b-2 pb-2">
+            <header className="flex justify-between items-center mb-4 border-b-2 pb-2 shrink-0">
                 <Button variant="link" onClick={handleBackToContents} className="font-sans text-gray-600 pl-0">
                     <ArrowLeft className="mr-2 h-4 w-4"/> Back to Contents
                 </Button>
                 <h3 className="text-sm font-sans font-semibold text-gray-600">{currentPageData.indexWords}</h3>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-16 gap-y-8">
-                {/* Left Column */}
-                <div className="space-y-6">
-                    <div>
-                        <h1 className="text-4xl font-bold text-gray-900 leading-tight">
-                            {currentPageData.leftContent.heading}
-                        </h1>
-                    </div>
-                    <div className="space-y-4 text-base leading-relaxed">
-                        {currentPageData.leftContent.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-                    </div>
-                    {currentPageData.leftContent.subHeading && (
-                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900 mt-8">
-                                {currentPageData.leftContent.subHeading}
-                            </h2>
+            <div className="flex-1 overflow-y-auto pr-4 -mr-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-16 gap-y-8">
+                    {/* Left Column */}
+                    <div className="space-y-6">
+                        <div>
+                            <h1 className="text-4xl font-bold text-gray-900 leading-tight">
+                                {currentPageData.leftContent.heading}
+                            </h1>
                         </div>
-                    )}
-                </div>
+                        <div className="space-y-4 text-base leading-relaxed">
+                            {currentPageData.leftContent.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+                        </div>
+                        {currentPageData.leftContent.subHeading && (
+                             <div>
+                                <h2 className="text-2xl font-bold text-gray-900 mt-8">
+                                    {currentPageData.leftContent.subHeading}
+                                </h2>
+                            </div>
+                        )}
+                    </div>
 
-                {/* Right Column */}
-                <div className="space-y-6">
-                     <ul className="space-y-5 text-base leading-relaxed">
-                        {currentPageData.rightContent.list.map((item, i) => (
-                             <li key={i}>
-                                <span className="font-bold">{item.bold}</span> {item.text}
-                            </li>
-                        ))}
-                    </ul>
-                    {currentPageData.rightContent.note && (
-                         <p className="text-sm text-gray-600 pt-8">
-                            {currentPageData.rightContent.note}
-                        </p>
-                    )}
+                    {/* Right Column */}
+                    <div className="space-y-6">
+                         <ul className="space-y-5 text-base leading-relaxed">
+                            {currentPageData.rightContent.list.map((item, i) => (
+                                 <li key={i}>
+                                    <span className="font-bold">{item.bold}</span> {item.text}
+                                </li>
+                            ))}
+                        </ul>
+                        {currentPageData.rightContent.note && (
+                             <p className="text-sm text-gray-600 pt-8">
+                                {currentPageData.rightContent.note}
+                            </p>
+                        )}
+                    </div>
                 </div>
             </div>
             
-            <footer className="flex justify-between items-center text-center mt-16 pt-4 border-t-2 text-sm text-gray-500 font-sans">
+            <footer className="flex justify-between items-center text-center mt-4 pt-4 border-t-2 text-sm text-gray-500 font-sans shrink-0">
                 <Button variant="outline" onClick={handlePrevPage} disabled={selectedPageIndex === 0}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Previous
                 </Button>
@@ -230,3 +232,4 @@ export default function BnfPage() {
     </div>
   );
 }
+
