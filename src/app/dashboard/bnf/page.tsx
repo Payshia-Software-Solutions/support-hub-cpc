@@ -83,22 +83,28 @@ const bnfChapters: BnfChapter[] = [
 const allPages: BnfPage[] = bnfChapters.flatMap(chapter => chapter.pages);
 
 const wordIndexData = [
-  "5htl 45", "5ht3 40", "abnormal 17", "absorption 1", "absorption 2", "absorption 3", "absorption 5", "access 9",
-  "according 9", "ace 11", "ace 14", "ace 15", "ace 21", "ace 22", "acetylcholinesterase 44", "acheis 44",
-  "aciclovir 48", "acid 17", "acting 13", "acting 48", "action 1", "action 3", "action 6", "activity 3",
-  "activity 43", "actual 1", "acute 13", "acute 14", "acute 20", "acute 23", "acute 28", "acute 32",
-  "acute 35", "acute 45", "additive 3", "adhd 39", "adjusted 7", "adjuvant 41", "adme 5", "administered 3",
-  "administered 20", "administration 2", "administration 5", "adrenaline 23", "adrs 4", "advanced 23", "advancement 31",
-  "adverse 1", "adverse 4", "adverse 7", "advice 22", "advice 42", "aeds 42", "affected 11", "affecting 3",
-  "affecting 30", "affects 2", "affects 3", "affects 5", "age 10", "age 12", "agents 22", "aggregation 19",
-  "agitation 37", "agonist 25", "agonists 43", "agonists 45", "agreed 9", "aiming 26", "aims 9", "aims 13",
-  "aims 15", "aims 43", "aims 44", "airflow 27", "airway 30", "airway 31", "airways 26", "airways 28"
-].map(item => {
-    const parts = item.split(' ');
-    const page = parseInt(parts.pop() || '0', 10);
-    const word = parts.join(' ');
-    return { word, page };
-});
+  { word: "Absorption", page: 5 },
+  { word: "Administration, routes of", page: 2 },
+  { word: "Adverse Drug Reactions (ADRs)", page: 4 },
+  { word: "Beta-blockers", page: 7 },
+  { word: "Bizarre reactions (Type B)", page: 4 },
+  { word: "Distribution", page: 5 },
+  { word: "Diuretics", page: 7 },
+  { word: "Dose-Response", page: 6 },
+  { word: "Drug Interactions", page: 3 },
+  { word: "Enteral", page: 2 },
+  { word: "Excretion", page: 5 },
+  { word: "Hypertension", page: 7 },
+  { word: "Metabolism", page: 5 },
+  { word: "Parenteral", page: 2 },
+  { word: "Pharmacodynamics", page: 1 },
+  { word: "Pharmacodynamics", page: 6 },
+  { word: "Pharmacokinetics", page: 1 },
+  { word: "Pharmacokinetics", page: 5 },
+  { word: "Pharmacology", page: 1 },
+  { word: "Receptor Binding", page: 6 },
+  { word: "Topical", page: 2 },
+].sort((a, b) => a.word.localeCompare(b.word));
 
 
 export default function BnfPage() {
@@ -147,7 +153,6 @@ export default function BnfPage() {
                 const currentPageData = allPages[selectedPageIndex];
                 return (
                     <article className="max-w-5xl mx-auto p-4 md:p-8 font-serif">
-                        {/* Header with Word Index */}
                         <header className="flex justify-between items-center mb-4 border-b-2 pb-2 shrink-0">
                             <Button variant="link" onClick={handleBackToContents} className="font-sans text-muted-foreground pl-0">
                                 <ArrowLeft className="mr-2 h-4 w-4"/> Back to Contents
@@ -155,36 +160,34 @@ export default function BnfPage() {
                             <h3 className="text-sm font-sans font-semibold text-muted-foreground">{currentPageData.indexWords}</h3>
                         </header>
 
-                        <div>
-                            <div className="space-y-6">
-                                <div>
-                                    <h1 className="text-4xl font-bold text-foreground leading-tight">
-                                        {currentPageData.leftContent.heading}
-                                    </h1>
-                                </div>
-                                <div className="space-y-4 text-base leading-relaxed text-foreground/90">
-                                    {currentPageData.leftContent.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-                                </div>
-                                {currentPageData.leftContent.subHeading && (
-                                     <div>
-                                        <h2 className="text-2xl font-bold text-foreground mt-8">
-                                            {currentPageData.leftContent.subHeading}
-                                        </h2>
-                                    </div>
-                                )}
-                                <ul className="space-y-5 text-base leading-relaxed text-foreground/90">
-                                   {currentPageData.rightContent.list.map((item, i) => (
-                                        <li key={i}>
-                                           <strong className="font-semibold">{item.bold}</strong> {item.text}
-                                       </li>
-                                   ))}
-                               </ul>
-                               {currentPageData.rightContent.note && (
-                                    <p className="text-sm text-muted-foreground pt-8">
-                                       {currentPageData.rightContent.note}
-                                   </p>
-                               )}
+                        <div className="space-y-6">
+                            <div>
+                                <h1 className="text-4xl font-bold text-foreground leading-tight">
+                                    {currentPageData.leftContent.heading}
+                                </h1>
                             </div>
+                            <div className="space-y-4 text-base leading-relaxed text-foreground/90">
+                                {currentPageData.leftContent.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+                            </div>
+                            {currentPageData.leftContent.subHeading && (
+                                    <div>
+                                    <h2 className="text-2xl font-bold text-foreground mt-8">
+                                        {currentPageData.leftContent.subHeading}
+                                    </h2>
+                                </div>
+                            )}
+                            <ul className="space-y-5 text-base leading-relaxed text-foreground/90">
+                                {currentPageData.rightContent.list.map((item, i) => (
+                                    <li key={i}>
+                                        <strong className="font-semibold">{item.bold}</strong> {item.text}
+                                    </li>
+                                ))}
+                            </ul>
+                            {currentPageData.rightContent.note && (
+                                <p className="text-sm text-muted-foreground pt-8">
+                                    {currentPageData.rightContent.note}
+                                </p>
+                            )}
                         </div>
                         
                         <footer className="flex justify-between items-center text-center mt-4 pt-4 border-t-2 text-sm text-muted-foreground font-sans shrink-0">
@@ -200,11 +203,11 @@ export default function BnfPage() {
                 );
             case 'index':
                  return (
-                    <div className="p-4 md:p-8 space-y-6 pb-20 max-w-5xl mx-auto font-serif">
+                    <div className="p-4 md:p-8 space-y-6 pb-20 max-w-5xl mx-auto font-serif h-full flex flex-col">
                         <header className="flex justify-between items-center mb-4 border-b pb-2">
                              <div className="flex-1">
-                                <h1 className="text-3xl font-bold">Word Index: British National Formulary (Vol. 1)</h1>
-                                <p className="text-sm text-muted-foreground mt-1">Alphabetical index of words found in British National Formulary (Vol. 1). Click an entry to navigate. (Generated from sample data)</p>
+                                <h1 className="text-3xl font-bold">Word Index</h1>
+                                <p className="text-sm text-muted-foreground mt-1">Alphabetical index of words found in the formulary.</p>
                             </div>
                             <Button variant="outline" onClick={handleBackToContents} className="font-sans ml-4 shrink-0">
                                 <ArrowLeft className="mr-2 h-4 w-4"/> Back to Contents
@@ -219,7 +222,7 @@ export default function BnfPage() {
                                 className="pl-10 w-full font-sans"
                             />
                         </div>
-                        <Card className="p-6">
+                        <Card className="p-6 flex-1 overflow-y-auto">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-2 text-sm font-sans">
                                {filteredIndexWords.map((item, i) => (
                                     <button
