@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, Award, Library } from "lucide-react";
+import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, Award, Library, BookOpen } from "lucide-react";
 import { UnreadBadge } from "@/components/dashboard/UnreadBadge";
 
 // --- Sub Components ---
@@ -103,7 +103,7 @@ export default function StudentDashboardPage() {
 
             <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-150">
                 <h2 className="text-2xl font-semibold font-headline mb-4">Quick Actions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                      <Link href="/dashboard/create-ticket" className="group block">
                         <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
                             <CardContent className="p-4 flex items-center gap-4">
@@ -132,6 +132,20 @@ export default function StudentDashboardPage() {
                         </CardContent>
                       </Card>
                     </Link>
+                    <a href="https://bnf.nice.org.uk/" target="_blank" rel="noopener noreferrer" className="group block">
+                        <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
+                            <CardContent className="p-4 flex items-center gap-4">
+                                <div className="p-3 rounded-lg bg-gradient-to-br from-red-400 to-rose-500">
+                                    <BookOpen className="w-8 h-8 text-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">BNF</h3>
+                                    <p className="text-sm text-muted-foreground">Access the British National Formulary.</p>
+                                </div>
+                                <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
+                            </CardContent>
+                        </Card>
+                    </a>
                 </div>
             </section>
             
