@@ -8,13 +8,13 @@ import * as z from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import type { BnfChapter, BnfPage } from '@/lib/bnf-data';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 const chapterSchema = z.object({
     title: z.string().min(3, "Chapter title must be at least 3 characters long."),
@@ -26,14 +26,13 @@ const pageSchema = z.object({
     indexWords: z.string().min(1, "At least one index word is required."),
     leftContent: z.object({
         heading: z.string().min(1, "Heading is required."),
-        paragraphs: z.array(z.object({ value: z.string().min(1, "Paragraph cannot be empty.") })),
-        subHeading: z.string().optional(),
+        paragraphs: z.array(z.string().min(1, "Paragraph cannot be empty.")).min(1, "At least one paragraph is required."),
     }),
     rightContent: z.object({
         list: z.array(z.object({
             bold: z.string().min(1, "Bold text is required."),
             text: z.string().min(1, "List item text is required.")
-        })),
+        })).min(1, "At least one list item is required."),
         note: z.string().optional(),
     }),
 });
@@ -41,9 +40,8 @@ const pageSchema = z.object({
 type FormValues = z.infer<typeof chapterSchema> | z.infer<typeof pageSchema>;
 
 interface BnfPageFormProps {
-    isOpen: boolean;
-    onOpenChange: (isOpen: boolean) => void;
     onSave: () => void;
+    onCancel: () => void;
     mode: 'create' | 'edit';
     type: 'chapter' | 'page';
     data?: BnfChapter | BnfPage;
@@ -65,7 +63,7 @@ async function saveBnfData(data: { type: 'chapter' | 'page', payload: any }) {
     return res.json();
 }
 
-export function BnfPageForm({ isOpen, onOpenChange, onSave, mode, type, data, chapterId, allChapters = [] }: BnfPageFormProps) {
+export function BnfPageForm({ onSave, onCancel, mode, type, data, chapterId, allChapters = [] }: BnfPageFormProps) {
     const isPage = type === 'page';
     const form = useForm({
         resolver: zodResolver(isPage ? pageSchema : chapterSchema),
@@ -82,18 +80,23 @@ export function BnfPageForm({ isOpen, onOpenChange, onSave, mode, type, data, ch
     });
 
     useEffect(() => {
-        if (isOpen) {
-            if (mode === 'edit' && data) {
-                form.reset(data);
-            } else {
-                form.reset(isPage ? { 
-                    chapterId: chapterId,
-                    leftContent: { paragraphs: [{ value: '' }] },
-                    rightContent: { list: [{ bold: '', text: '' }] }
-                } : {});
-            }
+        if (mode === 'edit' && data) {
+            const defaultData = isPage ? {
+                ...data,
+                leftContent: {
+                    ...data.leftContent,
+                    paragraphs: data.leftContent.paragraphs.map(p => ({value: p}))
+                }
+            } : data;
+            form.reset(defaultData);
+        } else {
+            form.reset(isPage ? { 
+                chapterId: chapterId,
+                leftContent: { paragraphs: [{ value: '' }] },
+                rightContent: { list: [{ bold: '', text: '' }] }
+            } : {});
         }
-    }, [isOpen, mode, data, form, isPage, chapterId]);
+    }, [mode, data, form, isPage, chapterId]);
 
     const mutation = useMutation({
         mutationFn: saveBnfData,
@@ -112,13 +115,13 @@ export function BnfPageForm({ isOpen, onOpenChange, onSave, mode, type, data, ch
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>{mode === 'edit' ? 'Edit' : 'Create'} BNF {type}</DialogTitle>
-                    <DialogDescription>Fill in the details for the BNF content.</DialogDescription>
-                </DialogHeader>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto pr-6 pl-2 -mr-6 -ml-2 space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle>{mode === 'edit' ? 'Edit' : 'Create'} BNF {type}</CardTitle>
+                    <CardDescription>Fill in the details for the BNF content.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
                     {isPage ? (
                         <div className="space-y-4">
                             <Controller
@@ -137,14 +140,14 @@ export function BnfPageForm({ isOpen, onOpenChange, onSave, mode, type, data, ch
                                     </div>
                                 )}
                             />
-                            <div className="space-y-2"><Label>Page Title</Label><Input {...form.register('title')} />{form.formState.errors.title && <p className="text-sm text-destructive">{form.formState.errors.title.message?.toString()}</p>}</div>
-                            <div className="space-y-2"><Label>Index Words (comma-separated)</Label><Input {...form.register('indexWords')} />{form.formState.errors.indexWords && <p className="text-sm text-destructive">{form.formState.errors.indexWords.message?.toString()}</p>}</div>
+                            <div className="space-y-2"><Label>Page Title</Label><Input {...form.register('title')} />{form.formState.errors.title && <p className="text-sm text-destructive">{String(form.formState.errors.title.message)}</p>}</div>
+                            <div className="space-y-2"><Label>Index Words (comma-separated)</Label><Input {...form.register('indexWords')} />{form.formState.errors.indexWords && <p className="text-sm text-destructive">{String(form.formState.errors.indexWords.message)}</p>}</div>
                             
                             <h3 className="font-semibold text-lg pt-4 border-t">Left Column Content</h3>
                             <div className="space-y-2"><Label>Main Heading</Label><Input {...form.register('leftContent.heading')} /></div>
                             <div className="space-y-2"><Label>Paragraphs</Label>
                                 {paragraphFields.map((field, index) => (
-                                    <div key={field.id} className="flex items-center gap-2"><Textarea {...form.register(`leftContent.paragraphs.${index}.value`)} /><Button type="button" variant="ghost" size="icon" onClick={() => removeParagraph(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button></div>
+                                    <div key={field.id} className="flex items-center gap-2"><Textarea {...form.register(`leftContent.paragraphs.${index}.value` as const)} /><Button type="button" variant="ghost" size="icon" onClick={() => removeParagraph(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button></div>
                                 ))}
                                 <Button type="button" variant="outline" size="sm" onClick={() => appendParagraph({ value: '' })}><PlusCircle className="mr-2 h-4 w-4"/>Add Paragraph</Button>
                             </div>
@@ -166,17 +169,17 @@ export function BnfPageForm({ isOpen, onOpenChange, onSave, mode, type, data, ch
                              <div className="space-y-2"><Label>Note (Optional)</Label><Textarea {...form.register('rightContent.note')} /></div>
                         </div>
                     ) : (
-                        <div className="space-y-2"><Label>Chapter Title</Label><Input {...form.register('title')} />{form.formState.errors.title && <p className="text-sm text-destructive">{form.formState.errors.title.message?.toString()}</p>}</div>
+                        <div className="space-y-2"><Label>Chapter Title</Label><Input {...form.register('title')} />{form.formState.errors.title && <p className="text-sm text-destructive">{String(form.formState.errors.title.message)}</p>}</div>
                     )}
-                </form>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={form.handleSubmit(onSubmit)} disabled={mutation.isPending}>
+                </CardContent>
+                 <CardFooter className="flex justify-end gap-2">
+                    <Button variant="outline" type="button" onClick={onCancel}>Cancel</Button>
+                    <Button type="submit" disabled={mutation.isPending}>
                         {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Save Changes
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </CardFooter>
+            </Card>
+        </form>
     );
 }
