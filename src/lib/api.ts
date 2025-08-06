@@ -1,6 +1,6 @@
 
 
-import type { Ticket, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload, ApiStaffMember, StaffMember, Announcement } from './types';
+import type { Ticket, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload, ApiStaffMember, StaffMember, Announcement, BnfChapter, BnfPage, BnfWordIndexEntry } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = (process.env.NEXT_PUBLIC_CHAT_SERVER_URL || 'https://chat-server.pharmacollege.lk') + '/api';
@@ -865,3 +865,17 @@ export const deleteAnnouncement = async (id: string): Promise<void> => {
         method: 'DELETE',
     });
 };
+
+// --- BNF API Functions ---
+export const getBnfChapters = (): Promise<BnfChapter[]> => apiFetch('/bnf/chapters/');
+export const getBnfPage = (id: number): Promise<BnfPage> => apiFetch(`/bnf/pages/${id}/`);
+export const getBnfPagesForChapter = (chapterId: number): Promise<BnfPage[]> => apiFetch(`/bnf/pages/chapter/${chapterId}/`);
+export const getBnfWordIndex = (): Promise<BnfWordIndexEntry[]> => apiFetch('/bnf/word-index/');
+
+export const createBnfChapter = (data: Omit<BnfChapter, 'id'>): Promise<BnfChapter> => apiFetch('/bnf/chapters/', { method: 'POST', body: JSON.stringify(data) });
+export const updateBnfChapter = (id: number, data: Partial<BnfChapter>): Promise<BnfChapter> => apiFetch(`/bnf/chapters/${id}/`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteBnfChapter = (id: number): Promise<void> => apiFetch(`/bnf/chapters/${id}/`, { method: 'DELETE' });
+
+export const createBnfPage = (data: Omit<BnfPage, 'id'>): Promise<BnfPage> => apiFetch('/bnf/pages/', { method: 'POST', body: JSON.stringify(data) });
+export const updateBnfPage = (id: number, data: Partial<BnfPage>): Promise<BnfPage> => apiFetch(`/bnf/pages/${id}/`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteBnfPage = (id: number): Promise<void> => apiFetch(`/bnf/pages/${id}/`, { method: 'DELETE' });

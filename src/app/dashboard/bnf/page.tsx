@@ -1,61 +1,47 @@
-
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, ListOrdered, Search, Loader2, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { BnfChapter, BnfPage } from '@/lib/bnf-data';
-
-// --- API Fetching ---
-const fetchBnfData = async (): Promise<{ chapters: BnfChapter[], pages: BnfPage[], index: { word: string; page: number }[] }> => {
-    const response = await fetch('/api/bnf');
-    if (!response.ok) {
-        throw new Error('Failed to fetch BNF data');
-    }
-    return response.json();
-};
-
+import { getBnfChapters, getBnfWordIndex, getBnfPagesForChapter, getBnfPage } from '@/lib/api';
+import type { BnfChapter, BnfPage, BnfWordIndexEntry } from '@/lib/types';
+import { Alert } from '@/components/ui/alert';
 
 export default function BnfPage() {
     const [view, setView] = useState<'contents' | 'page' | 'index'>('contents');
-    const [selectedPageIndex, setSelectedPageIndex] = useState<number>(0);
+    const [selectedPageId, setSelectedPageId] = useState<number | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const { data: bnfData, isLoading, isError, error } = useQuery({
-      queryKey: ['bnfData'],
-      queryFn: fetchBnfData,
-      staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    const { data: bnfChapters, isLoading: isLoadingChapters, isError: isChaptersError, error: chaptersError } = useQuery({
+        queryKey: ['bnfChapters'],
+        queryFn: getBnfChapters,
+        staleTime: 1000 * 60 * 5,
     });
 
-    const bnfChapters = bnfData?.chapters || [];
-    const allPages = bnfData?.pages || [];
-    const wordIndexData = bnfData?.index || [];
-
-    const handleNextPage = () => {
-        if (selectedPageIndex < allPages.length - 1) {
-            setSelectedPageIndex(prev => prev + 1);
-        }
-    };
-
-    const handlePrevPage = () => {
-        if (selectedPageIndex > 0) {
-            setSelectedPageIndex(prev => prev - 1);
-        }
-    };
+    const { data: bnfPage, isLoading: isLoadingPage } = useQuery({
+        queryKey: ['bnfPage', selectedPageId],
+        queryFn: () => getBnfPage(selectedPageId!),
+        enabled: !!selectedPageId,
+        staleTime: 1000 * 60 * 5,
+    });
+    
+    const { data: wordIndexData, isLoading: isLoadingIndex, isError: isIndexError, error: indexError } = useQuery({
+        queryKey: ['bnfWordIndex'],
+        queryFn: getBnfWordIndex,
+        staleTime: 1000 * 60 * 5,
+    });
     
     const handleSelectPage = (pageId: number) => {
-        const pageIndex = allPages.findIndex(p => p.id === pageId);
-        if (pageIndex !== -1) {
-            setSelectedPageIndex(pageIndex);
-            setView('page');
-        }
+        setSelectedPageId(pageId);
+        setView('page');
     }
 
     const handleBackToContents = () => {
+        setSelectedPageId(null);
         setView('contents');
     }
     
@@ -64,13 +50,9 @@ export default function BnfPage() {
       const lowercasedSearchTerm = searchTerm.toLowerCase();
       if (!lowercasedSearchTerm) return bnfChapters;
 
-      return bnfChapters.map(chapter => {
-          const filteredPages = chapter.pages.filter(page => 
-              page.title.toLowerCase().includes(lowercasedSearchTerm)
-          );
-          return { ...chapter, pages: filteredPages };
-      }).filter(chapter => 
-          chapter.title.toLowerCase().includes(lowercasedSearchTerm) || chapter.pages.length > 0
+      // This is a simplified search. A real implementation would fetch filtered results from the API.
+      return bnfChapters.filter(chapter => 
+          chapter.title.toLowerCase().includes(lowercasedSearchTerm)
       );
     }, [bnfChapters, searchTerm]);
     
@@ -80,8 +62,12 @@ export default function BnfPage() {
           item.word.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }, [wordIndexData, searchTerm]);
-
+    
     const renderView = () => {
+        const isLoading = isLoadingChapters || isLoadingIndex;
+        const isError = isChaptersError || isIndexError;
+        const error = chaptersError || indexError;
+
         if (isLoading) {
             return (
                  <div className="p-4 md:p-8 space-y-6 pb-20 h-full flex flex-col">
@@ -106,7 +92,7 @@ export default function BnfPage() {
                     <Alert variant="destructive">
                         <AlertTriangle className="h-4 w-4" />
                         <CardTitle>Error Loading Data</CardTitle>
-                        <CardDescription>{error instanceof Error ? error.message : 'An unknown error occurred'}</CardDescription>
+                        <CardDescription>{(error as Error).message}</CardDescription>
                     </Alert>
                 </div>
             )
@@ -115,56 +101,23 @@ export default function BnfPage() {
 
         switch (view) {
             case 'page':
-                const currentPageData = allPages[selectedPageIndex];
-                if (!currentPageData) return null;
+                if (isLoadingPage) {
+                     return <div className="p-8"><Skeleton className="h-96 w-full" /></div>
+                }
+                if (!bnfPage) return <div className="p-8 text-center">Page not found.</div>;
+                
                 return (
                     <div className="p-4 md:p-8 font-serif h-full flex flex-col">
                         <header className="flex justify-between items-center mb-4 border-b-2 pb-2 shrink-0">
                             <Button variant="link" onClick={handleBackToContents} className="font-sans text-muted-foreground pl-0">
                                 <ArrowLeft className="mr-2 h-4 w-4"/> Back to Contents
                             </Button>
-                            <h3 className="text-sm font-sans font-semibold text-muted-foreground">{currentPageData.indexWords}</h3>
+                            <h3 className="text-sm font-sans font-semibold text-muted-foreground">{bnfPage.index_words}</h3>
                         </header>
-
-                        <article className="space-y-6">
-                             <div>
-                                <h1 className="text-4xl font-bold text-foreground leading-tight">
-                                    {currentPageData.leftContent.heading}
-                                </h1>
-                            </div>
-                             <div className="space-y-4 text-base leading-relaxed text-foreground/90">
-                                {currentPageData.leftContent.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-                            </div>
-                            {currentPageData.leftContent.subHeading && (
-                                    <div>
-                                    <h2 className="text-2xl font-bold text-foreground mt-8">
-                                        {currentPageData.leftContent.subHeading}
-                                    </h2>
-                                </div>
-                            )}
-                             <ul className="space-y-5 text-base leading-relaxed text-foreground/90">
-                                {currentPageData.rightContent.list.map((item, i) => (
-                                    <li key={i}>
-                                        <strong className="font-semibold">{item.bold}</strong> {item.text}
-                                    </li>
-                                ))}
-                            </ul>
-                            {currentPageData.rightContent.note && (
-                                <p className="text-sm text-muted-foreground pt-8">
-                                    {currentPageData.rightContent.note}
-                                </p>
-                            )}
-                        </article>
-                        
-                        <footer className="flex justify-between items-center text-center mt-auto pt-4 border-t-2 text-sm text-muted-foreground font-sans shrink-0">
-                            <Button variant="outline" onClick={handlePrevPage} disabled={selectedPageIndex === 0}>
-                                <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-                            </Button>
-                            <span>Page {currentPageData.id}</span>
-                            <Button variant="outline" onClick={handleNextPage} disabled={selectedPageIndex === allPages.length - 1}>
-                                Next <ArrowRight className="ml-2 h-4 w-4" />
-                            </Button>
-                        </footer>
+                         <article className="space-y-6">
+                            <div dangerouslySetInnerHTML={{ __html: bnfPage.left_content }} />
+                            <div dangerouslySetInnerHTML={{ __html: bnfPage.right_content }} />
+                         </article>
                     </div>
                 );
             case 'index':
@@ -193,11 +146,11 @@ export default function BnfPage() {
                                {filteredIndexWords.map((item, i) => (
                                     <button
                                         key={i}
-                                        onClick={() => handleSelectPage(item.page)}
+                                        onClick={() => handleSelectPage(item.page_id)}
                                         className="text-left hover:text-primary hover:underline flex justify-between"
                                     >
                                         <span>{item.word}</span>
-                                        <span>{item.page}</span>
+                                        <span>{item.page_id}</span>
                                     </button>
                                ))}
                             </div>
@@ -233,21 +186,7 @@ export default function BnfPage() {
                                 <div key={chapter.id}>
                                     <h2 className="font-bold text-xl mb-2 flex justify-between items-baseline text-foreground">
                                         <span>{chapter.title}</span>
-                                        <span className="text-sm font-sans font-normal text-muted-foreground">Page {chapter.pages[0]?.id}</span>
                                     </h2>
-                                    <ul className="space-y-1 border-l-2 pl-4 ml-2 border-border">
-                                        {chapter.pages.map(page => (
-                                            <li key={page.id}>
-                                                <button
-                                                    onClick={() => handleSelectPage(page.id)}
-                                                    className="w-full text-left p-2 rounded-md hover:bg-accent/50 transition-colors flex justify-between items-baseline text-muted-foreground"
-                                                >
-                                                    <span>{page.title}</span>
-                                                    <span className="text-sm font-sans text-muted-foreground">Page {page.id}</span>
-                                                </button>
-                                            </li>
-                                        ))}
-                                    </ul>
                                 </div>
                             ))}
                              {filteredChapters.length === 0 && (

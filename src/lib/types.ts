@@ -601,8 +601,22 @@ export interface Announcement {
   imageUrl?: string;
 }
 
-export interface BnfData {
-    chapters: BnfChapter[];
-    pages: BnfPage[];
-    index: { word: string; page: number }[];
+export interface BnfPage {
+  id: number;
+  chapter_id: number;
+  title: string;
+  index_words: string;
+  left_content: string; // Storing as HTML string
+  right_content: string; // Storing as HTML string
+}
+
+export interface BnfChapter {
+    id: number;
+    title: string;
+}
+
+export interface BnfWordIndexEntry {
+    id: number;
+    word: string;
+    page_id: number;
 }
