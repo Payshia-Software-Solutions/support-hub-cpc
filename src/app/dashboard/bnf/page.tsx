@@ -3,9 +3,10 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, BookOpen, List, Search } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, List, Search, ListOrdered } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 // --- Data Structure for BNF Pages ---
 
@@ -82,33 +83,52 @@ const bnfChapters: BnfChapter[] = [
 
 const allPages: BnfPage[] = bnfChapters.flatMap(chapter => chapter.pages);
 
+const wordIndexData = [
+  "5htl 45", "5ht3 40", "abnormal 17", "absorption 1", "absorption 2", "absorption 3", "absorption 5", "access 9",
+  "according 9", "ace 11", "ace 14", "ace 15", "ace 21", "ace 22", "acetylcholinesterase 44", "acheis 44",
+  "aciclovir 48", "acid 17", "acting 13", "acting 48", "action 1", "action 3", "action 6", "activity 3",
+  "activity 43", "actual 1", "acute 13", "acute 14", "acute 20", "acute 23", "acute 28", "acute 32",
+  "acute 35", "acute 45", "additive 3", "adhd 39", "adjusted 7", "adjuvant 41", "adme 5", "administered 3",
+  "administered 20", "administration 2", "administration 5", "adrenaline 23", "adrs 4", "advanced 23", "advancement 31",
+  "adverse 1", "adverse 4", "adverse 7", "advice 22", "advice 42", "aeds 42", "affected 11", "affecting 3",
+  "affecting 30", "affects 2", "affects 3", "affects 5", "age 10", "age 12", "agents 22", "aggregation 19",
+  "agitation 37", "agonist 25", "agonists 43", "agonists 45", "agreed 9", "aiming 26", "aims 9", "aims 13",
+  "aims 15", "aims 43", "aims 44", "airflow 27", "airway 30", "airway 31", "airways 26", "airways 28"
+].map(item => {
+    const parts = item.split(' ');
+    const page = parseInt(parts.pop() || '0', 10);
+    const word = parts.join(' ');
+    return { word, page };
+});
+
 
 export default function BnfPage() {
-    const [selectedPageIndex, setSelectedPageIndex] = useState<number | null>(null);
+    const [view, setView] = useState<'contents' | 'page' | 'index'>('contents');
+    const [selectedPageIndex, setSelectedPageIndex] = useState<number>(0);
     const [searchTerm, setSearchTerm] = useState('');
 
     const handleNextPage = () => {
-        if (selectedPageIndex === null) return;
-        const flatIndex = allPages.findIndex(p => p.id === allPages[selectedPageIndex].id);
-        if (flatIndex < allPages.length - 1) {
-            setSelectedPageIndex(allPages.findIndex(p => p.id === allPages[flatIndex + 1].id));
+        if (selectedPageIndex < allPages.length - 1) {
+            setSelectedPageIndex(prev => prev + 1);
         }
     };
 
     const handlePrevPage = () => {
-        if (selectedPageIndex === null) return;
-        const flatIndex = allPages.findIndex(p => p.id === allPages[selectedPageIndex].id);
-        if (flatIndex > 0) {
-            setSelectedPageIndex(allPages.findIndex(p => p.id === allPages[flatIndex - 1].id));
+        if (selectedPageIndex > 0) {
+            setSelectedPageIndex(prev => prev - 1);
         }
     };
     
-    const handleSelectPage = (index: number) => {
-        setSelectedPageIndex(index);
+    const handleSelectPage = (pageId: number) => {
+        const pageIndex = allPages.findIndex(p => p.id === pageId);
+        if (pageIndex !== -1) {
+            setSelectedPageIndex(pageIndex);
+            setView('page');
+        }
     }
 
     const handleBackToContents = () => {
-        setSelectedPageIndex(null);
+        setView('contents');
     }
     
     const filteredChapters = bnfChapters.map(chapter => {
@@ -117,118 +137,171 @@ export default function BnfPage() {
         );
         return { ...chapter, pages: filteredPages };
     }).filter(chapter => chapter.pages.length > 0);
+    
+    const filteredIndexWords = wordIndexData.filter(item => 
+        item.word.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
+    const renderView = () => {
+        switch (view) {
+            case 'page':
+                const currentPageData = allPages[selectedPageIndex];
+                return (
+                    <article className="max-w-5xl mx-auto p-4 md:p-8 font-serif text-gray-800 flex flex-col flex-1 w-full">
+                        {/* Header with Word Index */}
+                        <header className="flex justify-between items-center mb-4 border-b-2 pb-2 shrink-0">
+                            <Button variant="link" onClick={handleBackToContents} className="font-sans text-gray-600 pl-0">
+                                <ArrowLeft className="mr-2 h-4 w-4"/> Back to Contents
+                            </Button>
+                            <h3 className="text-sm font-sans font-semibold text-gray-600">{currentPageData.indexWords}</h3>
+                        </header>
 
-    if (selectedPageIndex === null) {
-        return (
-            <div className="p-4 md:p-8 space-y-8 pb-20 max-w-4xl mx-auto">
-                <header className="text-center">
-                    <h1 className="text-4xl font-serif font-bold">Table of Contents</h1>
-                </header>
-                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search Table of Contents by title..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 w-full"
-                    />
-                </div>
-                <div className="space-y-6 font-serif">
-                    {filteredChapters.map(chapter => (
-                        <div key={chapter.id}>
-                            <h2 className="font-bold text-xl mb-2 flex justify-between items-baseline">
-                                <span>{chapter.title}</span>
-                                <span className="text-sm font-sans font-normal text-muted-foreground">Page {chapter.pages[0].id}</span>
-                            </h2>
-                            <ul className="space-y-1 border-l-2 pl-4 ml-2">
-                                {chapter.pages.map(page => {
-                                    const pageIndex = allPages.findIndex(p => p.id === page.id);
-                                    return (
-                                        <li key={page.id}>
-                                            <button
-                                                onClick={() => handleSelectPage(pageIndex)}
-                                                className="w-full text-left p-2 rounded-md hover:bg-accent/50 transition-colors flex justify-between items-baseline"
-                                            >
-                                                <span>{page.title}</span>
-                                                <span className="text-sm font-sans text-muted-foreground">Page {page.id}</span>
-                                            </button>
-                                        </li>
-                                    )
-                                })}
-                            </ul>
+                        <div className="flex-1 overflow-y-auto pr-4 -mr-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-16 gap-y-8">
+                                {/* Left Column */}
+                                <div className="space-y-6">
+                                    <div>
+                                        <h1 className="text-4xl font-bold text-gray-900 leading-tight">
+                                            {currentPageData.leftContent.heading}
+                                        </h1>
+                                    </div>
+                                    <div className="space-y-4 text-base leading-relaxed">
+                                        {currentPageData.leftContent.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+                                    </div>
+                                    {currentPageData.leftContent.subHeading && (
+                                         <div>
+                                            <h2 className="text-2xl font-bold text-gray-900 mt-8">
+                                                {currentPageData.leftContent.subHeading}
+                                            </h2>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Right Column */}
+                                <div className="space-y-6">
+                                     <ul className="space-y-5 text-base leading-relaxed">
+                                        {currentPageData.rightContent.list.map((item, i) => (
+                                             <li key={i}>
+                                                <span className="font-bold">{item.bold}</span> {item.text}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    {currentPageData.rightContent.note && (
+                                         <p className="text-sm text-gray-600 pt-8">
+                                            {currentPageData.rightContent.note}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                    ))}
-                     {filteredChapters.length === 0 && (
-                        <p className="text-center text-muted-foreground py-10">No results found for "{searchTerm}".</p>
-                    )}
-                </div>
-            </div>
-        );
-    }
+                        
+                        <footer className="flex justify-between items-center text-center mt-4 pt-4 border-t-2 text-sm text-gray-500 font-sans shrink-0">
+                            <Button variant="outline" onClick={handlePrevPage} disabled={selectedPageIndex === 0}>
+                                <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+                            </Button>
+                            <span>Page {currentPageData.id}</span>
+                            <Button variant="outline" onClick={handleNextPage} disabled={selectedPageIndex === allPages.length - 1}>
+                                Next <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </footer>
+                    </article>
+                );
+            case 'index':
+                 return (
+                    <div className="p-4 md:p-8 space-y-6 pb-20 max-w-5xl mx-auto font-serif">
+                        <header className="flex justify-between items-center mb-4 border-b pb-2">
+                             <div className="flex-1">
+                                <h1 className="text-3xl font-bold">Word Index: British National Formulary (Vol. 1)</h1>
+                                <p className="text-sm text-muted-foreground mt-1">Alphabetical index of words found in British National Formulary (Vol. 1). Click an entry to navigate. (Generated from sample data)</p>
+                            </div>
+                            <Button variant="outline" onClick={handleBackToContents} className="font-sans ml-4 shrink-0">
+                                <ArrowLeft className="mr-2 h-4 w-4"/> Back to Contents
+                            </Button>
+                        </header>
+                         <div className="relative mb-6">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search Word Index..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10 w-full font-sans"
+                            />
+                        </div>
+                        <Card className="p-6">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-2 text-sm font-sans">
+                               {filteredIndexWords.map((item, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => handleSelectPage(item.page)}
+                                        className="text-left hover:text-primary hover:underline flex justify-between"
+                                    >
+                                        <span>{item.word}</span>
+                                        <span>{item.page}</span>
+                                    </button>
+                               ))}
+                            </div>
+                            {filteredIndexWords.length === 0 && (
+                                <p className="text-center text-muted-foreground py-10 font-sans">No results found for "{searchTerm}".</p>
+                            )}
+                        </Card>
+                    </div>
+                );
+            case 'contents':
+            default:
+                return (
+                    <div className="p-4 md:p-8 space-y-8 pb-20 max-w-4xl mx-auto">
+                        <header className="text-center">
+                            <h1 className="text-4xl font-serif font-bold">Table of Contents</h1>
+                        </header>
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                            <div className="relative flex-grow w-full">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search Table of Contents by title..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10 w-full"
+                                />
+                            </div>
+                            <Button variant="outline" onClick={() => { setSearchTerm(''); setView('index'); }} className="w-full sm:w-auto">
+                                <ListOrdered className="mr-2 h-4 w-4" /> Word Index
+                            </Button>
+                        </div>
+                        <div className="space-y-6 font-serif">
+                            {filteredChapters.map(chapter => (
+                                <div key={chapter.id}>
+                                    <h2 className="font-bold text-xl mb-2 flex justify-between items-baseline">
+                                        <span>{chapter.title}</span>
+                                        <span className="text-sm font-sans font-normal text-muted-foreground">Page {chapter.pages[0].id}</span>
+                                    </h2>
+                                    <ul className="space-y-1 border-l-2 pl-4 ml-2">
+                                        {chapter.pages.map(page => (
+                                            <li key={page.id}>
+                                                <button
+                                                    onClick={() => handleSelectPage(page.id)}
+                                                    className="w-full text-left p-2 rounded-md hover:bg-accent/50 transition-colors flex justify-between items-baseline"
+                                                >
+                                                    <span>{page.title}</span>
+                                                    <span className="text-sm font-sans text-muted-foreground">Page {page.id}</span>
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                             {filteredChapters.length === 0 && (
+                                <p className="text-center text-muted-foreground py-10">No results found for "{searchTerm}".</p>
+                            )}
+                        </div>
+                    </div>
+                );
+        }
+    };
 
-    const currentPageData = allPages[selectedPageIndex];
 
   return (
     <div className="bg-white h-full flex flex-col">
-        <article className="max-w-5xl mx-auto p-4 md:p-8 font-serif text-gray-800 flex flex-col flex-1 w-full">
-            {/* Header with Word Index */}
-            <header className="flex justify-between items-center mb-4 border-b-2 pb-2 shrink-0">
-                <Button variant="link" onClick={handleBackToContents} className="font-sans text-gray-600 pl-0">
-                    <ArrowLeft className="mr-2 h-4 w-4"/> Back to Contents
-                </Button>
-                <h3 className="text-sm font-sans font-semibold text-gray-600">{currentPageData.indexWords}</h3>
-            </header>
-
-            <div className="flex-1 overflow-y-auto pr-4 -mr-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-16 gap-y-8">
-                    {/* Left Column */}
-                    <div className="space-y-6">
-                        <div>
-                            <h1 className="text-4xl font-bold text-gray-900 leading-tight">
-                                {currentPageData.leftContent.heading}
-                            </h1>
-                        </div>
-                        <div className="space-y-4 text-base leading-relaxed">
-                            {currentPageData.leftContent.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-                        </div>
-                        {currentPageData.leftContent.subHeading && (
-                             <div>
-                                <h2 className="text-2xl font-bold text-gray-900 mt-8">
-                                    {currentPageData.leftContent.subHeading}
-                                </h2>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Right Column */}
-                    <div className="space-y-6">
-                         <ul className="space-y-5 text-base leading-relaxed">
-                            {currentPageData.rightContent.list.map((item, i) => (
-                                 <li key={i}>
-                                    <span className="font-bold">{item.bold}</span> {item.text}
-                                </li>
-                            ))}
-                        </ul>
-                        {currentPageData.rightContent.note && (
-                             <p className="text-sm text-gray-600 pt-8">
-                                {currentPageData.rightContent.note}
-                            </p>
-                        )}
-                    </div>
-                </div>
-            </div>
-            
-            <footer className="flex justify-between items-center text-center mt-4 pt-4 border-t-2 text-sm text-gray-500 font-sans shrink-0">
-                <Button variant="outline" onClick={handlePrevPage} disabled={selectedPageIndex === 0}>
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-                </Button>
-                <span>Page {currentPageData.id} of {allPages.length}</span>
-                <Button variant="outline" onClick={handleNextPage} disabled={selectedPageIndex === allPages.length - 1}>
-                    Next <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-            </footer>
-        </article>
+        {renderView()}
     </div>
   );
 }
