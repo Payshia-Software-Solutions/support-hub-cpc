@@ -61,12 +61,17 @@ export default function BnfPage() {
     
     const filteredChapters = useMemo(() => {
       if (!bnfChapters) return [];
+      const lowercasedSearchTerm = searchTerm.toLowerCase();
+      if (!lowercasedSearchTerm) return bnfChapters;
+
       return bnfChapters.map(chapter => {
           const filteredPages = chapter.pages.filter(page => 
-              page.title.toLowerCase().includes(searchTerm.toLowerCase())
+              page.title.toLowerCase().includes(lowercasedSearchTerm)
           );
           return { ...chapter, pages: filteredPages };
-      }).filter(chapter => chapter.pages.length > 0);
+      }).filter(chapter => 
+          chapter.title.toLowerCase().includes(lowercasedSearchTerm) || chapter.pages.length > 0
+      );
     }, [bnfChapters, searchTerm]);
     
     const filteredIndexWords = useMemo(() => {
@@ -79,7 +84,7 @@ export default function BnfPage() {
     const renderView = () => {
         if (isLoading) {
             return (
-                 <div className="p-4 md:p-8 space-y-6 pb-20 max-w-5xl mx-auto h-full flex flex-col">
+                 <div className="p-4 md:p-8 space-y-6 pb-20 h-full flex flex-col">
                     <header className="flex justify-between items-center mb-4 border-b pb-2">
                         <Skeleton className="h-10 w-1/3" />
                         <Skeleton className="h-10 w-24" />
@@ -97,7 +102,7 @@ export default function BnfPage() {
 
         if (isError) {
             return (
-                 <div className="p-4 md:p-8 space-y-6 pb-20 max-w-5xl mx-auto">
+                 <div className="p-4 md:p-8 space-y-6 pb-20">
                     <Alert variant="destructive">
                         <AlertTriangle className="h-4 w-4" />
                         <CardTitle>Error Loading Data</CardTitle>
@@ -113,7 +118,7 @@ export default function BnfPage() {
                 const currentPageData = allPages[selectedPageIndex];
                 if (!currentPageData) return null;
                 return (
-                    <div className="max-w-5xl mx-auto p-4 md:p-8 font-serif h-full flex flex-col">
+                    <div className="p-4 md:p-8 font-serif h-full flex flex-col">
                         <header className="flex justify-between items-center mb-4 border-b-2 pb-2 shrink-0">
                             <Button variant="link" onClick={handleBackToContents} className="font-sans text-muted-foreground pl-0">
                                 <ArrowLeft className="mr-2 h-4 w-4"/> Back to Contents
@@ -121,13 +126,13 @@ export default function BnfPage() {
                             <h3 className="text-sm font-sans font-semibold text-muted-foreground">{currentPageData.indexWords}</h3>
                         </header>
 
-                        <div className="space-y-6">
-                            <div>
+                        <article className="space-y-6">
+                             <div>
                                 <h1 className="text-4xl font-bold text-foreground leading-tight">
                                     {currentPageData.leftContent.heading}
                                 </h1>
                             </div>
-                            <div className="space-y-4 text-base leading-relaxed text-foreground/90">
+                             <div className="space-y-4 text-base leading-relaxed text-foreground/90">
                                 {currentPageData.leftContent.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
                             </div>
                             {currentPageData.leftContent.subHeading && (
@@ -137,7 +142,7 @@ export default function BnfPage() {
                                     </h2>
                                 </div>
                             )}
-                            <ul className="space-y-5 text-base leading-relaxed text-foreground/90">
+                             <ul className="space-y-5 text-base leading-relaxed text-foreground/90">
                                 {currentPageData.rightContent.list.map((item, i) => (
                                     <li key={i}>
                                         <strong className="font-semibold">{item.bold}</strong> {item.text}
@@ -149,7 +154,7 @@ export default function BnfPage() {
                                     {currentPageData.rightContent.note}
                                 </p>
                             )}
-                        </div>
+                        </article>
                         
                         <footer className="flex justify-between items-center text-center mt-auto pt-4 border-t-2 text-sm text-muted-foreground font-sans shrink-0">
                             <Button variant="outline" onClick={handlePrevPage} disabled={selectedPageIndex === 0}>
@@ -164,7 +169,7 @@ export default function BnfPage() {
                 );
             case 'index':
                  return (
-                    <div className="p-4 md:p-8 space-y-6 pb-20 max-w-5xl mx-auto font-serif h-full flex flex-col">
+                    <div className="p-4 md:p-8 space-y-6 pb-20 font-serif h-full flex flex-col">
                         <header className="flex justify-between items-center mb-4 border-b pb-2">
                              <div className="flex-1">
                                 <h1 className="text-3xl font-bold">Word Index</h1>
@@ -205,7 +210,7 @@ export default function BnfPage() {
             case 'contents':
             default:
                 return (
-                    <div className="p-4 md:p-8 space-y-8 pb-20 max-w-4xl mx-auto h-full flex flex-col">
+                    <div className="p-4 md:p-8 space-y-8 pb-20 h-full flex flex-col">
                         <header className="text-center">
                             <h1 className="text-4xl font-serif font-bold text-foreground">Table of Contents</h1>
                         </header>
