@@ -112,7 +112,11 @@ function BnfForm({
 
     const onSubmit = (formData: any) => {
         const payload = mode === 'edit' && data ? { ...data, ...formData } : formData;
-        mutation.mutate(payload);
+        if(type === 'chapter' && mode === 'edit' && data) {
+            chapterMutation.mutate({ id: (data as BnfChapter).id, ...formData });
+        } else {
+            mutation.mutate(payload);
+        }
     };
 
     return (
