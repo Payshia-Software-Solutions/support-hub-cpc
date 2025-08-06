@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from 'react';
 import { cn } from "@/lib/utils";
@@ -134,6 +134,13 @@ const managementTasks: ManagementTask[] = [
     icon: <UserCheck className="w-8 h-8 text-white" />,
     href: "/admin/manage/login-as",
     category: "Student Management"
+  },
+  {
+    title: "BNF Management",
+    description: "Add, edit, and manage BNF content.",
+    icon: <BookOpen className="w-8 h-8 text-white" />,
+    href: "/admin/manage/bnf",
+    category: "Content & System"
   },
   {
     title: "General Settings",

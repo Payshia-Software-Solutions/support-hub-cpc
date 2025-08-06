@@ -600,3 +600,9 @@ export interface Announcement {
   createdAt: string;
   imageUrl?: string;
 }
+
+export interface BnfData {
+    chapters: BnfChapter[];
+    pages: BnfPage[];
+    index: { word: string; page: number }[];
+}
