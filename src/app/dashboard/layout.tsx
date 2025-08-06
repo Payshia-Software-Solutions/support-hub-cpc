@@ -31,8 +31,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           <main 
             className={cn(
               "flex flex-col flex-1 overflow-y-auto bg-background animate-in fade-in-50 slide-in-from-bottom-4 duration-500",
-              // Apply pb-16 for bottom dock space only if mobile and not in detail view
-              isMobile ? (isMobileDetailActive ? "" : "pb-16") : "",
+              // Apply pb-14 for bottom dock space only if mobile and not in detail view
+              isMobile ? (isMobileDetailActive ? "" : "pb-14") : "",
             )}
           >
             <SidebarInset className="flex-1">

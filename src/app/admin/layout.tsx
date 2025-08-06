@@ -64,7 +64,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             <SidebarInset 
                 className={cn(
                   "flex-1 flex flex-col",
-                  isMobile ? (isMobileDetailActive ? "pb-0" : "pb-16") : "pb-0"
+                  isMobile ? (isMobileDetailActive ? "pb-0" : "pb-14") : "pb-0"
                 )}
             >
               {children}
