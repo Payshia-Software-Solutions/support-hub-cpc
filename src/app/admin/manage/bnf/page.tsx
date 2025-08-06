@@ -24,7 +24,7 @@ import { getBnfChapters, getBnfPagesForChapter, createBnfChapter, updateBnfChapt
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -111,7 +111,8 @@ function BnfForm({
     const mutation = isPage ? pageMutation : chapterMutation;
 
     const onSubmit = (formData: any) => {
-        mutation.mutate(formData);
+        const payload = mode === 'edit' && data ? { ...data, ...formData } : formData;
+        mutation.mutate(payload);
     };
 
     return (
