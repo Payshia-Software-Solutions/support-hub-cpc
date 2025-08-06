@@ -156,41 +156,34 @@ export default function BnfPage() {
                         </header>
 
                         <div className="flex-1 overflow-y-auto pr-4 -mr-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-16 gap-y-8">
-                                {/* Left Column */}
-                                <div className="space-y-6">
-                                    <div>
-                                        <h1 className="text-4xl font-bold text-foreground leading-tight">
-                                            {currentPageData.leftContent.heading}
-                                        </h1>
-                                    </div>
-                                    <div className="space-y-4 text-base leading-relaxed">
-                                        {currentPageData.leftContent.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-                                    </div>
-                                    {currentPageData.leftContent.subHeading && (
-                                         <div>
-                                            <h2 className="text-2xl font-bold text-foreground mt-8">
-                                                {currentPageData.leftContent.subHeading}
-                                            </h2>
-                                        </div>
-                                    )}
+                            <div className="space-y-6">
+                                <div>
+                                    <h1 className="text-4xl font-bold text-foreground leading-tight">
+                                        {currentPageData.leftContent.heading}
+                                    </h1>
                                 </div>
-
-                                {/* Right Column */}
-                                <div className="space-y-6">
-                                     <ul className="space-y-5 text-base leading-relaxed">
-                                        {currentPageData.rightContent.list.map((item, i) => (
-                                             <li key={i}>
-                                                <span className="font-bold">{item.bold}</span> {item.text}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    {currentPageData.rightContent.note && (
-                                         <p className="text-sm text-muted-foreground pt-8">
-                                            {currentPageData.rightContent.note}
-                                        </p>
-                                    )}
+                                <div className="space-y-4 text-base leading-relaxed text-foreground/90">
+                                    {currentPageData.leftContent.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
                                 </div>
+                                {currentPageData.leftContent.subHeading && (
+                                     <div>
+                                        <h2 className="text-2xl font-bold text-foreground mt-8">
+                                            {currentPageData.leftContent.subHeading}
+                                        </h2>
+                                    </div>
+                                )}
+                                <ul className="space-y-5 text-base leading-relaxed text-foreground/90">
+                                   {currentPageData.rightContent.list.map((item, i) => (
+                                        <li key={i}>
+                                           <strong className="font-semibold">{item.bold}</strong> {item.text}
+                                       </li>
+                                   ))}
+                               </ul>
+                               {currentPageData.rightContent.note && (
+                                    <p className="text-sm text-muted-foreground pt-8">
+                                       {currentPageData.rightContent.note}
+                                   </p>
+                               )}
                             </div>
                         </div>
                         
