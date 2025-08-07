@@ -66,6 +66,7 @@ export interface UserProfile {
   name: string;
   email: string;
   role: 'student' | 'staff';
+  userlevel?: string; // e.g. "Admin", "Staff", "Student"
   avatar: string;
   joinedDate: string;
   lastLogin?: string;

@@ -24,8 +24,11 @@ import {
 } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminDashboardPage() {
+  const { user } = useAuth();
+
   const { data: tickets, isLoading: isLoadingTickets, isError: isErrorTickets, error: errorTickets } = useQuery<TicketType[]>({
     queryKey: ['admin-tickets-dashboard'], 
     queryFn: getAdminTickets,
@@ -300,92 +303,94 @@ export default function AdminDashboardPage() {
         </Card>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 delay-400">
-          <CardHeader>
-            <CardTitle>Active Tickets by Staff</CardTitle>
-            <CardDescription>Open and In-Progress tickets per staff member</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {isLoading ? (
-              <div className="flex h-full items-center justify-center">
-                 <Skeleton className="h-full w-full" />
-              </div>
-            ) : staffHandlingData.length > 0 ? (
-              <ChartContainer config={handlingChartConfig} className="w-full h-full">
-                <BarChart data={staffHandlingData} layout="vertical" accessibilityLayer margin={{ left: 10, right: 10 }}>
-                  <CartesianGrid horizontal={false} />
-                  <XAxis type="number" hide />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    fontSize={12}
-                    width={80}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent />}
-                  />
-                  <Legend />
-                  <Bar dataKey="Open" stackId="a" fill="var(--color-Open)" />
-                  <Bar dataKey="InProgress" stackId="a" fill="var(--color-InProgress)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ChartContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <p className="text-muted-foreground">No active tickets assigned to staff.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 delay-500">
-          <CardHeader>
-            <CardTitle>Resolved Tickets by Staff</CardTitle>
-            <CardDescription>Total tickets closed by each staff member</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {isLoading ? (
-              <div className="flex h-full items-center justify-center">
-                 <Skeleton className="h-full w-full" />
-              </div>
-            ) : staffClosedData.length > 0 ? (
-              <ChartContainer config={closedChartConfig} className="w-full h-full">
-                <BarChart data={staffClosedData} accessibilityLayer>
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    fontSize={12}
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    allowDecimals={false}
-                    fontSize={12}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent />}
-                  />
-                  <Legend />
-                  <Bar dataKey="Closed" fill="var(--color-Closed)" radius={4} />
-                </BarChart>
-              </ChartContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <p className="text-muted-foreground">No closed tickets assigned to staff.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </section>
+      {user?.userlevel === 'Admin' && (
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 delay-400">
+            <CardHeader>
+              <CardTitle>Active Tickets by Staff</CardTitle>
+              <CardDescription>Open and In-Progress tickets per staff member</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              {isLoading ? (
+                <div className="flex h-full items-center justify-center">
+                   <Skeleton className="h-full w-full" />
+                </div>
+              ) : staffHandlingData.length > 0 ? (
+                <ChartContainer config={handlingChartConfig} className="w-full h-full">
+                  <BarChart data={staffHandlingData} layout="vertical" accessibilityLayer margin={{ left: 10, right: 10 }}>
+                    <CartesianGrid horizontal={false} />
+                    <XAxis type="number" hide />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      fontSize={12}
+                      width={80}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent />}
+                    />
+                    <Legend />
+                    <Bar dataKey="Open" stackId="a" fill="var(--color-Open)" />
+                    <Bar dataKey="InProgress" stackId="a" fill="var(--color-InProgress)" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ChartContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-muted-foreground">No active tickets assigned to staff.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          <Card className="shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 delay-500">
+            <CardHeader>
+              <CardTitle>Resolved Tickets by Staff</CardTitle>
+              <CardDescription>Total tickets closed by each staff member</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              {isLoading ? (
+                <div className="flex h-full items-center justify-center">
+                   <Skeleton className="h-full w-full" />
+                </div>
+              ) : staffClosedData.length > 0 ? (
+                <ChartContainer config={closedChartConfig} className="w-full h-full">
+                  <BarChart data={staffClosedData} accessibilityLayer>
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      fontSize={12}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      allowDecimals={false}
+                      fontSize={12}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent />}
+                    />
+                    <Legend />
+                    <Bar dataKey="Closed" fill="var(--color-Closed)" radius={4} />
+                  </BarChart>
+                </ChartContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-muted-foreground">No closed tickets assigned to staff.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      )}
       
       <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-600">
         <Card className="shadow-lg">

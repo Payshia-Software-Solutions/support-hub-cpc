@@ -81,6 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           name: `${apiUser.fname} ${apiUser.lname}`,
           email: apiUser.email,
           role: apiUser.userlevel === 'Student' ? 'student' : 'staff',
+          userlevel: apiUser.userlevel, // Store the specific userlevel
           avatar: `https://placehold.co/100x100.png?text=${apiUser.fname.charAt(0)}${apiUser.lname.charAt(0)}`,
           joinedDate: apiUser.created_at,
         };
