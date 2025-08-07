@@ -13,12 +13,43 @@ import { Search, Cake, Send, Loader2, PartyPopper, AlertTriangle } from 'lucide-
 import { getAllUserFullDetails } from '@/lib/api';
 import type { UserFullDetails } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { format, isToday, parseISO, isValid } from 'date-fns';
+import { format, isToday, parseISO, isValid, getDayOfYear, addDays, subDays } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+
+const BirthdayStudentRow = ({ student, showAction = false, onSendWish, isSent }: {
+    student: UserFullDetails;
+    showAction?: boolean;
+    onSendWish?: (id: string) => void;
+    isSent?: boolean;
+}) => (
+     <TableRow key={student.id}>
+        <TableCell className="font-medium flex items-center gap-3">
+            <Avatar className="h-9 w-9">
+                <AvatarImage src={`https://placehold.co/40x40.png?text=${student.full_name[0]}`} alt={student.full_name} data-ai-hint="student avatar" />
+                <AvatarFallback>{student.full_name[0]}</AvatarFallback>
+            </Avatar>
+            <span>{student.full_name}</span>
+        </TableCell>
+        <TableCell>{student.username}</TableCell>
+        <TableCell>{format(parseISO(student.birth_day), 'MMMM do')}</TableCell>
+        {showAction && onSendWish && (
+            <TableCell className="text-right">
+                <Button size="sm" onClick={() => onSendWish(student.id)} disabled={isSent}>
+                    <Send className="h-4 w-4 mr-2" />
+                    {isSent ? 'Sent' : 'Send Wish'}
+                </Button>
+            </TableCell>
+        )}
+    </TableRow>
+);
+
 
 export default function BirthdayWishesPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isSendingAll, setIsSendingAll] = useState(false);
     const [sentWishes, setSentWishes] = useState<Set<string>>(new Set());
+    const [activeTab, setActiveTab] = useState('today');
 
     const { data: students, isLoading, isError, error } = useQuery<UserFullDetails[]>({
         queryKey: ['allStudentDetailsForBirthday'],
@@ -26,31 +57,67 @@ export default function BirthdayWishesPage() {
         staleTime: 1000 * 60 * 60, // Cache for 1 hour
     });
 
-    const birthdayStudents = useMemo(() => {
-        if (!students) return [];
-        return students.filter(student => {
-            if (!student.birth_day || student.birth_day === "0000-00-00") return false;
-            
-            const date = parseISO(student.birth_day);
-            if (!isValid(date)) return false;
+    const { today, recent, upcoming } = useMemo(() => {
+        if (!students) return { today: [], recent: [], upcoming: [] };
 
-            try {
-                return isToday(date);
-            } catch (e) {
-                return false;
+        const allBirthdays: { student: UserFullDetails, date: Date, dayOfYear: number }[] = students
+            .map(student => {
+                if (!student.birth_day || student.birth_day === "0000-00-00") return null;
+                const date = parseISO(student.birth_day);
+                if (!isValid(date)) return null;
+                return { student, date, dayOfYear: getDayOfYear(date) };
+            })
+            .filter(Boolean) as { student: UserFullDetails, date: Date, dayOfYear: number }[];
+
+        const now = new Date();
+        const todayDayOfYear = getDayOfYear(now);
+        
+        const todayList = allBirthdays.filter(b => b.date.getMonth() === now.getMonth() && b.date.getDate() === now.getDate());
+
+        // For recent/upcoming, we use day of year to handle year-end wraparound
+        const sevenDaysAgo = getDayOfYear(subDays(now, 7));
+        const sevenDaysHence = getDayOfYear(addDays(now, 7));
+
+        const recentList = allBirthdays.filter(b => {
+             if (b.dayOfYear === todayDayOfYear) return false; // Exclude today
+             if (sevenDaysAgo < sevenDaysHence) { // Not wrapping around year-end
+                return b.dayOfYear >= sevenDaysAgo && b.dayOfYear < todayDayOfYear;
+             } else { // Wraps around year-end (e.g., today is Jan 3)
+                 return b.dayOfYear >= sevenDaysAgo || b.dayOfYear < todayDayOfYear;
+             }
+        }).sort((a,b) => b.dayOfYear - a.dayOfYear);
+
+        const upcomingList = allBirthdays.filter(b => {
+            if (b.dayOfYear === todayDayOfYear) return false; // Exclude today
+            if (todayDayOfYear < sevenDaysHence) { // Not wrapping around year-end
+                return b.dayOfYear > todayDayOfYear && b.dayOfYear <= sevenDaysHence;
+            } else { // Wraps around year-end
+                return b.dayOfYear > todayDayOfYear || b.dayOfYear <= sevenDaysHence;
             }
-        });
+        }).sort((a,b) => a.dayOfYear - b.dayOfYear);
+
+        return {
+            today: todayList.map(b => b.student),
+            recent: recentList.map(b => b.student),
+            upcoming: upcomingList.map(b => b.student),
+        };
+
     }, [students]);
 
     const filteredStudents = useMemo(() => {
-        if (!birthdayStudents) return [];
+        let listToFilter = [];
+        if (activeTab === 'today') listToFilter = today;
+        if (activeTab === 'recent') listToFilter = recent;
+        if (activeTab === 'upcoming') listToFilter = upcoming;
+
+        if (!listToFilter) return [];
         const lowercasedFilter = searchTerm.toLowerCase();
-        if (!lowercasedFilter) return birthdayStudents;
-        return birthdayStudents.filter(student =>
+        if (!lowercasedFilter) return listToFilter;
+        return listToFilter.filter(student =>
             student.username?.toLowerCase().includes(lowercasedFilter) ||
             student.full_name?.toLowerCase().includes(lowercasedFilter)
         );
-    }, [birthdayStudents, searchTerm]);
+    }, [today, recent, upcoming, searchTerm, activeTab]);
     
     const handleSendWish = (studentId: string) => {
         // Mock sending wish
@@ -92,14 +159,8 @@ export default function BirthdayWishesPage() {
             <Card className="shadow-lg">
                 <CardHeader>
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-                        <div>
-                            <CardTitle className="flex items-center gap-2"><Cake className="h-5 w-5 text-primary"/> Today's Birthdays</CardTitle>
-                            <CardDescription>
-                                {isLoading ? "Loading students..." : `Found ${birthdayStudents.length} students celebrating today.`}
-                            </CardDescription>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                            <div className="relative w-full sm:w-auto flex-grow">
+                        <div className="flex-grow">
+                             <div className="relative w-full sm:w-auto flex-grow max-w-sm">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Search student..."
@@ -109,64 +170,61 @@ export default function BirthdayWishesPage() {
                                     disabled={isLoading}
                                 />
                             </div>
+                        </div>
+                        {activeTab === 'today' && (
                             <Button onClick={handleSendAll} disabled={isLoading || isSendingAll || filteredStudents.length === 0}>
                                 {isSendingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PartyPopper className="mr-2 h-4 w-4"/>}
                                 Send to All
                             </Button>
-                        </div>
+                        )}
                     </div>
                 </CardHeader>
                 <CardContent>
-                     {isLoading ? (
-                        <div className="space-y-2">
-                           <Skeleton className="h-12 w-full" />
-                           <Skeleton className="h-12 w-full" />
-                           <Skeleton className="h-12 w-full" />
-                        </div>
-                    ) : (
-                        <div className="relative w-full overflow-auto border rounded-lg">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="recent">Recent</TabsTrigger>
+                            <TabsTrigger value="today">Today ({today.length})</TabsTrigger>
+                            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                        </TabsList>
+                        
+                        <div className="relative w-full overflow-auto border rounded-lg mt-4">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Student</TableHead>
                                         <TableHead>Username</TableHead>
                                         <TableHead>Date of Birth</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        {activeTab === 'today' && <TableHead className="text-right">Actions</TableHead>}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredStudents.length > 0 ? filteredStudents.map((student) => (
-                                        <TableRow key={student.id}>
-                                            <TableCell className="font-medium flex items-center gap-3">
-                                                <Avatar className="h-9 w-9">
-                                                    <AvatarImage src={`https://placehold.co/40x40.png?text=${student.full_name[0]}`} alt={student.full_name} data-ai-hint="student avatar" />
-                                                    <AvatarFallback>{student.full_name[0]}</AvatarFallback>
-                                                </Avatar>
-                                                <span>{student.full_name}</span>
-                                            </TableCell>
-                                            <TableCell>{student.username}</TableCell>
-                                            <TableCell>{format(parseISO(student.birth_day), 'MMMM do')}</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button size="sm" onClick={() => handleSendWish(student.id)} disabled={sentWishes.has(student.id)}>
-                                                    <Send className="h-4 w-4 mr-2" />
-                                                    {sentWishes.has(student.id) ? 'Sent' : 'Send Wish'}
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    )) : (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="text-center h-24">
-                                                {birthdayStudents.length === 0 ? "No students have a birthday today." : "No students found matching your search."}
-                                            </TableCell>
-                                        </TableRow>
+                                    {isLoading ? (
+                                        <TableRow><TableCell colSpan={activeTab === 'today' ? 4 : 3} className="text-center h-24"><Loader2 className="h-6 w-6 animate-spin mx-auto"/></TableCell></TableRow>
+                                    ) : (
+                                        <>
+                                            {filteredStudents.length > 0 ? filteredStudents.map((student) => (
+                                                <BirthdayStudentRow 
+                                                    key={student.id} 
+                                                    student={student} 
+                                                    showAction={activeTab === 'today'}
+                                                    onSendWish={handleSendWish}
+                                                    isSent={sentWishes.has(student.id)}
+                                                />
+                                            )) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={activeTab === 'today' ? 4 : 3} className="text-center h-24">
+                                                        No students found.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </>
                                     )}
                                 </TableBody>
                             </Table>
                         </div>
-                    )}
+                    </Tabs>
                 </CardContent>
             </Card>
         </div>
     );
-
-    
+}
