@@ -3,7 +3,9 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BarChart as BarChartIcon, Users, MapPin, PersonStanding, Cake, Phone } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BarChart as BarChartIcon, Users, MapPin, PersonStanding, Cake, Phone, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import { getAllUserFullDetails, getAllCities, getAllDistricts } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { UserFullDetails } from '@/lib/types';
@@ -20,19 +22,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { differenceInYears } from 'date-fns';
-
-interface LocationData {
-    name: string;
-    count: number;
-}
-
-interface Location {
-  id: string;
-  name_en: string;
-}
 
 interface AgeGroup {
     name: string;
@@ -72,12 +62,9 @@ export default function StudentAnalyticsPage() {
             };
         }
         
-        const cityMap = new Map(cities.map(c => [c.id, c.name_en]));
         const districtMap = new Map(districts.map(d => [d.id, d.name_en]));
 
         const districtCounts: Record<string, number> = {};
-        const cityCounts: Record<string, number> = {};
-        const civilStatusCounts: Record<string, number> = {};
         const ageGroups: Record<string, number> = {
             '<20': 0, '20-25': 0, '26-30': 0, '31-35': 0, '36-40': 0, '>40': 0, 'Unknown': 0
         };
@@ -89,22 +76,10 @@ export default function StudentAnalyticsPage() {
                 const districtName = districtMap.get(student.district) || student.district;
                 districtCounts[districtName] = (districtCounts[districtName] || 0) + 1;
             }
-            if (student.city) {
-                const cityName = cityMap.get(student.city) || student.city;
-                cityCounts[cityName] = (cityCounts[cityName] || 0) + 1;
-            }
             
             // Gender
             const gender = student.gender || 'Unknown';
             genderCounts[gender] = (genderCounts[gender] || 0) + 1;
-
-            // Civil Status
-            let status = student.civil_status || 'Unknown';
-            status = status.replace(/\./g, '').trim();
-            if (status) {
-                status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
-            }
-            civilStatusCounts[status] = (civilStatusCounts[status] || 0) + 1;
             
             // Age
             if (student.birth_day && student.birth_day.includes('-') && new Date(student.birth_day).toString() !== 'Invalid Date') {
@@ -115,7 +90,6 @@ export default function StudentAnalyticsPage() {
                 else if (age >= 31 && age <= 35) ageGroups['31-35']++;
                 else if (age >= 36 && age <= 40) ageGroups['36-40']++;
                 else if (age > 40) ageGroups['>40']++;
-                else ageGroups['Unknown']++;
             } else {
                 ageGroups['Unknown']++;
             }
@@ -123,8 +97,6 @@ export default function StudentAnalyticsPage() {
 
         return {
             districts: Object.entries(districtCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
-            cities: Object.entries(cityCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
-            civilStatus: Object.entries(civilStatusCounts).map(([name, count]) => ({ name, count })).sort((a,b) => b.count - a.count),
             ageGroups: Object.entries(ageGroups).map(([name, count]) => ({ name, count })),
             genderData: Object.entries(genderCounts).map(([name, count]) => ({ name, count })),
             totalStudents: students.length,
@@ -152,9 +124,16 @@ export default function StudentAnalyticsPage() {
 
     return (
         <div className="p-4 md:p-8 space-y-8 pb-20">
-            <header>
-                <h1 className="text-3xl font-headline font-semibold">Student Analytics</h1>
-                <p className="text-muted-foreground">Geographic and demographic distribution of registered students.</p>
+            <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-headline font-semibold">Student Analytics Overview</h1>
+                    <p className="text-muted-foreground">High-level geographic and demographic student distribution.</p>
+                </div>
+                <Button asChild>
+                    <Link href="/admin/manage/analytics/report">
+                        View Detailed Report <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
             </header>
 
             <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -166,59 +145,14 @@ export default function StudentAnalyticsPage() {
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Unique Districts</CardTitle><MapPin className="w-5 h-5 text-primary" /></CardHeader>
                     <CardContent>{isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{analyticsData.districts.length}</div>}<p className="text-xs text-muted-foreground">Districts with student presence</p></CardContent>
                 </Card>
-                <Card className="shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Unique Cities</CardTitle><MapPin className="w-5 h-5 text-primary" /></CardHeader>
-                    <CardContent>{isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{analyticsData.cities.length}</div>}<p className="text-xs text-muted-foreground">Cities with student presence</p></CardContent>
+                 <Card className="shadow-lg">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Gender Ratio</CardTitle><PersonStanding className="w-5 h-5 text-primary" /></CardHeader>
+                    <CardContent>{isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{analyticsData.genderData.find(g => g.name === 'Female')?.count || 0} : {analyticsData.genderData.find(g => g.name === 'Male')?.count || 0}</div>}<p className="text-xs text-muted-foreground">Female to Male ratio</p></CardContent>
                 </Card>
             </section>
             
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle>Gender Ratio</CardTitle>
-                        <CardDescription>Distribution of male and female students.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="h-[300px] flex items-center justify-center">
-                            {isLoading ? <Skeleton className="h-48 w-48 rounded-full" /> : (
-                            <ChartContainer
-                                config={genderChartConfig}
-                                className="mx-auto aspect-square h-full"
-                            >
-                                <PieChart>
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={<ChartTooltipContent hideLabel />}
-                                />
-                                <Pie
-                                    data={analyticsData.genderData}
-                                    dataKey="count"
-                                    nameKey="name"
-                                    innerRadius={50}
-                                    strokeWidth={5}
-                                >
-                                    {analyticsData.genderData.map((entry) => (
-                                    <Cell key={`cell-${entry.name}`} fill={genderChartConfig[entry.name as keyof typeof genderChartConfig]?.color} />
-                                    ))}
-                                </Pie>
-                                <Legend content={({ payload }) => {
-                                    return (
-                                      <ul className="flex flex-wrap gap-x-4 gap-y-2 justify-center mt-4">
-                                        {payload?.map((entry) => (
-                                          <li key={`item-${entry.value}`} className="flex items-center gap-2 text-sm">
-                                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                                            <span>{entry.value} ({entry.payload.payload.count})</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )
-                                  }}
-                                />
-                                </PieChart>
-                            </ChartContainer>
-                            )}
-                    </CardContent>
-                </Card>
-                <Card className="shadow-lg">
+                 <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle>Age Distribution</CardTitle>
                         <CardDescription>Number of students in different age brackets.</CardDescription>
@@ -237,18 +171,15 @@ export default function StudentAnalyticsPage() {
                          )}
                     </CardContent>
                 </Card>
-            </section>
-            
-            <section>
-                <Card className="shadow-lg">
+                 <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle>Students by District</CardTitle>
-                        <CardDescription>Full breakdown of students across all districts.</CardDescription>
+                        <CardDescription>Top 15 districts with the most students.</CardDescription>
                     </CardHeader>
-                    <CardContent className="h-[500px]">
+                    <CardContent className="h-[300px]">
                         {isLoading ? <Skeleton className="h-full w-full" /> : (
                             <ChartContainer config={countChartConfig} className="w-full h-full">
-                                <BarChart data={analyticsData.districts} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                <BarChart data={analyticsData.districts.slice(0, 15)} layout="vertical" margin={{ left: 20, right: 20 }}>
                                     <CartesianGrid horizontal={false} />
                                     <YAxis dataKey="name" type="category" width={80} tickLine={false} axisLine={false} fontSize={10} interval={0} />
                                     <XAxis type="number" hide />
@@ -260,46 +191,6 @@ export default function StudentAnalyticsPage() {
                     </CardContent>
                 </Card>
             </section>
-            
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle>Civil Status Breakdown</CardTitle>
-                        <CardDescription>Student counts by civil status.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         {isLoading ? <Skeleton className="h-48 w-full" /> : (
-                            <Table>
-                                <TableHeader><TableRow><TableHead>Status</TableHead><TableHead className="text-right">Count</TableHead></TableRow></TableHeader>
-                                <TableBody>
-                                    {analyticsData.civilStatus.map((item) => (
-                                        <TableRow key={item.name}><TableCell>{item.name}</TableCell><TableCell className="text-right font-bold">{item.count}</TableCell></TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                         )}
-                    </CardContent>
-                </Card>
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle>City Breakdown</CardTitle>
-                        <CardDescription>Top student counts by city.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ScrollArea className="h-[400px]">
-                        {isLoading ? <Skeleton className="h-full w-full" /> : (
-                            <Table>
-                                <TableHeader><TableRow><TableHead>City</TableHead><TableHead className="text-right">Count</TableHead></TableRow></TableHeader>
-                                <TableBody>
-                                    {analyticsData.cities.map((city) => (
-                                        <TableRow key={city.name}><TableCell>{city.name}</TableCell><TableCell className="text-right font-bold">{city.count}</TableCell></TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        )}
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
-            </section>
         </div>
     );
+}

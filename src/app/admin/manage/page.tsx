@@ -149,6 +149,13 @@ const managementTasks: ManagementTask[] = [
     href: "/admin/manage/analytics",
     category: "Student Management"
   },
+    {
+    title: "Analytics Report",
+    description: "Generate and filter detailed student reports.",
+    icon: <FileSignature className="w-8 h-8 text-white" />,
+    href: "/admin/manage/analytics/report",
+    category: "Student Management"
+  },
   {
     title: "General Settings",
     description: "Configure system-wide settings for the admin panel.",
