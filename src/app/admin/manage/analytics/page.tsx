@@ -100,10 +100,10 @@ export default function StudentAnalyticsPage() {
             
             // Civil Status
             let status = student.civil_status || 'Unknown';
-            if (status.endsWith('.')) {
-                status = status.slice(0, -1);
+            status = status.replace(/\./g, '').trim(); // Remove all periods and trim whitespace
+            if (status) {
+                status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
             }
-            status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
             civilStatusCounts[status] = (civilStatusCounts[status] || 0) + 1;
             
             // Age
@@ -153,7 +153,7 @@ export default function StudentAnalyticsPage() {
                 <p className="text-muted-foreground">Geographic and demographic distribution of registered students.</p>
             </header>
 
-            <section className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="w-5 h-5 text-primary" /></CardHeader>
                     <CardContent>{isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{analyticsData.totalStudents.toLocaleString()}</div>}<p className="text-xs text-muted-foreground">Total registered students</p></CardContent>
@@ -165,10 +165,6 @@ export default function StudentAnalyticsPage() {
                 <Card className="shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Unique Cities</CardTitle><MapPin className="w-5 h-5 text-primary" /></CardHeader>
                     <CardContent>{isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{analyticsData.cities.length}</div>}<p className="text-xs text-muted-foreground">Cities with student presence</p></CardContent>
-                </Card>
-                 <Card className="shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Gender Ratio</CardTitle><PersonStanding className="w-5 h-5 text-primary" /></CardHeader>
-                    <CardContent>{isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{analyticsData.gender.map(g => `${g.name.charAt(0)}:${g.total}`).join(' ')}</div>}<p className="text-xs text-muted-foreground">Male / Female breakdown</p></CardContent>
                 </Card>
             </section>
             
