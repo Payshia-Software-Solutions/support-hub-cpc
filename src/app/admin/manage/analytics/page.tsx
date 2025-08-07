@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart as BarChartIcon, Users, MapPin, PersonStanding, Cake, Phone, ArrowRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { BarChart as BarChartIcon, Users, MapPin, PersonStanding, Cake, Phone, ArrowRight, TrendingUp, TrendingDown, PieChart as PieChartIcon } from 'lucide-react';
 import Link from 'next/link';
 import { getAllUserFullDetails, getAllCities, getAllDistricts } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -98,7 +98,7 @@ export default function StudentAnalyticsPage() {
             civilStatusCounts[capitalizedStatus] = (civilStatusCounts[capitalizedStatus] || 0) + 1;
             
             // Age
-             if (student.birth_day && student.birth_day.includes('-') && new Date(student.birth_day).toString() !== 'Invalid Date') {
+            if (student.birth_day && student.birth_day.includes('-') && new Date(student.birth_day).toString() !== 'Invalid Date') {
                 const age = differenceInYears(new Date(), new Date(student.birth_day));
                 if (age > 0 && age < 20) ageGroups['<20']++;
                 else if (age >= 20 && age <= 25) ageGroups['20-25']++;
@@ -168,6 +168,17 @@ export default function StudentAnalyticsPage() {
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Most Common Age</CardTitle><Cake className="w-5 h-5 text-primary" /></CardHeader>
                     <CardContent>{isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{analyticsData.ageGroups.filter(g => g.name !== 'Unknown').sort((a,b) => b.count - a.count)[0]?.name || 'N/A'}</div>}<p className="text-xs text-muted-foreground">Highest populated age bracket</p></CardContent>
                 </Card>
+                 <Card className="shadow-lg">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Gender Ratio</CardTitle><PieChartIcon className="w-5 h-5 text-primary" /></CardHeader>
+                    <CardContent>
+                        {isLoading ? <Skeleton className="h-8 w-1/2" /> : (
+                            <div className="text-2xl font-bold">
+                                {analyticsData.genderData.find(g => g.name === 'Male')?.count || 0} M / {analyticsData.genderData.find(g => g.name === 'Female')?.count || 0} F
+                            </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">Male vs Female student count</p>
+                    </CardContent>
+                </Card>
             </section>
             
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -224,15 +235,17 @@ export default function StudentAnalyticsPage() {
                     </CardHeader>
                     <CardContent className="h-[400px]">
                         {isLoading ? <Skeleton className="h-full w-full" /> : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={analyticsData.districts} layout="vertical" margin={{ left: 20, right: 20 }}>
-                                     <CartesianGrid horizontal={false} />
-                                    <YAxis dataKey="name" type="category" width={80} tickLine={false} axisLine={false} fontSize={10} interval={0} />
-                                    <XAxis type="number" hide />
-                                    <Tooltip cursor={false} content={<ChartTooltipContent />} />
-                                    <Bar dataKey="count" name="Students" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={12} />
-                                </BarChart>
-                            </ResponsiveContainer>
+                            <ChartContainer config={countChartConfig} className="w-full h-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={analyticsData.districts} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                         <CartesianGrid horizontal={false} />
+                                        <YAxis dataKey="name" type="category" width={80} tickLine={false} axisLine={false} fontSize={10} interval={0} />
+                                        <XAxis type="number" hide />
+                                        <Tooltip cursor={false} content={<ChartTooltipContent />} />
+                                        <Bar dataKey="count" name="Students" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={12} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </ChartContainer>
                         )}
                     </CardContent>
                 </Card>
@@ -294,5 +307,3 @@ export default function StudentAnalyticsPage() {
         </div>
     );
 }
-
-    
