@@ -13,7 +13,7 @@ import { Search, Cake, Send, Loader2, PartyPopper, AlertTriangle } from 'lucide-
 import { getAllUserFullDetails } from '@/lib/api';
 import type { UserFullDetails } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { format, isToday, parseISO } from 'date-fns';
+import { format, isToday, parseISO, isValid } from 'date-fns';
 
 export default function BirthdayWishesPage() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -29,10 +29,13 @@ export default function BirthdayWishesPage() {
     const birthdayStudents = useMemo(() => {
         if (!students) return [];
         return students.filter(student => {
-            if (!student.birth_day) return false;
+            if (!student.birth_day || student.birth_day === "0000-00-00") return false;
+            
+            const date = parseISO(student.birth_day);
+            if (!isValid(date)) return false;
+
             try {
-                // The API returns YYYY-MM-DD format, which parseISO handles correctly
-                return isToday(parseISO(student.birth_day));
+                return isToday(date);
             } catch (e) {
                 return false;
             }
@@ -165,4 +168,5 @@ export default function BirthdayWishesPage() {
             </Card>
         </div>
     );
-}
+
+    
