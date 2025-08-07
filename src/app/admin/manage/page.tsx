@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog, BookOpen, BarChart } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog, BookOpen, BarChart, Cake } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from 'react';
 import { cn } from "@/lib/utils";
@@ -154,6 +154,13 @@ const managementTasks: ManagementTask[] = [
     description: "Generate and filter detailed student reports.",
     icon: <FileSignature className="w-8 h-8 text-white" />,
     href: "/admin/manage/analytics/report",
+    category: "Student Management"
+  },
+  {
+    title: "Birthday Wishes",
+    description: "Send birthday greetings to students.",
+    icon: <Cake className="w-8 h-8 text-white" />,
+    href: "/admin/manage/birthday-wishes",
     category: "Student Management"
   },
   {
