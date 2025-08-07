@@ -14,6 +14,7 @@ import { getAllUserFullDetails, getAllCities, getAllDistricts } from '@/lib/api'
 import type { UserFullDetails } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
+import { differenceInYears } from 'date-fns';
 
 const ITEMS_PER_PAGE = 50;
 
@@ -22,11 +23,16 @@ interface Location {
   name_en: string;
 }
 
+const AGE_GROUPS = ['<20', '20-25', '26-30', '31-35', '36-40', '>40', 'Unknown'];
+const GENDERS = ['Male', 'Female', 'Unknown'];
+
 export default function AnalyticsReportPage() {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
     const [districtFilter, setDistrictFilter] = useState('all');
     const [cityFilter, setCityFilter] = useState('all');
+    const [ageGroupFilter, setAgeGroupFilter] = useState('all');
+    const [genderFilter, setGenderFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [isExporting, setIsExporting] = useState(false);
 
@@ -65,14 +71,27 @@ export default function AnalyticsReportPage() {
             
             const matchesDistrict = districtFilter === 'all' || student.district === districtFilter;
             const matchesCity = cityFilter === 'all' || student.city === cityFilter;
+            const matchesGender = genderFilter === 'all' || (student.gender || 'Unknown') === genderFilter;
+            
+            let studentAgeGroup = 'Unknown';
+            if (student.birth_day && student.birth_day.includes('-') && new Date(student.birth_day).toString() !== 'Invalid Date') {
+                const age = differenceInYears(new Date(), new Date(student.birth_day));
+                if (age < 20) studentAgeGroup = '<20';
+                else if (age <= 25) studentAgeGroup = '20-25';
+                else if (age <= 30) studentAgeGroup = '26-30';
+                else if (age <= 35) studentAgeGroup = '31-35';
+                else if (age <= 40) studentAgeGroup = '36-40';
+                else studentAgeGroup = '>40';
+            }
+            const matchesAgeGroup = ageGroupFilter === 'all' || studentAgeGroup === ageGroupFilter;
 
-            return matchesSearch && matchesDistrict && matchesCity;
+            return matchesSearch && matchesDistrict && matchesCity && matchesGender && matchesAgeGroup;
         });
-    }, [students, searchTerm, districtFilter, cityFilter]);
+    }, [students, searchTerm, districtFilter, cityFilter, genderFilter, ageGroupFilter]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, districtFilter, cityFilter]);
+    }, [searchTerm, districtFilter, cityFilter, genderFilter, ageGroupFilter]);
 
     const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
     const paginatedStudents = useMemo(() => {
@@ -162,8 +181,8 @@ export default function AnalyticsReportPage() {
                             </Button>
                         </div>
                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-4">
-                        <div className="relative w-full">
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 pt-4">
+                        <div className="relative w-full lg:col-span-2">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input placeholder="Search username, name, email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
                         </div>
@@ -181,7 +200,24 @@ export default function AnalyticsReportPage() {
                                 {cities?.map(c => <SelectItem key={c.id} value={c.id}>{c.name_en}</SelectItem>)}
                             </SelectContent>
                         </Select>
+                         <Select value={genderFilter} onValueChange={setGenderFilter}>
+                            <SelectTrigger><SelectValue placeholder="Filter by Gender" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Genders</SelectItem>
+                                {GENDERS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 pt-2">
+                        <div className="lg:col-span-3"></div> {/* Spacer */}
+                        <Select value={ageGroupFilter} onValueChange={setAgeGroupFilter}>
+                            <SelectTrigger className="lg:col-span-2"><SelectValue placeholder="Filter by Age Group" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Age Groups</SelectItem>
+                                {AGE_GROUPS.map(ag => <SelectItem key={ag} value={ag}>{ag}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                     </div>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? <Skeleton className="h-96 w-full" /> : (
