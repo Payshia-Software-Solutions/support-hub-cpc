@@ -208,9 +208,9 @@ export default function StudentAnalyticsPage() {
                     </CardContent>
                 </Card>
             </section>
-
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                 <Card className="shadow-lg">
+            
+            <section>
+                <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle>Students by District</CardTitle>
                         <CardDescription>Full breakdown of students across all districts.</CardDescription>
@@ -229,41 +229,45 @@ export default function StudentAnalyticsPage() {
                         )}
                     </CardContent>
                 </Card>
-
-                 <Card className="shadow-lg">
+            </section>
+            
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="shadow-lg">
                     <CardHeader>
-                        <CardTitle>Civil Status &amp; City Breakdown</CardTitle>
-                        <CardDescription>Student counts by civil status and city.</CardDescription>
+                        <CardTitle>Civil Status Breakdown</CardTitle>
+                        <CardDescription>Student counts by civil status.</CardDescription>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                             <h4 className="font-semibold text-sm mb-2">By Civil Status</h4>
-                             {isLoading ? <Skeleton className="h-48 w-full" /> : (
-                                <Table>
-                                    <TableHeader><TableRow><TableHead>Status</TableHead><TableHead className="text-right">Count</TableHead></TableRow></TableHeader>
-                                    <TableBody>
-                                        {analyticsData.civilStatus.map((item) => (
-                                            <TableRow key={item.name}><TableCell>{item.name}</TableCell><TableCell className="text-right font-bold">{item.count}</TableCell></TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                             )}
-                        </div>
-                         <div>
-                            <h4 className="font-semibold text-sm mb-2">By City</h4>
-                            <ScrollArea className="h-[400px]">
-                            {isLoading ? <Skeleton className="h-full w-full" /> : (
-                                <Table>
-                                    <TableHeader><TableRow><TableHead>City</TableHead><TableHead className="text-right">Count</TableHead></TableRow></TableHeader>
-                                    <TableBody>
-                                        {analyticsData.cities.map((city) => (
-                                            <TableRow key={city.name}><TableCell>{city.name}</TableCell><TableCell className="text-right font-bold">{city.count}</TableCell></TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            )}
-                            </ScrollArea>
-                        </div>
+                    <CardContent>
+                         {isLoading ? <Skeleton className="h-48 w-full" /> : (
+                            <Table>
+                                <TableHeader><TableRow><TableHead>Status</TableHead><TableHead className="text-right">Count</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {analyticsData.civilStatus.map((item) => (
+                                        <TableRow key={item.name}><TableCell>{item.name}</TableCell><TableCell className="text-right font-bold">{item.count}</TableCell></TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                         )}
+                    </CardContent>
+                </Card>
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle>City Breakdown</CardTitle>
+                        <CardDescription>Top student counts by city.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ScrollArea className="h-[400px]">
+                        {isLoading ? <Skeleton className="h-full w-full" /> : (
+                            <Table>
+                                <TableHeader><TableRow><TableHead>City</TableHead><TableHead className="text-right">Count</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {analyticsData.cities.map((city) => (
+                                        <TableRow key={city.name}><TableCell>{city.name}</TableCell><TableCell className="text-right font-bold">{city.count}</TableCell></TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
+                        </ScrollArea>
                     </CardContent>
                 </Card>
             </section>
