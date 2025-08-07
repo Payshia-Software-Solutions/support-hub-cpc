@@ -133,12 +133,10 @@ export default function StudentAnalyticsPage() {
       Other: { label: "Other", color: "hsl(var(--chart-3))" },
     };
     
-    const ageChartConfig: ChartConfig = {
+    const countChartConfig: ChartConfig = {
         count: { label: "Students", color: "hsl(var(--primary))" },
     };
 
-
-    const topDistrictsData = analyticsData.districts.slice(0, 15);
 
     if (isErrorStudents) {
         return <div className="p-8 text-destructive">Error loading student data: {studentsError.message}</div>;
@@ -178,7 +176,7 @@ export default function StudentAnalyticsPage() {
                     </CardHeader>
                     <CardContent className="h-[300px]">
                          {isLoading ? <Skeleton className="h-full w-full" /> : (
-                            <ChartContainer config={ageChartConfig} className="w-full h-full">
+                            <ChartContainer config={countChartConfig} className="w-full h-full">
                                <BarChart data={analyticsData.ageGroups} accessibilityLayer>
                                     <CartesianGrid vertical={false} />
                                     <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
@@ -215,17 +213,17 @@ export default function StudentAnalyticsPage() {
                  <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle>Students by District</CardTitle>
-                        <CardDescription>Top 15 districts with the most students.</CardDescription>
+                        <CardDescription>Full breakdown of students across all districts.</CardDescription>
                     </CardHeader>
-                    <CardContent className="h-[400px]">
+                    <CardContent className="h-[500px]">
                         {isLoading ? <Skeleton className="h-full w-full" /> : (
-                            <ChartContainer config={ageChartConfig} className="w-full h-full">
-                                <BarChart data={topDistrictsData} layout="vertical" margin={{ left: 20, right: 20 }}>
+                            <ChartContainer config={countChartConfig} className="w-full h-full">
+                                <BarChart data={analyticsData.districts} layout="vertical" margin={{ left: 20, right: 20 }}>
                                     <CartesianGrid horizontal={false} />
-                                    <YAxis dataKey="name" type="category" width={80} tickLine={false} axisLine={false} fontSize={12} />
+                                    <YAxis dataKey="name" type="category" width={80} tickLine={false} axisLine={false} fontSize={10} interval={0} />
                                     <XAxis type="number" hide />
                                     <Tooltip cursor={false} content={<ChartTooltipContent />} />
-                                    <Bar dataKey="count" name="Students" fill="var(--color-count)" radius={[0, 4, 4, 0]} />
+                                    <Bar dataKey="count" name="Students" fill="var(--color-count)" radius={[0, 4, 4, 0]} barSize={12} />
                                 </BarChart>
                             </ChartContainer>
                         )}
@@ -253,7 +251,7 @@ export default function StudentAnalyticsPage() {
                         </div>
                          <div>
                             <h4 className="font-semibold text-sm mb-2">By City</h4>
-                            <ScrollArea className="h-[300px]">
+                            <ScrollArea className="h-[400px]">
                             {isLoading ? <Skeleton className="h-full w-full" /> : (
                                 <Table>
                                     <TableHeader><TableRow><TableHead>City</TableHead><TableHead className="text-right">Count</TableHead></TableRow></TableHeader>
@@ -272,6 +270,3 @@ export default function StudentAnalyticsPage() {
         </div>
     );
 }
-
-
-    
