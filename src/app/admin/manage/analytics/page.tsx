@@ -99,7 +99,11 @@ export default function StudentAnalyticsPage() {
             genderCounts[gender] = (genderCounts[gender] || 0) + 1;
             
             // Civil Status
-            const status = student.civil_status || 'Unknown';
+            let status = student.civil_status || 'Unknown';
+            if (status.endsWith('.')) {
+                status = status.slice(0, -1);
+            }
+            status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
             civilStatusCounts[status] = (civilStatusCounts[status] || 0) + 1;
             
             // Age
