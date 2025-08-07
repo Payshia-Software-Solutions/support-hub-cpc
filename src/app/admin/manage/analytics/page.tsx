@@ -148,6 +148,11 @@ export default function StudentAnalyticsPage() {
                     <h1 className="text-3xl font-headline font-semibold">Student Analytics Overview</h1>
                     <p className="text-muted-foreground">High-level geographic and demographic student distribution.</p>
                 </div>
+                 <Link href="/admin/manage/analytics/report">
+                    <Button variant="outline">
+                        <ArrowRight className="mr-2 h-4 w-4" /> View Detailed Report
+                    </Button>
+                </Link>
             </header>
 
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -192,7 +197,7 @@ export default function StudentAnalyticsPage() {
                     </CardHeader>
                     <CardContent className="h-[300px]">
                          {isLoading ? <Skeleton className="h-full w-full rounded-full" /> : (
-                             <ResponsiveContainer width="100%" height="100%">
+                             <ChartContainer config={genderChartConfig} className="w-full h-full">
                                 <PieChart>
                                     <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                                     <Pie data={analyticsData.genderData} dataKey="count" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={80} labelLine={false} label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
@@ -205,7 +210,7 @@ export default function StudentAnalyticsPage() {
                                     </Pie>
                                     <Legend />
                                 </PieChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                          )}
                     </CardContent>
                 </Card>
@@ -221,6 +226,7 @@ export default function StudentAnalyticsPage() {
                         {isLoading ? <Skeleton className="h-full w-full" /> : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={analyticsData.districts} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                     <CartesianGrid horizontal={false} />
                                     <YAxis dataKey="name" type="category" width={80} tickLine={false} axisLine={false} fontSize={10} interval={0} />
                                     <XAxis type="number" hide />
                                     <Tooltip cursor={false} content={<ChartTooltipContent />} />
@@ -288,3 +294,5 @@ export default function StudentAnalyticsPage() {
         </div>
     );
 }
+
+    
