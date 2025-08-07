@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog, BookOpen } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog, BookOpen, BarChart } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from 'react';
 import { cn } from "@/lib/utils";
@@ -141,6 +141,13 @@ const managementTasks: ManagementTask[] = [
     icon: <BookOpen className="w-8 h-8 text-white" />,
     href: "/admin/manage/bnf",
     category: "Content & System"
+  },
+  {
+    title: "Student Analytics",
+    description: "View student data by location and demographics.",
+    icon: <BarChart className="w-8 h-8 text-white" />,
+    href: "/admin/manage/analytics",
+    category: "Student Management"
   },
   {
     title: "General Settings",
