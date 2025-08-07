@@ -885,3 +885,29 @@ export const updateBnfPage = (id: number, data: Partial<BnfPage>): Promise<BnfPa
     return apiFetch(`/bnf/pages/${id}/`, { method: 'PUT', body: JSON.stringify(payload) });
 };
 export const deleteBnfPage = (id: number): Promise<void> => apiFetch(`/bnf/pages/${id}/`, { method: 'DELETE' });
+
+interface Location {
+  id: string;
+  name_en: string;
+}
+
+// Location APIs
+export const getAllCities = async (): Promise<Location[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/cities`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch cities');
+    }
+    const data = await response.json();
+    // The API returns an object, so we convert it to an array
+    return Object.values(data);
+};
+
+export const getAllDistricts = async (): Promise<Location[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/districts`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch districts');
+    }
+     const data = await response.json();
+    // The API returns an object, so we convert it to an array
+    return Object.values(data);
+};

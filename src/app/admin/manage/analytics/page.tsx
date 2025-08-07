@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BarChart, Users, MapPin } from 'lucide-react';
-import { getAllUserFullDetails } from '@/lib/api';
+import { getAllUserFullDetails, getAllCities, getAllDistricts } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { UserFullDetails } from '@/lib/types';
 import {
@@ -26,38 +26,62 @@ interface LocationData {
     count: number;
 }
 
+interface Location {
+  id: string;
+  name_en: string;
+}
+
 export default function StudentAnalyticsPage() {
-    const { data: students, isLoading, isError, error } = useQuery<UserFullDetails[]>({
+    const { data: students, isLoading: isLoadingStudents, isError: isErrorStudents, error: studentsError } = useQuery<UserFullDetails[]>({
         queryKey: ['allStudentDetailsForAnalytics'],
         queryFn: getAllUserFullDetails,
         staleTime: 1000 * 60 * 15, // Cache for 15 minutes
     });
+    
+    const { data: cities, isLoading: isLoadingCities } = useQuery<Location[]>({
+        queryKey: ['allCities'],
+        queryFn: getAllCities,
+        staleTime: Infinity,
+    });
+
+    const { data: districts, isLoading: isLoadingDistricts } = useQuery<Location[]>({
+        queryKey: ['allDistricts'],
+        queryFn: getAllDistricts,
+        staleTime: Infinity,
+    });
+    
+    const isLoading = isLoadingStudents || isLoadingCities || isLoadingDistricts;
 
     const analyticsData = useMemo(() => {
-        if (!students) return { districts: [], cities: [] };
+        if (!students || !cities || !districts) return { districts: [], cities: [] };
+        
+        const cityMap = new Map(cities.map(c => [c.id, c.name_en]));
+        const districtMap = new Map(districts.map(d => [d.id, d.name_en]));
 
         const districtCounts: Record<string, number> = {};
         const cityCounts: Record<string, number> = {};
 
         students.forEach(student => {
             if (student.district) {
-                districtCounts[student.district] = (districtCounts[student.district] || 0) + 1;
+                const districtName = districtMap.get(student.district) || student.district;
+                districtCounts[districtName] = (districtCounts[districtName] || 0) + 1;
             }
             if (student.city) {
-                cityCounts[student.city] = (cityCounts[student.city] || 0) + 1;
+                const cityName = cityMap.get(student.city) || student.city;
+                cityCounts[cityName] = (cityCounts[cityName] || 0) + 1;
             }
         });
 
-        const districts: LocationData[] = Object.entries(districtCounts)
+        const districtsData: LocationData[] = Object.entries(districtCounts)
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
         
-        const cities: LocationData[] = Object.entries(cityCounts)
+        const citiesData: LocationData[] = Object.entries(cityCounts)
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
 
-        return { districts, cities };
-    }, [students]);
+        return { districts: districtsData, cities: citiesData };
+    }, [students, cities, districts]);
 
     const topDistrictsData = analyticsData.districts.slice(0, 15);
 
@@ -65,8 +89,8 @@ export default function StudentAnalyticsPage() {
         students: { label: "Students", color: "hsl(var(--primary))" },
     };
 
-    if (isError) {
-        return <div className="p-8 text-destructive">Error loading student data: {error.message}</div>;
+    if (isErrorStudents) {
+        return <div className="p-8 text-destructive">Error loading student data: {studentsError.message}</div>;
     }
 
     return (
