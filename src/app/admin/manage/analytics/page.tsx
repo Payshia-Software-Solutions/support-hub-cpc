@@ -22,6 +22,7 @@ import {
   Cell,
   Legend,
   ResponsiveContainer,
+  CartesianGrid,
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 import { differenceInYears } from 'date-fns';
@@ -99,12 +100,13 @@ export default function StudentAnalyticsPage() {
             // Age
              if (student.birth_day && student.birth_day.includes('-') && new Date(student.birth_day).toString() !== 'Invalid Date') {
                 const age = differenceInYears(new Date(), new Date(student.birth_day));
-                if (age < 20) ageGroups['<20']++;
-                else if (age <= 25) ageGroups['20-25']++;
-                else if (age <= 30) ageGroups['26-30']++;
-                else if (age <= 35) ageGroups['31-35']++;
-                else if (age <= 40) ageGroups['36-40']++;
-                else ageGroups['>40']++;
+                if (age > 0 && age < 20) ageGroups['<20']++;
+                else if (age >= 20 && age <= 25) ageGroups['20-25']++;
+                else if (age >= 26 && age <= 30) ageGroups['26-30']++;
+                else if (age >= 31 && age <= 35) ageGroups['31-35']++;
+                else if (age >= 36 && age <= 40) ageGroups['36-40']++;
+                else if (age > 40) ageGroups['>40']++;
+                else ageGroups['Unknown']++;
             } else {
                 ageGroups['Unknown']++;
             }
@@ -146,11 +148,6 @@ export default function StudentAnalyticsPage() {
                     <h1 className="text-3xl font-headline font-semibold">Student Analytics Overview</h1>
                     <p className="text-muted-foreground">High-level geographic and demographic student distribution.</p>
                 </div>
-                <Button asChild>
-                    <Link href="/admin/manage/analytics/report">
-                        View Detailed Report <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
             </header>
 
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -161,10 +158,6 @@ export default function StudentAnalyticsPage() {
                 <Card className="shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Unique Districts</CardTitle><MapPin className="w-5 h-5 text-primary" /></CardHeader>
                     <CardContent>{isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{analyticsData.districts.length}</div>}<p className="text-xs text-muted-foreground">Districts with student presence</p></CardContent>
-                </Card>
-                <Card className="shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Gender Ratio (F:M)</CardTitle><PersonStanding className="w-5 h-5 text-primary" /></CardHeader>
-                    <CardContent>{isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{analyticsData.genderData.find(g => g.name === 'Female')?.count || 0} : {analyticsData.genderData.find(g => g.name === 'Male')?.count || 0}</div>}<p className="text-xs text-muted-foreground">Female to Male students</p></CardContent>
                 </Card>
                 <Card className="shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Most Common Age</CardTitle><Cake className="w-5 h-5 text-primary" /></CardHeader>
@@ -180,14 +173,15 @@ export default function StudentAnalyticsPage() {
                     </CardHeader>
                     <CardContent className="h-[300px]">
                          {isLoading ? <Skeleton className="h-full w-full" /> : (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ChartContainer config={ageChartConfig} className="w-full h-full">
                                <BarChart data={analyticsData.ageGroups} accessibilityLayer>
+                                    <CartesianGrid vertical={false} />
                                     <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
                                     <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} fontSize={12} />
                                     <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                                     <Bar dataKey="count" fill="var(--color-count)" radius={4} />
                                 </BarChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                          )}
                     </CardContent>
                 </Card>
