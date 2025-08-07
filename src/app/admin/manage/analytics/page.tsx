@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo } from 'react';
@@ -68,6 +67,7 @@ export default function StudentAnalyticsPage() {
                 cities: [],
                 civilStatus: [],
                 ageGroups: [],
+                genderData: [],
                 totalStudents: 0
             };
         }
@@ -81,6 +81,7 @@ export default function StudentAnalyticsPage() {
         const ageGroups: Record<string, number> = {
             '<20': 0, '20-25': 0, '26-30': 0, '31-35': 0, '36-40': 0, '>40': 0, 'Unknown': 0
         };
+        const genderCounts: Record<string, number> = {};
 
         students.forEach(student => {
             // Location
@@ -93,9 +94,13 @@ export default function StudentAnalyticsPage() {
                 cityCounts[cityName] = (cityCounts[cityName] || 0) + 1;
             }
             
+            // Gender
+            const gender = student.gender || 'Unknown';
+            genderCounts[gender] = (genderCounts[gender] || 0) + 1;
+
             // Civil Status
             let status = student.civil_status || 'Unknown';
-            status = status.replace(/\./g, '').trim(); // Remove all periods and trim whitespace
+            status = status.replace(/\./g, '').trim();
             if (status) {
                 status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
             }
@@ -104,13 +109,13 @@ export default function StudentAnalyticsPage() {
             // Age
             if (student.birth_day && student.birth_day.includes('-') && new Date(student.birth_day).toString() !== 'Invalid Date') {
                 const age = differenceInYears(new Date(), new Date(student.birth_day));
-                if (age >= 0 && age < 20) ageGroups['<20']++;
+                if (age < 20) ageGroups['<20']++;
                 else if (age >= 20 && age <= 25) ageGroups['20-25']++;
                 else if (age >= 26 && age <= 30) ageGroups['26-30']++;
                 else if (age >= 31 && age <= 35) ageGroups['31-35']++;
                 else if (age >= 36 && age <= 40) ageGroups['36-40']++;
                 else if (age > 40) ageGroups['>40']++;
-                else ageGroups['Unknown']++; // Catch negative ages or other invalid calculated ages
+                else ageGroups['Unknown']++;
             } else {
                 ageGroups['Unknown']++;
             }
@@ -121,10 +126,16 @@ export default function StudentAnalyticsPage() {
             cities: Object.entries(cityCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
             civilStatus: Object.entries(civilStatusCounts).map(([name, count]) => ({ name, count })).sort((a,b) => b.count - a.count),
             ageGroups: Object.entries(ageGroups).map(([name, count]) => ({ name, count })),
+            genderData: Object.entries(genderCounts).map(([name, count]) => ({ name, count })),
             totalStudents: students.length,
         };
     }, [students, cities, districts]);
     
+    const genderChartConfig: ChartConfig = {
+        Male: { label: "Male", color: "hsl(var(--chart-1))" },
+        Female: { label: "Female", color: "hsl(var(--chart-2))" },
+        Unknown: { label: "Unknown", color: "hsl(var(--chart-3))" },
+    };
 
     const ageChartConfig: ChartConfig = {
         count: { label: "Students", color: "hsl(var(--primary))" },
@@ -162,6 +173,51 @@ export default function StudentAnalyticsPage() {
             </section>
             
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle>Gender Ratio</CardTitle>
+                        <CardDescription>Distribution of male and female students.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[300px] flex items-center justify-center">
+                            {isLoading ? <Skeleton className="h-48 w-48 rounded-full" /> : (
+                            <ChartContainer
+                                config={genderChartConfig}
+                                className="mx-auto aspect-square h-full"
+                            >
+                                <PieChart>
+                                <ChartTooltip
+                                    cursor={false}
+                                    content={<ChartTooltipContent hideLabel />}
+                                />
+                                <Pie
+                                    data={analyticsData.genderData}
+                                    dataKey="count"
+                                    nameKey="name"
+                                    innerRadius={50}
+                                    strokeWidth={5}
+                                >
+                                    {analyticsData.genderData.map((entry) => (
+                                    <Cell key={`cell-${entry.name}`} fill={genderChartConfig[entry.name as keyof typeof genderChartConfig]?.color} />
+                                    ))}
+                                </Pie>
+                                <Legend content={({ payload }) => {
+                                    return (
+                                      <ul className="flex flex-wrap gap-x-4 gap-y-2 justify-center mt-4">
+                                        {payload?.map((entry) => (
+                                          <li key={`item-${entry.value}`} className="flex items-center gap-2 text-sm">
+                                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                                            <span>{entry.value} ({entry.payload.payload.count})</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )
+                                  }}
+                                />
+                                </PieChart>
+                            </ChartContainer>
+                            )}
+                    </CardContent>
+                </Card>
                 <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle>Age Distribution</CardTitle>
