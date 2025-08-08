@@ -48,7 +48,7 @@ export function BottomDock() {
             >
               <div className={cn(
                 "flex items-center justify-center transition-all duration-300 ease-in-out mb-1",
-                 currentItemIsActive ? "w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg" : "w-8 h-8"
+                 currentItemIsActive ? "w-14 h-14 bg-primary text-primary-foreground rounded-2xl shadow-lg" : "w-8 h-8"
               )}>
                 <item.icon className="h-6 w-6" />
               </div>
@@ -57,6 +57,9 @@ export function BottomDock() {
                   currentItemIsActive && "font-bold"
               )}>
                 {item.label}
+                 {currentItemIsActive && (
+                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-[3px] bg-primary rounded-full" />
+                )}
               </span>
             </Link>
           );
