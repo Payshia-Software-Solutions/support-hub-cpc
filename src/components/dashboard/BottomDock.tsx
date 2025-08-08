@@ -42,13 +42,13 @@ export function BottomDock() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center text-xs font-medium w-full p-1 transition-all duration-300 ease-in-out focus:outline-none relative h-full pt-2",
-                currentItemIsActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                "flex flex-col items-center justify-center text-xs font-medium w-full p-1 transition-all duration-300 ease-in-out focus:outline-none h-full",
+                currentItemIsActive ? "text-primary -translate-y-3" : "text-muted-foreground hover:text-foreground"
               )}
             >
               <div className={cn(
                 "flex items-center justify-center transition-all duration-300 ease-in-out mb-1",
-                 currentItemIsActive ? "w-12 h-12 bg-primary text-primary-foreground rounded-lg shadow-lg" : "w-8 h-8"
+                 currentItemIsActive ? "w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg" : "w-8 h-8"
               )}>
                 <item.icon className="h-6 w-6" />
               </div>
@@ -58,9 +58,6 @@ export function BottomDock() {
               )}>
                 {item.label}
               </span>
-              {currentItemIsActive && (
-                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-primary rounded-full" />
-              )}
             </Link>
           );
         })}
