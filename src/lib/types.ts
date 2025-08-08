@@ -91,12 +91,7 @@ export interface StaffMember {
   email: string;
 }
 
-export interface ParentCourse {
-    id: string;
-    course_name: string;
-}
-
-export interface Course {
+export interface Batch {
   id: string;
   name: string;
   parent_course_id: string;
@@ -380,15 +375,16 @@ export interface AssignmentGrade {
 }
 
 export interface DeliveryOrder {
-    id: string;
-    delivery_id: string;
-    tracking_number: string;
-    order_date: string;
-    current_status: string;
-    delivery_title: string;
-    active_status: string;
-    order_recived_status?: 'Received' | 'Not Received' | null;
-    received_date?: string | null;
+  id: string;
+  delivery_id: string;
+  tracking_number: string;
+  order_date: string;
+  current_status: string;
+  delivery_title: string;
+  active_status: string;
+  order_recived_status?: 'Received' | 'Not Received' | null;
+  received_date?: string | null;
+  course_code?: string;
 }
 
 export interface CertificateRecord {
@@ -642,4 +638,8 @@ export interface BnfWordIndexEntry {
     id: number;
     word: string;
     page_id: number;
+}
+export interface ParentCourseListItem {
+    id: string;
+    course_name: string;
 }

@@ -1,6 +1,6 @@
 
 
-import type { Ticket, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload, ApiStaffMember, StaffMember, Announcement, BnfChapter, BnfPage, BnfWordIndexEntry, ParentCourse, ApiCourse } from './types';
+import type { Ticket, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload, ApiStaffMember, StaffMember, Announcement, BnfChapter, BnfPage, BnfWordIndexEntry, ParentCourse, ApiCourse, Batch } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = (process.env.NEXT_PUBLIC_CHAT_SERVER_URL || 'https://chat-server.pharmacollege.lk') + '/api';
@@ -896,7 +896,7 @@ export const getAllDistricts = async (): Promise<Location[]> => {
     return Object.values(data);
 };
 
-export const getCourses = async (): Promise<Course[]> => {
+export const getBatches = async (): Promise<Batch[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/course`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch courses' }));
@@ -928,55 +928,99 @@ export const getParentCourses = async (): Promise<ParentCourse[]> => {
     return response.json();
 }
 
-export const createCourse = async (courseData: Omit<Course, 'id'>): Promise<Course> => {
+export const createBatch = async (batchData: Omit<Batch, 'id'>): Promise<Batch> => {
      const payload = {
-        course_name: courseData.name,
-        parent_course_id: courseData.parent_course_id,
-        course_code: courseData.courseCode,
-        course_description: courseData.description,
-        course_duration: courseData.duration,
-        course_fee: courseData.fee,
-        registration_fee: courseData.registration_fee,
-        enroll_key: courseData.enroll_key,
-        course_img: courseData.course_img,
-        certification: courseData.certification,
-        mini_description: courseData.mini_description,
+        course_name: batchData.name,
+        parent_course_id: batchData.parent_course_id,
+        course_code: batchData.courseCode,
+        course_description: batchData.description,
+        course_duration: batchData.duration,
+        course_fee: batchData.fee,
+        registration_fee: batchData.registration_fee,
+        enroll_key: batchData.enroll_key,
+        course_img: batchData.course_img,
+        certification: batchData.certification,
+        mini_description: batchData.mini_description,
     };
     const response = await fetch(`${QA_API_BASE_URL}/course`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
     });
-    if (!response.ok) throw new Error('Failed to create course');
+    if (!response.ok) throw new Error('Failed to create batch');
     return response.json();
 };
 
-export const updateCourse = async (id: string, courseData: Partial<Omit<Course, 'id'>>): Promise<Course> => {
+export const updateBatch = async (id: string, batchData: Partial<Omit<Batch, 'id'>>): Promise<Batch> => {
     const payload = {
-        course_name: courseData.name,
-        parent_course_id: courseData.parent_course_id,
-        course_code: courseData.courseCode,
-        course_description: courseData.description,
-        course_duration: courseData.duration,
-        course_fee: courseData.fee,
-        registration_fee: courseData.registration_fee,
-        enroll_key: courseData.enroll_key,
-        course_img: courseData.course_img,
-        certification: courseData.certification,
-        mini_description: courseData.mini_description,
+        course_name: batchData.name,
+        parent_course_id: batchData.parent_course_id,
+        course_code: batchData.courseCode,
+        course_description: batchData.description,
+        course_duration: batchData.duration,
+        course_fee: batchData.fee,
+        registration_fee: batchData.registration_fee,
+        enroll_key: batchData.enroll_key,
+        course_img: batchData.course_img,
+        certification: batchData.certification,
+        mini_description: batchData.mini_description,
     };
     const response = await fetch(`${QA_API_BASE_URL}/course/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
     });
-    if (!response.ok) throw new Error('Failed to update course');
+    if (!response.ok) throw new Error('Failed to update batch');
     return response.json();
 };
 
-export const deleteCourse = async (id: string): Promise<void> => {
+export const deleteBatch = async (id: string): Promise<void> => {
     const response = await fetch(`${QA_API_BASE_URL}/course/${id}`, {
         method: 'DELETE',
     });
-    if (!response.ok) throw new Error('Failed to delete course');
+    if (!response.ok) throw new Error('Failed to delete batch');
+};
+
+
+// Parent Course API functions
+export const getParentCourseList = async (): Promise<ParentCourse[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/parent-main-course`);
+    if (!response.ok) throw new Error('Failed to fetch parent course list');
+    return response.json();
+};
+
+export const createParentCourse = async (courseData: Omit<ParentCourse, 'id'>): Promise<ParentCourse> => {
+    const response = await fetch(`${QA_API_BASE_URL}/parent-main-course`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(courseData),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create parent course.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
+export const updateParentCourse = async (id: string, courseData: Partial<Omit<ParentCourse, 'id'>>): Promise<ParentCourse> => {
+    const response = await fetch(`${QA_API_BASE_URL}/parent-main-course/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(courseData),
+    });
+     if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update parent course.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
+export const deleteParentCourse = async (id: string): Promise<void> => {
+    const response = await fetch(`${QA_API_BASE_URL}/parent-main-course/${id}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete parent course.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
 };

@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import { Search, PlusCircle, Edit, Trash2, BookOpen, AlertTriangle, Loader2 } from 'lucide-react';
 import { getBatches, createBatch, updateBatch, deleteBatch, getParentCourseList } from '@/lib/api';
-import type { Batch, ParentCourseListItem } from '@/lib/types';
+import type { Batch, ParentCourse } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -50,7 +50,7 @@ type BatchFormValues = z.infer<typeof batchFormSchema>;
 
 const BatchForm = ({ batch, onClose }: { batch?: Batch | null; onClose: () => void; }) => {
     const queryClient = useQueryClient();
-    const { data: parentCourses, isLoading: isLoadingParentCourses } = useQuery<ParentCourseListItem[]>({
+    const { data: parentCourses, isLoading: isLoadingParentCourses } = useQuery<ParentCourse[]>({
         queryKey: ['parentCourseList'],
         queryFn: getParentCourseList,
     });
