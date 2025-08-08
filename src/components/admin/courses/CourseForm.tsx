@@ -1,11 +1,11 @@
 "use client";
 
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import { createParentCourse, updateParentCourse } from '@/lib/api';
+import { createParentCourse } from '@/lib/api';
 import type { ParentCourse } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -43,35 +43,34 @@ type CourseFormValues = z.infer<typeof courseFormSchema>;
 interface CourseFormProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
-    course: ParentCourse | null;
 }
 
-export function CourseForm({ isOpen, onOpenChange, course }: CourseFormProps) {
+export function CourseForm({ isOpen, onOpenChange }: CourseFormProps) {
     const queryClient = useQueryClient();
 
     const form = useForm<CourseFormValues>({
         resolver: zodResolver(courseFormSchema),
         defaultValues: {
-            course_name: course?.course_name || '',
-            course_code: course?.course_code || '',
-            instructor_id: course?.instructor_id || '',
-            course_duration: course?.course_duration || '',
-            course_fee: course ? parseFloat(course.course_fee) : 0,
-            registration_fee: course ? parseFloat(course.registration_fee) : 0,
-            course_img: course?.course_img || '',
-            mini_description: course?.mini_description || '',
-            course_description: course?.course_description || '',
-            certification: course?.certification || '',
-            lecture_count: course?.lecture_count ? parseInt(course.lecture_count, 10) : 0,
-            hours_per_lecture: course?.hours_per_lecture ? parseInt(course.hours_per_lecture, 10) : 0,
-            assessments: course?.assessments ? parseInt(course.assessments, 10) : 0,
-            language: course?.language || '',
-            quizzes: course?.quizzes ? parseInt(course.quizzes, 10) : 0,
-            skill_level: course?.skill_level || '',
-            head_count: course?.head_count ? parseInt(course.head_count, 10) : 0,
-            course_mode: course?.course_mode || '',
-            slug: course?.slug || '',
-            criteria_list: course?.criteria_list || '',
+            course_name: '',
+            course_code: '',
+            instructor_id: '',
+            course_duration: '',
+            course_fee: 0,
+            registration_fee: 0,
+            course_img: '',
+            mini_description: '',
+            course_description: '',
+            certification: '',
+            lecture_count: 0,
+            hours_per_lecture: 0,
+            assessments: 0,
+            language: '',
+            quizzes: 0,
+            skill_level: '',
+            head_count: 0,
+            course_mode: '',
+            slug: '',
+            criteria_list: '',
         },
     });
 
@@ -87,15 +86,13 @@ export function CourseForm({ isOpen, onOpenChange, course }: CourseFormProps) {
                 quizzes: String(data.quizzes),
                 head_count: String(data.head_count),
             };
-            if (course?.id) {
-                return updateParentCourse(course.id, apiData);
-            }
             return createParentCourse(apiData);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['parentCourses'] });
-            toast({ title: 'Success', description: `Course ${course ? 'updated' : 'created'} successfully.` });
+            toast({ title: 'Success', description: 'Course created successfully.' });
             onOpenChange(false);
+            form.reset();
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -107,12 +104,15 @@ export function CourseForm({ isOpen, onOpenChange, course }: CourseFormProps) {
     };
 
     return (
-         <Dialog open={isOpen} onOpenChange={onOpenChange}>
+         <Dialog open={isOpen} onOpenChange={(open) => {
+             if (!open) form.reset();
+             onOpenChange(open);
+         }}>
             <DialogContent className="max-w-4xl max-h-[90vh]">
                 <DialogHeader>
-                    <DialogTitle>{course ? "Edit" : "Create"} Course</DialogTitle>
+                    <DialogTitle>Create New Course</DialogTitle>
                     <DialogDescription>
-                        {course ? "Modify the existing course details." : "Fill in the details for a new parent course."}
+                        Fill in the details for a new parent course.
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="pr-6 -mr-6">
@@ -145,7 +145,7 @@ export function CourseForm({ isOpen, onOpenChange, course }: CourseFormProps) {
                     <DialogClose asChild><Button type="button" variant="outline" disabled={courseMutation.isPending}>Cancel</Button></DialogClose>
                     <Button type="submit" form="course-form" disabled={courseMutation.isPending}>
                         {courseMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {course ? "Save Changes" : "Create Course"}
+                        Create Course
                     </Button>
                 </DialogFooter>
             </DialogContent>

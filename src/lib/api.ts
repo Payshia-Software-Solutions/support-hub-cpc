@@ -928,6 +928,15 @@ export const getParentCourses = async (): Promise<ParentCourse[]> => {
     return response.json();
 }
 
+export const getParentCourse = async (id: string): Promise<ParentCourse> => {
+    const response = await fetch(`${QA_API_BASE_URL}/parent-main-course/${id}`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch course' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
 export const createBatch = async (batchData: Omit<Batch, 'id'>): Promise<Batch> => {
      const payload = {
         course_name: batchData.name,

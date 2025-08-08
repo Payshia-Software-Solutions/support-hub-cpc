@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getParentCourses, deleteParentCourse } from '@/lib/api';
 import type { ParentCourse } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlusCircle, Search, Loader2, AlertTriangle, BookOpen } from 'lucide-react';
@@ -14,12 +14,13 @@ import { CourseList } from '@/components/admin/courses/CourseList';
 import { CourseForm } from '@/components/admin/courses/CourseForm';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
 
 export function CoursePageClient() {
     const queryClient = useQueryClient();
+    const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [selectedCourse, setSelectedCourse] = useState<ParentCourse | null>(null);
+    const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
     const [courseToDelete, setCourseToDelete] = useState<ParentCourse | null>(null);
 
     const { data: courses, isLoading, isError, error } = useQuery<ParentCourse[]>({
@@ -40,20 +41,6 @@ export function CoursePageClient() {
         onSettled: () => setCourseToDelete(null),
     });
 
-    const handleCreate = () => {
-        setSelectedCourse(null);
-        setIsFormOpen(true);
-    };
-
-    const handleEdit = (course: ParentCourse) => {
-        setSelectedCourse(course);
-        setIsFormOpen(true);
-    };
-
-    const handleDelete = (course: ParentCourse) => {
-        setCourseToDelete(course);
-    };
-
     const filteredCourses = courses?.filter(course =>
         course.course_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         course.course_code.toLowerCase().includes(searchTerm.toLowerCase())
@@ -62,9 +49,8 @@ export function CoursePageClient() {
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <CourseForm
-                isOpen={isFormOpen}
-                onOpenChange={setIsFormOpen}
-                course={selectedCourse}
+                isOpen={isCreateFormOpen}
+                onOpenChange={setIsCreateFormOpen}
             />
 
              <AlertDialog open={!!courseToDelete} onOpenChange={() => setCourseToDelete(null)}>
@@ -91,7 +77,7 @@ export function CoursePageClient() {
                     <h1 className="text-3xl font-headline font-semibold">Manage Courses</h1>
                     <p className="text-muted-foreground">Add, edit, and manage parent courses and their batches.</p>
                 </div>
-                <Button onClick={handleCreate}>
+                <Button onClick={() => setIsCreateFormOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Add New Course
                 </Button>
             </header>
@@ -119,15 +105,19 @@ export function CoursePageClient() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {[...Array(3)].map((_, i) => (
                                 <Card key={i} className="animate-pulse">
-                                    <CardHeader className="h-24 bg-muted rounded-t-lg"></CardHeader>
-                                    <CardContent className="p-4 space-y-2">
+                                    <div className="h-24 bg-muted rounded-t-lg"></div>
+                                    <CardHeader>
                                         <Skeleton className="h-6 w-3/4 bg-muted rounded"></Skeleton>
                                         <Skeleton className="h-4 w-1/2 bg-muted rounded"></Skeleton>
+                                    </CardHeader>
+                                    <CardContent className="p-4 space-y-2">
+                                        <Skeleton className="h-4 w-full bg-muted rounded"></Skeleton>
+                                        <Skeleton className="h-4 w-full bg-muted rounded"></Skeleton>
                                     </CardContent>
-                                    <CardFooter className="p-4 flex justify-end gap-2">
+                                    <CardContent className="p-4 flex justify-end gap-2">
                                          <Skeleton className="h-10 w-24 bg-muted rounded-md"></Skeleton>
                                          <Skeleton className="h-10 w-10 bg-muted rounded-md"></Skeleton>
-                                    </CardFooter>
+                                    </CardContent>
                                 </Card>
                             ))}
                         </div>
@@ -143,8 +133,7 @@ export function CoursePageClient() {
                         filteredCourses.length > 0 ? (
                              <CourseList
                                 courses={filteredCourses}
-                                onEdit={handleEdit}
-                                onDelete={handleDelete}
+                                onDelete={setCourseToDelete}
                             />
                         ) : (
                              <div className="text-center py-20 text-muted-foreground flex flex-col items-center">

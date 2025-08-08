@@ -5,7 +5,7 @@ import Image from 'next/image';
 import type { ParentCourse } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Settings } from 'lucide-react';
+import { Edit, Trash2, Settings, BookOpen } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,11 +15,10 @@ import {
 
 interface CourseListProps {
     courses: ParentCourse[];
-    onEdit: (course: ParentCourse) => void;
     onDelete: (course: ParentCourse) => void;
 }
 
-export function CourseList({ courses, onEdit, onDelete }: CourseListProps) {
+export function CourseList({ courses, onDelete }: CourseListProps) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map(course => (
@@ -60,9 +59,11 @@ export function CourseList({ courses, onEdit, onDelete }: CourseListProps) {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => onEdit(course)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    <span>Edit Course</span>
+                                <DropdownMenuItem asChild>
+                                   <Link href={`/admin/manage/courses/edit/${course.id}`}>
+                                     <Edit className="mr-2 h-4 w-4" />
+                                     <span>Edit Course</span>
+                                   </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => onDelete(course)} className="text-destructive">
                                     <Trash2 className="mr-2 h-4 w-4" />
