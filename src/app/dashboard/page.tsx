@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, Award, Library, BookOpen } from "lucide-react";
+import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, Award, Library, BookOpen, FileText } from "lucide-react";
 import { UnreadBadge } from "@/components/dashboard/UnreadBadge";
 
 // --- Sub Components ---
@@ -131,6 +131,20 @@ export default function StudentDashboardPage() {
                           <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
                         </CardContent>
                       </Card>
+                    </Link>
+                    <Link href="/dashboard/games/sentence-builder" className="group block">
+                        <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
+                            <CardContent className="p-4 flex items-center gap-4">
+                                <div className="p-3 rounded-lg bg-gradient-to-br from-orange-400 to-rose-500">
+                                    <FileText className="w-8 h-8 text-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">Sentence Challenge</h3>
+                                    <p className="text-sm text-muted-foreground">Practice your English sentence structure.</p>
+                                </div>
+                                <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
+                            </CardContent>
+                        </Card>
                     </Link>
                     {user?.role === 'staff' && (
                         <Link href="/dashboard/bnf" className="group block">
