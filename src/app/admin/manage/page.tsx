@@ -38,10 +38,10 @@ const managementTasks: ManagementTask[] = [
     category: "Student Management"
   },
    {
-    title: "Manage Courses",
-    description: "View, add, and edit course information and fees.",
+    title: "Manage Batches",
+    description: "View, add, and edit batch information and fees.",
     icon: <BookOpen className="w-8 h-8 text-white" />,
-    href: "/admin/manage/courses",
+    href: "/admin/manage/batches",
     category: "Content & System"
   },
   {
@@ -248,3 +248,5 @@ export default function AdminManagePage() {
     </div>
   );
 }
+
+    

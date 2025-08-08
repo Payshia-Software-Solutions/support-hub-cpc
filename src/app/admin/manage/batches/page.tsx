@@ -31,15 +31,15 @@ import {
 
 
 const courseFormSchema = z.object({
-    name: z.string().min(3, "Course name must be at least 3 characters."),
-    courseCode: z.string().min(3, "Course code must be at least 3 characters."),
+    name: z.string().min(3, "Batch name must be at least 3 characters."),
+    courseCode: z.string().min(3, "Batch code must be at least 3 characters."),
     fee: z.coerce.number().min(0, "Fee must be a positive number."),
     description: z.string().optional(),
 });
 
 type CourseFormValues = z.infer<typeof courseFormSchema>;
 
-const CourseForm = ({ course, onClose }: { course?: Course | null; onClose: () => void; }) => {
+const BatchForm = ({ course, onClose }: { course?: Course | null; onClose: () => void; }) => {
     const queryClient = useQueryClient();
     const form = useForm<CourseFormValues>({
         resolver: zodResolver(courseFormSchema),
@@ -60,7 +60,7 @@ const CourseForm = ({ course, onClose }: { course?: Course | null; onClose: () =
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['allCourses'] });
-            toast({ title: 'Success', description: `Course ${course ? 'updated' : 'created'} successfully.` });
+            toast({ title: 'Success', description: `Batch ${course ? 'updated' : 'created'} successfully.` });
             onClose();
         },
         onError: (error: Error) => {
@@ -75,17 +75,17 @@ const CourseForm = ({ course, onClose }: { course?: Course | null; onClose: () =
     return (
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="name">Course Name</Label>
+                <Label htmlFor="name">Batch Name</Label>
                 <Input id="name" {...form.register('name')} />
                 {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
             </div>
              <div className="space-y-2">
-                <Label htmlFor="courseCode">Course Code</Label>
+                <Label htmlFor="courseCode">Batch Code</Label>
                 <Input id="courseCode" {...form.register('courseCode')} />
                 {form.formState.errors.courseCode && <p className="text-sm text-destructive">{form.formState.errors.courseCode.message}</p>}
             </div>
              <div className="space-y-2">
-                <Label htmlFor="fee">Course Fee (LKR)</Label>
+                <Label htmlFor="fee">Batch Fee (LKR)</Label>
                 <Input id="fee" type="number" step="0.01" {...form.register('fee')} />
                 {form.formState.errors.fee && <p className="text-sm text-destructive">{form.formState.errors.fee.message}</p>}
             </div>
@@ -99,7 +99,7 @@ const CourseForm = ({ course, onClose }: { course?: Course | null; onClose: () =
                 </DialogClose>
                 <Button type="submit" disabled={courseMutation.isPending}>
                     {courseMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {course ? "Save Changes" : "Create Course"}
+                    {course ? "Save Changes" : "Create Batch"}
                 </Button>
             </DialogFooter>
         </form>
@@ -107,7 +107,7 @@ const CourseForm = ({ course, onClose }: { course?: Course | null; onClose: () =
 };
 
 
-export default function ManageCoursesPage() {
+export default function ManageBatchesPage() {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -124,7 +124,7 @@ export default function ManageCoursesPage() {
         mutationFn: deleteCourse,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['allCourses'] });
-            toast({ title: 'Success', description: 'Course deleted successfully.' });
+            toast({ title: 'Success', description: 'Batch deleted successfully.' });
             setCourseToDelete(null);
         },
         onError: (error: Error) => {
@@ -170,12 +170,12 @@ export default function ManageCoursesPage() {
              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{selectedCourse ? "Edit" : "Create"} Course</DialogTitle>
+                        <DialogTitle>{selectedCourse ? "Edit" : "Create"} Batch</DialogTitle>
                         <DialogDescription>
-                           {selectedCourse ? "Modify the existing course details." : "Fill in the details for a new course."}
+                           {selectedCourse ? "Modify the existing batch details." : "Fill in the details for a new batch."}
                         </DialogDescription>
                     </DialogHeader>
-                    <CourseForm course={selectedCourse} onClose={() => setIsFormOpen(false)} />
+                    <BatchForm course={selectedCourse} onClose={() => setIsFormOpen(false)} />
                 </DialogContent>
             </Dialog>
 
@@ -184,7 +184,7 @@ export default function ManageCoursesPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete the course "{courseToDelete?.name}". This action cannot be undone.
+                            This will permanently delete the batch "{courseToDelete?.name}". This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -200,21 +200,21 @@ export default function ManageCoursesPage() {
 
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-headline font-semibold">Manage Courses</h1>
-                    <p className="text-muted-foreground">View, add, and edit course information.</p>
+                    <h1 className="text-3xl font-headline font-semibold">Manage Batches</h1>
+                    <p className="text-muted-foreground">View, add, and edit batch information.</p>
                 </div>
                 <Button onClick={handleCreate}>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Add New Course
+                    Add New Batch
                 </Button>
             </header>
             <Card className="shadow-lg">
                 <CardHeader>
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
-                            <CardTitle>All Courses</CardTitle>
+                            <CardTitle>All Batches</CardTitle>
                              <CardDescription>
-                                {isLoading ? "Loading..." : `${filteredCourses.length} courses found.`}
+                                {isLoading ? "Loading..." : `${filteredCourses.length} batches found.`}
                             </CardDescription>
                         </div>
                          <div className="relative w-full md:w-auto md:max-w-xs">
@@ -241,9 +241,9 @@ export default function ManageCoursesPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Course Name</TableHead>
-                                        <TableHead>Course Code</TableHead>
-                                        <TableHead>Course Fee (LKR)</TableHead>
+                                        <TableHead>Batch Name</TableHead>
+                                        <TableHead>Batch Code</TableHead>
+                                        <TableHead>Batch Fee (LKR)</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -261,7 +261,7 @@ export default function ManageCoursesPage() {
                                     )) : (
                                         <TableRow>
                                             <TableCell colSpan={4} className="text-center h-24">
-                                                No courses found.
+                                                No batches found.
                                             </TableCell>
                                         </TableRow>
                                     )}
@@ -274,3 +274,5 @@ export default function ManageCoursesPage() {
         </div>
     );
 }
+
+    
