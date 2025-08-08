@@ -117,13 +117,13 @@ export const gameLevels: GameLevel[] = [
         words: ["I", "coffee", "like", "but", "I", "prefer", "tea"],
         correct: "I like coffee but I prefer tea",
         hint: "'but' connects two opposite ideas.",
-        translation: "මම කෝපි වලට කැමතියි, නමුත් තේ වලට වඩා කැමතියි."
+        translation: "මම කෝපි වලට කැමතියි, නමුත් මම තේ වලට වඩා කැමතියි."
       },
       {
         words: ["She", "to", "went", "the", "store", "and", "bought", "milk"],
         correct: "She went to the store and bought milk",
         hint: "'and' connects two related actions.",
-        translation: "ඇය සාප්පුවට ගොස් කිරි මිලදී ගත්තා."
+        translation: "ඇය සාප්පුවට ගියා සහ කිරි මිලදී ගත්තා."
       },
       {
         words: ["He", "can", "study", "or", "he", "can", "watch", "TV"],
