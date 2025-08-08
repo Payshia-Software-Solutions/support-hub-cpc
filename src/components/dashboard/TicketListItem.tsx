@@ -54,7 +54,7 @@ export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: Ti
                  <div className="flex justify-between items-center text-xs text-muted-foreground">
                     <div className="flex items-center gap-2">
                         <User className="w-4 h-4" />
-                        <span className="font-medium">{ticket.studentName} ({ticket.studentNumber})</span>
+                        <span className="font-medium">{ticket.studentName}</span>
                     </div>
                 </div>
                  <div className="flex justify-between items-center text-xs text-muted-foreground">
