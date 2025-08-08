@@ -7,15 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Check, Lightbulb, RefreshCw, Sparkles, Trophy } from 'lucide-react';
+import { ArrowLeft, Check, Lightbulb, RefreshCw, Sparkles, Trophy, ChevronRight } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { gameLevels } from '@/lib/sentence-builder-data';
+import { gameLevels, GameLevel } from '@/lib/sentence-builder-data';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-confetti';
 
 export default function SentenceBuilderPage() {
   const router = useRouter();
+  const [view, setView] = useState<'levels' | 'game'>('levels');
   const [levelIndex, setLevelIndex] = useState(0);
   const [sentenceIndex, setSentenceIndex] = useState(0);
   const [builtSentence, setBuiltSentence] = useState<string[]>([]);
@@ -23,16 +24,30 @@ export default function SentenceBuilderPage() {
   const [showHint, setShowHint] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [completedLevels, setCompletedLevels] = useState<Set<number>>(new Set());
 
   const currentLevel = gameLevels[levelIndex];
   const currentSentence = currentLevel.sentences[sentenceIndex];
   
   const jumbledWords = useMemo(() => {
-    // This ensures the shuffle is consistent for a given sentence but different for different sentences
+    if (!currentSentence) return [];
     return [...currentSentence.words].sort(() => Math.random() - 0.5);
   }, [currentSentence]);
 
-  const handleWordClick = (word: string, index: number) => {
+  const handleSelectLevel = (index: number) => {
+    setLevelIndex(index);
+    setSentenceIndex(0);
+    setBuiltSentence([]);
+    setIsCorrect(null);
+    setShowHint(false);
+    setView('game');
+  };
+
+  const handleBackToLevels = () => {
+    setView('levels');
+  };
+
+  const handleWordClick = (word: string) => {
     if (builtSentence.includes(word)) return;
     setBuiltSentence(prev => [...prev, word]);
   };
@@ -48,8 +63,15 @@ export default function SentenceBuilderPage() {
       const points = showHint ? 1 : 2;
       setScore(prev => prev + points);
       toast({ title: "Correct!", description: `+${points} point(s)!` });
-      if(levelIndex === gameLevels.length - 1 && sentenceIndex === currentLevel.sentences.length - 1) {
-        setShowConfetti(true);
+
+      const isLastSentenceInLevel = sentenceIndex === currentLevel.sentences.length - 1;
+      const isLastLevel = levelIndex === gameLevels.length - 1;
+
+      if (isLastSentenceInLevel) {
+          setCompletedLevels(prev => new Set(prev).add(currentLevel.level));
+          if(isLastLevel) {
+            setShowConfetti(true);
+          }
       }
     } else {
       setIsCorrect(false);
@@ -63,10 +85,9 @@ export default function SentenceBuilderPage() {
     setBuiltSentence([]);
     if (sentenceIndex < currentLevel.sentences.length - 1) {
       setSentenceIndex(prev => prev + 1);
-    } else if (levelIndex < gameLevels.length - 1) {
-      setLevelIndex(prev => prev + 1);
-      setSentenceIndex(0);
-       toast({ title: `Level Up!`, description: `You've reached Level ${levelIndex + 2}.` });
+    } else {
+      toast({ title: `Level ${currentLevel.level} Complete!`, description: `Great job! Select another level to continue.` });
+      handleBackToLevels();
     }
   };
   
@@ -74,41 +95,69 @@ export default function SentenceBuilderPage() {
     setBuiltSentence([]);
     setShowHint(false);
     setIsCorrect(null);
-  }
+  };
   
-  const progress = ((levelIndex * currentLevel.sentences.length + sentenceIndex) / (gameLevels.length * currentLevel.sentences.length)) * 100;
+  const progress = ((sentenceIndex) / (currentLevel.sentences.length)) * 100;
   
-  const allLevelsComplete = levelIndex === gameLevels.length - 1 && sentenceIndex === currentLevel.sentences.length - 1 && isCorrect;
+  const isLevelComplete = sentenceIndex === currentLevel.sentences.length - 1 && isCorrect;
 
-  return (
-     <div className="p-4 md:p-8 space-y-6 pb-20">
-      {showConfetti && <Confetti recycle={false} onConfettiComplete={() => setShowConfetti(false)} />}
-      <header>
-        <Button onClick={() => router.back()} variant="ghost" className="-ml-4">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-        </Button>
-      </header>
-       <Card className="shadow-lg max-w-4xl mx-auto">
+  const renderLevelSelection = () => (
+    <Card className="shadow-lg max-w-4xl mx-auto">
+        <CardHeader>
+            <CardTitle className="text-2xl font-headline">Sentence Builder Challenge</CardTitle>
+            <CardDescription>Select a level to begin arranging words into correct sentences.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {gameLevels.map((level, index) => {
+                    const isCompleted = completedLevels.has(level.level);
+                    return (
+                        <button key={level.level} onClick={() => handleSelectLevel(index)} className="group block h-full text-left">
+                           <Card className={cn("shadow-md hover:shadow-lg hover:border-primary/50 transition-all h-full", isCompleted && "bg-green-100 border-green-300")}>
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <div>
+                                        <CardTitle className="text-base group-hover:text-primary">Level {level.level}</CardTitle>
+                                        <CardDescription className="text-xs">{level.pattern}</CardDescription>
+                                    </div>
+                                    {isCompleted ? <Check className="h-5 w-5 text-green-500" /> : <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />}
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm text-muted-foreground italic">e.g., "{level.sentences[0].correct}"</p>
+                                </CardContent>
+                            </Card>
+                        </button>
+                    )
+                })}
+            </div>
+        </CardContent>
+    </Card>
+  );
+
+  const renderGameView = () => (
+     <Card className="shadow-lg max-w-4xl mx-auto">
         <CardHeader>
             <div className="flex justify-between items-start">
                  <div>
-                    <CardTitle className="text-2xl font-headline">Sentence Builder Challenge</CardTitle>
+                    <Button variant="ghost" onClick={handleBackToLevels} className="h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Levels
+                    </Button>
+                    <CardTitle className="text-2xl font-headline">Level {currentLevel.level}: {currentLevel.pattern}</CardTitle>
                     <CardDescription>Arrange the words to form a correct sentence.</CardDescription>
                 </div>
                 <div className="text-right">
-                    <Badge variant="secondary" className="text-lg">Level {currentLevel.level}</Badge>
+                    <Badge variant="secondary" className="text-lg">Question {sentenceIndex + 1} / {currentLevel.sentences.length}</Badge>
                     <p className="text-sm font-bold text-primary mt-1">Score: {score}</p>
                 </div>
             </div>
              <Progress value={progress} className="mt-4" />
         </CardHeader>
         <CardContent className="space-y-6">
-            {allLevelsComplete ? (
+            {isLevelComplete && completedLevels.has(currentLevel.level) ? (
                  <div className="text-center py-10">
                     <Trophy className="h-24 w-24 text-amber-400 mx-auto mb-4" />
-                    <h2 className="text-3xl font-bold text-primary">Congratulations!</h2>
-                    <p className="text-muted-foreground mt-2">You have completed all the levels!</p>
-                    <p className="text-2xl font-bold mt-4">Final Score: {score}</p>
+                    <h2 className="text-3xl font-bold text-primary">Level {currentLevel.level} Complete!</h2>
+                    <p className="text-muted-foreground mt-2">You have completed all sentences for this level!</p>
+                    <p className="text-2xl font-bold mt-4">Current Score: {score}</p>
                 </div>
             ) : (
                 <>
@@ -139,7 +188,7 @@ export default function SentenceBuilderPage() {
                           {jumbledWords.map((word, i) => {
                             const isUsed = builtSentence.includes(word);
                             return (
-                               <Button key={i} onClick={() => handleWordClick(word, i)} disabled={isUsed} className="text-base h-auto py-2 px-4">
+                               <Button key={i} onClick={() => handleWordClick(word)} disabled={isUsed} className="text-base h-auto py-2 px-4">
                                 {word}
                               </Button>
                             )
@@ -160,19 +209,19 @@ export default function SentenceBuilderPage() {
         </CardContent>
         <CardFooter className="flex flex-col sm:flex-row justify-between gap-2">
             <div>
-                 <Button variant="outline" onClick={() => setShowHint(true)} disabled={showHint || isCorrect === true || allLevelsComplete}>
+                 <Button variant="outline" onClick={() => setShowHint(true)} disabled={showHint || isCorrect === true || isLevelComplete}>
                     <Lightbulb className="mr-2 h-4 w-4" />
                     Hint
                 </Button>
             </div>
             <div className="flex gap-2">
-                 <Button variant="secondary" onClick={handleReset} disabled={isCorrect === true || allLevelsComplete}>
+                 <Button variant="secondary" onClick={handleReset} disabled={isCorrect === true || isLevelComplete}>
                     <RefreshCw className="mr-2 h-4 w-4" />
                     Reset
                 </Button>
                 {isCorrect ? (
                     <Button onClick={handleNext} className="bg-green-600 hover:bg-green-700">
-                      Next Sentence <Sparkles className="ml-2 h-4 w-4" />
+                      {isLevelComplete ? 'Finish Level' : 'Next Sentence'} <Sparkles className="ml-2 h-4 w-4" />
                     </Button>
                 ) : (
                     <Button onClick={handleCheckAnswer}>
@@ -183,6 +232,18 @@ export default function SentenceBuilderPage() {
             </div>
         </CardFooter>
       </Card>
+  );
+
+
+  return (
+     <div className="p-4 md:p-8 space-y-6 pb-20">
+        {showConfetti && <Confetti recycle={false} onConfettiComplete={() => setShowConfetti(false)} />}
+        <header>
+            <Button onClick={() => router.back()} variant="ghost" className="-ml-4">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+            </Button>
+        </header>
+       {view === 'levels' ? renderLevelSelection() : renderGameView()}
     </div>
   );
 }
