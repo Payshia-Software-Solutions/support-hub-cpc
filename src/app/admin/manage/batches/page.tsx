@@ -1,21 +1,21 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import { Search, PlusCircle, Edit, Trash2, BookOpen, AlertTriangle, Loader2 } from 'lucide-react';
-import { getCourses, createCourse, updateCourse, deleteCourse } from '@/lib/api';
-import type { Course } from '@/lib/types';
+import { getCourses, createCourse, updateCourse, deleteCourse, getParentCourses } from '@/lib/api';
+import type { Course, ParentCourse } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -28,35 +28,70 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 
 const courseFormSchema = z.object({
     name: z.string().min(3, "Batch name must be at least 3 characters."),
-    courseCode: z.string().min(3, "Batch code must be at least 3 characters."),
+    parent_course_id: z.string().min(1, "Parent course is required."),
+    courseCode: z.string().min(1, "Batch code is required."),
     fee: z.coerce.number().min(0, "Fee must be a positive number."),
+    registration_fee: z.coerce.number().min(0, "Registration fee must be a positive number."),
+    duration: z.string().min(1, "Duration is required."),
+    enroll_key: z.string().optional(),
     description: z.string().optional(),
+    mini_description: z.string().optional(),
+    certification: z.string().optional(),
+    course_img: z.string().optional(),
 });
 
 type CourseFormValues = z.infer<typeof courseFormSchema>;
 
 const BatchForm = ({ course, onClose }: { course?: Course | null; onClose: () => void; }) => {
     const queryClient = useQueryClient();
+    const { data: parentCourses, isLoading: isLoadingParentCourses } = useQuery<ParentCourse[]>({
+        queryKey: ['parentCourses'],
+        queryFn: getParentCourses,
+    });
+
     const form = useForm<CourseFormValues>({
         resolver: zodResolver(courseFormSchema),
         defaultValues: {
             name: course?.name || '',
+            parent_course_id: course?.parent_course_id || '',
             courseCode: course?.courseCode || '',
             fee: course ? parseFloat(course.fee) : 0,
+            registration_fee: course ? parseFloat(course.registration_fee) : 0,
+            duration: course?.duration || '',
+            enroll_key: course?.enroll_key || '',
             description: course?.description || '',
+            mini_description: course?.mini_description || '',
+            certification: course?.certification || '',
+            course_img: course?.course_img || '',
         }
     });
+    
+    useEffect(() => {
+        if(course) {
+            form.reset({
+                ...course,
+                fee: parseFloat(course.fee),
+                registration_fee: parseFloat(course.registration_fee),
+            });
+        }
+    }, [course, form]);
 
     const courseMutation = useMutation({
         mutationFn: (data: CourseFormValues) => {
-            if (course) {
-                return updateCourse(course.id, { ...data, fee: String(data.fee) });
+            const apiData = {
+                ...data,
+                fee: String(data.fee),
+                registration_fee: String(data.registration_fee)
+            };
+            if (course?.id) {
+                return updateCourse(course.id, apiData);
             }
-            return createCourse({ ...data, fee: String(data.fee) });
+            return createCourse(apiData);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['allCourses'] });
@@ -73,27 +108,71 @@ const BatchForm = ({ course, onClose }: { course?: Course | null; onClose: () =>
     };
 
     return (
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="name">Batch Name</Label>
-                <Input id="name" {...form.register('name')} />
-                {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto p-1 pr-4">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="name">Batch Name</Label>
+                    <Input id="name" {...form.register('name')} />
+                    {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="parent_course_id">Parent Course</Label>
+                    <Controller
+                        name="parent_course_id"
+                        control={form.control}
+                        render={({ field }) => (
+                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingParentCourses}>
+                                <SelectTrigger><SelectValue placeholder="Select a parent course..."/></SelectTrigger>
+                                <SelectContent>
+                                    {parentCourses?.map(pc => <SelectItem key={pc.id} value={pc.id}>{pc.course_name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                    {form.formState.errors.parent_course_id && <p className="text-sm text-destructive">{form.formState.errors.parent_course_id.message}</p>}
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="courseCode">Batch Code</Label>
+                    <Input id="courseCode" {...form.register('courseCode')} />
+                    {form.formState.errors.courseCode && <p className="text-sm text-destructive">{form.formState.errors.courseCode.message}</p>}
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="duration">Duration</Label>
+                    <Input id="duration" {...form.register('duration')} />
+                    {form.formState.errors.duration && <p className="text-sm text-destructive">{form.formState.errors.duration.message}</p>}
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="fee">Batch Fee (LKR)</Label>
+                    <Input id="fee" type="number" step="0.01" {...form.register('fee')} />
+                    {form.formState.errors.fee && <p className="text-sm text-destructive">{form.formState.errors.fee.message}</p>}
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="registration_fee">Registration Fee (LKR)</Label>
+                    <Input id="registration_fee" type="number" step="0.01" {...form.register('registration_fee')} />
+                    {form.formState.errors.registration_fee && <p className="text-sm text-destructive">{form.formState.errors.registration_fee.message}</p>}
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="enroll_key">Enrollment Key</Label>
+                    <Input id="enroll_key" {...form.register('enroll_key')} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="course_img">Course Image URL</Label>
+                    <Input id="course_img" {...form.register('course_img')} placeholder="https://placehold.co/800x400.png" />
+                </div>
             </div>
              <div className="space-y-2">
-                <Label htmlFor="courseCode">Batch Code</Label>
-                <Input id="courseCode" {...form.register('courseCode')} />
-                {form.formState.errors.courseCode && <p className="text-sm text-destructive">{form.formState.errors.courseCode.message}</p>}
+                <Label htmlFor="description">Full Description</Label>
+                <Textarea id="description" {...form.register('description')} rows={5} />
             </div>
              <div className="space-y-2">
-                <Label htmlFor="fee">Batch Fee (LKR)</Label>
-                <Input id="fee" type="number" step="0.01" {...form.register('fee')} />
-                {form.formState.errors.fee && <p className="text-sm text-destructive">{form.formState.errors.fee.message}</p>}
+                <Label htmlFor="mini_description">Mini Description</Label>
+                <Textarea id="mini_description" {...form.register('mini_description')} rows={2} />
             </div>
              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" {...form.register('description')} />
+                <Label htmlFor="certification">Certification Details</Label>
+                <Textarea id="certification" {...form.register('certification')} rows={2} />
             </div>
-            <DialogFooter>
+            <DialogFooter className="sticky bottom-0 bg-background pt-4">
                 <DialogClose asChild>
                     <Button type="button" variant="outline" disabled={courseMutation.isPending}>Cancel</Button>
                 </DialogClose>
@@ -168,7 +247,7 @@ export default function ManageBatchesPage() {
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent>
+                <DialogContent className="max-w-3xl">
                     <DialogHeader>
                         <DialogTitle>{selectedCourse ? "Edit" : "Create"} Batch</DialogTitle>
                         <DialogDescription>

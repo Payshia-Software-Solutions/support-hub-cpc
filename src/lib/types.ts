@@ -91,12 +91,24 @@ export interface StaffMember {
   email: string;
 }
 
+export interface ParentCourse {
+    id: string;
+    course_name: string;
+}
+
 export interface Course {
   id: string;
-  courseCode: string;
   name: string;
+  parent_course_id: string;
+  courseCode: string;
+  description: string;
+  duration: string;
   fee: string;
-  description?: string;
+  registration_fee: string;
+  enroll_key: string;
+  course_img?: string | null;
+  certification?: string;
+  mini_description?: string;
 }
 
 export interface Recording {
@@ -502,6 +514,12 @@ export interface ApiCourse {
     course_code: string;
     course_fee: string;
     course_description: string;
+    course_duration: string;
+    registration_fee: string;
+    enroll_key: string;
+    course_img: string | null;
+    certification: string;
+    mini_description: string;
 }
 
 export interface ApiCourseResponse {

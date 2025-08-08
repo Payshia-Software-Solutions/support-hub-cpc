@@ -1,6 +1,6 @@
 
 
-import type { Ticket, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload, ApiStaffMember, StaffMember, Announcement, BnfChapter, BnfPage, BnfWordIndexEntry } from './types';
+import type { Ticket, Chat, Message, Attachment, CreateTicketMessageClientPayload, CreateTicketPayload, UpdateTicketPayload, CreateChatMessageClientPayload, TicketStatus, StudentSearchResult, UserFullDetails, UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, FullStudentData, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, DeliveryOrder, StudentInBatch, CreateDeliveryOrderPayload, Course, ApiCourseResponse, DeliverySetting, PaymentRequest, StudentEnrollmentInfo, CreatePaymentPayload, TempUser, StudentBalanceData, CreateCertificateOrderPayload, ApiStaffMember, StaffMember, Announcement, BnfChapter, BnfPage, BnfWordIndexEntry, ParentCourse, ApiCourse } from './types';
 
 // In a real app, you would move this to a .env file
 const API_BASE_URL = (process.env.NEXT_PUBLIC_CHAT_SERVER_URL || 'https://chat-server.pharmacollege.lk') + '/api';
@@ -906,38 +906,69 @@ export const getCourses = async (): Promise<Course[]> => {
 
     return Object.values(apiResponse).map(courseDetails => ({
         id: courseDetails.id,
-        courseCode: courseDetails.course_code, 
         name: courseDetails.course_name,
+        parent_course_id: courseDetails.parent_course_id,
+        courseCode: courseDetails.course_code,
+        description: courseDetails.course_description,
+        duration: courseDetails.course_duration,
         fee: courseDetails.course_fee,
-        description: courseDetails.course_description
+        registration_fee: courseDetails.registration_fee,
+        enroll_key: courseDetails.enroll_key,
+        course_img: courseDetails.course_img,
+        certification: courseDetails.certification,
+        mini_description: courseDetails.mini_description,
     }));
 };
 
+export const getParentCourses = async (): Promise<ParentCourse[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/parent-main-course`);
+     if (!response.ok) {
+        throw new Error('Failed to fetch parent courses');
+    }
+    return response.json();
+}
+
 export const createCourse = async (courseData: Omit<Course, 'id'>): Promise<Course> => {
+     const payload = {
+        course_name: courseData.name,
+        parent_course_id: courseData.parent_course_id,
+        course_code: courseData.courseCode,
+        course_description: courseData.description,
+        course_duration: courseData.duration,
+        course_fee: courseData.fee,
+        registration_fee: courseData.registration_fee,
+        enroll_key: courseData.enroll_key,
+        course_img: courseData.course_img,
+        certification: courseData.certification,
+        mini_description: courseData.mini_description,
+    };
     const response = await fetch(`${QA_API_BASE_URL}/course`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            course_name: courseData.name,
-            course_code: courseData.courseCode,
-            course_fee: courseData.fee,
-            course_description: courseData.description,
-        }),
+        body: JSON.stringify(payload),
     });
     if (!response.ok) throw new Error('Failed to create course');
     return response.json();
 };
 
 export const updateCourse = async (id: string, courseData: Partial<Omit<Course, 'id'>>): Promise<Course> => {
+    const payload = {
+        course_name: courseData.name,
+        parent_course_id: courseData.parent_course_id,
+        course_code: courseData.courseCode,
+        course_description: courseData.description,
+        course_duration: courseData.duration,
+        course_fee: courseData.fee,
+        registration_fee: courseData.registration_fee,
+        enroll_key: courseData.enroll_key,
+        course_img: courseData.course_img,
+        certification: courseData.certification,
+        mini_description: courseData.mini_description,
+    };
     const response = await fetch(`${QA_API_BASE_URL}/course/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            course_name: courseData.name,
-            course_code: courseData.courseCode,
-            course_fee: courseData.fee,
-            course_description: courseData.description,
-        }),
+        body: JSON.stringify(payload),
     });
     if (!response.ok) throw new Error('Failed to update course');
     return response.json();
