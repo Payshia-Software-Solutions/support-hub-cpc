@@ -908,6 +908,44 @@ export const getCourses = async (): Promise<Course[]> => {
         id: courseDetails.id,
         courseCode: courseDetails.course_code, 
         name: courseDetails.course_name,
-        fee: courseDetails.course_fee
+        fee: courseDetails.course_fee,
+        description: courseDetails.course_description
     }));
+};
+
+export const createCourse = async (courseData: Omit<Course, 'id'>): Promise<Course> => {
+    const response = await fetch(`${QA_API_BASE_URL}/course`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            course_name: courseData.name,
+            course_code: courseData.courseCode,
+            course_fee: courseData.fee,
+            course_description: courseData.description,
+        }),
+    });
+    if (!response.ok) throw new Error('Failed to create course');
+    return response.json();
+};
+
+export const updateCourse = async (id: string, courseData: Partial<Omit<Course, 'id'>>): Promise<Course> => {
+    const response = await fetch(`${QA_API_BASE_URL}/course/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            course_name: courseData.name,
+            course_code: courseData.courseCode,
+            course_fee: courseData.fee,
+            course_description: courseData.description,
+        }),
+    });
+    if (!response.ok) throw new Error('Failed to update course');
+    return response.json();
+};
+
+export const deleteCourse = async (id: string): Promise<void> => {
+    const response = await fetch(`${QA_API_BASE_URL}/course/${id}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete course');
 };
