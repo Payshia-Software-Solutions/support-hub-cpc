@@ -6,7 +6,7 @@ import type { Ticket, StaffMember } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CalendarDays, ArrowRight, UserCircle, Lock, Ticket as TicketIcon } from "lucide-react"; 
+import { CalendarDays, ArrowRight, UserCircle, Lock, Ticket as TicketIcon, User } from "lucide-react"; 
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -51,6 +51,12 @@ export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: Ti
                  <CardDescription>Ticket ID: <span className="font-bold text-red-800 text-lg">TKT-{ticket.id}</span></CardDescription>
             </CardHeader>
             <CardContent className="flex-grow space-y-3">
+                 <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        <span className="font-medium">{ticket.studentName} ({ticket.studentNumber})</span>
+                    </div>
+                </div>
                  <div className="flex justify-between items-center text-xs text-muted-foreground">
                     <div className="flex items-center gap-2">
                         {ticket.assignedTo && (
