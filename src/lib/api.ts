@@ -896,6 +896,21 @@ export const getAllDistricts = async (): Promise<Location[]> => {
     return Object.values(data);
 };
 
+export const getCourses = async (): Promise<Course[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/course`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch courses' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    const apiResponse: ApiCourseResponse = await response.json();
+
+    return Object.values(apiResponse).map(courseDetails => ({
+        id: courseDetails.id,
+        name: courseDetails.course_name,
+        courseCode: courseDetails.course_code,
+    }));
+};
+
 export const getBatches = async (): Promise<Batch[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/course`);
     if (!response.ok) {
