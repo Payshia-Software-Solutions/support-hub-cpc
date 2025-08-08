@@ -45,7 +45,7 @@ export const gameLevels: GameLevel[] = [
         words: ["bought", "a", "car", "She", "red"],
         correct: "She bought a red car",
         hint: "The adjective 'red' comes before the noun 'car'.",
-        translation: "ඇය රතු මෝටර් රථයක් මිලදී ගත්තා"
+        translation: "ඇය රතු මෝටර් රථයක් මිලදී ගත්තාය"
       },
       {
         words: ["He", "a", "wears", "shirt", "blue"],
@@ -93,7 +93,7 @@ export const gameLevels: GameLevel[] = [
         words: ["not", "go", "did", "They", "school", "to"],
         correct: "They did not go to school",
         hint: "The helping verb 'did' comes before 'not'.",
-        translation: "ඔවුන් පාසල් ගියේ නැහැ"
+        translation: "ඔවුන් පාසල් ගියේ නැත"
       },
       {
         words: ["is", "He", "a", "not", "doctor"],
@@ -105,7 +105,7 @@ export const gameLevels: GameLevel[] = [
         words: ["I", "like", "do", "not", "spiders"],
         correct: "I do not like spiders",
         hint: "Use the helping verb 'do'.",
-        translation: "මම මකුළුවන්ට කැමති නැහැ"
+        translation: "මම මකුළුවන්ට කැමති නැත"
       },
     ]
   },
@@ -141,7 +141,7 @@ export const gameLevels: GameLevel[] = [
         words: ["He", "cricket", "played"],
         correct: "He played cricket",
         hint: "The action happened in the past.",
-        translation: "ඔහු ක්‍රිකට් ක්‍රීඩා කළා."
+        translation: "ඔහු ක්‍රිකට් ක්‍රීඩා කළේය."
       },
       {
         words: ["a", "She", "letter", "wrote"],
@@ -153,7 +153,7 @@ export const gameLevels: GameLevel[] = [
         words: ["We", "a", "movie", "watched"],
         correct: "We watched a movie",
         hint: "The verb is in the past tense.",
-        translation: "අපි චිත්‍රපටයක් බැලුවා."
+        translation: "අපි චිත්‍රපටයක් බැලුවෙමු."
       },
     ]
   },
@@ -165,13 +165,13 @@ export const gameLevels: GameLevel[] = [
         words: ["I", "you", "will", "call"],
         correct: "I will call you",
         hint: "The action will happen in the future.",
-        translation: "මම ඔයාට කතා කරන්නම්."
+        translation: "මම ඔබට කතා කරන්නම්."
       },
       {
         words: ["tomorrow", "She", "visit", "will"],
         correct: "She will visit tomorrow",
         hint: "'will' comes before the main verb.",
-        translation: "ඇය හෙට එනු ඇත."
+        translation: "ඇය හෙට පැමිණෙනු ඇත."
       },
       {
         words: ["They", "the", "project", "will", "start"],
@@ -189,19 +189,67 @@ export const gameLevels: GameLevel[] = [
         words: ["is", "He", "a", "book", "reading"],
         correct: "He is reading a book",
         hint: "The action is happening now.",
-        translation: "ඔහු පොතක් කියවමින් සිටී."
+        translation: "ඔහු පොතක් කියවමින් සිටියි."
       },
       {
         words: ["chess", "They", "playing", "are"],
         correct: "They are playing chess",
         hint: "Use the 'are' helping verb.",
-        translation: "ඔවුන් චෙස් ක්‍රීඩා කරමින් සිටී."
+        translation: "ඔවුන් චෙස් ක්‍රීඩා කරමින් සිටියි."
       },
       {
         words: ["I", "water", "am", "drinking"],
         correct: "I am drinking water",
         hint: "The verb ends with '-ing'.",
         translation: "මම වතුර බොමින් සිටිමි."
+      },
+    ]
+  },
+  {
+    level: 9,
+    pattern: "Present Perfect Tense",
+    sentences: [
+      {
+        words: ["have", "I", "my", "work", "finished"],
+        correct: "I have finished my work",
+        hint: "The action is completed recently. Use 'have'.",
+        translation: "මම මගේ වැඩ අවසන් කර ඇත."
+      },
+      {
+        words: ["has", "She", "to", "London", "been"],
+        correct: "She has been to London",
+        hint: "This talks about a past experience. Use 'has'.",
+        translation: "ඇය ලන්ඩනයට ගොස් ඇත."
+      },
+      {
+        words: ["They", "seen", "have", "that", "movie"],
+        correct: "They have seen that movie",
+        hint: "Use the past participle form of the verb 'see'.",
+        translation: "ඔවුන් එම චිත්‍රපටය නරඹා ඇත."
+      },
+    ]
+  },
+  {
+    level: 10,
+    pattern: "Past Continuous Tense",
+    sentences: [
+      {
+        words: ["was", "He", "a", "book", "reading"],
+        correct: "He was reading a book",
+        hint: "The action was ongoing in the past.",
+        translation: "ඔහු පොතක් කියවමින් සිටියේය."
+      },
+      {
+        words: ["were", "They", "playing", "when", "I", "arrived", "chess"],
+        correct: "They were playing chess when I arrived",
+        hint: "An ongoing past action interrupted by another.",
+        translation: "මා පැමිණෙන විට ඔවුන් චෙස් ක්‍රීඩා කරමින් සිටියහ."
+      },
+      {
+        words: ["it", "raining", "was", "yesterday"],
+        correct: "It was raining yesterday",
+        hint: "Describes an ongoing condition in the past.",
+        translation: "ඊයේ වර්ෂාව பெய்துகொண்டிருந்தது."
       },
     ]
   }
