@@ -41,7 +41,6 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
     )
     .filter(ticket => {
         if (statusFilter === 'all') return true;
-        if (statusFilter === 'Open') return ticket.status === 'Open' || ticket.status === 'In Progress';
         return ticket.status === statusFilter;
     })
     .filter(ticket => priorityFilter === "all" || ticket.priority === priorityFilter)
@@ -108,7 +107,8 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="Open">Open & In Progress</SelectItem>
+              <SelectItem value="Open">Open</SelectItem>
+              <SelectItem value="In Progress">In Progress</SelectItem>
               <SelectItem value="Closed">Closed</SelectItem>
             </SelectContent>
           </Select>
