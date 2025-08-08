@@ -666,7 +666,14 @@ const TicketDiscussionContent = ({
         <ImageViewerDialog imageUrl={viewingImage} onOpenChange={(open) => !open && setViewingImage(null)} />
         <header className="px-4 py-3 border-b bg-card flex items-center gap-3 shrink-0">
           <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-          <h2 className="font-semibold text-md md:text-lg">Ticket Discussion</h2>
+          <div>
+            <h2 className="font-semibold text-md md:text-lg">Ticket Discussion</h2>
+            {userRole === 'staff' && ticket.studentName && (
+                <p className="text-xs text-muted-foreground -mt-1">
+                    Chatting with {ticket.studentName}
+                </p>
+            )}
+          </div>
         </header>
         
         <ScrollArea className="flex-1 px-4 py-4" ref={scrollAreaRef}>
