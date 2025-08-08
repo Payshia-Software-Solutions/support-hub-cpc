@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -5,13 +6,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getParentCourses, deleteParentCourse } from '@/lib/api';
 import type { ParentCourse } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlusCircle, Search, Loader2, AlertTriangle, BookOpen } from 'lucide-react';
 import { CourseList } from '@/components/admin/courses/CourseList';
 import { CourseForm } from '@/components/admin/courses/CourseForm';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function CoursePageClient() {
     const queryClient = useQueryClient();
@@ -119,12 +121,12 @@ export function CoursePageClient() {
                                 <Card key={i} className="animate-pulse">
                                     <CardHeader className="h-24 bg-muted rounded-t-lg"></CardHeader>
                                     <CardContent className="p-4 space-y-2">
-                                        <div className="h-6 w-3/4 bg-muted rounded"></div>
-                                        <div className="h-4 w-1/2 bg-muted rounded"></div>
+                                        <Skeleton className="h-6 w-3/4 bg-muted rounded"></Skeleton>
+                                        <Skeleton className="h-4 w-1/2 bg-muted rounded"></Skeleton>
                                     </CardContent>
                                     <CardFooter className="p-4 flex justify-end gap-2">
-                                         <div className="h-10 w-24 bg-muted rounded-md"></div>
-                                         <div className="h-10 w-24 bg-muted rounded-md"></div>
+                                         <Skeleton className="h-10 w-24 bg-muted rounded-md"></Skeleton>
+                                         <Skeleton className="h-10 w-10 bg-muted rounded-md"></Skeleton>
                                     </CardFooter>
                                 </Card>
                             ))}
