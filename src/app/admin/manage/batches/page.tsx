@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import { Search, PlusCircle, Edit, Trash2, BookOpen, AlertTriangle, Loader2 } from 'lucide-react';
-import { getCourses, createCourse, updateCourse, deleteCourse, getParentCourses } from '@/lib/api';
-import type { Course, ParentCourse } from '@/lib/types';
+import { getBatches, createBatch, updateBatch, deleteBatch, getParentCourseList } from '@/lib/api';
+import type { Batch, ParentCourseListItem } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,9 +29,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { useSearchParams } from 'next/navigation';
 
 
-const courseFormSchema = z.object({
+const batchFormSchema = z.object({
     name: z.string().min(3, "Batch name must be at least 3 characters."),
     parent_course_id: z.string().min(1, "Parent course is required."),
     courseCode: z.string().min(1, "Batch code is required."),
@@ -45,57 +46,71 @@ const courseFormSchema = z.object({
     course_img: z.string().optional(),
 });
 
-type CourseFormValues = z.infer<typeof courseFormSchema>;
+type BatchFormValues = z.infer<typeof batchFormSchema>;
 
-const BatchForm = ({ course, onClose }: { course?: Course | null; onClose: () => void; }) => {
+const BatchForm = ({ batch, onClose }: { batch?: Batch | null; onClose: () => void; }) => {
     const queryClient = useQueryClient();
-    const { data: parentCourses, isLoading: isLoadingParentCourses } = useQuery<ParentCourse[]>({
-        queryKey: ['parentCourses'],
-        queryFn: getParentCourses,
+    const { data: parentCourses, isLoading: isLoadingParentCourses } = useQuery<ParentCourseListItem[]>({
+        queryKey: ['parentCourseList'],
+        queryFn: getParentCourseList,
     });
 
-    const form = useForm<CourseFormValues>({
-        resolver: zodResolver(courseFormSchema),
+    const form = useForm<BatchFormValues>({
+        resolver: zodResolver(batchFormSchema),
         defaultValues: {
-            name: course?.name || '',
-            parent_course_id: course?.parent_course_id || '',
-            courseCode: course?.courseCode || '',
-            fee: course ? parseFloat(course.fee) : 0,
-            registration_fee: course ? parseFloat(course.registration_fee) : 0,
-            duration: course?.duration || '',
-            enroll_key: course?.enroll_key || '',
-            description: course?.description || '',
-            mini_description: course?.mini_description || '',
-            certification: course?.certification || '',
-            course_img: course?.course_img || '',
+            name: batch?.name || '',
+            parent_course_id: batch?.parent_course_id || '',
+            courseCode: batch?.courseCode || '',
+            fee: batch ? parseFloat(batch.fee) : 0,
+            registration_fee: batch ? parseFloat(batch.registration_fee) : 0,
+            duration: batch?.duration || '',
+            enroll_key: batch?.enroll_key || '',
+            description: batch?.description || '',
+            mini_description: batch?.mini_description || '',
+            certification: batch?.certification || '',
+            course_img: batch?.course_img || '',
         }
     });
     
     useEffect(() => {
-        if(course) {
+        if(batch) {
             form.reset({
-                ...course,
-                fee: parseFloat(course.fee),
-                registration_fee: parseFloat(course.registration_fee),
+                ...batch,
+                fee: parseFloat(batch.fee),
+                registration_fee: parseFloat(batch.registration_fee),
+            });
+        } else {
+             form.reset({
+                name: '',
+                parent_course_id: '',
+                courseCode: '',
+                fee: 0,
+                registration_fee: 0,
+                duration: '',
+                enroll_key: '',
+                description: '',
+                mini_description: '',
+                certification: '',
+                course_img: '',
             });
         }
-    }, [course, form]);
+    }, [batch, form]);
 
-    const courseMutation = useMutation({
-        mutationFn: (data: CourseFormValues) => {
+    const batchMutation = useMutation({
+        mutationFn: (data: BatchFormValues) => {
             const apiData = {
                 ...data,
                 fee: String(data.fee),
                 registration_fee: String(data.registration_fee)
             };
-            if (course?.id) {
-                return updateCourse(course.id, apiData);
+            if (batch?.id) {
+                return updateBatch(batch.id, apiData);
             }
-            return createCourse(apiData);
+            return createBatch(apiData);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['allCourses'] });
-            toast({ title: 'Success', description: `Batch ${course ? 'updated' : 'created'} successfully.` });
+            queryClient.invalidateQueries({ queryKey: ['allBatches'] });
+            toast({ title: 'Success', description: `Batch ${batch ? 'updated' : 'created'} successfully.` });
             onClose();
         },
         onError: (error: Error) => {
@@ -103,8 +118,8 @@ const BatchForm = ({ course, onClose }: { course?: Course | null; onClose: () =>
         }
     });
     
-    const onSubmit = (data: CourseFormValues) => {
-        courseMutation.mutate(data);
+    const onSubmit = (data: BatchFormValues) => {
+        batchMutation.mutate(data);
     };
 
     return (
@@ -156,8 +171,8 @@ const BatchForm = ({ course, onClose }: { course?: Course | null; onClose: () =>
                     <Input id="enroll_key" {...form.register('enroll_key')} />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="course_img">Course Image URL</Label>
-                    <Input id="course_img" {...form.register('course_img')} placeholder="https://placehold.co/800x400.png" />
+                    <Label htmlFor="course_img">Course Image Filename</Label>
+                    <Input id="course_img" {...form.register('course_img')} placeholder="e.g., image.jpg" />
                 </div>
             </div>
              <div className="space-y-2">
@@ -174,11 +189,11 @@ const BatchForm = ({ course, onClose }: { course?: Course | null; onClose: () =>
             </div>
             <DialogFooter className="sticky bottom-0 bg-background pt-4">
                 <DialogClose asChild>
-                    <Button type="button" variant="outline" disabled={courseMutation.isPending}>Cancel</Button>
+                    <Button type="button" variant="outline" disabled={batchMutation.isPending}>Cancel</Button>
                 </DialogClose>
-                <Button type="submit" disabled={courseMutation.isPending}>
-                    {courseMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {course ? "Save Changes" : "Create Batch"}
+                <Button type="submit" disabled={batchMutation.isPending}>
+                    {batchMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {batch ? "Save Changes" : "Create Batch"}
                 </Button>
             </DialogFooter>
         </form>
@@ -186,51 +201,61 @@ const BatchForm = ({ course, onClose }: { course?: Course | null; onClose: () =>
 };
 
 
-export default function ManageBatchesPage() {
+function ManageBatchesPageComponent() {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-    const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
+    const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
+    const [batchToDelete, setBatchToDelete] = useState<Batch | null>(null);
+    
+    const searchParams = useSearchParams();
+    const courseIdFilter = searchParams.get('courseId');
 
-    const { data: courses, isLoading, isError, error } = useQuery<Course[]>({
-        queryKey: ['allCourses'],
-        queryFn: getCourses,
+    const { data: batches, isLoading, isError, error } = useQuery<Batch[]>({
+        queryKey: ['allBatches'],
+        queryFn: getBatches,
         staleTime: 1000 * 60 * 5,
     });
 
     const deleteMutation = useMutation({
-        mutationFn: deleteCourse,
+        mutationFn: deleteBatch,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['allCourses'] });
+            queryClient.invalidateQueries({ queryKey: ['allBatches'] });
             toast({ title: 'Success', description: 'Batch deleted successfully.' });
-            setCourseToDelete(null);
+            setBatchToDelete(null);
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
-            setCourseToDelete(null);
+            setBatchToDelete(null);
         }
     });
 
     const handleCreate = () => {
-        setSelectedCourse(null);
+        setSelectedBatch(null);
         setIsFormOpen(true);
     };
 
-    const handleEdit = (course: Course) => {
-        setSelectedCourse(course);
+    const handleEdit = (batch: Batch) => {
+        setSelectedBatch(batch);
         setIsFormOpen(true);
     };
 
-    const filteredCourses = useMemo(() => {
-        if (!courses) return [];
+    const filteredBatches = useMemo(() => {
+        if (!batches) return [];
+        let filtered = batches;
+
+        if (courseIdFilter) {
+            filtered = filtered.filter(batch => batch.parent_course_id === courseIdFilter);
+        }
+
         const lowercasedFilter = searchTerm.toLowerCase();
-        if (!lowercasedFilter) return courses;
-        return courses.filter(course =>
-            course.name.toLowerCase().includes(lowercasedFilter) ||
-            course.courseCode.toLowerCase().includes(lowercasedFilter)
+        if (!lowercasedFilter) return filtered;
+        
+        return filtered.filter(batch =>
+            batch.name.toLowerCase().includes(lowercasedFilter) ||
+            batch.courseCode.toLowerCase().includes(lowercasedFilter)
         );
-    }, [courses, searchTerm]);
+    }, [batches, searchTerm, courseIdFilter]);
 
     if (isError) {
         return (
@@ -249,26 +274,26 @@ export default function ManageBatchesPage() {
              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent className="max-w-3xl">
                     <DialogHeader>
-                        <DialogTitle>{selectedCourse ? "Edit" : "Create"} Batch</DialogTitle>
+                        <DialogTitle>{selectedBatch ? "Edit" : "Create"} Batch</DialogTitle>
                         <DialogDescription>
-                           {selectedCourse ? "Modify the existing batch details." : "Fill in the details for a new batch."}
+                           {selectedBatch ? "Modify the existing batch details." : "Fill in the details for a new batch."}
                         </DialogDescription>
                     </DialogHeader>
-                    <BatchForm course={selectedCourse} onClose={() => setIsFormOpen(false)} />
+                    <BatchForm batch={selectedBatch} onClose={() => setIsFormOpen(false)} />
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog open={!!courseToDelete} onOpenChange={() => setCourseToDelete(null)}>
+            <AlertDialog open={!!batchToDelete} onOpenChange={() => setBatchToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete the batch "{courseToDelete?.name}". This action cannot be undone.
+                            This will permanently delete the batch "{batchToDelete?.name}". This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteMutation.mutate(courseToDelete!.id)} disabled={deleteMutation.isPending}>
+                        <AlertDialogAction onClick={() => deleteMutation.mutate(batchToDelete!.id)} disabled={deleteMutation.isPending}>
                              {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                              Delete
                         </AlertDialogAction>
@@ -293,7 +318,7 @@ export default function ManageBatchesPage() {
                         <div>
                             <CardTitle>All Batches</CardTitle>
                              <CardDescription>
-                                {isLoading ? "Loading..." : `${filteredCourses.length} batches found.`}
+                                {isLoading ? "Loading..." : `${filteredBatches.length} batches found.`}
                             </CardDescription>
                         </div>
                          <div className="relative w-full md:w-auto md:max-w-xs">
@@ -327,14 +352,14 @@ export default function ManageBatchesPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredCourses.length > 0 ? filteredCourses.map((course) => (
-                                        <TableRow key={course.id}>
-                                            <TableCell className="font-medium">{course.name}</TableCell>
-                                            <TableCell>{course.courseCode}</TableCell>
-                                            <TableCell>{parseFloat(course.fee).toFixed(2)}</TableCell>
+                                    {filteredBatches.length > 0 ? filteredBatches.map((batch) => (
+                                        <TableRow key={batch.id}>
+                                            <TableCell className="font-medium">{batch.name}</TableCell>
+                                            <TableCell>{batch.courseCode}</TableCell>
+                                            <TableCell>{parseFloat(batch.fee).toFixed(2)}</TableCell>
                                             <TableCell className="text-right">
-                                               <Button variant="ghost" size="icon" onClick={() => handleEdit(course)}><Edit className="h-4 w-4"/></Button>
-                                               <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setCourseToDelete(course)}><Trash2 className="h-4 w-4"/></Button>
+                                               <Button variant="ghost" size="icon" onClick={() => handleEdit(batch)}><Edit className="h-4 w-4"/></Button>
+                                               <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setBatchToDelete(batch)}><Trash2 className="h-4 w-4"/></Button>
                                             </TableCell>
                                         </TableRow>
                                     )) : (
@@ -354,4 +379,11 @@ export default function ManageBatchesPage() {
     );
 }
 
-    
+
+export default function ManageBatchesPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ManageBatchesPageComponent />
+        </Suspense>
+    );
+}

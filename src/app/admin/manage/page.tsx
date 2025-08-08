@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog, BookOpen, BarChart, Cake } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog, BookOpen, BarChart, Cake, Library } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from 'react';
 import { cn } from "@/lib/utils";
@@ -42,6 +42,13 @@ const managementTasks: ManagementTask[] = [
     description: "View, add, and edit batch information and fees.",
     icon: <BookOpen className="w-8 h-8 text-white" />,
     href: "/admin/manage/batches",
+    category: "Content & System"
+  },
+  {
+    title: "Manage Courses",
+    description: "Manage parent courses and their details.",
+    icon: <Library className="w-8 h-8 text-white" />,
+    href: "/admin/manage/courses",
     category: "Content & System"
   },
   {
