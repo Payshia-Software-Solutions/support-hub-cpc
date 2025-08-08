@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,12 +14,17 @@ import { gameLevels, GameLevel } from '@/lib/sentence-builder-data';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-confetti';
 
+interface Word {
+  text: string;
+  id: number;
+}
+
 export default function SentenceBuilderPage() {
   const router = useRouter();
   const [view, setView] = useState<'levels' | 'game'>('levels');
   const [levelIndex, setLevelIndex] = useState(0);
   const [sentenceIndex, setSentenceIndex] = useState(0);
-  const [builtSentence, setBuiltSentence] = useState<string[]>([]);
+  const [builtSentence, setBuiltSentence] = useState<Word[]>([]);
   const [score, setScore] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -31,7 +36,9 @@ export default function SentenceBuilderPage() {
   
   const jumbledWords = useMemo(() => {
     if (!currentSentence) return [];
-    return [...currentSentence.words].sort(() => Math.random() - 0.5);
+    return currentSentence.words
+      .map((word, index) => ({ text: word, id: index }))
+      .sort(() => Math.random() - 0.5);
   }, [currentSentence]);
 
   const handleSelectLevel = (index: number) => {
@@ -47,17 +54,17 @@ export default function SentenceBuilderPage() {
     setView('levels');
   };
 
-  const handleWordClick = (word: string) => {
-    if (builtSentence.includes(word)) return;
+  const handleWordClick = (word: Word) => {
+    if (builtSentence.some(w => w.id === word.id)) return;
     setBuiltSentence(prev => [...prev, word]);
   };
 
-  const handleRemoveWord = (word: string) => {
-    setBuiltSentence(prev => prev.filter(w => w !== word));
+  const handleRemoveWord = (wordToRemove: Word) => {
+    setBuiltSentence(prev => prev.filter(w => w.id !== wordToRemove.id));
   };
   
   const handleCheckAnswer = () => {
-    const userAnswer = builtSentence.join(' ');
+    const userAnswer = builtSentence.map(w => w.text).join(' ');
     if (userAnswer === currentSentence.correct) {
       setIsCorrect(true);
       const points = showHint ? 1 : 2;
@@ -163,9 +170,9 @@ export default function SentenceBuilderPage() {
                 <>
                     <Card className="bg-muted min-h-[8rem] p-4 flex flex-wrap items-center gap-2">
                       {builtSentence.length > 0 ? (
-                        builtSentence.map((word, i) => (
-                           <Button key={i} variant="secondary" onClick={() => handleRemoveWord(word)} className="text-base h-auto py-2 px-4 shadow-sm animate-in zoom-in-50">
-                            {word}
+                        builtSentence.map((word) => (
+                           <Button key={word.id} variant="secondary" onClick={() => handleRemoveWord(word)} className="text-base h-auto py-2 px-4 shadow-sm animate-in zoom-in-50">
+                            {word.text}
                           </Button>
                         ))
                       ) : (
@@ -185,11 +192,11 @@ export default function SentenceBuilderPage() {
                     <div className="space-y-3">
                          <h3 className="font-semibold text-muted-foreground text-center">Word Bank</h3>
                         <Card className="p-4 flex flex-wrap justify-center gap-3">
-                          {jumbledWords.map((word, i) => {
-                            const isUsed = builtSentence.includes(word);
+                          {jumbledWords.map((word) => {
+                            const isUsed = builtSentence.some(w => w.id === word.id);
                             return (
-                               <Button key={i} onClick={() => handleWordClick(word)} disabled={isUsed} className="text-base h-auto py-2 px-4">
-                                {word}
+                               <Button key={word.id} onClick={() => handleWordClick(word)} disabled={isUsed} className="text-base h-auto py-2 px-4">
+                                {word.text}
                               </Button>
                             )
                           })}
