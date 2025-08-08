@@ -27,8 +27,8 @@ export function AdminBottomDock() {
   }
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-sm border-t">
-      <div className="flex justify-around items-center h-14">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t">
+      <div className="relative flex justify-around items-center h-16">
         {navItems.map((item) => {
           const currentItemIsActive = item.href === '/admin/dashboard'
               ? pathname === item.href
@@ -39,18 +39,24 @@ export function AdminBottomDock() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center text-xs font-medium w-full h-full p-1 transition-colors duration-200",
-                currentItemIsActive ? "text-primary" : "text-muted-foreground hover:text-primary"
+                "flex flex-col items-center justify-center text-xs font-medium w-full p-1 transition-all duration-300 ease-in-out focus:outline-none h-full",
+                currentItemIsActive ? "text-primary -translate-y-3" : "text-muted-foreground hover:text-foreground"
               )}
             >
               <div className={cn(
-                "p-2 rounded-lg transition-colors",
-                 currentItemIsActive && "bg-primary/10"
+                "flex items-center justify-center transition-all duration-300 ease-in-out mb-1",
+                 currentItemIsActive ? "w-14 h-14 bg-primary text-primary-foreground rounded-2xl shadow-lg" : "w-8 h-8"
               )}>
-                <item.icon className="h-5 w-5" />
+                <item.icon className="h-6 w-6" />
               </div>
-              <span className="mt-1">
+              <span className={cn(
+                  "relative text-[11px]",
+                  currentItemIsActive && "font-bold"
+              )}>
                 {item.label}
+                 {currentItemIsActive && (
+                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-[3px] bg-primary rounded-full" />
+                )}
               </span>
             </Link>
           );
