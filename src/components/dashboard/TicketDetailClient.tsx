@@ -204,7 +204,25 @@ const EnrollmentCard = ({ enrollment }: { enrollment: StudentEnrollment }) => (
     </Card>
 );
 
-const StudentInfoDisplay = ({ studentInfo }: { studentInfo: FullStudentData }) => {
+const StudentInfoDisplay = ({ studentNumber }: { studentNumber: string }) => {
+    
+    const { data: studentInfo, isLoading, isError, error } = useQuery<FullStudentData>({
+        queryKey: ['studentFullInfo', studentNumber],
+        queryFn: () => getStudentFullInfo(studentNumber),
+        enabled: !!studentNumber,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+
+    if (isLoading) {
+        return <div className="p-4 space-y-4"><Skeleton className="h-40 w-full" /><Skeleton className="h-64 w-full" /></div>
+    }
+
+    if (isError) {
+        return <Alert variant="destructive"><AlertTitle>Failed to load student details</AlertTitle><AlertDescription>{error.message}</AlertDescription></Alert>
+    }
+    
+    if (!studentInfo) return null;
+
     const { studentInfo: details, studentBalance, studentEnrollments } = studentInfo;
 
     const infoItem = (icon: React.ReactNode, label: string, value: string | undefined | null) => {
@@ -840,13 +858,11 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const [activeMobileTab, setActiveMobileTab] = useState<'discussion' | 'info'>('discussion');
+  const [activeMobileTab, setActiveMobileTab] = useState<'discussion' | 'info' | 'student'>('discussion');
   const queryClient = useQueryClient();
   const [isSending, setIsSending] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
 
-  const [studentDetails, setStudentDetails] = useState<FullStudentData | null>(null);
-  const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [isStudentInfoDialogOpen, setIsStudentInfoDialogOpen] = useState(false);
   const isMobile = useIsMobile();
   const { user } = useAuth();
@@ -1035,29 +1051,6 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
       }
     }
   };
-  
-  const handleFetchStudentDetails = async () => {
-    if (!ticket.studentNumber) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No student number associated with this ticket.' });
-        return;
-    }
-    setIsFetchingDetails(true);
-    if (!isMobile) {
-        setIsStudentInfoDialogOpen(true);
-    }
-    try {
-        const data = await getStudentFullInfo(ticket.studentNumber);
-        setStudentDetails(data);
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Failed to Fetch Details', description: error.message });
-        setStudentDetails(null);
-        if (!isMobile) {
-            setIsStudentInfoDialogOpen(false);
-        }
-    } finally {
-        setIsFetchingDetails(false);
-    }
-  };
 
   const removeStagedAttachment = (idToRemove: string) => {
     setStagedAttachments(prev => prev.filter(att => att.id !== idToRemove));
@@ -1108,14 +1101,7 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
         {activeMobileTab === 'student' && userRole === 'staff' && (
              <ScrollArea className="flex-1 bg-card">
                 <div className="p-4 space-y-4">
-                     {!studentDetails && (
-                        <Button onClick={handleFetchStudentDetails} disabled={isFetchingDetails} className="w-full">
-                            {isFetchingDetails ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <User className="mr-2 h-4 w-4"/>}
-                            Show Student Details
-                        </Button>
-                    )}
-                    {isFetchingDetails && <Skeleton className="h-64 w-full" />}
-                    {studentDetails && <StudentInfoDisplay studentInfo={studentDetails} />}
+                    <StudentInfoDisplay studentNumber={ticket.studentNumber} />
                 </div>
             </ScrollArea>
         )}
@@ -1164,19 +1150,18 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
               <div className="mt-6">
                 <Dialog open={isStudentInfoDialogOpen} onOpenChange={setIsStudentInfoDialogOpen}>
                     <DialogTrigger asChild>
-                         <Button onClick={handleFetchStudentDetails} disabled={isFetchingDetails} className="w-full">
-                            {isFetchingDetails ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <User className="mr-2 h-4 w-4"/>}
+                         <Button className="w-full">
+                            <User className="mr-2 h-4 w-4"/>
                             Show Student Details
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl h-[90vh]">
                          <DialogHeader>
                             <DialogTitle>Student Details</DialogTitle>
-                            {studentDetails && <DialogDescription>{studentDetails?.studentInfo.full_name} ({studentDetails?.studentInfo.student_id})</DialogDescription>}
+                            <DialogDescription>{ticket.studentName} ({ticket.studentNumber})</DialogDescription>
                         </DialogHeader>
                         <div className="overflow-y-auto pr-4 -mr-4">
-                            {isFetchingDetails && <div className="p-4"><Skeleton className="h-96 w-full" /></div>}
-                            {studentDetails && <StudentInfoDisplay studentInfo={studentDetails} />}
+                            <StudentInfoDisplay studentNumber={ticket.studentNumber} />
                         </div>
                     </DialogContent>
                 </Dialog>

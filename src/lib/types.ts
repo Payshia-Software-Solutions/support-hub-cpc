@@ -643,3 +643,9 @@ export interface ParentCourseListItem {
     id: string;
     course_name: string;
 }
+
+export interface Course {
+  id: string;
+  name: string;
+  courseCode: string;
+}
