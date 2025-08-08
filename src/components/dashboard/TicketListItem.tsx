@@ -54,7 +54,7 @@ export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: Ti
                  <div className="flex justify-between items-center text-xs text-muted-foreground">
                     <div className="flex items-center gap-2">
                         <User className="w-4 h-4" />
-                        <span className="font-medium">{ticket.studentName}</span>
+                        <span className="font-medium">{ticket.studentName} ({ticket.studentNumber})</span>
                     </div>
                 </div>
                  <div className="flex justify-between items-center text-xs text-muted-foreground">
@@ -76,7 +76,7 @@ export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: Ti
                     </div>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2">
-                   {ticket.lastMessagePreview || "No messages yet."}
+                   {ticket.lastMessagePreview}
                 </p>
             </CardContent>
             <CardFooter className="flex justify-between items-center text-xs text-muted-foreground p-4 bg-muted/50">
