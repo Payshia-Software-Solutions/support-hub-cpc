@@ -55,12 +55,18 @@ export default function SentenceBuilderPage() {
   };
 
   const handleWordClick = (word: Word) => {
-    if (builtSentence.some(w => w.id === word.id)) return;
     setBuiltSentence(prev => [...prev, word]);
   };
 
   const handleRemoveWord = (wordToRemove: Word) => {
-    setBuiltSentence(prev => prev.filter(w => w.id !== wordToRemove.id));
+    const indexToRemove = builtSentence.findIndex(w => w.id === wordToRemove.id);
+    if (indexToRemove > -1) {
+        setBuiltSentence(prev => {
+            const newSentence = [...prev];
+            newSentence.splice(indexToRemove, 1);
+            return newSentence;
+        });
+    }
   };
   
   const handleCheckAnswer = () => {
@@ -170,8 +176,8 @@ export default function SentenceBuilderPage() {
                 <>
                     <Card className="bg-muted min-h-[8rem] p-4 flex flex-wrap items-center gap-2">
                       {builtSentence.length > 0 ? (
-                        builtSentence.map((word) => (
-                           <Button key={word.id} variant="secondary" onClick={() => handleRemoveWord(word)} className="text-base h-auto py-2 px-4 shadow-sm animate-in zoom-in-50">
+                        builtSentence.map((word, index) => (
+                           <Button key={`${word.id}-${index}`} variant="secondary" onClick={() => handleRemoveWord(word)} className="text-base h-auto py-2 px-4 shadow-sm animate-in zoom-in-50">
                             {word.text}
                           </Button>
                         ))
@@ -193,9 +199,8 @@ export default function SentenceBuilderPage() {
                          <h3 className="font-semibold text-muted-foreground text-center">Word Bank</h3>
                         <Card className="p-4 flex flex-wrap justify-center gap-3">
                           {jumbledWords.map((word) => {
-                            const isUsed = builtSentence.some(w => w.id === word.id);
                             return (
-                               <Button key={word.id} onClick={() => handleWordClick(word)} disabled={isUsed} className="text-base h-auto py-2 px-4">
+                               <Button key={word.id} onClick={() => handleWordClick(word)} className="text-base h-auto py-2 px-4">
                                 {word.text}
                               </Button>
                             )
@@ -207,7 +212,10 @@ export default function SentenceBuilderPage() {
                         <Alert className="bg-blue-100 border-blue-300 text-blue-800">
                           <Lightbulb className="h-4 w-4 !text-blue-800" />
                           <AlertTitle>Hint</AlertTitle>
-                          <AlertDescription>{currentSentence.hint}</AlertDescription>
+                          <AlertDescription>
+                              <p>{currentSentence.hint}</p>
+                              <p className="mt-2 font-semibold">Translation: {currentSentence.translation}</p>
+                          </AlertDescription>
                         </Alert>
                       )}
                 </>
