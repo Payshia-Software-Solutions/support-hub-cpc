@@ -95,6 +95,7 @@ export interface Course {
   id: string;
   courseCode: string;
   name: string;
+  fee: string;
 }
 
 export interface Recording {
@@ -498,6 +499,7 @@ export interface ApiCourse {
     course_name: string;
     parent_course_id: string;
     course_code: string;
+    course_fee: string;
 }
 
 export interface ApiCourseResponse {

@@ -37,6 +37,13 @@ const managementTasks: ManagementTask[] = [
     href: "/admin/manage/enroll",
     category: "Student Management"
   },
+   {
+    title: "Manage Courses",
+    description: "View, add, and edit course information and fees.",
+    icon: <BookOpen className="w-8 h-8 text-white" />,
+    href: "/admin/manage/courses",
+    category: "Content & System"
+  },
   {
     title: "Payment Updates",
     description: "Record and verify student payments.",

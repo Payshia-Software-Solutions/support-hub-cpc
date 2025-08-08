@@ -657,22 +657,6 @@ export const createDeliveryOrderForStudent = async (payload: CreateDeliveryOrder
     return response.json();
 };
 
-// Courses / Batches
-export const getCourses = async (): Promise<Course[]> => {
-    const response = await fetch(`${QA_API_BASE_URL}/course`);
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch courses' }));
-        throw new Error(errorData.message || `Request failed with status ${response.status}`);
-    }
-    const apiResponse: ApiCourseResponse = await response.json();
-
-    return Object.entries(apiResponse).map(([courseCode, courseDetails]) => ({
-        id: courseDetails.id,
-        courseCode: courseCode, 
-        name: courseDetails.course_name,
-    }));
-};
-
 export const getDeliverySettingsForCourse = async (courseCode: string): Promise<DeliverySetting[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/delivery-settings/by-course/${courseCode}`);
     if (response.status === 404) {
@@ -910,4 +894,20 @@ export const getAllDistricts = async (): Promise<Location[]> => {
      const data = await response.json();
     // The API returns an object, so we convert it to an array
     return Object.values(data);
+};
+
+export const getCourses = async (): Promise<Course[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/course`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch courses' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    const apiResponse: ApiCourseResponse = await response.json();
+
+    return Object.values(apiResponse).map(courseDetails => ({
+        id: courseDetails.id,
+        courseCode: courseDetails.course_code, 
+        name: courseDetails.course_name,
+        fee: courseDetails.course_fee
+    }));
 };
