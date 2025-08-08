@@ -11,16 +11,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlusCircle, Search, Loader2, AlertTriangle, BookOpen } from 'lucide-react';
 import { CourseList } from '@/components/admin/courses/CourseList';
-import { CourseForm } from '@/components/admin/courses/CourseForm';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export function CoursePageClient() {
     const queryClient = useQueryClient();
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
-    const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
     const [courseToDelete, setCourseToDelete] = useState<ParentCourse | null>(null);
 
     const { data: courses, isLoading, isError, error } = useQuery<ParentCourse[]>({
@@ -48,11 +47,6 @@ export function CoursePageClient() {
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
-            <CourseForm
-                isOpen={isCreateFormOpen}
-                onOpenChange={setIsCreateFormOpen}
-            />
-
              <AlertDialog open={!!courseToDelete} onOpenChange={() => setCourseToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -77,8 +71,10 @@ export function CoursePageClient() {
                     <h1 className="text-3xl font-headline font-semibold">Manage Courses</h1>
                     <p className="text-muted-foreground">Add, edit, and manage parent courses and their batches.</p>
                 </div>
-                <Button onClick={() => setIsCreateFormOpen(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Course
+                 <Button asChild>
+                    <Link href="/admin/manage/courses/create">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add New Course
+                    </Link>
                 </Button>
             </header>
 
@@ -114,10 +110,10 @@ export function CoursePageClient() {
                                         <Skeleton className="h-4 w-full bg-muted rounded"></Skeleton>
                                         <Skeleton className="h-4 w-full bg-muted rounded"></Skeleton>
                                     </CardContent>
-                                    <CardContent className="p-4 flex justify-end gap-2">
+                                    <CardFooter className="p-4 flex justify-end gap-2">
                                          <Skeleton className="h-10 w-24 bg-muted rounded-md"></Skeleton>
                                          <Skeleton className="h-10 w-10 bg-muted rounded-md"></Skeleton>
-                                    </CardContent>
+                                    </CardFooter>
                                 </Card>
                             ))}
                         </div>
