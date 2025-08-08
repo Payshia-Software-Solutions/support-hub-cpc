@@ -120,7 +120,7 @@ export const gameLevels: GameLevel[] = [
         translation: "මම කෝපි වලට කැමතියි, නමුත් තේ වලට වඩා කැමතියි."
       },
       {
-        words: ["She", "to", "went", "the", "store", "and", "bought", "milk"],
+        words: ["She", "went", "the", "to", "store", "and", "bought", "milk"],
         correct: "She went to the store and bought milk",
         hint: "'and' connects two related actions.",
         translation: "ඇය සාප්පුවට ගොස්, කිරි මිලදී ගත්තාය."
@@ -130,6 +130,78 @@ export const gameLevels: GameLevel[] = [
         correct: "He can study or he can watch TV",
         hint: "'or' presents a choice.",
         translation: "ඔහුට පාඩම් කිරීමට හෝ රූපවාහිනිය නැරඹීමට හැකිය."
+      },
+    ]
+  },
+  {
+    level: 6,
+    pattern: "Simple Past Tense",
+    sentences: [
+      {
+        words: ["He", "cricket", "played"],
+        correct: "He played cricket",
+        hint: "The action happened in the past.",
+        translation: "ඔහු ක්‍රිකට් ක්‍රීඩා කළා."
+      },
+      {
+        words: ["a", "She", "letter", "wrote"],
+        correct: "She wrote a letter",
+        hint: "What did she do?",
+        translation: "ඇය ලිපියක් ලිව්වාය."
+      },
+      {
+        words: ["We", "a", "movie", "watched"],
+        correct: "We watched a movie",
+        hint: "The verb is in the past tense.",
+        translation: "අපි චිත්‍රපටයක් බැලුවා."
+      },
+    ]
+  },
+  {
+    level: 7,
+    pattern: "Simple Future Tense",
+    sentences: [
+      {
+        words: ["I", "you", "will", "call"],
+        correct: "I will call you",
+        hint: "The action will happen in the future.",
+        translation: "මම ඔයාට කතා කරන්නම්."
+      },
+      {
+        words: ["tomorrow", "She", "visit", "will"],
+        correct: "She will visit tomorrow",
+        hint: "'will' comes before the main verb.",
+        translation: "ඇය හෙට එනු ඇත."
+      },
+      {
+        words: ["They", "the", "project", "will", "start"],
+        correct: "They will start the project",
+        hint: "This is about a future plan.",
+        translation: "ඔවුන් ව්‍යාපෘතිය ආරම්භ කරනු ඇත."
+      },
+    ]
+  },
+  {
+    level: 8,
+    pattern: "Present Continuous Tense",
+    sentences: [
+      {
+        words: ["is", "He", "a", "book", "reading"],
+        correct: "He is reading a book",
+        hint: "The action is happening now.",
+        translation: "ඔහු පොතක් කියවමින් සිටී."
+      },
+      {
+        words: ["chess", "They", "playing", "are"],
+        correct: "They are playing chess",
+        hint: "Use the 'are' helping verb.",
+        translation: "ඔවුන් චෙස් ක්‍රීඩා කරමින් සිටී."
+      },
+      {
+        words: ["I", "water", "am", "drinking"],
+        correct: "I am drinking water",
+        hint: "The verb ends with '-ing'.",
+        translation: "මම වතුර බොමින් සිටිමි."
       },
     ]
   }
