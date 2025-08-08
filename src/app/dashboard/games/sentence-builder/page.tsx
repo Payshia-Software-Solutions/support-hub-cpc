@@ -102,7 +102,7 @@ export default function SentenceBuilderPage() {
   const isLevelComplete = sentenceIndex === currentLevel.sentences.length - 1 && isCorrect;
 
   const renderLevelSelection = () => (
-    <Card className="shadow-lg max-w-4xl mx-auto">
+    <Card className="shadow-lg">
         <CardHeader>
             <CardTitle className="text-2xl font-headline">Sentence Builder Challenge</CardTitle>
             <CardDescription>Select a level to begin arranging words into correct sentences.</CardDescription>
@@ -134,7 +134,7 @@ export default function SentenceBuilderPage() {
   );
 
   const renderGameView = () => (
-     <Card className="shadow-lg max-w-4xl mx-auto">
+     <Card className="shadow-lg">
         <CardHeader>
             <div className="flex justify-between items-start">
                  <div>
