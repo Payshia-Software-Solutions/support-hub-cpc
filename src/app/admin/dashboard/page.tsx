@@ -4,7 +4,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Ticket, MessageSquare, CheckCircle, Users } from "lucide-react";
+import { Ticket, MessageSquare, CheckCircle, Users, Clock } from "lucide-react";
 import { getAdminTickets, getAdminChats, getStaffMembers } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Ticket as TicketType, Chat as ChatType, StaffMember } from "@/lib/types";
@@ -47,17 +47,17 @@ export default function AdminDashboardPage() {
   const isLoading = isLoadingTickets || isLoadingChats || isLoadingStaff;
 
   const dashboardStats = useMemo(() => {
-    const openTicketsCount = tickets?.filter(t => t.status === 'Open' || t.status === 'In Progress').length ?? 0;
+    const openTicketsCount = tickets?.filter(t => t.status === 'Open').length ?? 0;
+    const inProgressTicketsCount = tickets?.filter(t => t.status === 'In Progress').length ?? 0;
     const activeChatsCount = chats?.length ?? 0;
     const oneMonthAgo = subDays(new Date(), 30);
     const resolvedThisMonthCount = tickets?.filter(t => t.status === 'Closed' && t.updatedAt && new Date(t.updatedAt) > oneMonthAgo).length ?? 0;
-    const newUsersCount = "23"; // Static placeholder
 
     return [
-      { title: "Open Tickets", value: openTicketsCount.toString(), icon: <Ticket className="w-6 h-6 text-primary" />, trend: "All open & in-progress", href: "/admin/tickets?status=Open" },
+      { title: "Open Tickets", value: openTicketsCount.toString(), icon: <Ticket className="w-6 h-6 text-primary" />, trend: "Tickets awaiting response", href: "/admin/tickets?status=Open" },
+      { title: "In Progress", value: inProgressTicketsCount.toString(), icon: <Clock className="w-6 h-6 text-purple-500" />, trend: "Tickets actively being handled" },
       { title: "Active Chats", value: activeChatsCount.toString(), icon: <MessageSquare className="w-6 h-6 text-primary" />, trend: "Total active conversations", href: "/admin/chat" },
-      { title: "Resolved Tickets (Month)", value: resolvedThisMonthCount.toString(), icon: <CheckCircle className="w-6 h-6 text-green-500" />, trend: "In the last 30 days" },
-      { title: "New Users (Week)", value: newUsersCount, icon: <Users className="w-6 h-6 text-primary" />, trend: "Static placeholder" },
+      { title: "Resolved (Month)", value: resolvedThisMonthCount.toString(), icon: <CheckCircle className="w-6 h-6 text-green-500" />, trend: "In the last 30 days" },
     ];
   }, [tickets, chats]);
 
