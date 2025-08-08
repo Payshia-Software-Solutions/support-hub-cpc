@@ -1,18 +1,18 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Check, Lightbulb, RefreshCw, Sparkles, Trophy, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Check, Lightbulb, RefreshCw, Sparkles, Trophy, ChevronRight, Volume2, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { gameLevels, GameLevel } from '@/lib/sentence-builder-data';
 import { cn } from '@/lib/utils';
-import Confetti from 'react-confetti';
+import { generateAudio } from '@/ai/flows/text-to-speech-flow';
 
 interface Word {
   text: string;
@@ -28,8 +28,11 @@ export default function SentenceBuilderPage() {
   const [score, setScore] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-  const [showConfetti, setShowConfetti] = useState(false);
   const [completedLevels, setCompletedLevels] = useState<Set<number>>(new Set());
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
 
   const currentLevel = gameLevels[levelIndex];
   const currentSentence = currentLevel.sentences[sentenceIndex];
@@ -74,7 +77,7 @@ export default function SentenceBuilderPage() {
     }
   };
   
-  const handleCheckAnswer = () => {
+  const handleCheckAnswer = async () => {
     const userAnswer = builtSentence.map(w => w.text).join(' ');
     if (userAnswer === currentSentence.correct) {
       setIsCorrect(true);
@@ -83,13 +86,20 @@ export default function SentenceBuilderPage() {
       toast({ title: "Correct!", description: `+${points} point(s)!` });
 
       const isLastSentenceInLevel = sentenceIndex === currentLevel.sentences.length - 1;
-      const isLastLevel = levelIndex === gameLevels.length - 1;
+      
+      setIsAudioLoading(true);
+      try {
+        const audioData = await generateAudio(currentSentence.correct);
+        setAudioSrc(audioData.media);
+      } catch (error) {
+          console.error("Failed to generate audio:", error);
+          toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the sentence.' });
+      } finally {
+        setIsAudioLoading(false);
+      }
 
       if (isLastSentenceInLevel) {
           setCompletedLevels(prev => new Set(prev).add(currentLevel.level));
-          if(isLastLevel) {
-            setShowConfetti(true);
-          }
       }
     } else {
       setIsCorrect(false);
@@ -101,6 +111,7 @@ export default function SentenceBuilderPage() {
     setIsCorrect(null);
     setShowHint(false);
     setBuiltSentence([]);
+    setAudioSrc(null);
     if (sentenceIndex < currentLevel.sentences.length - 1) {
       setSentenceIndex(prev => prev + 1);
     } else {
@@ -113,11 +124,16 @@ export default function SentenceBuilderPage() {
     setBuiltSentence([]);
     setShowHint(false);
     setIsCorrect(null);
+    setAudioSrc(null);
   };
   
   const progress = ((sentenceIndex) / (currentLevel.sentences.length)) * 100;
   
   const isLevelComplete = sentenceIndex === currentLevel.sentences.length - 1 && isCorrect;
+
+  const playAudio = () => {
+      audioRef.current?.play();
+  };
 
   const renderLevelSelection = () => (
     <Card className="shadow-lg">
@@ -191,14 +207,30 @@ export default function SentenceBuilderPage() {
                       )}
                     </Card>
 
-                    {isCorrect !== null && (
-                         <Alert variant={isCorrect ? "default" : "destructive"} className={cn(isCorrect && "bg-green-100 border-green-300 text-green-800")}>
-                            <AlertTitle>{isCorrect ? "Correct!" : "Incorrect!"}</AlertTitle>
+                    {isCorrect && (
+                         <Alert variant="default" className="bg-green-100 border-green-300 text-green-800">
+                            <Check className="h-4 w-4 !text-green-800" />
+                            <AlertTitle className="flex justify-between items-center">
+                                <span>Correct!</span>
+                                <Button size="sm" variant="ghost" className="h-auto p-1.5" onClick={playAudio} disabled={isAudioLoading || !audioSrc}>
+                                    {isAudioLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Volume2 className="h-5 w-5"/>}
+                                </Button>
+                            </AlertTitle>
                             <AlertDescription>
-                                {isCorrect ? "Great job! Click 'Next' to continue." : "That's not right. Try rearranging the words or use a hint."}
+                                <p className="font-semibold text-lg">{currentSentence.correct}</p>
+                                <p className="text-sm italic">{currentSentence.translation}</p>
+                                {audioSrc && <audio ref={audioRef} src={audioSrc} />}
                             </AlertDescription>
                         </Alert>
                     )}
+
+                    {isCorrect === false && (
+                         <Alert variant="destructive">
+                            <AlertTitle>Incorrect!</AlertTitle>
+                            <AlertDescription>That's not right. Try rearranging the words or use a hint.</AlertDescription>
+                        </Alert>
+                    )}
+
 
                     <div className="space-y-3">
                          <h3 className="font-semibold text-muted-foreground text-center">Word Bank</h3>
@@ -255,7 +287,6 @@ export default function SentenceBuilderPage() {
 
   return (
      <div className="p-4 md:p-8 space-y-6 pb-20">
-        {showConfetti && <Confetti recycle={false} onConfettiComplete={() => setShowConfetti(false)} />}
         <header>
             <Button onClick={() => router.back()} variant="ghost" className="-ml-4">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
@@ -265,3 +296,4 @@ export default function SentenceBuilderPage() {
     </div>
   );
 }
+

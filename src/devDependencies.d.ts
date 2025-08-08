@@ -10,3 +10,4 @@
 // For example, to declare a module named "buffer", you would add the following
 // line:
 // declare module "buffer";
+declare module "wav";
