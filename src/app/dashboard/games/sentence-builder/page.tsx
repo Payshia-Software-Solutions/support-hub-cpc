@@ -40,6 +40,11 @@ export default function SentenceBuilderPage() {
       .map((word, index) => ({ text: word, id: index }))
       .sort(() => Math.random() - 0.5);
   }, [currentSentence]);
+  
+  const availableWords = useMemo(() => {
+    const builtWordIds = new Set(builtSentence.map(w => w.id));
+    return jumbledWords.filter(w => !builtWordIds.has(w.id));
+  }, [jumbledWords, builtSentence]);
 
   const handleSelectLevel = (index: number) => {
     setLevelIndex(index);
@@ -198,13 +203,11 @@ export default function SentenceBuilderPage() {
                     <div className="space-y-3">
                          <h3 className="font-semibold text-muted-foreground text-center">Word Bank</h3>
                         <Card className="p-4 flex flex-wrap justify-center gap-3">
-                          {jumbledWords.map((word) => {
-                            return (
-                               <Button key={word.id} onClick={() => handleWordClick(word)} className="text-base h-auto py-2 px-4">
-                                {word.text}
-                              </Button>
-                            )
-                          })}
+                          {availableWords.map((word) => (
+                            <Button key={word.id} onClick={() => handleWordClick(word)} className="text-base h-auto py-2 px-4">
+                              {word.text}
+                            </Button>
+                          ))}
                         </Card>
                     </div>
 
