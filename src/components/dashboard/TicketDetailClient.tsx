@@ -463,7 +463,7 @@ const TicketInfoContent = memo(({
           <div className="flex items-center gap-2 text-sm">
             <User className="w-4 h-4 text-muted-foreground" />
             <span className="font-medium">Student:</span>
-            <span>{ticket.studentName || 'Unknown Student'}</span>
+            <span>{ticket.studentName} ({ticket.studentNumber})</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <CalendarDays className="w-4 h-4 text-muted-foreground" />
@@ -1009,6 +1009,10 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
         createdBy: user.username,
       }
     });
+
+    if (userRole === 'staff' && ticket.status === 'Open') {
+      handleStatusChange('In Progress');
+    }
   };
 
   const handleUnlockTicket = () => {
