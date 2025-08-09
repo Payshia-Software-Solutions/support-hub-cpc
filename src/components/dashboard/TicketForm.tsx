@@ -20,7 +20,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import type { TicketCategory, Attachment as ApiAttachment } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Book, CreditCard, Gamepad2, Truck, MoreHorizontal, ArrowLeft, Video, ClipboardList, ClipboardCheck, Award, Paperclip, FileText, XCircle, Loader2, GraduationCap, UserPlus, BookOpen, UserCog } from "lucide-react";
+import { Book, CreditCard, Gamepad2, Truck, MoreHorizontal, ArrowLeft, Video, ClipboardList, ClipboardCheck, Award, Paperclip, FileText, XCircle, Loader2, GraduationCap, UserPlus, BookOpen, UserCog, Wrench } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
 
@@ -31,7 +31,7 @@ interface Attachment extends ApiAttachment {
 
 
 const ticketFormSchema = z.object({
-  category: z.enum(["Course", "Payment", "Games", "Study Packs", "Recordings", "Assignments", "Quiz", "Exam", "Other", "Convocation", "Registration", "English Course", "Contact Dilip sir"], {
+  category: z.enum(["Course", "Payment", "Games", "Study Packs", "Recordings", "Assignments", "Quiz", "Exam", "Other", "Convocation", "Registration", "English Course", "Contact Dilip sir", "Technical Issue"], {
     required_error: "You need to select a ticket category.",
   }),
   description: z.string().min(1, "Description cannot be empty.").max(1000, "Description must be at most 1000 characters."),
@@ -57,6 +57,7 @@ const categoryOptions: { name: TicketCategory; icon: React.ElementType }[] = [
     { name: "Registration", icon: UserPlus },
     { name: "English Course", icon: BookOpen },
     { name: "Contact Dilip sir", icon: UserCog },
+    { name: "Technical Issue", icon: Wrench },
     { name: "Other", icon: MoreHorizontal },
 ];
 
