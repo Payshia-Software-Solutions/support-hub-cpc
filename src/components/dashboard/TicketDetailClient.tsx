@@ -761,7 +761,7 @@ const TicketDiscussionContent = ({
                                     <StarRating 
                                         messageId={String(message.id)}
                                         onRate={(rating) => handleRate(String(message.id), rating)} 
-                                        disabled={!!submittedRatings[String(message.id)] || !!ticket.rating}
+                                        disabled={!!ticket.rating || !!submittedRatings[String(message.id)]}
                                     />
                                 )}
                             </div>
@@ -976,22 +976,19 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   });
 
   const ratingMutation = useMutation({
-      mutationFn: ({ ticketId, rating }: { ticketId: string; rating: number }) => 
-          updateTicketRating(ticketId, rating),
-      onSuccess: (response, variables) => {
-          queryClient.invalidateQueries({ queryKey: ['ticket', response.ticket.id] });
-          toast({
-              title: `Thank You!`,
-              description: `You've rated the service ${variables.rating} out of 5 stars.`,
-          });
-      },
-      onError: (error: Error) => {
-          toast({
-              variant: 'destructive',
-              title: 'Rating Failed',
-              description: error.message,
-          });
-      }
+    mutationFn: ({ ticketId, rating }: { ticketId: string, rating: number }) =>
+        updateTicketRating(ticketId, rating),
+    onSuccess: (response) => {
+        // Invalidate the ticket query to refetch the data with the new rating
+        queryClient.invalidateQueries({ queryKey: ['ticket', response.ticket.id] });
+    },
+    onError: (error: Error) => {
+        toast({
+            variant: 'destructive',
+            title: 'Rating Failed',
+            description: error.message,
+        });
+    }
   });
   
   const handleUpdate = (updates: Partial<Ticket>) => {
