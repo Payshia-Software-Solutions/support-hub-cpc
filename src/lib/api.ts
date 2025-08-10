@@ -219,12 +219,12 @@ export const updateTicket = async (ticketData: UpdateTicketPayload): Promise<Tic
     return mapApiTicketToTicket(updatedApiTicket);
 };
 
-export const updateTicketRating = async (ticketId: string, rating: number): Promise<Ticket> => {
-    const response = await apiFetch<{ message: string; ticket: any }>(`/tickets/update-rating/${ticketId}`, {
+export const updateTicketRating = async (ticketId: string, rating: number): Promise<{ message: string, ticket: { id: string } }> => {
+    const response = await apiFetch<{ message: string; ticket: { id: string } }>(`/tickets/update-rating/${ticketId}`, {
         method: 'POST',
         body: JSON.stringify({ rating_value: rating }),
     });
-    return mapApiTicketToTicket(response.ticket);
+    return response;
 };
 
 export const assignTicket = async (ticketId: string, assignedTo: string, assigneeAvatar: string, lockedByStaffId: string): Promise<Ticket> => {

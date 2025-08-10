@@ -978,8 +978,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const ratingMutation = useMutation({
       mutationFn: ({ ticketId, rating }: { ticketId: string; rating: number }) => 
           updateTicketRating(ticketId, rating),
-      onSuccess: (updatedTicketData, variables) => {
-          queryClient.invalidateQueries({ queryKey: ['ticket', variables.ticketId] });
+      onSuccess: (response, variables) => {
+          queryClient.invalidateQueries({ queryKey: ['ticket', response.ticket.id] });
           toast({
               title: `Thank You!`,
               description: `You've rated the service ${variables.rating} out of 5 stars.`,
