@@ -30,8 +30,8 @@ export default function ManageCommissionsPage() {
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
-                <h1 className="text-3xl font-headline font-semibold">Staff Commissions</h1>
-                <p className="text-muted-foreground">Select a staff member to view and manage their commission rates.</p>
+                <h1 className="text-3xl font-headline font-semibold">Staff Commission Management</h1>
+                <p className="text-muted-foreground">Select a staff member to manage their individual commission rates.</p>
             </header>
 
             <Card className="shadow-lg">

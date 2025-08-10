@@ -141,14 +141,14 @@ export default function StaffCommissionDetailsPage() {
       <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
            <Button variant="ghost" onClick={() => router.push('/admin/manage/commissions')} className="-ml-4"><ArrowLeft className="mr-2 h-4 w-4"/> Back to Staff List</Button>
-           <h1 className="text-3xl font-headline font-semibold mt-2">Manage Commissions for {staffMember.name}</h1>
-           <p className="text-muted-foreground">Set and adjust task-based commissions for this staff member.</p>
+           <h1 className="text-3xl font-headline font-semibold mt-2">Individual Staff Commissions</h1>
+           <p className="text-muted-foreground">Set and adjust task-based commissions for {staffMember.name}.</p>
         </div>
-        <Button onClick={handleCreate}><PlusCircle className="mr-2 h-4 w-4" /> Add New Commission</Button>
+        <Button onClick={handleCreate}><PlusCircle className="mr-2 h-4 w-4" /> Add New Rate</Button>
       </header>
 
       <Card className="shadow-lg">
-        <CardHeader><CardTitle>Commission Rates</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Commission Rates for {staffMember.name}</CardTitle></CardHeader>
         <CardContent>
             <div className="relative w-full overflow-auto border rounded-lg">
                 <Table>
