@@ -3,18 +3,17 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { TicketList } from "@/components/dashboard/TicketList";
-import { dummyStaffMembers } from "@/lib/dummy-data";
 import type { Ticket } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getAdminTickets } from '@/lib/api';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-
-const CURRENT_STAFF_ID = dummyStaffMembers[0]?.id || 'staff1'; 
+import { useAuth } from '@/contexts/AuthContext';
 
 function TicketsPageContent() {
   const searchParams = useSearchParams();
   const initialStatusFilter = searchParams.get('status') || 'all';
+  const { user } = useAuth();
 
   const { data: tickets, isLoading, isError, error } = useQuery<Ticket[]>({
     queryKey: ['admin-tickets'],
@@ -45,7 +44,7 @@ function TicketsPageContent() {
     <div className="h-full overflow-y-auto w-full pb-20">
       <TicketList 
         tickets={tickets || []} 
-        currentStaffId={CURRENT_STAFF_ID}
+        currentStaffId={user?.username}
         initialStatusFilter={initialStatusFilter}
       />
     </div>
@@ -60,5 +59,3 @@ export default function AdminTicketsPage() {
     </Suspense>
   )
 }
-
-      

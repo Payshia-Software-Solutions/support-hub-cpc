@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, LayoutGrid, List, Rows } from "lucide-react";
+import { Plus, Search, LayoutGrid, List, Rows, User } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
@@ -19,6 +19,8 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -36,6 +38,7 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [assignedToMeFilter, setAssignedToMeFilter] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isMounted, setIsMounted] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -63,31 +66,34 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
       try {
           const savedFilters = localStorage.getItem(FILTERS_STORAGE_KEY);
           if (savedFilters) {
-              const { searchTerm, statusFilter, priorityFilter } = JSON.parse(savedFilters);
+              const { searchTerm, statusFilter, priorityFilter, assignedToMeFilter } = JSON.parse(savedFilters);
               setSearchTerm(searchTerm || "");
               if (!initialStatusFilter || initialStatusFilter === 'all') {
                  setStatusFilter(statusFilter || "all");
               }
               setPriorityFilter(priorityFilter || "all");
+              if (currentStaffId) {
+                setAssignedToMeFilter(assignedToMeFilter || false);
+              }
           }
       } catch (error) {
           console.error("Failed to load filters from local storage", error);
       }
     }
     setIsMounted(true);
-  }, [initialStatusFilter]);
+  }, [initialStatusFilter, currentStaffId]);
 
   useEffect(() => {
     if (isMounted) {
         try {
-            const filters = { searchTerm, statusFilter, priorityFilter };
+            const filters = { searchTerm, statusFilter, priorityFilter, assignedToMeFilter };
             localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
             localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
         } catch (error) {
             console.error("Failed to save state to local storage", error);
         }
     }
-  }, [searchTerm, statusFilter, priorityFilter, viewMode, isMounted]);
+  }, [searchTerm, statusFilter, priorityFilter, viewMode, isMounted, assignedToMeFilter]);
 
   const filteredTickets = useMemo(() => {
     return initialTickets
@@ -103,16 +109,20 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
         return ticket.status === statusFilter;
     })
     .filter(ticket => priorityFilter === "all" || ticket.priority === priorityFilter)
+    .filter(ticket => {
+        if (!assignedToMeFilter || !currentStaffId) return true;
+        return ticket.assignedTo === currentStaffId;
+    })
     .sort((a, b) => { // Sort open/in progress tickets first, then by creation date
       const closedOrder = a.status === 'Closed' ? 1 : (b.status === 'Closed' ? -1 : 0);
       if (closedOrder !== 0) return closedOrder;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }, [initialTickets, searchTerm, statusFilter, priorityFilter]);
+  }, [initialTickets, searchTerm, statusFilter, priorityFilter, assignedToMeFilter, currentStaffId]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, priorityFilter]);
+  }, [searchTerm, statusFilter, priorityFilter, assignedToMeFilter]);
 
   const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE);
   const paginatedTickets = useMemo(() => {
@@ -123,7 +133,7 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
   }, [filteredTickets, currentPage]);
   
   const linkPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin') 
-    ? '/admin/create-ticket' 
+    ? '/dashboard/create-ticket' // Admin create ticket page might be different if it exists
     : '/dashboard/create-ticket';
 
   const ViewSwitcher = () => (
@@ -193,6 +203,20 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
           </Select>
         </div>
       </div>
+
+       {currentStaffId && (
+        <div className="flex items-center space-x-2">
+            <Checkbox
+                id="assigned-to-me"
+                checked={assignedToMeFilter}
+                onCheckedChange={(checked) => setAssignedToMeFilter(Boolean(checked))}
+            />
+            <Label htmlFor="assigned-to-me" className="text-sm font-medium">
+                Only show tickets assigned to me
+            </Label>
+        </div>
+      )}
+
 
       {paginatedTickets.length > 0 ? (
         <>
