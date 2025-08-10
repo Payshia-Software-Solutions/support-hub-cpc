@@ -137,7 +137,7 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
         status: apiTicket.status,
         createdAt: apiTicket.created_at,
         updatedAt: apiTicket.updated_at,
-        studentNumber: apiTicket.student_name, 
+        studentNumber: apiTicket.student_number || apiTicket.student_name, // Handle both possible fields
         studentName: apiTicket.student_name, 
         studentAvatar: apiTicket.student_avatar,
         assignedTo: apiTicket.assigned_to,
@@ -146,7 +146,7 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
         lockedByStaffId: apiTicket.locked_by_staff_id,
         attachments: attachments,
         lastMessagePreview: apiTicket.last_message_preview,
-        rating: apiTicket.rating,
+        rating: apiTicket.rating_value || apiTicket.rating, // Handle both possible fields
     };
 }
 
@@ -220,11 +220,11 @@ export const updateTicket = async (ticketData: UpdateTicketPayload): Promise<Tic
 };
 
 export const updateTicketRating = async (ticketId: string, rating: number): Promise<Ticket> => {
-    const updatedApiTicket = await apiFetch<any>(`/tickets/update-rating/${ticketId}`, {
-        method: 'POST', // or 'PUT' depending on API design
+    const response = await apiFetch<{ message: string; ticket: any }>(`/tickets/update-rating/${ticketId}`, {
+        method: 'POST',
         body: JSON.stringify({ rating_value: rating }),
     });
-    return mapApiTicketToTicket(updatedApiTicket);
+    return mapApiTicketToTicket(response.ticket);
 };
 
 export const assignTicket = async (ticketId: string, assignedTo: string, assigneeAvatar: string, lockedByStaffId: string): Promise<Ticket> => {
@@ -1059,3 +1059,6 @@ export const deleteParentCourse = async (id: string): Promise<void> => {
     }
 };
 
+
+
+    
