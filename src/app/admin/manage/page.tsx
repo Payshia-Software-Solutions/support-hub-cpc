@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog, BookOpen, BarChart, Cake, Library } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog, BookOpen, BarChart, Cake, Library, Percent } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from 'react';
 import { cn } from "@/lib/utils";
@@ -50,6 +50,13 @@ const managementTasks: ManagementTask[] = [
     icon: <Library className="w-8 h-8 text-white" />,
     href: "/admin/manage/courses",
     category: "Content & System"
+  },
+   {
+    title: "Staff Commissions",
+    description: "Set up commission rates for staff tasks.",
+    icon: <Percent className="w-8 h-8 text-white" />,
+    href: "/admin/manage/commissions",
+    category: "Financial"
   },
   {
     title: "Payment Updates",
@@ -255,5 +262,3 @@ export default function AdminManagePage() {
     </div>
   );
 }
-
-    
