@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Search } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
   Tooltip,
   TooltipContent,
@@ -25,10 +26,42 @@ interface TicketListProps {
 const ITEMS_PER_PAGE = 9; // Display 9 tickets per page (3x3 grid)
 
 export function TicketList({ tickets: initialTickets, currentStaffId, initialStatusFilter = "all" }: TicketListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || "");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || initialStatusFilter);
+  const [priorityFilter, setPriorityFilter] = useState(searchParams.get('priority') || "all");
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1', 10));
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+    if (searchTerm) {
+        params.set('q', searchTerm);
+    } else {
+        params.delete('q');
+    }
+    if (statusFilter !== 'all') {
+        params.set('status', statusFilter);
+    } else {
+        params.delete('status');
+    }
+    if (priorityFilter !== 'all') {
+        params.set('priority', priorityFilter);
+    } else {
+        params.delete('priority');
+    }
+    if (currentPage > 1) {
+        params.set('page', String(currentPage));
+    } else {
+        params.delete('page');
+    }
+    
+    // Use replace to avoid adding to browser history
+    router.replace(`${pathname}?${params.toString()}`);
+  }, [searchTerm, statusFilter, priorityFilter, currentPage, pathname, router, searchParams]);
+
 
   const filteredTickets = useMemo(() => {
     return initialTickets
@@ -55,10 +88,6 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, priorityFilter]);
-  
-  useEffect(() => {
-    setStatusFilter(initialStatusFilter);
-  }, [initialStatusFilter]);
 
   const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE);
   const paginatedTickets = useMemo(() => {
