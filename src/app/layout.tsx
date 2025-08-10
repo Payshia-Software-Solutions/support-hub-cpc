@@ -10,6 +10,7 @@ import { Preloader } from '@/components/ui/preloader';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { cn } from '@/lib/utils';
 import { PT_Sans } from 'next/font/google';
+import { TopLoader } from '@/components/ui/nprogress';
 
 const ptSans = PT_Sans({
   subsets: ['latin'],
@@ -56,6 +57,7 @@ export default function RootLayout({
             <AuthProvider>
               <PWAProvider>
                 <Suspense fallback={<Preloader />}>
+                  <TopLoader />
                   {children}
                 </Suspense>
                 <Toaster />
