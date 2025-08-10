@@ -58,6 +58,7 @@ export interface Ticket {
   lockedByStaffId?: string;
   attachments?: Attachment[];
   lastMessagePreview?: string;
+  rating?: number;
 }
 
 export interface UserProfile {

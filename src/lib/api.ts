@@ -146,6 +146,7 @@ function mapApiTicketToTicket(apiTicket: any): Ticket {
         lockedByStaffId: apiTicket.locked_by_staff_id,
         attachments: attachments,
         lastMessagePreview: apiTicket.last_message_preview,
+        rating: apiTicket.rating,
     };
 }
 
@@ -217,6 +218,15 @@ export const updateTicket = async (ticketData: UpdateTicketPayload): Promise<Tic
     const updatedApiTicket = await apiFetch<any>(`/tickets/${ticketData.id}`, { method: 'POST', body: JSON.stringify(apiPayload) });
     return mapApiTicketToTicket(updatedApiTicket);
 };
+
+export const updateTicketRating = async (ticketId: string, rating: number): Promise<Ticket> => {
+    const updatedApiTicket = await apiFetch<any>(`/tickets/update-rating/${ticketId}`, {
+        method: 'POST', // or 'PUT' depending on API design
+        body: JSON.stringify({ rating_value: rating }),
+    });
+    return mapApiTicketToTicket(updatedApiTicket);
+};
+
 export const assignTicket = async (ticketId: string, assignedTo: string, assigneeAvatar: string, lockedByStaffId: string): Promise<Ticket> => {
   const apiPayload = {
     assigned_to: assignedTo,
@@ -1048,3 +1058,4 @@ export const deleteParentCourse = async (id: string): Promise<void> => {
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
 };
+

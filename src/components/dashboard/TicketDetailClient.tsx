@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTicketMessages, createTicketMessage, updateTicketStatus, markTicketMessagesAsRead, getStudentFullInfo } from "@/lib/api";
+import { getTicketMessages, createTicketMessage, updateTicketStatus, markTicketMessagesAsRead, getStudentFullInfo, updateTicketRating } from "@/lib/api";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
@@ -599,7 +599,9 @@ const TicketDiscussionContent = ({
   fileInputRef,
   handleFileSelect,
   isSending,
-  handleEmojiClick
+  handleEmojiClick,
+  handleRate,
+  submittedRatings
  }: {
     ticket: Ticket,
     userRole: 'student' | 'staff',
@@ -615,11 +617,12 @@ const TicketDiscussionContent = ({
     handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void,
     isSending: boolean,
     handleEmojiClick: (emojiData: EmojiClickData) => void
+    handleRate: (messageId: string, rating: number) => void;
+    submittedRatings: Record<string, number>;
  }) => {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [viewingImage, setViewingImage] = useState<string | null>(null);
     const queryClient = useQueryClient();
-    const [submittedRatings, setSubmittedRatings] = useState<Record<string, number>>({});
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
     const { data: messages, isLoading, isError } = useQuery<Message[]>({
@@ -657,10 +660,6 @@ const TicketDiscussionContent = ({
 
     // Find the first unread message for the current user
     const firstUnreadIndex = messages?.findIndex(m => m.readStatus === 'Unread' && m.from !== userRole) ?? -1;
-
-    const handleRate = (messageId: string, rating: number) => {
-        setSubmittedRatings(prev => ({...prev, [messageId]: rating}));
-    };
 
     return (
     <div className="flex flex-col h-full bg-background">
@@ -760,9 +759,9 @@ const TicketDiscussionContent = ({
                                 <p className="text-sm break-all"><LinkifiedText text={message.text} /></p>
                                 {isRatingRequest && userRole === 'student' && (
                                     <StarRating 
-                                        messageId={message.id}
-                                        onRate={(rating) => handleRate(message.id, rating)} 
-                                        disabled={!!submittedRatings[message.id]}
+                                        messageId={String(message.id)}
+                                        onRate={(rating) => handleRate(String(message.id), rating)} 
+                                        disabled={!!submittedRatings[String(message.id)] || !!ticket.rating}
                                     />
                                 )}
                             </div>
@@ -870,6 +869,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   const queryClient = useQueryClient();
   const [isSending, setIsSending] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [submittedRatings, setSubmittedRatings] = useState<Record<string, number>>({});
+
 
   const [isStudentInfoDialogOpen, setIsStudentInfoDialogOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -1093,6 +1094,22 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     }
   };
 
+  const handleRateTicket = (messageId: string, rating: number) => {
+    updateTicketRating(ticket.id, rating)
+      .then(updatedTicket => {
+        setTicket(updatedTicket);
+        queryClient.setQueryData(['ticket', ticket.id], updatedTicket);
+        setSubmittedRatings(prev => ({...prev, [messageId]: rating}));
+      })
+      .catch(err => {
+        toast({
+          variant: 'destructive',
+          title: 'Rating Failed',
+          description: err.message,
+        });
+      });
+  };
+
   const lockerName = ticket.lockedByStaffId ? staffMembers?.find(s => s.username === ticket.lockedByStaffId)?.name : 'another staff member';
 
   if (isMobile) {
@@ -1157,6 +1174,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
                 handleFileSelect={handleFileSelect}
                 isSending={isSending}
                 handleEmojiClick={handleEmojiClick}
+                handleRate={handleRateTicket}
+                submittedRatings={submittedRatings}
             />
           </div>
         )}
@@ -1218,6 +1237,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
             handleFileSelect={handleFileSelect}
             isSending={isSending}
             handleEmojiClick={handleEmojiClick}
+            handleRate={handleRateTicket}
+            submittedRatings={submittedRatings}
         />
       </div>
     </div>
