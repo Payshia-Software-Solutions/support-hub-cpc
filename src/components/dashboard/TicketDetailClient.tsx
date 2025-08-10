@@ -974,6 +974,25 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
       });
     },
   });
+
+  const ratingMutation = useMutation({
+      mutationFn: ({ ticketId, rating }: { ticketId: string; rating: number }) => 
+          updateTicketRating(ticketId, rating),
+      onSuccess: (updatedTicketData, variables) => {
+          queryClient.invalidateQueries({ queryKey: ['ticket', variables.ticketId] });
+          toast({
+              title: `Thank You!`,
+              description: `You've rated the service ${variables.rating} out of 5 stars.`,
+          });
+      },
+      onError: (error: Error) => {
+          toast({
+              variant: 'destructive',
+              title: 'Rating Failed',
+              description: error.message,
+          });
+      }
+  });
   
   const handleUpdate = (updates: Partial<Ticket>) => {
       const updatedData = { ...ticket, ...updates, updatedAt: new Date().toISOString() };
@@ -1095,19 +1114,8 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   };
 
   const handleRateTicket = (messageId: string, rating: number) => {
-    updateTicketRating(ticket.id, rating)
-      .then(updatedTicket => {
-        setTicket(updatedTicket);
-        queryClient.setQueryData(['ticket', ticket.id], updatedTicket);
-        setSubmittedRatings(prev => ({...prev, [messageId]: rating}));
-      })
-      .catch(err => {
-        toast({
-          variant: 'destructive',
-          title: 'Rating Failed',
-          description: err.message,
-        });
-      });
+    ratingMutation.mutate({ ticketId: ticket.id, rating });
+    setSubmittedRatings(prev => ({...prev, [messageId]: rating}));
   };
 
   const lockerName = ticket.lockedByStaffId ? staffMembers?.find(s => s.username === ticket.lockedByStaffId)?.name : 'another staff member';
