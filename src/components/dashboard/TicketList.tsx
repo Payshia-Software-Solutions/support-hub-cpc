@@ -33,21 +33,38 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
   const [currentPage, setCurrentPage] = useState(1);
   const [isMounted, setIsMounted] = useState(false);
 
-  // On component mount, load filters from localStorage.
+  // On component mount, load filters. Prioritize URL params over localStorage.
   useEffect(() => {
-    try {
-        const savedFilters = localStorage.getItem(FILTERS_STORAGE_KEY);
-        if (savedFilters) {
-            const { searchTerm, statusFilter, priorityFilter } = JSON.parse(savedFilters);
-            setSearchTerm(searchTerm || "");
-            setStatusFilter(statusFilter || initialStatusFilter);
-            setPriorityFilter(priorityFilter || "all");
-        }
-    } catch (error) {
-        console.error("Failed to load filters from local storage", error);
+    // If there's an initial filter from the URL, use it and update localStorage.
+    if (initialStatusFilter && initialStatusFilter !== 'all') {
+      setStatusFilter(initialStatusFilter);
+      try {
+        const saved = localStorage.getItem(FILTERS_STORAGE_KEY);
+        const currentFilters = saved ? JSON.parse(saved) : {};
+        localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify({ ...currentFilters, statusFilter: initialStatusFilter }));
+      } catch (error) {
+        console.error("Failed to update status filter in local storage", error);
+      }
+    } else {
+      // Otherwise, load from localStorage as usual.
+      try {
+          const savedFilters = localStorage.getItem(FILTERS_STORAGE_KEY);
+          if (savedFilters) {
+              const { searchTerm, statusFilter, priorityFilter } = JSON.parse(savedFilters);
+              setSearchTerm(searchTerm || "");
+              // Do not override if initialStatusFilter is present from URL
+              if (!initialStatusFilter || initialStatusFilter === 'all') {
+                 setStatusFilter(statusFilter || "all");
+              }
+              setPriorityFilter(priorityFilter || "all");
+          }
+      } catch (error) {
+          console.error("Failed to load filters from local storage", error);
+      }
     }
     setIsMounted(true);
   }, [initialStatusFilter]);
+
 
   // When filters change, save them to localStorage.
   useEffect(() => {
