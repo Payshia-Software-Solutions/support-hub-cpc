@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog, BookOpen, BarChart, Cake, Library, Percent } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog, BookOpen, BarChart, Cake, Library, Percent, Briefcase } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from 'react';
 import { cn } from "@/lib/utils";
@@ -56,6 +56,13 @@ const managementTasks: ManagementTask[] = [
     description: "Set up commission rates for staff tasks.",
     icon: <Percent className="w-8 h-8 text-white" />,
     href: "/admin/manage/commissions",
+    category: "Financial"
+  },
+  {
+    title: "Management Commissions",
+    description: "Set task-based commissions for management.",
+    icon: <Briefcase className="w-8 h-8 text-white" />,
+    href: "/admin/manage/management-commissions",
     category: "Financial"
   },
   {
