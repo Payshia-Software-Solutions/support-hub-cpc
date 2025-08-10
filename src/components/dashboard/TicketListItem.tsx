@@ -23,6 +23,7 @@ interface TicketListItemProps {
   ticket: Ticket;
   currentStaffId?: string; // Optional for admin context
   staffMembers?: StaffMember[];
+  viewMode?: 'grid' | 'list';
 }
 
 const priorityColors: Record<Ticket["priority"], string> = {
@@ -31,7 +32,7 @@ const priorityColors: Record<Ticket["priority"], string> = {
   Low: "bg-green-500 text-white",
 };
 
-export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: TicketListItemProps) {
+export function TicketListItem({ ticket, currentStaffId, staffMembers = [], viewMode = 'grid' }: TicketListItemProps) {
   const { user } = useAuth();
   
   const linkPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
@@ -41,6 +42,35 @@ export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: Ti
   const assignedStaffMember = staffMembers.find(s => s.username === ticket.assignedTo);
   const assignedStaffName = assignedStaffMember?.name || ticket.assignedTo;
   
+  if (viewMode === 'list') {
+      return (
+        <Link href={linkPath} className="group block">
+            <div className="flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                <div className="flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <TicketIcon className="w-5 h-5 text-primary"/>
+                    </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                        <p className="font-semibold truncate pr-2">{ticket.subject}</p>
+                        <Badge variant={ticket.status === 'Closed' ? 'secondary' : 'default'}>{ticket.status}</Badge>
+                    </div>
+                    <div className="flex justify-between items-end mt-1">
+                        <p className="text-sm text-muted-foreground truncate pr-2">
+                           ID: TKT-{ticket.id}
+                        </p>
+                        <UnreadBadge ticketId={ticket.id} userRole="student" />
+                    </div>
+                </div>
+                 <div className="flex-shrink-0">
+                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+            </div>
+        </Link>
+      )
+  }
+
   return (
     <Link href={linkPath} className="group block h-full">
         <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full flex flex-col">

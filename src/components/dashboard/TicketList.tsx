@@ -4,9 +4,10 @@
 import type { Ticket } from "@/lib/types";
 import { TicketListItem } from "./TicketListItem";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, LayoutGrid, List, Rows } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
@@ -15,6 +16,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -24,7 +27,9 @@ interface TicketListProps {
 
 const ITEMS_PER_PAGE = 9;
 const FILTERS_STORAGE_KEY = 'ticketListFilters';
+const VIEW_MODE_STORAGE_KEY = 'ticketListViewMode';
 
+type ViewMode = 'grid' | 'list' | 'table';
 
 export function TicketList({ tickets: initialTickets, currentStaffId, initialStatusFilter = "all" }: TicketListProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,10 +37,18 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [isMounted, setIsMounted] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
-  // On component mount, load filters. Prioritize URL params over localStorage.
   useEffect(() => {
-    // If there's an initial filter from the URL, use it and update localStorage.
+    try {
+        const savedViewMode = localStorage.getItem(VIEW_MODE_STORAGE_KEY) as ViewMode | null;
+        if (savedViewMode && ['grid', 'list', 'table'].includes(savedViewMode)) {
+            setViewMode(savedViewMode);
+        }
+    } catch (error) {
+        console.error("Failed to load view mode from local storage", error);
+    }
+
     if (initialStatusFilter && initialStatusFilter !== 'all') {
       setStatusFilter(initialStatusFilter);
       try {
@@ -46,13 +59,11 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
         console.error("Failed to update status filter in local storage", error);
       }
     } else {
-      // Otherwise, load from localStorage as usual.
       try {
           const savedFilters = localStorage.getItem(FILTERS_STORAGE_KEY);
           if (savedFilters) {
               const { searchTerm, statusFilter, priorityFilter } = JSON.parse(savedFilters);
               setSearchTerm(searchTerm || "");
-              // Do not override if initialStatusFilter is present from URL
               if (!initialStatusFilter || initialStatusFilter === 'all') {
                  setStatusFilter(statusFilter || "all");
               }
@@ -65,20 +76,17 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
     setIsMounted(true);
   }, [initialStatusFilter]);
 
-
-  // When filters change, save them to localStorage.
   useEffect(() => {
-    // We only save if the component is mounted to avoid overwriting on initial load.
     if (isMounted) {
         try {
             const filters = { searchTerm, statusFilter, priorityFilter };
             localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+            localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
         } catch (error) {
-            console.error("Failed to save filters to local storage", error);
+            console.error("Failed to save state to local storage", error);
         }
     }
-  }, [searchTerm, statusFilter, priorityFilter, isMounted]);
-
+  }, [searchTerm, statusFilter, priorityFilter, viewMode, isMounted]);
 
   const filteredTickets = useMemo(() => {
     return initialTickets
@@ -101,7 +109,6 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
     });
   }, [initialTickets, searchTerm, statusFilter, priorityFilter]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, priorityFilter]);
@@ -114,13 +121,25 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
     );
   }, [filteredTickets, currentPage]);
   
+  const linkPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin') 
+    ? '/admin/create-ticket' 
+    : '/dashboard/create-ticket';
+
+  const ViewSwitcher = () => (
+    <div className="flex items-center gap-1 rounded-md bg-muted p-1">
+        <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" className="h-8 w-8 p-1.5" onClick={() => setViewMode('grid')}><LayoutGrid className="h-4 w-4"/></Button>
+        <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm" className="h-8 w-8 p-1.5" onClick={() => setViewMode('list')}><List className="h-4 w-4"/></Button>
+        <Button variant={viewMode === 'table' ? 'default' : 'ghost'} size="sm" className="h-8 w-8 p-1.5" onClick={() => setViewMode('table')}><Rows className="h-4 w-4"/></Button>
+    </div>
+  );
+
   return (
     <div className="space-y-4 md:space-y-6 p-4 md:px-6">
        <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button asChild className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 h-14 w-14 rounded-full shadow-lg">
-                <Link href="/dashboard/create-ticket">
+                <Link href={linkPath}>
                     <Plus className="h-6 w-6" />
                     <span className="sr-only">Create New Ticket</span>
                 </Link>
@@ -138,18 +157,19 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
           <p className="text-muted-foreground text-sm">Create or manage support tickets.</p>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-2">
+           <ViewSwitcher />
           <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by ID, subject, user..."
-              className="pl-10 w-full md:w-64 bg-card"
+              placeholder="Search..."
+              className="pl-10 w-full md:w-48 bg-card"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[180px] bg-card">
-              <SelectValue placeholder="Filter by status" />
+            <SelectTrigger className="w-full sm:w-[150px] bg-card">
+              <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
@@ -160,8 +180,8 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
             </SelectContent>
           </Select>
           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="w-full sm:w-[180px] bg-card">
-              <SelectValue placeholder="Filter by priority" />
+            <SelectTrigger className="w-full sm:w-[150px] bg-card">
+              <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Priorities</SelectItem>
@@ -175,11 +195,46 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
 
       {paginatedTickets.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {paginatedTickets.map((ticket) => (
-              <TicketListItem key={ticket.id} ticket={ticket} currentStaffId={currentStaffId} />
-            ))}
-          </div>
+          {viewMode === 'grid' && (
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {paginatedTickets.map((ticket) => (
+                  <TicketListItem key={ticket.id} ticket={ticket} currentStaffId={currentStaffId} viewMode="grid" />
+                ))}
+            </div>
+          )}
+          {viewMode === 'list' && (
+             <div className="space-y-3">
+                {paginatedTickets.map((ticket) => (
+                  <TicketListItem key={ticket.id} ticket={ticket} currentStaffId={currentStaffId} viewMode="list" />
+                ))}
+            </div>
+          )}
+          {viewMode === 'table' && (
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Ticket ID</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created On</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedTickets.map((ticket) => (
+                    <TableRow key={ticket.id}>
+                      <TableCell><Link href={currentStaffId ? `/admin/tickets/${ticket.id}` : `/dashboard/tickets/${ticket.id}`} className="font-medium text-primary hover:underline">TKT-{ticket.id}</Link></TableCell>
+                      <TableCell>{ticket.subject}</TableCell>
+                      <TableCell>{ticket.studentName}</TableCell>
+                      <TableCell><Badge variant={ticket.status === 'Closed' ? 'outline' : 'default'}>{ticket.status}</Badge></TableCell>
+                      <TableCell>{format(new Date(ticket.createdAt), "dd/MM/yyyy")}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
           {totalPages > 1 && (
              <div className="flex items-center justify-center space-x-2 pt-4">
                 <Button
