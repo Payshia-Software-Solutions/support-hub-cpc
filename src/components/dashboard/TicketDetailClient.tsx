@@ -761,7 +761,7 @@ const TicketDiscussionContent = ({
                                     <StarRating 
                                         messageId={String(message.id)}
                                         onRate={(rating) => handleRate(String(message.id), rating)} 
-                                        disabled={!!ticket.rating || !!submittedRatings[String(message.id)]}
+                                        disabled={!!submittedRatings[String(message.id)]}
                                     />
                                 )}
                             </div>
