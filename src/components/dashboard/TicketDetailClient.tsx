@@ -1052,6 +1052,10 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     if (userRole === 'staff' && ticket.status === 'Open') {
       handleStatusChange('In Progress');
     }
+
+    if (userRole === 'student' && ticket.status === 'Closed') {
+      handleStatusChange('Open');
+    }
   };
 
   const handleUnlockTicket = () => {
@@ -1246,3 +1250,4 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     </div>
   );
 }
+
