@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Plus, Search } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
   Tooltip,
   TooltipContent,
@@ -23,44 +22,45 @@ interface TicketListProps {
   initialStatusFilter?: string;
 }
 
-const ITEMS_PER_PAGE = 9; // Display 9 tickets per page (3x3 grid)
+const ITEMS_PER_PAGE = 9;
+const FILTERS_STORAGE_KEY = 'ticketListFilters';
+
 
 export function TicketList({ tickets: initialTickets, currentStaffId, initialStatusFilter = "all" }: TicketListProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isMounted, setIsMounted] = useState(false);
 
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || "");
-  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || initialStatusFilter);
-  const [priorityFilter, setPriorityFilter] = useState(searchParams.get('priority') || "all");
-  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1', 10));
-
+  // On component mount, load filters from localStorage.
   useEffect(() => {
-    const params = new URLSearchParams(searchParams);
-    if (searchTerm) {
-        params.set('q', searchTerm);
-    } else {
-        params.delete('q');
+    try {
+        const savedFilters = localStorage.getItem(FILTERS_STORAGE_KEY);
+        if (savedFilters) {
+            const { searchTerm, statusFilter, priorityFilter } = JSON.parse(savedFilters);
+            setSearchTerm(searchTerm || "");
+            setStatusFilter(statusFilter || initialStatusFilter);
+            setPriorityFilter(priorityFilter || "all");
+        }
+    } catch (error) {
+        console.error("Failed to load filters from local storage", error);
     }
-    if (statusFilter !== 'all') {
-        params.set('status', statusFilter);
-    } else {
-        params.delete('status');
+    setIsMounted(true);
+  }, [initialStatusFilter]);
+
+  // When filters change, save them to localStorage.
+  useEffect(() => {
+    // We only save if the component is mounted to avoid overwriting on initial load.
+    if (isMounted) {
+        try {
+            const filters = { searchTerm, statusFilter, priorityFilter };
+            localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+        } catch (error) {
+            console.error("Failed to save filters to local storage", error);
+        }
     }
-    if (priorityFilter !== 'all') {
-        params.set('priority', priorityFilter);
-    } else {
-        params.delete('priority');
-    }
-    if (currentPage > 1) {
-        params.set('page', String(currentPage));
-    } else {
-        params.delete('page');
-    }
-    
-    // Use replace to avoid adding to browser history
-    router.replace(`${pathname}?${params.toString()}`);
-  }, [searchTerm, statusFilter, priorityFilter, currentPage, pathname, router, searchParams]);
+  }, [searchTerm, statusFilter, priorityFilter, isMounted]);
 
 
   const filteredTickets = useMemo(() => {

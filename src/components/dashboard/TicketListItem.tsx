@@ -17,7 +17,6 @@ import {
 import { UnreadBadge } from "./UnreadBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
-import { useSearchParams } from "next/navigation";
 
 
 interface TicketListItemProps {
@@ -34,19 +33,16 @@ const priorityColors: Record<Ticket["priority"], string> = {
 
 export function TicketListItem({ ticket, currentStaffId, staffMembers = [] }: TicketListItemProps) {
   const { user } = useAuth();
-  const searchParams = useSearchParams();
   
   const linkPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
     ? `/admin/tickets/${ticket.id}`
     : `/dashboard/tickets/${ticket.id}`;
     
-  const linkHref = `${linkPath}?${searchParams.toString()}`;
-    
   const assignedStaffMember = staffMembers.find(s => s.username === ticket.assignedTo);
   const assignedStaffName = assignedStaffMember?.name || ticket.assignedTo;
   
   return (
-    <Link href={linkHref} className="group block h-full">
+    <Link href={linkPath} className="group block h-full">
         <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full flex flex-col">
             <CardHeader>
                 <div className="flex justify-between items-start gap-2">
