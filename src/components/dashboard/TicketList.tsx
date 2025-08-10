@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 interface TicketListProps {
   tickets: Ticket[];
