@@ -55,7 +55,7 @@ export default function AdminDashboardPage() {
 
     return [
       { title: "Open Tickets", value: openTicketsCount.toString(), icon: <Ticket className="w-6 h-6 text-primary" />, trend: "Tickets awaiting response", href: "/admin/tickets?status=Open" },
-      { title: "In Progress", value: inProgressTicketsCount.toString(), icon: <Clock className="w-6 h-6 text-purple-500" />, trend: "Tickets actively being handled" },
+      { title: "In Progress", value: inProgressTicketsCount.toString(), icon: <Clock className="w-6 h-6 text-purple-500" />, trend: "Tickets actively being handled", href: "/admin/tickets?status=In Progress" },
       { title: "Active Chats", value: activeChatsCount.toString(), icon: <MessageSquare className="w-6 h-6 text-primary" />, trend: "Total active conversations", href: "/admin/chat" },
       { title: "Resolved (Month)", value: resolvedThisMonthCount.toString(), icon: <CheckCircle className="w-6 h-6 text-green-500" />, trend: "In the last 30 days" },
     ];
