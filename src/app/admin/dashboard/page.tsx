@@ -391,22 +391,6 @@ export default function AdminDashboardPage() {
           </Card>
         </section>
       )}
-      
-      <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-600">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>New ticket #ticket123 created by Student Alpha.</li>
-              <li>Chat with Student Bravo ended.</li>
-              <li>Ticket #ticket120 resolved by Staff Jane.</li>
-              <li>Payment of $50 received from Student Charlie.</li>
-            </ul>
-          </CardContent>
-        </Card>
-      </section>
 
     </div>
   );
