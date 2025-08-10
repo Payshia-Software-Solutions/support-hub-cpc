@@ -42,6 +42,8 @@ export function TicketListItem({ ticket, currentStaffId, staffMembers = [], view
   const assignedStaffMember = staffMembers.find(s => s.username === ticket.assignedTo);
   const assignedStaffName = assignedStaffMember?.name || ticket.assignedTo;
   
+  const userRoleForBadge = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin') ? 'staff' : 'student';
+
   if (viewMode === 'list') {
       return (
         <Link href={linkPath} className="group block">
@@ -60,7 +62,7 @@ export function TicketListItem({ ticket, currentStaffId, staffMembers = [], view
                         <p className="text-sm text-muted-foreground truncate pr-2">
                            ID: TKT-{ticket.id}
                         </p>
-                        <UnreadBadge ticketId={ticket.id} userRole="student" />
+                        <UnreadBadge ticketId={ticket.id} userRole={userRoleForBadge} />
                     </div>
                 </div>
                  <div className="flex-shrink-0">
