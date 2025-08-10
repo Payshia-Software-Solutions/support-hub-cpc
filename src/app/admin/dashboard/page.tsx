@@ -49,6 +49,7 @@ export default function AdminDashboardPage() {
   const dashboardStats = useMemo(() => {
     const openTicketsCount = tickets?.filter(t => t.status === 'Open').length ?? 0;
     const inProgressTicketsCount = tickets?.filter(t => t.status === 'In Progress').length ?? 0;
+    const snoozedTicketsCount = tickets?.filter(t => t.status === 'Snooze').length ?? 0;
     const activeChatsCount = chats?.length ?? 0;
     const oneMonthAgo = subDays(new Date(), 30);
     const resolvedThisMonthCount = tickets?.filter(t => t.status === 'Closed' && t.updatedAt && new Date(t.updatedAt) > oneMonthAgo).length ?? 0;
@@ -56,6 +57,7 @@ export default function AdminDashboardPage() {
     return [
       { title: "Open Tickets", value: openTicketsCount.toString(), icon: <Ticket className="w-6 h-6 text-primary" />, trend: "Tickets awaiting response", href: "/admin/tickets?status=Open" },
       { title: "In Progress", value: inProgressTicketsCount.toString(), icon: <Clock className="w-6 h-6 text-purple-500" />, trend: "Tickets actively being handled", href: "/admin/tickets?status=In Progress" },
+      { title: "Snoozed Tickets", value: snoozedTicketsCount.toString(), icon: <Clock className="w-6 h-6 text-orange-500" />, trend: "Tickets paused or waiting", href: "/admin/tickets?status=Snooze" },
       { title: "Active Chats", value: activeChatsCount.toString(), icon: <MessageSquare className="w-6 h-6 text-primary" />, trend: "Total active conversations", href: "/admin/chat" },
       { title: "Resolved (Month)", value: resolvedThisMonthCount.toString(), icon: <CheckCircle className="w-6 h-6 text-green-500" />, trend: "In the last 30 days", href: "/admin/tickets?status=Closed" },
     ];
@@ -147,7 +149,7 @@ export default function AdminDashboardPage() {
         <p className="text-muted-foreground">Overview of support activity and system status.</p>
       </header>
 
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="grid grid-cols-2 lg:grid-cols-5 gap-6">
         {dashboardStats.map((stat, index) => {
            const card = (
              <Card 
