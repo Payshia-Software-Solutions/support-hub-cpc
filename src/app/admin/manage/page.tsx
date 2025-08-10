@@ -52,17 +52,10 @@ const managementTasks: ManagementTask[] = [
     category: "Content & System"
   },
    {
-    title: "Staff Commissions",
-    description: "Set up commission rates for staff tasks.",
+    title: "Commissions Management",
+    description: "Set up staff rates and management commission hierarchies.",
     icon: <Percent className="w-8 h-8 text-white" />,
     href: "/admin/manage/commissions",
-    category: "Financial"
-  },
-  {
-    title: "Management Commissions",
-    description: "Set task-based commissions for management.",
-    icon: <Briefcase className="w-8 h-8 text-white" />,
-    href: "/admin/manage/management-commissions",
     category: "Financial"
   },
   {
@@ -269,3 +262,5 @@ export default function AdminManagePage() {
     </div>
   );
 }
+
+    

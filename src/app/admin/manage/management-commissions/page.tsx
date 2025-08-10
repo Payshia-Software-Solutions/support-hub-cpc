@@ -1,24 +1,23 @@
 
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Briefcase } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function ManagementCommissionsPage() {
+  // This page is now effectively deprecated in favor of the tabbed view.
+  // We can leave it as a simple placeholder or redirect, but for now, this is fine.
   return (
-    <div className="p-4 md:p-8 space-y-8 pb-20 flex items-center justify-center min-h-full">
-      <Card className="w-full max-w-lg text-center shadow-lg">
+    <div className="p-4 md:p-8">
+      <Card>
         <CardHeader>
-          <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
-            <Briefcase className="w-10 h-10 text-primary" />
-          </div>
-          <CardTitle className="mt-4">Management Commissions</CardTitle>
-           <CardDescription>This page is under construction.</CardDescription>
+          <CardTitle>Page Moved</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">The functionality to define task-based management commissions will be available here soon.</p>
+          <p>Management Commissions are now handled under the main "Commissions Management" page.</p>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    
