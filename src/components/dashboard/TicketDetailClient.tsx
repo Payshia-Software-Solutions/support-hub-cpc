@@ -397,6 +397,7 @@ const TicketInfoContent = memo(({
               <SelectContent>
                 <SelectItem value="Open">Open</SelectItem>
                 <SelectItem value="In Progress">In Progress</SelectItem>
+                <SelectItem value="Snooze">Snooze</SelectItem>
                 <SelectItem value="Closed">Closed</SelectItem>
               </SelectContent>
             </Select>
@@ -878,6 +879,28 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
   useEffect(() => {
     setTicket(initialTicket);
   }, [initialTicket]);
+  
+  const { data: messages } = useQuery<Message[]>({
+    queryKey: ['ticketMessages', ticket.id],
+    queryFn: () => getTicketMessages(ticket.id),
+    enabled: !!ticket.id,
+    refetchInterval: 5000,
+  });
+
+
+  useEffect(() => {
+    if (userRole === 'staff' && ticket.status === 'In Progress' && messages && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.from === 'staff') {
+        const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000);
+        const lastMessageTime = new Date(lastMessage.time);
+        if (lastMessageTime < eightHoursAgo) {
+          handleStatusChange('Snooze');
+        }
+      }
+    }
+  }, [ticket, messages, userRole]);
+
 
   const isTicketLockedByOther = userRole === 'staff' && ticket.isLocked && ticket.lockedByStaffId !== currentStaffUsername;
   const isTicketLockedByCurrentUser = userRole === 'staff' && ticket.isLocked && ticket.lockedByStaffId === currentStaffUsername;

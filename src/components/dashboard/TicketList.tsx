@@ -45,8 +45,8 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
     })
     .filter(ticket => priorityFilter === "all" || ticket.priority === priorityFilter)
     .sort((a, b) => { // Sort open/in progress tickets first, then by creation date
-      if (a.status !== 'Closed' && b.status === 'Closed') return -1;
-      if (a.status === 'Closed' && b.status !== 'Closed') return 1;
+      const closedOrder = a.status === 'Closed' ? 1 : (b.status === 'Closed' ? -1 : 0);
+      if (closedOrder !== 0) return closedOrder;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }, [initialTickets, searchTerm, statusFilter, priorityFilter]);
@@ -109,6 +109,7 @@ export function TicketList({ tickets: initialTickets, currentStaffId, initialSta
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="Open">Open</SelectItem>
               <SelectItem value="In Progress">In Progress</SelectItem>
+              <SelectItem value="Snooze">Snooze</SelectItem>
               <SelectItem value="Closed">Closed</SelectItem>
             </SelectContent>
           </Select>
