@@ -548,8 +548,8 @@ const LinkifiedText = ({ text }: { text: string }) => {
   );
 };
 
-const StarRating = ({ onRate, messageId, disabled = false }: { onRate?: (rating: number) => void; messageId: string, disabled?: boolean }) => {
-    const [rating, setRating] = useState(0);
+const StarRating = ({ onRate, disabled = false, initialRating = 0 }: { onRate?: (rating: number) => void; disabled?: boolean; initialRating?: number; }) => {
+    const [rating, setRating] = useState(initialRating);
     const [hoverRating, setHoverRating] = useState(0);
 
     const handleRatingClick = (newRating: number) => {
@@ -600,8 +600,7 @@ const TicketDiscussionContent = ({
   handleFileSelect,
   isSending,
   handleEmojiClick,
-  handleRate,
-  submittedRatings
+  handleRate
  }: {
     ticket: Ticket,
     userRole: 'student' | 'staff',
@@ -618,12 +617,13 @@ const TicketDiscussionContent = ({
     isSending: boolean,
     handleEmojiClick: (emojiData: EmojiClickData) => void
     handleRate: (messageId: string, rating: number) => void;
-    submittedRatings: Record<string, number>;
  }) => {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [viewingImage, setViewingImage] = useState<string | null>(null);
     const queryClient = useQueryClient();
     const inputRef = useRef<HTMLTextAreaElement>(null);
+     const [submittedRatings, setSubmittedRatings] = useState<Record<string, number>>({});
+
 
     const { data: messages, isLoading, isError } = useQuery<Message[]>({
         queryKey: ['ticketMessages', ticket.id],
@@ -759,9 +759,9 @@ const TicketDiscussionContent = ({
                                 <p className="text-sm break-all"><LinkifiedText text={message.text} /></p>
                                 {isRatingRequest && userRole === 'student' && (
                                     <StarRating 
-                                        messageId={String(message.id)}
                                         onRate={(rating) => handleRate(String(message.id), rating)} 
-                                        disabled={!!submittedRatings[String(message.id)]}
+                                        disabled={!!ticket.rating || !!submittedRatings[String(message.id)]}
+                                        initialRating={ticket.rating || submittedRatings[String(message.id)] || 0}
                                     />
                                 )}
                             </div>
@@ -979,7 +979,6 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     mutationFn: ({ ticketId, rating }: { ticketId: string, rating: number }) =>
         updateTicketRating(ticketId, rating),
     onSuccess: (response) => {
-        // Invalidate the ticket query to refetch the data with the new rating
         queryClient.invalidateQueries({ queryKey: ['ticket', response.ticket.id] });
     },
     onError: (error: Error) => {
@@ -1180,7 +1179,6 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
                 isSending={isSending}
                 handleEmojiClick={handleEmojiClick}
                 handleRate={handleRateTicket}
-                submittedRatings={submittedRatings}
             />
           </div>
         )}
@@ -1243,7 +1241,6 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
             isSending={isSending}
             handleEmojiClick={handleEmojiClick}
             handleRate={handleRateTicket}
-            submittedRatings={submittedRatings}
         />
       </div>
     </div>
