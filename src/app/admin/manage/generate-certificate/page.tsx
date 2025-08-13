@@ -25,13 +25,14 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
         queryKey: ['userCertificateStatus', student.username],
         queryFn: () => getUserCertificatePrintStatus(student.username),
         staleTime: 5 * 60 * 1000,
-        refetchOnWindowFocus: true, // This will ensure the query refetches when the window is focused after mutation.
+        refetchOnWindowFocus: true,
     });
 
     const generatedCertificate = useMemo(() => {
         if (!certificateStatus) return null;
-        return certificateStatus.find(cert => cert.parent_course_id === course.id && cert.type === 'Certificate');
-    }, [certificateStatus, course.id]);
+        // Match by course_code as parent_course_id can be null
+        return certificateStatus.find(cert => cert.course_code === course.courseCode && cert.type === 'Certificate');
+    }, [certificateStatus, course.courseCode]);
 
     const isEligible = true;
 
