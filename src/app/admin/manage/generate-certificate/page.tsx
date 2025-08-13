@@ -4,8 +4,8 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getCourses, getStudentsByCourseCode, generateCertificate } from '@/lib/api';
-import type { Course, StudentInBatch, GenerateCertificatePayload } from '@/lib/types';
+import { getCourses, getStudentsByCourseCode, generateCertificate, getUserCertificatePrintStatus } from '@/lib/api';
+import type { Course, StudentInBatch, GenerateCertificatePayload, UserCertificatePrintStatus } from '@/lib/types';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,15 +21,24 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
     const queryClient = useQueryClient();
     const { user } = useAuth();
     
-    // For simplicity, we assume eligibility based on a simple criteria here.
-    // A real app would have a more complex check, possibly returning eligibility from the student list API.
-    const isEligible = true; 
+    const { data: certificateStatus, isLoading: isLoadingStatus } = useQuery<UserCertificatePrintStatus[]>({
+        queryKey: ['userCertificateStatus', student.username],
+        queryFn: () => getUserCertificatePrintStatus(student.username),
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const generatedCertificate = useMemo(() => {
+        if (!certificateStatus) return null;
+        return certificateStatus.find(cert => cert.parent_course_id === course.id && cert.type === 'Certificate');
+    }, [certificateStatus, course.id]);
+
+    const isEligible = true;
 
     const { mutate, isPending } = useMutation({
         mutationFn: generateCertificate,
         onSuccess: (data) => {
             toast({ title: 'Certificate Generated!', description: `Certificate ID ${data.certificate_id} created for ${student.full_name}.` });
-            // Optionally, we could refetch student-specific data here if needed.
+            queryClient.invalidateQueries({ queryKey: ['userCertificateStatus', student.username] });
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
@@ -55,6 +64,21 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
         mutate(payload);
     };
 
+    const renderActionCell = () => {
+        if (isLoadingStatus) {
+            return <Skeleton className="h-6 w-24" />;
+        }
+        if (generatedCertificate) {
+            return <Badge variant="secondary">ID: {generatedCertificate.certificate_id}</Badge>;
+        }
+        return (
+            <Button size="sm" onClick={handleGenerate} disabled={!isEligible || isPending}>
+                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Award className="mr-2 h-4 w-4" />}
+                Generate
+            </Button>
+        );
+    };
+
     return (
         <TableRow>
             <TableCell className="font-medium">{student.username}</TableCell>
@@ -65,10 +89,7 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
                 </Badge>
             </TableCell>
             <TableCell className="text-right">
-                <Button size="sm" onClick={handleGenerate} disabled={!isEligible || isPending}>
-                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Award className="mr-2 h-4 w-4" />}
-                    Generate
-                </Button>
+                {renderActionCell()}
             </TableCell>
         </TableRow>
     );
