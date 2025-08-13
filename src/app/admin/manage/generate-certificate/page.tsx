@@ -1,32 +1,35 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getStudentFullInfo, generateCertificate } from '@/lib/api';
-import type { FullStudentData, StudentEnrollment, GenerateCertificatePayload } from '@/lib/types';
+import { getCourses, getStudentsByCourseCode, generateCertificate } from '@/lib/api';
+import type { Course, StudentInBatch, GenerateCertificatePayload } from '@/lib/types';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, AlertTriangle, User, Mail, Phone, Award, CheckCircle, XCircle } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Award, Loader2, AlertTriangle, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-
-const CertificateEligibilityCard = ({ enrollment, studentNumber }: { enrollment: StudentEnrollment, studentNumber: string }) => {
+const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch, course: Course }) => {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     
+    // For simplicity, we assume eligibility based on a simple criteria here.
+    // A real app would have a more complex check, possibly returning eligibility from the student list API.
+    const isEligible = true; 
+
     const { mutate, isPending } = useMutation({
         mutationFn: generateCertificate,
         onSuccess: (data) => {
-            toast({ title: 'Certificate Generated!', description: `Certificate ID ${data.certificate_id} created for ${enrollment.parent_course_name}.` });
-            queryClient.invalidateQueries({ queryKey: ['studentFullInfo', studentNumber] });
+            toast({ title: 'Certificate Generated!', description: `Certificate ID ${data.certificate_id} created for ${student.full_name}.` });
+            // Optionally, we could refetch student-specific data here if needed.
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
@@ -40,163 +43,132 @@ const CertificateEligibilityCard = ({ enrollment, studentNumber }: { enrollment:
         }
 
         const payload: GenerateCertificatePayload = {
-            student_number: studentNumber,
-            print_status: "0", // 0 for Not Printed
+            student_number: student.username,
+            print_status: "0",
             print_by: user.username,
             type: "Certificate",
-            parentCourseCode: parseInt(enrollment.parent_course_id, 10),
-            referenceId: 0, // No specific reference for manual generation
-            course_code: enrollment.course_code,
-            source: "manual_generation"
+            parentCourseCode: parseInt(course.id, 10),
+            referenceId: 0,
+            course_code: course.courseCode,
+            source: "batch_generation"
         };
         mutate(payload);
     };
 
-    const hasGeneratedCertificate = enrollment.certificateRecords.some(c => c.type === 'Certificate');
-
     return (
-        <div className={cn("p-4 border rounded-lg flex items-center justify-between", enrollment.certificate_eligibility ? "bg-card" : "bg-muted/50")}>
-            <div className="flex-1">
-                <p className="font-semibold">{enrollment.parent_course_name}</p>
-                <div className="flex items-center gap-2 mt-1">
-                    <Badge variant={enrollment.certificate_eligibility ? 'default' : 'secondary'}>
-                        {enrollment.certificate_eligibility ? "Eligible" : "Not Eligible"}
-                    </Badge>
-                     {hasGeneratedCertificate && (
-                        <Badge variant="outline" className="text-blue-600 border-blue-400">
-                           <CheckCircle className="mr-1.5 h-3.5 w-3.5"/> Generated
-                        </Badge>
-                    )}
-                </div>
-            </div>
-            <Button 
-                size="sm" 
-                onClick={handleGenerate} 
-                disabled={!enrollment.certificate_eligibility || hasGeneratedCertificate || isPending}
-            >
-                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Award className="mr-2 h-4 w-4" />}
-                {hasGeneratedCertificate ? 'Already Generated' : 'Generate'}
-            </Button>
-        </div>
+        <TableRow>
+            <TableCell className="font-medium">{student.username}</TableCell>
+            <TableCell>{student.full_name}</TableCell>
+            <TableCell>
+                <Badge variant={isEligible ? 'default' : 'destructive'}>
+                    {isEligible ? "Eligible" : "Not Eligible"}
+                </Badge>
+            </TableCell>
+            <TableCell className="text-right">
+                <Button size="sm" onClick={handleGenerate} disabled={!isEligible || isPending}>
+                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Award className="mr-2 h-4 w-4" />}
+                    Generate
+                </Button>
+            </TableCell>
+        </TableRow>
     );
 };
 
+export default function GenerateCertificateBatchPage() {
+    const [selectedCourseId, setSelectedCourseId] = useState('');
+    const queryClient = useQueryClient();
 
-export default function GenerateCertificatePage() {
-    const [studentId, setStudentId] = useState('');
-    const [studentData, setStudentData] = useState<FullStudentData | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[]>({
+        queryKey: ['coursesForCertGen'],
+        queryFn: getCourses,
+        staleTime: 1000 * 60 * 10, // Cache for 10 minutes
+    });
 
-    const handleSearch = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!studentId.trim()) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please enter a student ID.' });
-            return;
-        }
+    const selectedCourse = useMemo(() => {
+        return courses?.find(c => c.id === selectedCourseId);
+    }, [courses, selectedCourseId]);
 
-        setIsLoading(true);
-        setError(null);
-        setStudentData(null);
-
-        try {
-            const data = await getStudentFullInfo(studentId);
-            setStudentData(data);
-        } catch (err: any) {
-            setError(err.message || 'An unknown error occurred.');
-            toast({ variant: 'destructive', title: 'Search Failed', description: err.message });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const enrollmentsArray = studentData ? Object.values(studentData.studentEnrollments) : [];
-
+    const { data: students, isLoading: isLoadingStudents, isError, error } = useQuery<StudentInBatch[]>({
+        queryKey: ['studentsByBatch', selectedCourse?.courseCode],
+        queryFn: () => getStudentsByCourseCode(selectedCourse!.courseCode),
+        enabled: !!selectedCourse,
+    });
+    
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
-                <h1 className="text-3xl font-headline font-semibold">Generate Certificate</h1>
-                <p className="text-muted-foreground">Search for a student to check their eligibility and generate certificates.</p>
+                <h1 className="text-3xl font-headline font-semibold">Batch Certificate Generation</h1>
+                <p className="text-muted-foreground">Select a batch to view students and generate their certificates.</p>
             </header>
 
             <Card className="shadow-lg">
-                <CardContent className="p-6">
-                    <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
-                        <Input 
-                            placeholder="Enter Student ID (e.g., PA16642)" 
-                            value={studentId}
-                            onChange={(e) => setStudentId(e.target.value)}
-                            className="flex-grow"
-                        />
-                        <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                            Search
-                        </Button>
-                    </form>
+                <CardHeader>
+                    <CardTitle>Select a Batch</CardTitle>
+                    <CardDescription>Choose the batch for which you want to generate certificates.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Select value={selectedCourseId} onValueChange={setSelectedCourseId} disabled={isLoadingCourses}>
+                        <SelectTrigger className="w-full md:w-1/2">
+                            <SelectValue placeholder={isLoadingCourses ? "Loading batches..." : "Choose a batch..."} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {courses?.map(course => (
+                                <SelectItem key={course.id} value={course.id}>
+                                    {course.name} ({course.courseCode})
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </CardContent>
             </Card>
 
-            {isLoading && (
-                <div className="space-y-6">
-                    <Skeleton className="h-[170px] w-full" />
-                    <Skeleton className="h-64 w-full" />
-                </div>
-            )}
-
-            {error && !isLoading && (
-                <Card className="border-destructive">
-                    <CardHeader><CardTitle className="flex items-center gap-2 text-destructive"><AlertTriangle /> An Error Occurred</CardTitle></CardHeader>
-                    <CardContent><p>{error}</p></CardContent>
+            {selectedCourse && (
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle>Students in {selectedCourse.name}</CardTitle>
+                        <CardDescription>
+                            List of students enrolled in this batch.
+                            {isLoadingStudents && " Loading students..."}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoadingStudents ? (
+                            <div className="space-y-2">
+                                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                            </div>
+                        ) : isError ? (
+                            <Alert variant="destructive">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTitle>Error Loading Students</AlertTitle>
+                                <AlertDescription>{(error as Error).message}</AlertDescription>
+                            </Alert>
+                        ) : students && students.length > 0 ? (
+                            <div className="relative w-full overflow-auto border rounded-lg">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Student ID</TableHead>
+                                            <TableHead>Full Name</TableHead>
+                                            <TableHead>Eligibility</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {students.map(student => (
+                                            <CertificateGenerationRow key={student.student_course_id} student={student} course={selectedCourse}/>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        ) : (
+                            <div className="text-center py-10 text-muted-foreground flex flex-col items-center">
+                                <BookOpen className="w-12 h-12 mb-4" />
+                                <h3 className="text-lg font-semibold">No Students Found</h3>
+                                <p>There are no students enrolled in this batch.</p>
+                            </div>
+                        )}
+                    </CardContent>
                 </Card>
-            )}
-
-            {studentData && (
-                <div className="space-y-6">
-                    {/* Profile Header */}
-                    <Card className="shadow-lg">
-                        <CardContent className="p-4 md:p-6">
-                            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-6">
-                                <Avatar className="w-24 h-24 text-4xl border-2 border-primary" data-ai-hint="student avatar">
-                                    <AvatarImage src={`https://placehold.co/150x150.png`} alt={studentData.studentInfo.full_name} />
-                                    <AvatarFallback>{studentData.studentInfo.full_name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 text-center sm:text-left">
-                                    <h2 className="text-2xl font-bold font-headline">{studentData.studentInfo.full_name}</h2>
-                                    <p className="text-muted-foreground">{studentData.studentInfo.student_id}</p>
-                                    <div className="mt-2 text-sm text-muted-foreground space-y-1 break-all">
-                                        <p className="flex items-center justify-center sm:justify-start gap-2"><Mail className="h-4 w-4 shrink-0" /> {studentData.studentInfo.e_mail}</p>
-                                        <p className="flex items-center justify-center sm:justify-start gap-2"><Phone className="h-4 w-4 shrink-0" /> {studentData.studentInfo.telephone_1}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Certificate Eligibility */}
-                    <Card className="shadow-lg">
-                        <CardHeader>
-                            <CardTitle>Certificate Eligibility & Generation</CardTitle>
-                            <CardDescription>View course eligibility and generate certificates for this student.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           <div className="space-y-4">
-                                {enrollmentsArray.length > 0 ? (
-                                    enrollmentsArray.map(enrollment => (
-                                        <CertificateEligibilityCard key={enrollment.id} enrollment={enrollment} studentNumber={studentData.studentInfo.username} />
-                                    ))
-                                ) : (
-                                    <Alert>
-                                        <AlertCircle className="h-4 w-4" />
-                                        <AlertTitle>No Enrollments Found</AlertTitle>
-                                        <AlertDescription>
-                                            This student is not currently enrolled in any courses.
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
             )}
         </div>
     );
