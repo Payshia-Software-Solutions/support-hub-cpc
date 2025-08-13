@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -135,6 +134,13 @@ const managementTasks: ManagementTask[] = [
     href: "/admin/manage/convocation-orders",
     category: "Certificates & Convocation"
   },
+  {
+    title: "Generate Certificate",
+    description: "Manually generate a certificate for an eligible student.",
+    icon: <Award className="w-8 h-8 text-white" />,
+    href: "/admin/manage/generate-certificate",
+    category: "Certificates & Convocation"
+  },
    {
     title: "Manage Recordings",
     description: "Add, edit, or delete course video recordings.",
@@ -262,5 +268,3 @@ export default function AdminManagePage() {
     </div>
   );
 }
-
-    
