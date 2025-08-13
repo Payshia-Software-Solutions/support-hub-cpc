@@ -30,7 +30,6 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
 
     const generatedCertificate = useMemo(() => {
         if (!certificateStatus) return null;
-        // Correctly match by courseCode only
         return certificateStatus.find(cert => cert.course_code === course.courseCode && cert.type === 'Certificate');
     }, [certificateStatus, course.courseCode]);
 
