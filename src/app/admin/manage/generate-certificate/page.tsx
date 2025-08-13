@@ -25,6 +25,7 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
         queryKey: ['userCertificateStatus', student.username],
         queryFn: () => getUserCertificatePrintStatus(student.username),
         staleTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: true, // This will ensure the query refetches when the window is focused after mutation.
     });
 
     const generatedCertificate = useMemo(() => {
