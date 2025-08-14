@@ -144,6 +144,7 @@ export const getUserCertificatePrintStatus = async (studentNumber: string): Prom
         throw new Error(errorData.error || 'Failed to fetch certificate status');
     }
     const data = await response.json();
+    // Correctly return the nested array or an empty array if it doesn't exist
     return data.certificateStatus || [];
 };
 
