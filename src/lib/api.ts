@@ -566,8 +566,7 @@ export const getUserCertificatePrintStatus = async (studentNumber: string): Prom
         throw new Error(errorData.error || 'Failed to fetch certificate status');
     }
     const data = await response.json();
-    // The API wraps the results in a 'certificateStatus' key.
-    return data.certificateStatus || []; 
+    return data.certificateStatus || [];
 };
 
 export const generateCertificate = async (payload: GenerateCertificatePayload): Promise<any> => {

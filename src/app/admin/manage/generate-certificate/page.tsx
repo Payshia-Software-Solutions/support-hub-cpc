@@ -30,6 +30,7 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
 
     const generatedCertificate = useMemo(() => {
         if (!certificateStatus) return null;
+        // Correctly match by course_code
         return certificateStatus.find(cert => cert.course_code === course.courseCode && cert.type === 'Certificate');
     }, [certificateStatus, course.courseCode]);
 
@@ -40,24 +41,8 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
         onSuccess: (newCertificateData) => {
             toast({ title: 'Certificate Generated!', description: `Certificate ID ${newCertificateData.certificate_id} created for ${student.full_name}.` });
 
-            // Optimistically update the cache to show the new ID immediately
-            queryClient.setQueryData(['userCertificateStatus', student.username], (oldData: UserCertificatePrintStatus[] | undefined) => {
-                const newCertificate: UserCertificatePrintStatus = {
-                    id: newCertificateData.id,
-                    student_number: student.username,
-                    certificate_id: newCertificateData.certificate_id,
-                    print_date: new Date().toISOString(),
-                    print_status: "0",
-                    print_by: user?.username || 'Admin',
-                    type: "Certificate",
-                    course_code: course.courseCode,
-                    parent_course_id: course.id,
-                };
-                return oldData ? [...oldData, newCertificate] : [newCertificate];
-            });
-
-            // Invalidate to refetch in the background for consistency
-            queryClient.invalidateQueries({ queryKey: ['userCertificateStatus', student.username] });
+            // Force a refetch of the certificate status for this user to ensure UI updates.
+            queryClient.refetchQueries({ queryKey: ['userCertificateStatus', student.username] });
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
