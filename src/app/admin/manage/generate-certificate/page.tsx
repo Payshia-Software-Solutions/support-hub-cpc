@@ -41,7 +41,6 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
         mutationFn: generateCertificate,
         onSuccess: (newCertificateData) => {
             toast({ title: 'Certificate Generated!', description: `Certificate ID ${newCertificateData.certificate_id} created for ${student.full_name}.` });
-            // Immediately update the local query data to show the new certificate
             queryClient.setQueryData(['userCertificateStatus', student.username], (oldData: UserCertificatePrintStatus[] | undefined) => {
                 const newCert: UserCertificatePrintStatus = {
                     id: newCertificateData.id,
@@ -56,7 +55,6 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
                 };
                 return oldData ? [...oldData, newCert] : [newCert];
             });
-            // Also refetch to ensure consistency with the backend
             queryClient.refetchQueries({ queryKey: ['userCertificateStatus', student.username] });
         },
         onError: (error: Error) => {
@@ -178,7 +176,7 @@ export default function GenerateCertificateBatchPage() {
             {selectedCourse && (
                 <Card className="shadow-lg">
                     <CardHeader>
-                        <CardTitle>Students in {selectedCourse.name}</CardTitle>
+                        <CardTitle>Students in {selectedCourse.name} ({selectedCourse.courseCode})</CardTitle>
                         <CardDescription>
                             List of students enrolled in this batch.
                             {isLoadingStudents && " Loading students..."}
