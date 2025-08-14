@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCourses } from '@/lib/actions/courses';
@@ -41,6 +41,22 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
         mutationFn: generateCertificate,
         onSuccess: (newCertificateData) => {
             toast({ title: 'Certificate Generated!', description: `Certificate ID ${newCertificateData.certificate_id} created for ${student.full_name}.` });
+            // Immediately update the local query data to show the new certificate
+            queryClient.setQueryData(['userCertificateStatus', student.username], (oldData: UserCertificatePrintStatus[] | undefined) => {
+                const newCert: UserCertificatePrintStatus = {
+                    id: newCertificateData.id,
+                    student_number: newCertificateData.student_number,
+                    certificate_id: newCertificateData.certificate_id,
+                    print_date: new Date().toISOString(),
+                    print_status: "0",
+                    print_by: newCertificateData.print_by,
+                    type: "Certificate",
+                    course_code: course.courseCode,
+                    parent_course_id: course.id,
+                };
+                return oldData ? [...oldData, newCert] : [newCert];
+            });
+            // Also refetch to ensure consistency with the backend
             queryClient.refetchQueries({ queryKey: ['userCertificateStatus', student.username] });
         },
         onError: (error: Error) => {
@@ -69,10 +85,10 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
 
     const renderActionCell = () => {
         if (isLoadingStatus) {
-            return <Skeleton className="h-6 w-24" />;
+            return <Skeleton className="h-9 w-24" />;
         }
         if (generatedCertificate) {
-            return <Badge variant="secondary">ID: {generatedCertificate.certificate_id}</Badge>;
+            return null; // Don't show the button if a certificate exists
         }
         return (
             <Button size="sm" onClick={handleGenerate} disabled={!isEligible || isPending}>
@@ -81,6 +97,16 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
             </Button>
         );
     };
+    
+    const renderCertificateIdCell = () => {
+        if (isLoadingStatus) {
+            return <Skeleton className="h-6 w-28" />;
+        }
+        if (generatedCertificate) {
+            return <Badge variant="secondary">{generatedCertificate.certificate_id}</Badge>;
+        }
+        return <Badge variant="outline">None</Badge>;
+    }
 
     return (
         <TableRow>
@@ -90,6 +116,9 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
                 <Badge variant={isEligible ? 'default' : 'destructive'}>
                     {isEligible ? "Eligible" : "Not Eligible"}
                 </Badge>
+            </TableCell>
+            <TableCell>
+                {renderCertificateIdCell()}
             </TableCell>
             <TableCell className="text-right">
                 {renderActionCell()}
@@ -174,6 +203,7 @@ export default function GenerateCertificateBatchPage() {
                                             <TableHead>Student ID</TableHead>
                                             <TableHead>Full Name</TableHead>
                                             <TableHead>Eligibility</TableHead>
+                                            <TableHead>Certificate ID</TableHead>
                                             <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
