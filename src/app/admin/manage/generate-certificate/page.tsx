@@ -31,12 +31,13 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
         refetchOnWindowFocus: true,
     });
 
-    const certificateStatus = rawCertificateData?.certificateStatus || [];
-
     const generatedCertificate = useMemo(() => {
-        if (!certificateStatus) return null;
+        const certificateStatus = rawCertificateData?.certificateStatus || [];
+        if (certificateStatus.length === 0) return null;
+        
+        // Find a certificate where the course_code matches the selected batch's courseCode.
         return certificateStatus.find(cert => cert.course_code === course.courseCode && cert.type === 'Certificate');
-    }, [certificateStatus, course.courseCode]);
+    }, [rawCertificateData, course.courseCode]);
 
     const isEligible = true;
 
@@ -94,7 +95,7 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
             return <Skeleton className="h-9 w-24" />;
         }
         if (generatedCertificate) {
-            return null;
+            return null; // Don't show the button if a certificate exists
         }
         return (
             <Button size="sm" onClick={handleGenerate} disabled={!isEligible || isPending}>
