@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCourses } from '@/lib/actions/courses';
 import { getStudentsByCourseCode } from '@/lib/actions/delivery';
-import { generateCertificate, getUserCertificatePrintStatus } from '@/lib/actions/certificates';
+import { getUserCertificatePrintStatus, generateCertificate } from '@/lib/actions/certificates';
 import type { Course, StudentInBatch, GenerateCertificatePayload, UserCertificatePrintStatus } from '@/lib/types';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,9 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Award, Loader2, AlertTriangle, BookOpen } from 'lucide-react';
+import { Award, Loader2, AlertTriangle, BookOpen, Database } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 
 const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch, course: Course }) => {
     const queryClient = useQueryClient();
@@ -55,7 +56,7 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
                 };
                 return oldData ? [...oldData, newCert] : [newCert];
             });
-            queryClient.refetchQueries({ queryKey: ['userCertificateStatus', student.username] });
+            queryClient.refetchQueries({ queryKey: ['userCertificateStatus', student.username], exact: true });
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
@@ -117,6 +118,26 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
             </TableCell>
             <TableCell>
                 {renderCertificateIdCell()}
+            </TableCell>
+            <TableCell className="text-center">
+                 <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" disabled={isLoadingStatus}>
+                            <Database className="h-4 w-4" />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>API Response for {student.username}</DialogTitle>
+                            <DialogDescription>Raw JSON data from the certificate status endpoint.</DialogDescription>
+                        </DialogHeader>
+                        <div className="mt-4 max-h-[60vh] overflow-y-auto rounded-md bg-muted p-4">
+                            <pre className="text-xs">
+                                <code>{JSON.stringify(certificateStatus, null, 2)}</code>
+                            </pre>
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </TableCell>
             <TableCell className="text-right">
                 {renderActionCell()}
@@ -202,6 +223,7 @@ export default function GenerateCertificateBatchPage() {
                                             <TableHead>Full Name</TableHead>
                                             <TableHead>Eligibility</TableHead>
                                             <TableHead>Certificate ID</TableHead>
+                                            <TableHead className="text-center">API Data</TableHead>
                                             <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
