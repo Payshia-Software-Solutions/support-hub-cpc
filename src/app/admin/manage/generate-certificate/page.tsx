@@ -24,12 +24,14 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
     const queryClient = useQueryClient();
     const { user } = useAuth();
     
-    const { data: certificateStatus, isLoading: isLoadingStatus } = useQuery<UserCertificatePrintStatus[]>({
+    const { data: rawCertificateData, isLoading: isLoadingStatus } = useQuery<{ certificateStatus: UserCertificatePrintStatus[] }>({
         queryKey: ['userCertificateStatus', student.username],
         queryFn: () => getUserCertificatePrintStatus(student.username),
         staleTime: 5 * 60 * 1000,
         refetchOnWindowFocus: true,
     });
+
+    const certificateStatus = rawCertificateData?.certificateStatus || [];
 
     const generatedCertificate = useMemo(() => {
         if (!certificateStatus) return null;
@@ -42,7 +44,9 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
         mutationFn: generateCertificate,
         onSuccess: (newCertificateData) => {
             toast({ title: 'Certificate Generated!', description: `Certificate ID ${newCertificateData.certificate_id} created for ${student.full_name}.` });
-            queryClient.setQueryData(['userCertificateStatus', student.username], (oldData: UserCertificatePrintStatus[] | undefined) => {
+            
+            // Optimistically update the local cache to reflect the new certificate immediately.
+            queryClient.setQueryData(['userCertificateStatus', student.username], (oldData: { certificateStatus: UserCertificatePrintStatus[] } | undefined) => {
                 const newCert: UserCertificatePrintStatus = {
                     id: newCertificateData.id,
                     student_number: newCertificateData.student_number,
@@ -54,8 +58,11 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
                     course_code: course.courseCode,
                     parent_course_id: course.id,
                 };
-                return oldData ? [...oldData, newCert] : [newCert];
+                 const existingStatuses = oldData?.certificateStatus || [];
+                 return { certificateStatus: [...existingStatuses, newCert] };
             });
+
+            // Refetch to ensure data consistency with the server
             queryClient.refetchQueries({ queryKey: ['userCertificateStatus', student.username], exact: true });
         },
         onError: (error: Error) => {
@@ -87,7 +94,7 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
             return <Skeleton className="h-9 w-24" />;
         }
         if (generatedCertificate) {
-            return null; // Don't show the button if a certificate exists
+            return null;
         }
         return (
             <Button size="sm" onClick={handleGenerate} disabled={!isEligible || isPending}>
@@ -133,7 +140,7 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
                         </DialogHeader>
                         <div className="mt-4 max-h-[60vh] overflow-y-auto rounded-md bg-muted p-4">
                             <pre className="text-xs">
-                                <code>{JSON.stringify(certificateStatus, null, 2)}</code>
+                                <code>{JSON.stringify(rawCertificateData, null, 2)}</code>
                             </pre>
                         </div>
                     </DialogContent>
