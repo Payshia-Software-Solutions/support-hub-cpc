@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getParentCourses, deleteParentCourse } from '@/lib/api';
+import { getParentCourses, deleteParentCourse } from '@/lib/actions/courses';
 import type { ParentCourse } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';

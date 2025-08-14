@@ -4,7 +4,9 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getCourses, getStudentsByCourseCode, generateCertificate, getUserCertificatePrintStatus } from '@/lib/api';
+import { getCourses } from '@/lib/actions/courses';
+import { getStudentsByCourseCode } from '@/lib/actions/delivery';
+import { generateCertificate, getUserCertificatePrintStatus } from '@/lib/actions/certificates';
 import type { Course, StudentInBatch, GenerateCertificatePayload, UserCertificatePrintStatus } from '@/lib/types';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,7 +32,6 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
 
     const generatedCertificate = useMemo(() => {
         if (!certificateStatus) return null;
-        // Correctly match by course_code
         return certificateStatus.find(cert => cert.course_code === course.courseCode && cert.type === 'Certificate');
     }, [certificateStatus, course.courseCode]);
 
@@ -40,8 +41,6 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
         mutationFn: generateCertificate,
         onSuccess: (newCertificateData) => {
             toast({ title: 'Certificate Generated!', description: `Certificate ID ${newCertificateData.certificate_id} created for ${student.full_name}.` });
-
-            // Force a refetch of the certificate status for this user to ensure UI updates.
             queryClient.refetchQueries({ queryKey: ['userCertificateStatus', student.username] });
         },
         onError: (error: Error) => {

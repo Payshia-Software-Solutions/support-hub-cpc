@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import { getTickets } from "@/lib/api";
+import { getTickets } from "@/lib/actions/tickets";
 import type { Ticket } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

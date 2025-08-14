@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { dummyCourses } from '@/lib/dummy-data';
 import type { Course } from '@/lib/types';
+import { getStudentFullInfo } from '@/lib/actions/users';
 
 // Simplified types for this page
 interface StudentInfo {
@@ -56,12 +57,7 @@ export default function EnrollStudentPage() {
         setStudentData(null);
 
         try {
-            const response = await fetch(`https://qa-api.pharmacollege.lk/get-student-full-info?loggedUser=${studentId.trim().toUpperCase()}`);
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: `Student not found or server error. Status: ${response.status}` }));
-                throw new Error(errorData.message || 'Student not found or API response is invalid.');
-            }
-            const data = await response.json();
+            const data = await getStudentFullInfo(studentId.trim().toUpperCase());
             if (data && data.studentInfo && data.studentEnrollments) {
                 setStudentData(data);
             } else {

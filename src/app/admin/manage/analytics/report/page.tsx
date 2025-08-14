@@ -10,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import { Search, Loader2, FileDown, FileSignature, ArrowLeft } from 'lucide-react';
-import { getAllUserFullDetails, getAllCities, getAllDistricts } from '@/lib/api';
+import { getAllUserFullDetails } from '@/lib/actions/users';
+import { getAllCities, getAllDistricts } from '@/lib/actions/locations';
 import type { UserFullDetails } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';

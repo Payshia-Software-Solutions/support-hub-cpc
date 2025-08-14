@@ -1,3 +1,4 @@
+
 "use client";
 
 import { CoursePageClient } from "@/components/admin/courses/CoursePageClient";

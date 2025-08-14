@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import { Search, PlusCircle, Edit, Trash2, BookOpen, AlertTriangle, Loader2 } from 'lucide-react';
-import { getBatches, createBatch, updateBatch, deleteBatch, getParentCourseList } from '@/lib/api';
+import { getBatches, createBatch, updateBatch, deleteBatch, getParentCourseList } from '@/lib/actions/courses';
 import type { Batch, ParentCourse } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -28,6 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert } from '@/components/ui/alert';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useSearchParams } from 'next/navigation';
 
@@ -262,7 +263,7 @@ function ManageBatchesPageComponent() {
             <div className="p-4 md:p-8">
                 <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>An Error Occurred</AlertTitle>
+                    <AlertDialogTitle>An Error Occurred</AlertDialogTitle>
                     <AlertDescription>{error?.message}</AlertDescription>
                 </Alert>
             </div>

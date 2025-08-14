@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -7,9 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getBnfChapters, getBnfWordIndex, getBnfPagesForChapter, getBnfPage } from '@/lib/api';
+import { getBnfChapters, getBnfWordIndex, getBnfPage } from '@/lib/actions/bnf';
 import type { BnfChapter, BnfPage, BnfWordIndexEntry } from '@/lib/types';
-import { Alert } from '@/components/ui/alert';
+import { Alert, AlertTitle as ShadcnAlertTitle } from '@/components/ui/alert';
 
 export default function BnfPage() {
     const [view, setView] = useState<'contents' | 'page' | 'index'>('contents');
@@ -91,7 +92,7 @@ export default function BnfPage() {
                  <div className="p-4 md:p-8 space-y-6 pb-20">
                     <Alert variant="destructive">
                         <AlertTriangle className="h-4 w-4" />
-                        <CardTitle>Error Loading Data</CardTitle>
+                        <ShadcnAlertTitle>Error Loading Data</ShadcnAlertTitle>
                         <CardDescription>{(error as Error).message}</CardDescription>
                     </Alert>
                 </div>

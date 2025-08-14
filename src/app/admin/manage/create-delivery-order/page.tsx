@@ -13,8 +13,8 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { createDeliveryOrder } from '@/lib/api';
-import type { FullStudentData, StudentEnrollment, DeliveryOrderPayload } from '@/lib/types';
+import { createDeliveryOrder } from '@/lib/actions/delivery';
+import type { FullStudentData, DeliveryOrderPayload } from '@/lib/types';
 
 export default function CreateDeliveryOrderPage() {
     const queryClient = useQueryClient();
@@ -39,9 +39,6 @@ export default function CreateDeliveryOrderPage() {
             setDeliveryTitle('');
             setDeliveryNotes('');
             setSelectedCourseCode('');
-            // Optionally clear student data to allow for a new search
-            // setStudentData(null); 
-            // setStudentId('');
         },
         onError: (err: Error) => {
             toast({
@@ -64,7 +61,6 @@ export default function CreateDeliveryOrderPage() {
         setStudentData(null);
 
         try {
-            // Using a generic fetch here, assuming getStudentFullInfo in api.ts exists
             const response = await fetch(`https://qa-api.pharmacollege.lk/get-student-full-info?loggedUser=${studentId.trim().toUpperCase()}`);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: `Student not found or server error. Status: ${response.status}` }));
@@ -119,7 +115,6 @@ export default function CreateDeliveryOrderPage() {
             received_date: null,
             cod_amount: '0.00',
             package_weight: '0.000',
-            // Custom fields from our form
             delivery_title: deliveryTitle,
             notes: deliveryNotes,
         };

@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { getStaffMembers } from '@/lib/api';
+import { getStaffMembers } from '@/lib/actions/users';
 import type { StaffMember } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 

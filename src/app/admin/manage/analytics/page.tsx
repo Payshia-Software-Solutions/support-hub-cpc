@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart as BarChartIcon, Users, MapPin, PersonStanding, Cake, Phone, ArrowRight, TrendingUp, TrendingDown, PieChart as PieChartIcon } from 'lucide-react';
 import Link from 'next/link';
-import { getAllUserFullDetails, getAllCities, getAllDistricts } from '@/lib/api';
+import { getAllUserFullDetails } from '@/lib/actions/users';
+import { getAllCities, getAllDistricts } from '@/lib/actions/locations';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { UserFullDetails, Location } from '@/lib/types';
 import {

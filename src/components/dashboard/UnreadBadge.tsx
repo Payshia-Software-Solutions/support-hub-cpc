@@ -2,7 +2,7 @@
 "use client";
 
 import { useQuery } from '@tanstack/react-query';
-import { getUnreadMessageCount } from '@/lib/api';
+import { getUnreadMessageCount } from '@/lib/actions/tickets';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, MessageSquareDashedIcon } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { useSidebar } from "@/components/ui/sidebar"; 
-import { getAdminChats, createChatMessage } from "@/lib/api";
+import { getAdminChats, createChatMessage } from "@/lib/actions/tickets";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";

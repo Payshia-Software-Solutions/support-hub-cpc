@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PlusCircle, Trash2, Edit, AlertTriangle, BookOpen, ChevronRight, ArrowLeft, Loader2 } from 'lucide-react';
 import type { BnfChapter, BnfPage } from '@/lib/types';
-import { getBnfChapters, getBnfPagesForChapter, createBnfChapter, updateBnfChapter, deleteBnfChapter, createBnfPage, updateBnfPage, deleteBnfPage } from '@/lib/api';
+import { getBnfChapters, createBnfChapter, updateBnfChapter, deleteBnfChapter, createBnfPage, updateBnfPage, deleteBnfPage } from '@/lib/actions/bnf';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -328,5 +328,3 @@ export default function BnfManagementPage() {
         </div>
     )
 }
-
-    

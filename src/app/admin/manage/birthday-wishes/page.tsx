@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import { Search, Cake, Send, Loader2, PartyPopper, AlertTriangle } from 'lucide-react';
-import { getAllUserFullDetails } from '@/lib/api';
+import { getAllUserFullDetails } from '@/lib/actions/users';
 import type { UserFullDetails } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format, isToday, parseISO, isValid, getDayOfYear, addDays, subDays } from 'date-fns';

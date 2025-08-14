@@ -2,7 +2,7 @@
 "use client";
 
 import { useQuery } from '@tanstack/react-query';
-import { getAnnouncements } from '@/lib/api';
+import { getAnnouncements } from '@/lib/actions/announcements';
 import type { Announcement } from '@/lib/types';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";

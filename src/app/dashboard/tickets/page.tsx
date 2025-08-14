@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { TicketList } from "@/components/dashboard/TicketList";
 import type { Ticket } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getTickets } from '@/lib/api';
+import { getTickets } from '@/lib/actions/tickets';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function TicketsPage() {

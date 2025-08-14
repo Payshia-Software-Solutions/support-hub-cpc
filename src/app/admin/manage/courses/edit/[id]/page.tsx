@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getParentCourse, updateParentCourse } from '@/lib/api';
+import { getParentCourse, updateParentCourse } from '@/lib/actions/courses';
 import type { ParentCourse } from '@/lib/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';

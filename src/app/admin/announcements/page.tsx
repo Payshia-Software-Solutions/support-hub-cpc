@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { getAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement } from "@/lib/api";
+import { getAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement } from "@/lib/actions/announcements";
 import type { Announcement } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertTitle as ShadcnAlertTitle } from "@/components/ui/alert"; // Renamed to avoid conflict with AlertDialogTitle
 
 const AnnouncementForm = ({
   announcement,
@@ -189,7 +190,7 @@ export default function AdminAnnouncementsPage() {
             {isError && (
                  <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Error Loading Announcements</AlertTitle>
+                    <ShadcnAlertTitle>Error Loading Announcements</ShadcnAlertTitle>
                     <AlertDescription>{error.message}</AlertDescription>
                 </Alert>
             )}

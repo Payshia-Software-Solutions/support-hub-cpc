@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { getStudentsByCourseCode, createDeliveryOrderForStudent, getDeliveryOrdersForStudent, getCourses, getDeliverySettingsForCourse, updateDeliveryOrderStatus } from '@/lib/api';
+import { getStudentsByCourseCode, createDeliveryOrderForStudent, getDeliveryOrdersForStudent, updateDeliveryOrderStatus } from '@/lib/actions/delivery';
+import { getCourses, getDeliverySettingsForCourse } from '@/lib/actions/courses';
 import type { StudentInBatch, DeliveryOrder, Course, DeliverySetting } from '@/lib/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -663,4 +664,3 @@ export default function BatchDeliveryOrdersPage() {
         </div>
     );
 }
-

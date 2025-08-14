@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, ArrowRight, Briefcase } from 'lucide-react';
-import { getStaffMembers } from '@/lib/api';
+import { getStaffMembers } from '@/lib/actions/users';
 import type { StaffMember } from '@/lib/types';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Link from 'next/link';
@@ -137,5 +137,3 @@ export default function ManageCommissionsPage() {
         </div>
     );
 }
-
-    

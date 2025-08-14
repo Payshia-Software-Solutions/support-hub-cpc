@@ -5,7 +5,7 @@ import Link from "next/link";
 import { TicketForm } from "@/components/dashboard/TicketForm";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createTicket, getTickets } from "@/lib/api";
+import { createTicket, getTickets } from "@/lib/actions/tickets";
 import { toast } from "@/hooks/use-toast";
 import type { Ticket, Attachment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";

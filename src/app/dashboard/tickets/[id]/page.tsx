@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { toast } from "@/hooks/use-toast";
-import { getTicket, updateTicket } from "@/lib/api";
+import { getTicket, updateTicket } from "@/lib/actions/tickets";
 
 export default function TicketDetailPage() {
   const router = useRouter();
@@ -30,13 +30,10 @@ export default function TicketDetailPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: updateTicket,
+    mutationFn: (data: Parameters<typeof updateTicket>[0]) => updateTicket(data),
     onSuccess: (data) => {
-      // Invalidate the ticket itself to get the latest status
       queryClient.invalidateQueries({ queryKey: ['ticket', data.id] });
-      // Invalidate the list of tickets to update the card in the list view.
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
-      // Invalidate the messages for this ticket, in case the status change added a system message.
       queryClient.invalidateQueries({ queryKey: ['ticketMessages', data.id] });
     },
     onError: (err: Error) => {
@@ -49,7 +46,6 @@ export default function TicketDetailPage() {
   });
 
   useEffect(() => {
-    // Intercept the back button press
     history.pushState(null, '', location.href);
     const handlePopState = (event: PopStateEvent) => {
         event.preventDefault();

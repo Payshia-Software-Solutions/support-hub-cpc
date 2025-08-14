@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import { Search, UserCheck, AlertTriangle } from 'lucide-react';
 import type { ApiStaffMember, UserProfile } from '@/lib/types';
-import { getAllStudents } from '@/lib/api';
+import { getAllStudents } from '@/lib/actions/users';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
