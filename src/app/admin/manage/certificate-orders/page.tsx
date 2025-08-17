@@ -3,8 +3,8 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCertificateOrders, updateCertificateOrderCourses, getUserCertificatePrintStatus, generateCertificate, getStudentBalance } from '@/lib/actions/certificates';
-import { getStudentFullInfo } from '@/lib/actions/users';
+import { getCertificateOrders, updateCertificateOrderCourses, getUserCertificatePrintStatus, generateCertificate } from '@/lib/actions/certificates';
+import { getStudentFullInfo, getStudentBalance } from '@/lib/actions/users';
 import type { CertificateOrder, FullStudentData, UpdateCertificateOrderCoursesPayload, UserCertificatePrintStatus, GenerateCertificatePayload, StudentBalanceData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
