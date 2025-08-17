@@ -18,7 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTicketMessages, createTicketMessage, updateTicketStatus, markTicketMessagesAsRead, getStudentFullInfo, updateTicketRating } from "@/lib/api";
+import { getTicketMessages, createTicketMessage, updateTicketStatus, markTicketMessagesAsRead, updateTicketRating } from "@/lib/actions/tickets";
+import { getStudentFullInfo } from "@/lib/actions/users";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
@@ -1250,4 +1251,5 @@ export function TicketDetailClient({ initialTicket, onUpdateTicket, onAssignTick
     </div>
   );
 }
+
 

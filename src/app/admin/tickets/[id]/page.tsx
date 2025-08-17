@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 import { toast } from "@/hooks/use-toast";
-import { getTicket, updateTicket, assignTicket, unlockTicket, getStaffMembers, getStudentFullInfo } from "@/lib/api";
+import { getTicket, updateTicket, assignTicket, unlockTicket } from "@/lib/actions/tickets";
+import { getStaffMembers, getStudentFullInfo } from "@/lib/actions/users";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminTicketDetailPage() {
