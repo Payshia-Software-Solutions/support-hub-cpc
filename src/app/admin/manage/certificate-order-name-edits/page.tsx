@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getCertificateOrders, updateCertificateName, sendCertificateNameSms } from '@/lib/api';
+import { getCertificateOrders, updateCertificateName, sendCertificateNameSms } from '@/lib/actions/certificates';
 import type { CertificateOrder, UpdateCertificateNamePayload, SendSmsPayload } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
