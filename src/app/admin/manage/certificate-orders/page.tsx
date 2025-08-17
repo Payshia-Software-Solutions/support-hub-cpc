@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet, FileDown, Phone } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet, FileDown, Phone, Home, Mail, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -24,6 +24,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   Tooltip,
   TooltipContent,
@@ -330,6 +338,7 @@ export default function CertificateOrdersListPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [updatableOrders, setUpdatableOrders] = useState<Record<string, boolean>>({});
     const [isExporting, setIsExporting] = useState(false);
+    const [selectedOrderDetails, setSelectedOrderDetails] = useState<CertificateOrder | null>(null);
 
     const { data: orders, isLoading: isLoadingOrders, isError, error } = useQuery<CertificateOrder[]>({
         queryKey: ['allCertificateOrders'],
@@ -464,6 +473,29 @@ export default function CertificateOrdersListPage() {
                 <p className="text-muted-foreground">View all certificate orders and check student eligibility.</p>
             </header>
 
+            <Dialog open={!!selectedOrderDetails} onOpenChange={(open) => !open && setSelectedOrderDetails(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Shipping Details for Order #{selectedOrderDetails?.id}</DialogTitle>
+                        <DialogDescription>
+                            Delivery information provided by {selectedOrderDetails?.created_by}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4 text-sm">
+                        <div className="space-y-1">
+                            <Label>Full Address</Label>
+                            <p className="p-2 bg-muted rounded-md text-muted-foreground">
+                                {selectedOrderDetails?.address_line1}, {selectedOrderDetails?.address_line2}, {selectedOrderDetails?.city_id}, {selectedOrderDetails?.district}
+                            </p>
+                        </div>
+                        <div className="space-y-1">
+                            <Label>Contact Number</Label>
+                            <p className="p-2 bg-muted rounded-md text-muted-foreground">{selectedOrderDetails?.mobile}</p>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             <Card className="shadow-lg">
                 <CardHeader>
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -497,21 +529,21 @@ export default function CertificateOrdersListPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Student</TableHead>
-                                    <TableHead>Name on Certificate</TableHead>
-                                    <TableHead>Mobile</TableHead>
                                     <TableHead>Course(s)</TableHead>
                                     <TableHead>Generated Certs</TableHead>
                                     <TableHead>Order Date</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead>Actions</TableHead>
+                                    <TableHead>Eligibility</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {paginatedOrders.map(order => (
                                     <TableRow key={order.id}>
-                                        <TableCell className="font-medium">{order.created_by}</TableCell>
-                                        <TableCell>{order.name_on_certificate}</TableCell>
-                                        <TableCell>{order.mobile}</TableCell>
+                                        <TableCell className="font-medium">
+                                            <p>{order.created_by}</p>
+                                            <p className="text-xs text-muted-foreground">{order.name_on_certificate}</p>
+                                        </TableCell>
                                         <TableCell>{order.course_code}</TableCell>
                                         <TableCell>
                                             <CertificateStatusCell order={order} studentNumber={order.created_by} orderCourseCodes={order.course_code} />
@@ -520,6 +552,9 @@ export default function CertificateOrdersListPage() {
                                         <TableCell><Badge variant="secondary">{order.certificate_status}</Badge></TableCell>
                                         <TableCell>
                                             <OrderActionsCell order={order} onEligibilityStatusChange={handleEligibilityStatusChange} />
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="outline" size="sm" onClick={() => setSelectedOrderDetails(order)}>View Details</Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -546,10 +581,6 @@ export default function CertificateOrdersListPage() {
                                         <Badge variant="secondary">{order.certificate_status}</Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <p className="text-muted-foreground font-medium">Mobile</p>
-                                        <p className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5"/>{order.mobile}</p>
-                                    </div>
-                                    <div className="flex items-center justify-between">
                                         <p className="text-muted-foreground font-medium">Course(s)</p>
                                         <p>{order.course_code}</p>
                                     </div>
@@ -559,9 +590,14 @@ export default function CertificateOrdersListPage() {
                                             <CertificateStatusCell order={order} studentNumber={order.created_by} orderCourseCodes={order.course_code} />
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-between pt-2 border-t mt-2">
-                                        <p className="text-muted-foreground font-medium">Actions</p>
-                                        <OrderActionsCell order={order} onEligibilityStatusChange={handleEligibilityStatusChange} />
+                                     <div className="flex items-start justify-between">
+                                        <p className="text-muted-foreground font-medium shrink-0 pr-2">Eligibility</p>
+                                        <div className="text-right">
+                                            <OrderActionsCell order={order} onEligibilityStatusChange={handleEligibilityStatusChange} />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-end pt-2 border-t mt-2">
+                                         <Button variant="outline" size="sm" onClick={() => setSelectedOrderDetails(order)}>View Details</Button>
                                     </div>
                                 </div>
                             </div>
