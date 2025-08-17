@@ -220,8 +220,8 @@ export default function CreateCertificateOrderPage() {
     const submissionData = new FormData();
     submissionData.append("address_line1", addressData.addressLine1);
     submissionData.append("address_line2", addressData.addressLine2 || "");
-    submissionData.append("city_id", cityName);
-    submissionData.append("district", districtName);
+    submissionData.append("city_id", addressData.city);
+    submissionData.append("district", addressData.district);
     submissionData.append("mobile", addressData.phone);
     submissionData.append("created_by", studentUsername);
     submissionData.append("type", "1");
