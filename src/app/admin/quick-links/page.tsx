@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { searchStudents, getStudentFullInfo } from '@/lib/api';
+import { searchStudents, getStudentFullInfo } from '@/lib/actions/users';
 import type { StudentSearchResult, FullStudentData, StudentBalance, StudentEnrollment, DeliveryOrder, CertificateRecord, ApiPaymentRecord } from '@/lib/types';
 
 
@@ -413,5 +413,7 @@ export default function AdminQuickLinksPage() {
         </div>
     );
 }
+
+    
 
     
