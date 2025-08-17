@@ -4,7 +4,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getStudentFullInfo, createCertificateOrder } from '@/lib/api';
+import { getStudentFullInfo } from '@/lib/actions/users';
+import { createCertificateOrder } from '@/lib/actions/certificates';
 import type { FullStudentData, StudentEnrollment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
