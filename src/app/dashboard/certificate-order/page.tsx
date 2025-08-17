@@ -3,7 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getCertificateOrdersByStudent } from '@/lib/api';
+import { getCertificateOrdersByStudent } from '@/lib/actions/certificates';
 import type { CertificateOrder } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
