@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet, FileDown, Phone, Home, Mail, User } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -46,19 +46,17 @@ import { cn } from '@/lib/utils';
 const ITEMS_PER_PAGE = 25;
 
 // --- Certificate Status Component ---
-const CertificateStatusCell = ({ order, studentNumber, orderCourseCodes }: { order: CertificateOrder, studentNumber: string, orderCourseCodes: string }) => {
+const CertificateStatusCell = ({ order, studentNumber, courseCode }: { order: CertificateOrder, studentNumber: string, courseCode: string }) => {
     const queryClient = useQueryClient();
     const { user } = useAuth();
 
-    const { data: certificateStatusData, isLoading: isLoadingCerts, isError: isErrorCerts } = useQuery<{ certificateStatus: UserCertificatePrintStatus[] }, Error>({
-        queryKey: ['userCertificateStatus', studentNumber],
-        queryFn: () => getUserCertificatePrintStatus(studentNumber),
+    const { data: certificateStatus, isLoading: isLoadingCerts, isError: isErrorCerts } = useQuery<UserCertificatePrintStatus[], Error>({
+        queryKey: ['userCertificateStatus', studentNumber, courseCode],
+        queryFn: () => getUserCertificatePrintStatus(studentNumber, courseCode),
         staleTime: 5 * 60 * 1000,
-        enabled: !!studentNumber,
+        enabled: !!studentNumber && !!courseCode,
     });
-    const certificates = certificateStatusData?.certificateStatus;
-
-
+    
     const { data: fullStudentData, isLoading: isLoadingInfo, isError: isErrorInfo } = useQuery<FullStudentData, Error>({
         queryKey: ['studentFullInfoForCertGen', studentNumber],
         queryFn: () => getStudentFullInfo(studentNumber),
@@ -66,15 +64,14 @@ const CertificateStatusCell = ({ order, studentNumber, orderCourseCodes }: { ord
         enabled: !!studentNumber,
     });
 
-    const { mutate: generateCert, isPending: isGenerating, variables: generatingVariables } = useMutation({
+    const { mutate: generateCert, isPending: isGenerating } = useMutation({
         mutationFn: (payload: GenerateCertificatePayload) => generateCertificate(payload),
         onSuccess: () => {
             toast({
                 title: "Certificate Generated",
                 description: "The certificate record has been created successfully.",
             });
-            // Refetch the status to update the UI
-            queryClient.invalidateQueries({ queryKey: ['userCertificateStatus', studentNumber] });
+            queryClient.invalidateQueries({ queryKey: ['userCertificateStatus', studentNumber, courseCode] });
         },
         onError: (error: Error) => {
             toast({
@@ -87,7 +84,8 @@ const CertificateStatusCell = ({ order, studentNumber, orderCourseCodes }: { ord
 
     const isLoading = isLoadingCerts || isLoadingInfo;
     const isError = isErrorCerts || isErrorInfo;
-
+    const generatedCertificate = certificateStatus && certificateStatus.length > 0 ? certificateStatus[0] : null;
+    
     if (isLoading) {
         return <Skeleton className="h-6 w-24" />;
     }
@@ -96,76 +94,63 @@ const CertificateStatusCell = ({ order, studentNumber, orderCourseCodes }: { ord
         return <Badge variant="destructive">Error</Badge>;
     }
 
-    const orderCourseIds = orderCourseCodes.split(',').map(id => id.trim()).filter(Boolean);
+    if (generatedCertificate) {
+         return (
+             <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                         <Badge variant={generatedCertificate.print_status === '1' ? 'default' : 'secondary'}>
+                            {generatedCertificate.certificate_id}
+                        </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Course ID: {generatedCertificate.parent_course_id}</p>
+                        <p>{generatedCertificate.type}: {generatedCertificate.certificate_id}</p>
+                        <p>Status: {generatedCertificate.print_status === '1' ? 'Printed' : 'Generated'}</p>
+                        <p>Date: {new Date(generatedCertificate.print_date).toLocaleDateString()}</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        );
+    }
+    
+    const handleGenerateClick = () => {
+         if (!user || !user.username) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not identify admin user.' });
+            return;
+        }
+        if (!fullStudentData) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Student enrollment data not loaded.'});
+            return;
+        }
+        
+        const enrollment = Object.values(fullStudentData.studentEnrollments).find(e => e.course_code === courseCode);
+        
+        if (!enrollment) {
+            toast({ variant: 'destructive', title: 'Error', description: `Enrollment for course code ${courseCode} not found.`});
+            return;
+        }
 
-    // A certificate is "generated" if a record exists for it, regardless of print_status.
-    const generatedCertificates = certificates?.filter(
-        cert => cert.type === 'Certificate' && orderCourseIds.includes(cert.parent_course_id)
-    ) || [];
-
-    const generatedCourseIds = generatedCertificates.map(c => c.parent_course_id);
-    const ungeneratedCourseIds = orderCourseIds.filter(id => !generatedCourseIds.includes(id));
-
+        const payload: GenerateCertificatePayload = {
+            student_number: studentNumber,
+            print_status: "Printed",
+            print_by: user.username,
+            type: "Certificate",
+            parentCourseCode: parseInt(enrollment.parent_course_id, 10),
+            referenceId: parseInt(order.id, 10),
+            course_code: courseCode,
+            source: "courier"
+        };
+        generateCert(payload);
+    };
 
     return (
-        <div className="flex flex-wrap gap-2 items-center">
-            {generatedCertificates.map(cert => (
-                <TooltipProvider key={cert.id}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                             <Badge variant={cert.print_status === '1' ? 'default' : 'secondary'}>
-                                {cert.parent_course_id}: {cert.certificate_id}
-                            </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Course ID: {cert.parent_course_id}</p>
-                            <p>{cert.type}: {cert.certificate_id}</p>
-                            <p>Status: {cert.print_status === '1' ? 'Printed' : 'Generated'}</p>
-                            <p>Date: {new Date(cert.print_date).toLocaleDateString()}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            ))}
-            
-            {fullStudentData && ungeneratedCourseIds.map(courseId => {
-                const enrollment = Object.values(fullStudentData.studentEnrollments).find(e => e.parent_course_id === courseId);
-                if (!enrollment) return null;
-
-                const isGeneratingThisOne = isGenerating && generatingVariables?.parentCourseCode === parseInt(courseId, 10);
-
-                const handleGenerateClick = () => {
-                     if (!user || !user.username) {
-                        toast({ variant: 'destructive', title: 'Error', description: 'Could not identify admin user.' });
-                        return;
-                    }
-                    const payload: GenerateCertificatePayload = {
-                        student_number: studentNumber,
-                        print_status: "Printed",
-                        print_by: user.username,
-                        type: "Certificate",
-                        parentCourseCode: parseInt(courseId, 10),
-                        referenceId: parseInt(order.id, 10),
-                        course_code: enrollment.course_code,
-                        source: "courier"
-                    };
-                    generateCert(payload);
-                };
-
-                return (
-                    <Button key={courseId} size="sm" variant="outline" onClick={handleGenerateClick} disabled={isGeneratingThisOne}>
-                        {isGeneratingThisOne && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Generate ({enrollment.course_code})
-                    </Button>
-                )
-            })}
-
-            {generatedCertificates.length === 0 && ungeneratedCourseIds.length === 0 && (
-                 <Badge variant="secondary">None</Badge>
-            )}
-        </div>
-    );
+        <Button size="sm" variant="outline" onClick={handleGenerateClick} disabled={isGenerating}>
+            {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Generate
+        </Button>
+    )
 };
-
 
 
 // --- Action Component ---
@@ -544,7 +529,7 @@ export default function CertificateOrdersListPage() {
                                 <TableRow>
                                     <TableHead>Student</TableHead>
                                     <TableHead>Course(s)</TableHead>
-                                    <TableHead>Generated Certs</TableHead>
+                                    <TableHead>Cert Status</TableHead>
                                     <TableHead>Order Date</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Eligibility</TableHead>
@@ -560,7 +545,11 @@ export default function CertificateOrdersListPage() {
                                         </TableCell>
                                         <TableCell>{order.course_code}</TableCell>
                                         <TableCell>
-                                            <CertificateStatusCell order={order} studentNumber={order.created_by} orderCourseCodes={order.course_code} />
+                                            <div className="flex flex-wrap gap-2 items-center">
+                                                {order.course_code.split(',').map(code => (
+                                                    <CertificateStatusCell key={code.trim()} order={order} studentNumber={order.created_by} courseCode={code.trim()} />
+                                                ))}
+                                            </div>
                                         </TableCell>
                                         <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell><Badge variant="secondary">{order.certificate_status}</Badge></TableCell>
@@ -598,14 +587,18 @@ export default function CertificateOrdersListPage() {
                                         <p className="text-muted-foreground font-medium">Status</p>
                                         <Badge variant="secondary">{order.certificate_status}</Badge>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-muted-foreground font-medium">Course(s)</p>
-                                        <p>{order.course_code}</p>
+                                     <div className="flex flex-col items-start justify-between">
+                                        <p className="text-muted-foreground font-medium mb-1">Course(s)</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {order.course_code.split(',').map(code => <Badge key={code.trim()} variant="outline">{code.trim()}</Badge>)}
+                                        </div>
                                     </div>
                                     <div className="flex items-start justify-between">
-                                        <p className="text-muted-foreground font-medium shrink-0 pr-2">Generated Certs</p>
-                                        <div className="text-right">
-                                            <CertificateStatusCell order={order} studentNumber={order.created_by} orderCourseCodes={order.course_code} />
+                                        <p className="text-muted-foreground font-medium shrink-0 pr-2">Certificates</p>
+                                        <div className="text-right flex flex-wrap gap-1 justify-end">
+                                            {order.course_code.split(',').map(code => (
+                                                <CertificateStatusCell key={code.trim()} order={order} studentNumber={order.created_by} courseCode={code.trim()} />
+                                            ))}
                                         </div>
                                     </div>
                                      <div className="flex items-start justify-between">
@@ -643,3 +636,4 @@ export default function CertificateOrdersListPage() {
         </div>
     );
 }
+

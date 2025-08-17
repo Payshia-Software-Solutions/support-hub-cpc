@@ -132,19 +132,28 @@ export const updateCertificateOrderCourses = async (payload: UpdateCertificateOr
 };
 
 // User Certificate Print Status
-export const getUserCertificatePrintStatus = async (studentNumber: string): Promise<{ certificateStatus: UserCertificatePrintStatus[] }> => {
-    const response = await fetch(`${QA_API_BASE_URL}/user_certificate_print_status?studentNumber=${studentNumber}`);
+export const getUserCertificatePrintStatus = async (studentNumber: string, courseCode?: string): Promise<UserCertificatePrintStatus[]> => {
+    let url = `${QA_API_BASE_URL}/user_certificate_print_status?studentNumber=${studentNumber}`;
+    if (courseCode) {
+        url += `&courseCode=${courseCode}`;
+    }
+    const response = await fetch(url);
     
     if (response.status === 404) {
-        return { certificateStatus: [] };
+        return [];
     }
     
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: `Failed to fetch certificate status. Status: ${response.status}` }));
         throw new Error(errorData.error || 'Failed to fetch certificate status');
     }
-    return response.json();
+    
+    const data = await response.json();
+    // The API might return an object with a property, or just the array.
+    // This handles both cases.
+    return Array.isArray(data) ? data : data.certificateStatus || [];
 };
+
 
 export const generateCertificate = async (payload: GenerateCertificatePayload): Promise<any> => {
     const response = await fetch(`${QA_API_BASE_URL}/certificate-print-status`, {
