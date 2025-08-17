@@ -169,11 +169,11 @@ const CertificateStatusCell = ({ order, studentNumber, orderCourseCodes }: { ord
 
 
 // --- Action Component ---
-const OrderActionsCell = ({ order, onEligibilityStatusChange }: { order: CertificateOrder, onEligibilityStatusChange: (orderId: string, isUpdatable: boolean) => void }) => {
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [dialogContent, setDialogContent] = useState<{ title: string, description: React.ReactNode, onConfirm?: () => void }>({});
-    const queryClient = useQueryClient();
-
+const OrderActionsCell = ({ order, onEligibilityStatusChange, onUpdateClick }: { 
+    order: CertificateOrder, 
+    onEligibilityStatusChange: (orderId: string, isUpdatable: boolean) => void,
+    onUpdateClick: () => void 
+}) => {
     const { data: fullStudentData, isLoading, isError } = useQuery<FullStudentData, Error>({
         queryKey: ['studentFullInfoForEligibility', order.created_by],
         queryFn: () => getStudentFullInfo(order.created_by),
@@ -212,71 +212,6 @@ const OrderActionsCell = ({ order, onEligibilityStatusChange }: { order: Certifi
     }, [isLoading, isUpdateAvailable, order.id, onEligibilityStatusChange]);
 
 
-    const { mutate: updateCourses, isPending: isUpdating } = useMutation({
-        mutationFn: (payload: UpdateCertificateOrderCoursesPayload) => updateCertificateOrderCourses(payload),
-        onSuccess: (data) => {
-            toast({
-                title: "Update Successful",
-                description: "The certificate order has been updated.",
-            });
-            queryClient.invalidateQueries({ queryKey: ['allCertificateOrders'] });
-            setIsDialogOpen(false);
-        },
-        onError: (error: Error) => {
-            toast({
-                variant: 'destructive',
-                title: 'Update Failed',
-                description: error.message,
-            });
-        }
-    });
-
-    const openUpdateDialog = () => {
-        if (!newEligibleEnrollments.length) return;
-
-        const currentCourses = order.course_code.split(',').map(s => s.trim()).filter(Boolean);
-        
-        const onConfirm = () => {
-            const newEligibleCourseIds = newEligibleEnrollments.map(e => e.parent_course_id);
-            const allCourseIds = [...currentCourses, ...newEligibleCourseIds];
-
-            updateCourses({
-                orderId: order.id,
-                courseCodes: allCourseIds.join(','),
-            });
-        };
-
-        setDialogContent({
-            title: "Update Certificate Order",
-            description: (
-                <div className="text-sm">
-                    <p className="mb-3">This student is eligible for the following additional course(s). Do you want to add them to this certificate order?</p>
-                    <div className="space-y-4 rounded-md border bg-muted/50 p-3 max-h-60 overflow-y-auto">
-                        {newEligibleEnrollments.map(enrollment => (
-                            <div key={enrollment.parent_course_id}>
-                                <h4 className="font-semibold text-card-foreground">{enrollment.parent_course_name}</h4>
-                                <ul className="mt-1 list-disc list-inside text-xs text-muted-foreground space-y-1 pl-2">
-                                    {enrollment.criteria_details.map(c => (
-                                        <li key={c.id} className="flex items-center justify-between">
-                                            <span>{c.list_name}</span>
-                                            {c.evaluation.completed ? (
-                                                 <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5" /> Complete</span>
-                                            ) : (
-                                                 <span className="text-red-600 font-medium flex items-center gap-1"><XCircle className="h-3.5 w-3.5" /> Incomplete</span>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            ),
-            onConfirm
-        });
-        setIsDialogOpen(true);
-    };
-
     if (isLoading) {
         return (
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
@@ -296,28 +231,9 @@ const OrderActionsCell = ({ order, onEligibilityStatusChange }: { order: Certifi
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
             <div className="flex-shrink-0">
                 {isUpdateAvailable ? (
-                     <>
-                        <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>{dialogContent.title}</AlertDialogTitle>
-                                    <AlertDialogDescription asChild>
-                                        {dialogContent.description || <div />}
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel disabled={isUpdating}>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={dialogContent.onConfirm} disabled={isUpdating}>
-                                        {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Update Order
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                        <Button variant="default" size="sm" onClick={openUpdateDialog}>
-                            Update Available
-                        </Button>
-                    </>
+                    <Button variant="default" size="sm" onClick={onUpdateClick}>
+                        Update Available
+                    </Button>
                 ) : (
                     <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">Up to date</Badge>
                 )}
@@ -341,11 +257,65 @@ export default function CertificateOrdersListPage() {
     const [isExporting, setIsExporting] = useState(false);
     const [selectedOrderDetails, setSelectedOrderDetails] = useState<CertificateOrder | null>(null);
 
+    // State for the update dialog
+    const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+    const [orderToUpdate, setOrderToUpdate] = useState<CertificateOrder | null>(null);
+
     const { data: orders, isLoading: isLoadingOrders, isError, error } = useQuery<CertificateOrder[]>({
         queryKey: ['allCertificateOrders'],
         queryFn: getCertificateOrders,
         staleTime: 5 * 60 * 1000,
     });
+    
+    const { data: updateDialogStudentData } = useQuery<FullStudentData, Error>({
+        queryKey: ['studentFullInfoForEligibility', orderToUpdate?.created_by],
+        queryFn: () => getStudentFullInfo(orderToUpdate!.created_by),
+        enabled: !!orderToUpdate,
+    });
+    
+    const queryClient = useQueryClient();
+    const { mutate: updateCourses, isPending: isUpdating } = useMutation({
+        mutationFn: (payload: UpdateCertificateOrderCoursesPayload) => updateCertificateOrderCourses(payload),
+        onSuccess: (data) => {
+            toast({
+                title: "Update Successful",
+                description: "The certificate order has been updated.",
+            });
+            queryClient.invalidateQueries({ queryKey: ['allCertificateOrders'] });
+            setIsUpdateDialogOpen(false);
+            setOrderToUpdate(null);
+        },
+        onError: (error: Error) => {
+            toast({
+                variant: 'destructive',
+                title: 'Update Failed',
+                description: error.message,
+            });
+        }
+    });
+
+    const openUpdateDialog = (order: CertificateOrder) => {
+        setOrderToUpdate(order);
+        setIsUpdateDialogOpen(true);
+    };
+
+    const handleConfirmUpdate = () => {
+        if (!orderToUpdate || !updateDialogStudentData) return;
+
+        const currentCourses = orderToUpdate.course_code.split(',').map(s => s.trim()).filter(Boolean);
+        const allEligibleEnrollments = Object.values(updateDialogStudentData.studentEnrollments).filter(e => e.certificate_eligibility);
+        const newEligibleCourseIds = allEligibleEnrollments
+            .filter(e => !currentCourses.includes(e.parent_course_id))
+            .map(e => e.parent_course_id);
+        
+        const allCourseIds = [...currentCourses, ...newEligibleCourseIds];
+
+        updateCourses({
+            orderId: orderToUpdate.id,
+            courseCodes: allCourseIds.join(','),
+        });
+    };
+
 
     const filteredOrders = useMemo(() => {
         if (!orders) return [];
@@ -361,9 +331,9 @@ export default function CertificateOrdersListPage() {
         return Object.values(updatableOrders).filter(Boolean).length;
     }, [updatableOrders]);
 
-    const handleEligibilityStatusChange = (orderId: string, isUpdatable: boolean) => {
+    const handleEligibilityStatusChange = useCallback((orderId: string, isUpdatable: boolean) => {
         setUpdatableOrders(prev => ({ ...prev, [orderId]: isUpdatable }));
-    };
+    }, []);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -473,6 +443,49 @@ export default function CertificateOrdersListPage() {
                 <h1 className="text-3xl font-headline font-semibold">Certificate Orders</h1>
                 <p className="text-muted-foreground">View all certificate orders and check student eligibility.</p>
             </header>
+            
+            {/* Update Dialog */}
+             <AlertDialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Update Certificate Order</AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                           {!updateDialogStudentData ? <div><Loader2 className="animate-spin mr-2"/>Loading...</div> : (
+                             <div className="text-sm">
+                                <p className="mb-3">This student is eligible for the following additional course(s). Do you want to add them to this certificate order?</p>
+                                <div className="space-y-4 rounded-md border bg-muted/50 p-3 max-h-60 overflow-y-auto">
+                                    {Object.values(updateDialogStudentData.studentEnrollments).filter(e => e.certificate_eligibility && !orderToUpdate?.course_code.includes(e.parent_course_id)).map(enrollment => (
+                                        <div key={enrollment.parent_course_id}>
+                                            <h4 className="font-semibold text-card-foreground">{enrollment.parent_course_name}</h4>
+                                            <ul className="mt-1 list-disc list-inside text-xs text-muted-foreground space-y-1 pl-2">
+                                                {enrollment.criteria_details.map(c => (
+                                                    <li key={c.id} className="flex items-center justify-between">
+                                                        <span>{c.list_name}</span>
+                                                        {c.evaluation.completed ? (
+                                                             <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5" /> Complete</span>
+                                                        ) : (
+                                                             <span className="text-red-600 font-medium flex items-center gap-1"><XCircle className="h-3.5 w-3.5" /> Incomplete</span>
+                                                        )}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                           )}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isUpdating}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmUpdate} disabled={isUpdating}>
+                            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Update Order
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
 
             <Dialog open={!!selectedOrderDetails} onOpenChange={(open) => !open && setSelectedOrderDetails(null)}>
                 <DialogContent>
@@ -552,7 +565,11 @@ export default function CertificateOrdersListPage() {
                                         <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell><Badge variant="secondary">{order.certificate_status}</Badge></TableCell>
                                         <TableCell>
-                                            <OrderActionsCell order={order} onEligibilityStatusChange={handleEligibilityStatusChange} />
+                                            <OrderActionsCell 
+                                                order={order} 
+                                                onEligibilityStatusChange={handleEligibilityStatusChange} 
+                                                onUpdateClick={() => openUpdateDialog(order)}
+                                            />
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Button variant="outline" size="sm" onClick={() => setSelectedOrderDetails(order)}>View Details</Button>
@@ -594,7 +611,11 @@ export default function CertificateOrdersListPage() {
                                      <div className="flex items-start justify-between">
                                         <p className="text-muted-foreground font-medium shrink-0 pr-2">Eligibility</p>
                                         <div className="text-right">
-                                            <OrderActionsCell order={order} onEligibilityStatusChange={handleEligibilityStatusChange} />
+                                            <OrderActionsCell 
+                                                order={order} 
+                                                onEligibilityStatusChange={handleEligibilityStatusChange} 
+                                                onUpdateClick={() => openUpdateDialog(order)}
+                                            />
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-end pt-2 border-t mt-2">
