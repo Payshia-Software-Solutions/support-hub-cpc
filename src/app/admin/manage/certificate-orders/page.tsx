@@ -3,7 +3,8 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCertificateOrders, getStudentFullInfo, updateCertificateOrderCourses, getUserCertificatePrintStatus, generateCertificate, getStudentBalance } from '@/lib/api';
+import { getCertificateOrders, updateCertificateOrderCourses, getUserCertificatePrintStatus, generateCertificate } from '@/lib/actions/certificates';
+import { getStudentFullInfo, getStudentBalance } from '@/lib/actions/users';
 import type { CertificateOrder, FullStudentData, UpdateCertificateOrderCoursesPayload, UserCertificatePrintStatus, GenerateCertificatePayload, StudentBalanceData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,12 +41,14 @@ const CertificateStatusCell = ({ order, studentNumber, orderCourseCodes }: { ord
     const queryClient = useQueryClient();
     const { user } = useAuth();
 
-    const { data: certificates, isLoading: isLoadingCerts, isError: isErrorCerts } = useQuery<UserCertificatePrintStatus[], Error>({
+    const { data: certificateStatusData, isLoading: isLoadingCerts, isError: isErrorCerts } = useQuery<{ certificateStatus: UserCertificatePrintStatus[] }, Error>({
         queryKey: ['userCertificateStatus', studentNumber],
         queryFn: () => getUserCertificatePrintStatus(studentNumber),
         staleTime: 5 * 60 * 1000,
         enabled: !!studentNumber,
     });
+    const certificates = certificateStatusData?.certificateStatus;
+
 
     const { data: fullStudentData, isLoading: isLoadingInfo, isError: isErrorInfo } = useQuery<FullStudentData, Error>({
         queryKey: ['studentFullInfoForCertGen', studentNumber],
@@ -582,3 +585,5 @@ export default function CertificateOrdersListPage() {
         </div>
     );
 }
+
+    
