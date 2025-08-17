@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { TicketList } from "@/components/dashboard/TicketList";
 import type { Ticket } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getAdminTickets } from '@/lib/api';
+import { getAdminTickets } from '@/lib/actions/tickets';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';

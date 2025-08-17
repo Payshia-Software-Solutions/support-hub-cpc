@@ -82,6 +82,7 @@ export default function AdminDashboardPage() {
     Open: { label: "Open", color: "hsl(var(--chart-1))" },
     "In Progress": { label: "In Progress", color: "hsl(var(--chart-2))" },
     Closed: { label: "Closed", color: "hsl(var(--chart-3))" },
+    Snooze: { label: "Snooze", color: "hsl(var(--chart-4))" },
   };
 
   const ticketStatusData = useMemo(() => {
@@ -101,6 +102,7 @@ export default function AdminDashboardPage() {
   const handlingChartConfig: ChartConfig = {
     Open: { label: "Open", color: "hsl(var(--chart-1))" },
     InProgress: { label: "In Progress", color: "hsl(var(--chart-2))" },
+    Snooze: { label: "Snooze", color: "hsl(var(--chart-4))" },
   };
 
   const staffHandlingData = useMemo(() => {
@@ -111,8 +113,9 @@ export default function AdminDashboardPage() {
         name: staff.name.split(' ')[0], // Use first name for brevity
         Open: assignedTickets.filter(t => t.status === 'Open').length,
         InProgress: assignedTickets.filter(t => t.status === 'In Progress').length,
+        Snooze: assignedTickets.filter(t => t.status === 'Snooze').length,
       };
-    }).filter(d => d.Open > 0 || d.InProgress > 0);
+    }).filter(d => d.Open > 0 || d.InProgress > 0 || d.Snooze > 0);
   }, [tickets, staffMembers]);
   
   const closedChartConfig: ChartConfig = {
@@ -311,7 +314,7 @@ export default function AdminDashboardPage() {
           <Card className="shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 delay-400">
             <CardHeader>
               <CardTitle>Active Tickets by Staff</CardTitle>
-              <CardDescription>Open and In-Progress tickets per staff member</CardDescription>
+              <CardDescription>Open, In-Progress, and Snoozed tickets per staff member</CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
               {isLoading ? (
@@ -338,7 +341,8 @@ export default function AdminDashboardPage() {
                     />
                     <Legend />
                     <Bar dataKey="Open" stackId="a" fill="var(--color-Open)" />
-                    <Bar dataKey="InProgress" stackId="a" fill="var(--color-InProgress)" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="InProgress" stackId="a" fill="var(--color-InProgress)" />
+                    <Bar dataKey="Snooze" stackId="a" fill="var(--color-Snooze)" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ChartContainer>
               ) : (
@@ -398,3 +402,5 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
+    
