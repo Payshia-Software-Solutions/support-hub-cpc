@@ -3,15 +3,16 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCertificateOrders, updateCertificateOrderCourses, getUserCertificatePrintStatus, generateCertificate } from '@/lib/actions/certificates';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getStudentFullInfo, getStudentBalance } from '@/lib/actions/users';
+import { getCertificateOrders, updateCertificateOrderCourses, generateCertificate, getUserCertificatePrintStatus } from '@/lib/actions/certificates';
 import type { CertificateOrder, FullStudentData, UpdateCertificateOrderCoursesPayload, UserCertificatePrintStatus, GenerateCertificatePayload, StudentBalanceData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -46,23 +47,39 @@ import { cn } from '@/lib/utils';
 const ITEMS_PER_PAGE = 25;
 
 // --- Certificate Status Component ---
-const CertificateStatusCell = ({ order, studentNumber, courseCode }: { order: CertificateOrder, studentNumber: string, courseCode: string }) => {
+const CertificateStatusCell = ({ order, parentCourseId, studentNumber }: { order: CertificateOrder, parentCourseId: string, studentNumber: string }) => {
     const queryClient = useQueryClient();
     const { user } = useAuth();
-
-    const { data: certificateStatus, isLoading: isLoadingCerts, isError: isErrorCerts } = useQuery<UserCertificatePrintStatus[], Error>({
-        queryKey: ['userCertificateStatus', studentNumber, courseCode],
-        queryFn: () => getUserCertificatePrintStatus(studentNumber, courseCode),
-        staleTime: 5 * 60 * 1000,
-        enabled: !!studentNumber && !!courseCode,
-    });
     
-    const { data: fullStudentData, isLoading: isLoadingInfo, isError: isErrorInfo } = useQuery<FullStudentData, Error>({
+    // 1. Fetch full student data to find the course code (batch code)
+    const { data: studentData, isLoading: isLoadingStudentInfo } = useQuery<FullStudentData, Error>({
         queryKey: ['studentFullInfoForCertGen', studentNumber],
         queryFn: () => getStudentFullInfo(studentNumber),
         staleTime: 5 * 60 * 1000,
         enabled: !!studentNumber,
     });
+
+    const relevantEnrollment = useMemo(() => {
+        if (!studentData) return null;
+        return Object.values(studentData.studentEnrollments).find(e => e.parent_course_id === parentCourseId);
+    }, [studentData, parentCourseId]);
+
+    const courseCode = relevantEnrollment?.course_code;
+
+    // 2. Fetch certificate status using the found course code
+    const { data: certificateStatusData, isLoading: isLoadingCerts, isError: isErrorCerts } = useQuery<{ certificateStatus: UserCertificatePrintStatus[] }, Error>({
+        queryKey: ['userCertificateStatus', studentNumber, courseCode],
+        queryFn: () => getUserCertificatePrintStatus(studentNumber, courseCode),
+        staleTime: 5 * 60 * 1000,
+        enabled: !!courseCode, // Only run this query if we have a course code
+    });
+    
+    // 3. Find the specific certificate status
+    const relevantCertificateStatus = useMemo(() => {
+        if (!certificateStatusData?.certificateStatus) return null;
+        return certificateStatusData.certificateStatus.find(c => c.course_code === courseCode);
+    }, [certificateStatusData, courseCode]);
+
 
     const { mutate: generateCert, isPending: isGenerating } = useMutation({
         mutationFn: (payload: GenerateCertificatePayload) => generateCertificate(payload),
@@ -82,32 +99,30 @@ const CertificateStatusCell = ({ order, studentNumber, courseCode }: { order: Ce
         }
     });
 
-    const isLoading = isLoadingCerts || isLoadingInfo;
-    const isError = isErrorCerts || isErrorInfo;
-    const generatedCertificate = certificateStatus && certificateStatus.length > 0 ? certificateStatus[0] : null;
+    const isLoading = isLoadingCerts || isLoadingStudentInfo;
     
     if (isLoading) {
         return <Skeleton className="h-6 w-24" />;
     }
 
-    if (isError) {
+    if (isErrorCerts) {
         return <Badge variant="destructive">Error</Badge>;
     }
 
-    if (generatedCertificate) {
+    if (relevantCertificateStatus) {
          return (
              <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                         <Badge variant={generatedCertificate.print_status === '1' ? 'default' : 'secondary'}>
-                            {generatedCertificate.certificate_id}
+                         <Badge variant={relevantCertificateStatus.print_status === '1' ? 'default' : 'secondary'}>
+                            {relevantCertificateStatus.certificate_id}
                         </Badge>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Course ID: {generatedCertificate.parent_course_id}</p>
-                        <p>{generatedCertificate.type}: {generatedCertificate.certificate_id}</p>
-                        <p>Status: {generatedCertificate.print_status === '1' ? 'Printed' : 'Generated'}</p>
-                        <p>Date: {new Date(generatedCertificate.print_date).toLocaleDateString()}</p>
+                        <p>Course ID: {relevantCertificateStatus.parent_course_id}</p>
+                        <p>{relevantCertificateStatus.type}: {relevantCertificateStatus.certificate_id}</p>
+                        <p>Status: {relevantCertificateStatus.print_status === '1' ? 'Printed' : 'Generated'}</p>
+                        <p>Date: {new Date(relevantCertificateStatus.print_date).toLocaleDateString()}</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
@@ -119,26 +134,19 @@ const CertificateStatusCell = ({ order, studentNumber, courseCode }: { order: Ce
             toast({ variant: 'destructive', title: 'Error', description: 'Could not identify admin user.' });
             return;
         }
-        if (!fullStudentData) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Student enrollment data not loaded.'});
+        if (!relevantEnrollment) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Student enrollment data not loaded or not found for this course.'});
             return;
         }
         
-        const enrollment = Object.values(fullStudentData.studentEnrollments).find(e => e.course_code === courseCode);
-        
-        if (!enrollment) {
-            toast({ variant: 'destructive', title: 'Error', description: `Enrollment for course code ${courseCode} not found.`});
-            return;
-        }
-
         const payload: GenerateCertificatePayload = {
             student_number: studentNumber,
             print_status: "Printed",
             print_by: user.username,
             type: "Certificate",
-            parentCourseCode: parseInt(enrollment.parent_course_id, 10),
+            parentCourseCode: parseInt(relevantEnrollment.parent_course_id, 10),
             referenceId: parseInt(order.id, 10),
-            course_code: courseCode,
+            course_code: relevantEnrollment.course_code,
             source: "courier"
         };
         generateCert(payload);
@@ -241,8 +249,6 @@ export default function CertificateOrdersListPage() {
     const [updatableOrders, setUpdatableOrders] = useState<Record<string, boolean>>({});
     const [isExporting, setIsExporting] = useState(false);
     const [selectedOrderDetails, setSelectedOrderDetails] = useState<CertificateOrder | null>(null);
-
-    // State for the update dialog
     const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
     const [orderToUpdate, setOrderToUpdate] = useState<CertificateOrder | null>(null);
 
@@ -429,7 +435,6 @@ export default function CertificateOrdersListPage() {
                 <p className="text-muted-foreground">View all certificate orders and check student eligibility.</p>
             </header>
             
-            {/* Update Dialog */}
              <AlertDialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -533,7 +538,7 @@ export default function CertificateOrdersListPage() {
                                     <TableHead>Order Date</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Eligibility</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="text-right">Shipping Details</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -547,7 +552,7 @@ export default function CertificateOrdersListPage() {
                                         <TableCell>
                                             <div className="flex flex-wrap gap-2 items-center">
                                                 {order.course_code.split(',').map(code => (
-                                                    <CertificateStatusCell key={code.trim()} order={order} studentNumber={order.created_by} courseCode={code.trim()} />
+                                                    <CertificateStatusCell key={code.trim()} order={order} parentCourseId={code.trim()} studentNumber={order.created_by} />
                                                 ))}
                                             </div>
                                         </TableCell>
@@ -561,7 +566,7 @@ export default function CertificateOrdersListPage() {
                                             />
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="outline" size="sm" onClick={() => setSelectedOrderDetails(order)}>View Details</Button>
+                                            <Button variant="outline" size="sm" onClick={() => setSelectedOrderDetails(order)}>View</Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -597,7 +602,7 @@ export default function CertificateOrdersListPage() {
                                         <p className="text-muted-foreground font-medium shrink-0 pr-2">Certificates</p>
                                         <div className="text-right flex flex-wrap gap-1 justify-end">
                                             {order.course_code.split(',').map(code => (
-                                                <CertificateStatusCell key={code.trim()} order={order} studentNumber={order.created_by} courseCode={code.trim()} />
+                                                <CertificateStatusCell key={code.trim()} order={order} parentCourseId={code.trim()} studentNumber={order.created_by} />
                                             ))}
                                         </div>
                                     </div>
