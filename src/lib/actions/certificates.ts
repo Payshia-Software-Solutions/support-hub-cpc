@@ -65,6 +65,16 @@ export const createCertificateOrder = async (payload: FormData): Promise<{ refer
     return response.json();
 };
 
+export const deleteCertificateOrder = async (orderId: string): Promise<void> => {
+    const response = await fetch(`${QA_API_BASE_URL}/certificate-orders/${orderId}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to delete order. Status: ${response.status}` }));
+        throw new Error(errorData.message || 'Failed to delete certificate order');
+    }
+};
+
 export const sendCertificateNameSms = async (payload: SendSmsPayload): Promise<any> => {
     const response = await fetch(`${QA_API_BASE_URL}/send-name-sms`, {
         method: 'POST',

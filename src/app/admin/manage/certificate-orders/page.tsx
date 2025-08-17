@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getCertificateOrders, updateCertificateOrderCourses, getUserCertificatePrintStatus, generateCertificate } from '@/lib/actions/certificates';
+import { getCertificateOrders, updateCertificateOrderCourses, deleteCertificateOrder, generateCertificate, getUserCertificatePrintStatus } from '@/lib/actions/certificates';
 import { getStudentFullInfo, getStudentBalance } from '@/lib/actions/users';
 import type { CertificateOrder, FullStudentData, UpdateCertificateOrderCoursesPayload, UserCertificatePrintStatus, GenerateCertificatePayload, StudentBalanceData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -12,8 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -32,7 +33,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import {
   Tooltip,
   TooltipContent,
@@ -240,6 +240,7 @@ export default function CertificateOrdersListPage() {
     const [selectedOrderDetails, setSelectedOrderDetails] = useState<CertificateOrder | null>(null);
     const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
     const [orderToUpdate, setOrderToUpdate] = useState<CertificateOrder | null>(null);
+    const [orderToDelete, setOrderToDelete] = useState<CertificateOrder | null>(null);
 
     const [studentDataMap, setStudentDataMap] = useState<Map<string, { studentData?: FullStudentData, balanceData?: StudentBalanceData }>>(new Map());
 
@@ -259,6 +260,17 @@ export default function CertificateOrdersListPage() {
         },
         onError: (error: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: error.message })
     });
+    
+    const deleteMutation = useMutation({
+        mutationFn: (orderId: string) => deleteCertificateOrder(orderId),
+        onSuccess: () => {
+            toast({ title: 'Order Deleted', description: 'The certificate order has been removed.' });
+            queryClient.invalidateQueries({ queryKey: ['allCertificateOrders'] });
+            setOrderToDelete(null);
+        },
+        onError: (error: Error) => toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message }),
+    });
+
 
     const filteredOrders = useMemo(() => {
         if (!orders) return [];
@@ -316,18 +328,38 @@ export default function CertificateOrdersListPage() {
     };
     
     if (isLoadingOrders) return <div className="p-8"><Skeleton className="h-64 w-full" /></div>;
-    if (isError) return (
-        <div className="p-8">
-            <Alert variant="destructive">
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error.message}</AlertDescription>
-            </Alert>
-        </div>
-    );
+    if (isError) {
+        return (
+            <div className="p-8">
+                <Alert variant="destructive">
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error.message}</AlertDescription>
+                </Alert>
+            </div>
+        );
+    }
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header><h1 className="text-3xl font-headline font-semibold">Certificate Orders</h1><p className="text-muted-foreground">View all certificate orders and check student eligibility.</p></header>
+
+            <AlertDialog open={!!orderToDelete} onOpenChange={() => setOrderToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the order #{orderToDelete?.id}. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteMutation.mutate(orderToDelete!.id)} disabled={deleteMutation.isPending}>
+                            {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                             Delete Order
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             <AlertDialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
                 <AlertDialogContent>
@@ -353,7 +385,7 @@ export default function CertificateOrdersListPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isUpdating}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmUpdate} disabled={isUpdating || !orderToUpdate || !studentDataMap.get(orderToUpdate.created_by)?.studentData}>
+                        <AlertDialogAction onClick={handleConfirmUpdate} disabled={isUpdating || !orderToUpdate || !studentDataMap.get(orderToUpdate!.created_by)?.studentData}>
                             {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Update Order
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -381,7 +413,7 @@ export default function CertificateOrdersListPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="relative w-full overflow-auto border rounded-lg hidden md:block">
-                        <Table><TableHeader><TableRow><TableHead>Order ID</TableHead><TableHead>Student</TableHead><TableHead>Course(s)</TableHead><TableHead>Cert Status</TableHead><TableHead>Convocation Status</TableHead><TableHead>Order Date</TableHead><TableHead>Eligibility</TableHead><TableHead className="text-right">Shipping Details</TableHead></TableRow></TableHeader>
+                        <Table><TableHeader><TableRow><TableHead>Order ID</TableHead><TableHead>Student</TableHead><TableHead>Course(s)</TableHead><TableHead>Cert Status</TableHead><TableHead>Convocation Status</TableHead><TableHead>Order Date</TableHead><TableHead>Eligibility</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {paginatedOrders.map(order => (
                                     <TableRow key={order.id}>
@@ -392,7 +424,10 @@ export default function CertificateOrdersListPage() {
                                         <TableCell><ConvocationStatusCell studentNumber={order.created_by} /></TableCell>
                                         <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell><OrderActionsCell order={order} onUpdateClick={() => openUpdateDialog(order)} studentData={studentDataMap.get(order.created_by)?.studentData} balanceData={studentDataMap.get(order.created_by)?.balanceData} isLoading={isLoadingStudentData && !studentDataMap.has(order.created_by)} /></TableCell>
-                                        <TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => setSelectedOrderDetails(order)}>View</Button></TableCell>
+                                        <TableCell className="text-right space-x-1">
+                                            <Button variant="outline" size="sm" onClick={() => setSelectedOrderDetails(order)}>View</Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setOrderToDelete(order)}><Trash2 className="h-4 w-4"/></Button>
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -408,7 +443,10 @@ export default function CertificateOrdersListPage() {
                                     <div className="flex flex-col items-start justify-between"><p className="text-muted-foreground font-medium mb-1">Course(s)</p><div className="flex flex-wrap gap-1">{order.course_code.split(',').map(code => <Badge key={code.trim()} variant="outline">{code.trim()}</Badge>)}</div></div>
                                     <div className="flex items-start justify-between"><p className="text-muted-foreground font-medium shrink-0 pr-2">Certificates</p><div className="text-right flex flex-wrap gap-1 justify-end">{order.course_code.split(',').map(code => <CertificateStatusCell key={code.trim()} order={order} studentDataMap={studentDataMap} />)}</div></div>
                                     <div className="flex items-start justify-between"><p className="text-muted-foreground font-medium shrink-0 pr-2">Eligibility</p><div className="text-right"><OrderActionsCell order={order} onUpdateClick={() => openUpdateDialog(order)} studentData={studentDataMap.get(order.created_by)?.studentData} balanceData={studentDataMap.get(order.created_by)?.balanceData} isLoading={isLoadingStudentData && !studentDataMap.has(order.created_by)} /></div></div>
-                                    <div className="flex items-center justify-end pt-2 border-t mt-2"><Button variant="outline" size="sm" onClick={() => setSelectedOrderDetails(order)}>View Details</Button></div>
+                                    <div className="flex items-center justify-end pt-2 border-t mt-2 gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => setSelectedOrderDetails(order)}>Details</Button>
+                                        <Button variant="destructive" size="sm" onClick={() => setOrderToDelete(order)}>Delete</Button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
