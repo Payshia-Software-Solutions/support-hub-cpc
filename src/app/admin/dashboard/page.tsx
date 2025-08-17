@@ -4,7 +4,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Ticket, MessageSquare, CheckCircle, Users, Clock } from "lucide-react";
+import { Ticket, MessageSquare, CheckCircle, Users, Clock, BarChart as BarChartIcon } from "lucide-react";
 import { getAdminTickets, getAdminChats } from "@/lib/actions/tickets";
 import { getStaffMembers } from "@/lib/actions/users";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +22,7 @@ import {
   Legend,
   CartesianGrid,
   Label,
+  ResponsiveContainer,
 } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 import Link from "next/link";
@@ -132,6 +133,20 @@ export default function AdminDashboardPage() {
       };
     }).filter(d => d.Closed > 0);
   }, [tickets, staffMembers]);
+  
+    const categoryChartConfig: ChartConfig = {
+        total: { label: "Tickets" },
+    };
+
+    const ticketCategoryData = useMemo(() => {
+        if (!tickets) return [];
+        const categoryCounts = tickets.reduce((acc, ticket) => {
+            acc[ticket.category] = (acc[ticket.category] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        return Object.entries(categoryCounts).map(([name, total]) => ({ name, total })).sort((a,b) => b.total - a.total);
+    }, [tickets]);
   
   if (isErrorTickets || isErrorChats) {
     return (
@@ -309,6 +324,43 @@ export default function AdminDashboardPage() {
         </Card>
       </section>
 
+      <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-400">
+        <Card className="shadow-lg">
+            <CardHeader>
+                <CardTitle>Ticket Analytics by Category</CardTitle>
+                <CardDescription>Distribution of tickets across different support categories.</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[400px]">
+                {isLoading ? (
+                    <div className="flex h-full items-center justify-center">
+                        <Skeleton className="h-full w-full" />
+                    </div>
+                ) : (
+                    <ChartContainer config={categoryChartConfig} className="w-full h-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                           <BarChart data={ticketCategoryData} layout="vertical" margin={{ right: 20 }}>
+                                <CartesianGrid horizontal={false} />
+                                <YAxis dataKey="name" type="category" width={120} tickLine={false} axisLine={false} fontSize={12} />
+                                <XAxis type="number" hide />
+                                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                                <Bar dataKey="total" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={20}>
+                                     {ticketCategoryData.map((entry) => (
+                                        <Label
+                                            key={entry.name}
+                                            content={({ x, y, width, height, value }) => 
+                                                <text x={x + width + 5} y={y + height / 2} dy={4} className="text-sm fill-muted-foreground">{value}</text>
+                                            }
+                                        />
+                                     ))}
+                                </Bar>
+                           </BarChart>
+                        </ResponsiveContainer>
+                    </ChartContainer>
+                )}
+            </CardContent>
+        </Card>
+      </section>
+
       {user?.userlevel === 'Admin' && (
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 delay-400">
@@ -402,5 +454,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
-    
