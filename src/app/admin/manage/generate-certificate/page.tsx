@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCourses } from '@/lib/actions/courses';
@@ -15,16 +15,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Award, Loader2, AlertTriangle, BookOpen, Database } from 'lucide-react';
+import { Award, Loader2, AlertTriangle, BookOpen, Database, Printer, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import Link from 'next/link';
 
 const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch, course: Course }) => {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     
-    const { data: rawCertificateData, isLoading: isLoadingStatus } = useQuery<{ certificateStatus: UserCertificatePrintStatus[] }>({
+    const { data: rawCertificateData, isLoading: isLoadingStatus, refetch } = useQuery<{ certificateStatus: UserCertificatePrintStatus[] }>({
         queryKey: ['userCertificateStatus', student.username],
         queryFn: () => getUserCertificatePrintStatus(student.username),
         staleTime: 5 * 60 * 1000,
@@ -35,7 +36,6 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
         const certificateStatus = rawCertificateData?.certificateStatus || [];
         if (certificateStatus.length === 0) return null;
         
-        // Find a certificate where the course_code matches the selected batch's courseCode.
         return certificateStatus.find(cert => cert.course_code === course.courseCode && cert.type === 'Certificate');
     }, [rawCertificateData, course.courseCode]);
 
@@ -45,26 +45,7 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
         mutationFn: generateCertificate,
         onSuccess: (newCertificateData) => {
             toast({ title: 'Certificate Generated!', description: `Certificate ID ${newCertificateData.certificate_id} created for ${student.full_name}.` });
-            
-            // Optimistically update the local cache to reflect the new certificate immediately.
-            queryClient.setQueryData(['userCertificateStatus', student.username], (oldData: { certificateStatus: UserCertificatePrintStatus[] } | undefined) => {
-                const newCert: UserCertificatePrintStatus = {
-                    id: newCertificateData.id,
-                    student_number: newCertificateData.student_number,
-                    certificate_id: newCertificateData.certificate_id,
-                    print_date: new Date().toISOString(),
-                    print_status: "0",
-                    print_by: newCertificateData.print_by,
-                    type: "Certificate",
-                    course_code: course.courseCode,
-                    parent_course_id: course.id,
-                };
-                 const existingStatuses = oldData?.certificateStatus || [];
-                 return { certificateStatus: [...existingStatuses, newCert] };
-            });
-
-            // Refetch to ensure data consistency with the server
-            queryClient.refetchQueries({ queryKey: ['userCertificateStatus', student.username], exact: true });
+            refetch(); // Refetch status to show new certificate
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
@@ -95,7 +76,15 @@ const CertificateGenerationRow = ({ student, course }: { student: StudentInBatch
             return <Skeleton className="h-9 w-24" />;
         }
         if (generatedCertificate) {
-            return null; // Don't show the button if a certificate exists
+            return (
+                <div className="flex gap-2 justify-end">
+                    <Button asChild size="sm" variant="outline">
+                        <Link href={`/print/certificate/${generatedCertificate.certificate_id}`} target="_blank">
+                            <Eye className="mr-2 h-4 w-4" /> View
+                        </Link>
+                    </Button>
+                </div>
+            );
         }
         return (
             <Button size="sm" onClick={handleGenerate} disabled={!isEligible || isPending}>
