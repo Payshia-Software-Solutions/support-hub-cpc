@@ -6,85 +6,73 @@ import { format } from 'date-fns';
 
 interface CertificateLayoutProps {
   studentName: string;
+  studentIndex: string;
   courseName: string;
   issueDate: string;
   certificateId: string;
 }
 
-export const CertificateLayout = ({ studentName, courseName, issueDate, certificateId }: CertificateLayoutProps) => {
+export const CertificateLayout = ({ studentName, studentIndex, courseName, issueDate, certificateId }: CertificateLayoutProps) => {
+  const qrCodeUrl = `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(`ID: ${certificateId} | Name: ${studentName}`)}`;
+
   return (
-    <div className="relative w-[210mm] h-[297mm] bg-white p-12 flex flex-col text-black font-serif">
-      {/* Background watermark */}
-      <div className="absolute inset-0 flex items-center justify-center z-0">
-        <Image
-          src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png"
-          alt="Logo Watermark"
-          width={400}
-          height={400}
-          className="opacity-5"
-          data-ai-hint="logo"
-        />
-      </div>
+    <div className="relative w-[210mm] h-[297mm] bg-white p-16 flex flex-col font-sans text-black">
 
       {/* Main content */}
-      <div className="relative z-10 flex flex-col h-full">
-        {/* Header */}
-        <header className="text-center mb-12">
-            <Image
-                src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png"
-                alt="Ceylon Pharma College Logo"
-                width={80}
-                height={80}
-                className="mx-auto mb-4"
-                data-ai-hint="logo"
-            />
-          <h1 className="text-4xl font-bold tracking-wider text-blue-900">Ceylon Pharma College</h1>
-          <p className="text-lg text-gray-600 mt-2">SRI LANKA</p>
-        </header>
+      <div className="relative z-10 flex flex-col h-full items-center justify-center text-center">
 
-        {/* Certificate Title */}
-        <div className="text-center my-8">
-          <p className="text-xl tracking-widest text-gray-700">This is to certify that</p>
-          <h2 className="text-5xl font-bold my-6 px-4 py-2 border-y-2 border-blue-800 inline-block">
-            {studentName}
-          </h2>
-          <p className="text-xl text-gray-700">
-            has successfully completed the
-          </p>
-          <h3 className="text-3xl font-semibold text-blue-800 mt-4">
-            {courseName}
-          </h3>
+        <h1 className="text-2xl font-bold tracking-widest text-gray-800">
+          CERTIFICATE OF COMPLETION
+        </h1>
+
+        <p className="text-base text-gray-600 mt-12">
+          This certificate is awarded to
+        </p>
+
+        <h2 className="text-4xl font-bold my-4 text-gray-900">
+          {studentName}
+        </h2>
+
+        <p className="text-base text-gray-600">
+          in recognition of the <br /> successful completion of the
+        </p>
+        
+        <h3 className="text-2xl font-bold text-gray-800 mt-6">
+          {courseName}
+        </h3>
+        
+        <p className="text-base font-semibold text-gray-600 mt-4">
+          offered by
+        </p>
+
+        <h4 className="text-2xl font-bold text-gray-900">
+            Ceylon Pharma College
+        </h4>
+        
+        <p className="text-base text-gray-600 mt-6">
+            The certificate award ceremony was held at the<br/>BMICH, Colombo, Sri Lanka.
+        </p>
+
+        {/* Footer section at the bottom */}
+        <div className="absolute bottom-16 left-16 right-16 flex justify-between items-end">
+            <div className="flex items-end gap-4">
+                <Image
+                    src={qrCodeUrl}
+                    alt="Certificate QR Code"
+                    width={80}
+                    height={80}
+                    data-ai-hint="qr code"
+                />
+                <div className="text-left text-xs font-mono text-gray-700">
+                    <p>Date: {format(new Date(issueDate), 'MMMM d, yyyy')}</p>
+                    <p>Index Number: {studentIndex}</p>
+                    <p>Certificate ID: {certificateId}</p>
+                </div>
+            </div>
+            <div className="text-xs font-mono text-gray-700">
+                <p>PV00253555</p>
+            </div>
         </div>
-
-        {/* Body */}
-        <div className="flex-grow text-center text-gray-600 text-lg leading-relaxed">
-          <p>
-            This course was conducted by the Ceylon Pharma College, fulfilling all the
-            requirements as prescribed by the academic board. The recipient has demonstrated
-            the necessary skills and knowledge in the field.
-          </p>
-        </div>
-
-        {/* Footer & Signatures */}
-        <footer className="mt-16">
-          <div className="flex justify-between items-end">
-            <div className="text-center">
-              <div className="w-48 h-0.5 bg-gray-700 mx-auto"></div>
-              <p className="text-sm font-semibold mt-2">DIRECTOR</p>
-            </div>
-            <div className="text-center">
-                <p className="text-xs text-gray-500">Issued On</p>
-                <p className="font-semibold">{format(new Date(issueDate), 'MMMM do, yyyy')}</p>
-            </div>
-            <div className="text-center">
-              <div className="w-48 h-0.5 bg-gray-700 mx-auto"></div>
-              <p className="text-sm font-semibold mt-2">HEAD OF ACADEMICS</p>
-            </div>
-          </div>
-           <p className="text-center text-xs text-gray-400 mt-8">
-            Certificate ID: {certificateId}
-          </p>
-        </footer>
       </div>
     </div>
   );

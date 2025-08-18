@@ -1,5 +1,6 @@
 
 
+
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -360,12 +361,14 @@ export interface ApiPaymentRecord {
     payment_status: string;
     payment_type: string;
     paid_date: string;
+    created_at: string;
 }
 
 export interface StudentBalance {
     totalPaymentAmount: number;
     TotalStudentPaymentRecords: number;
     studentBalance: number;
+    TotalRegistrationFee: number;
     paymentRecords: Record<string, ApiPaymentRecord>;
 }
 
@@ -643,6 +646,33 @@ export interface BnfWordIndexEntry {
 export interface ParentCourseListItem {
     id: string;
     course_name: string;
+}
+
+export interface ParentCourse {
+    id: string;
+    course_name: string;
+    course_code: string;
+    instructor_id: string | null;
+    course_duration: string | null;
+    course_fee: string | null;
+    registration_fee: string | null;
+    course_img: string | null;
+    mini_description: string | null;
+    course_description: string | null;
+    certification: string | null;
+    lecture_count: string | null;
+    hours_per_lecture: string | null;
+    assessments: string | null;
+    language: string | null;
+    quizzes: string | null;
+    skill_level: string | null;
+    head_count: string | null;
+    course_mode: string | null;
+    is_active: string;
+    created_at: string;
+    updated_at: string;
+    slug: string | null;
+    criteria_list: string | null;
 }
 
 export interface Course {

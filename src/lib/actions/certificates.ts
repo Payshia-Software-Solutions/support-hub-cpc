@@ -1,4 +1,5 @@
 
+
 import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
@@ -160,6 +161,18 @@ export const getUserCertificatePrintStatus = async (studentNumber: string, cours
     
     const data = await response.json();
     return Array.isArray(data) ? { certificateStatus: data } : data;
+};
+
+export const getCertificatePrintStatusById = async (certificateId: string): Promise<UserCertificatePrintStatus | null> => {
+    const response = await fetch(`${QA_API_BASE_URL}/certificate-print-status/by-certificate_id/${certificateId}`);
+    if (response.status === 404) {
+        return null;
+    }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to fetch certificate status for ID ${certificateId}` }));
+        throw new Error(errorData.message || 'Failed to fetch certificate status');
+    }
+    return response.json();
 };
 
 

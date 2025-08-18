@@ -1,4 +1,5 @@
 
+
 import type { Course, ApiCourseResponse, Batch, ParentCourse } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
@@ -119,6 +120,15 @@ export const getParentCourse = async (id: string): Promise<ParentCourse> => {
     return response.json();
 };
 
+export const getParentCourseByCode = async (code: string): Promise<ParentCourse> => {
+    const response = await fetch(`${QA_API_BASE_URL}/parent-main-course/by-code/${code}`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to fetch course for code ${code}` }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
 export const createParentCourse = async (courseData: Omit<ParentCourse, 'id'>): Promise<ParentCourse> => {
     const response = await fetch(`${QA_API_BASE_URL}/parent-main-course`, {
         method: 'POST',
@@ -154,3 +164,10 @@ export const deleteParentCourse = async (id: string): Promise<void> => {
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
 };
+
+export const getDeliverySettingsForCourse = async (courseCode: string): Promise<any[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/delivery-settings/by-course/${courseCode}`);
+    if (response.status === 404) return [];
+    if (!response.ok) throw new Error('Failed to fetch delivery settings');
+    return response.json();
+}
