@@ -22,7 +22,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
       <div className="relative z-10 flex flex-col h-full items-center justify-center text-center">
 
         <h1 className="text-2xl font-bold tracking-widest text-gray-800">
-          CERTIFICATE OF COMPLETION
+          CERTIFICATE OF PARTICIPATION
         </h1>
 
         <p className="text-base text-gray-600 mt-12">
@@ -34,25 +34,19 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
         </h2>
 
         <p className="text-base text-gray-600">
-          in recognition of the <br /> successful completion of the
+          in recognition of the successful participation in the 06 days 
+          <br />
+          English program
         </p>
         
-        <h3 className="text-2xl font-bold text-gray-800 mt-6">
-          {courseName}
-        </h3>
-        
-        <p className="text-base font-semibold text-gray-600 mt-4">
-          offered by
+        <p className="text-base text-gray-600 mt-6">
+            conducted by
         </p>
 
-        <h4 className="text-2xl font-bold text-gray-900">
+        <h4 className="text-2xl font-bold text-gray-900 mt-2">
             Ceylon Pharma College
         </h4>
         
-        <p className="text-base text-gray-600 mt-6">
-            The certificate award ceremony was held at the<br/>BMICH, Colombo, Sri Lanka.
-        </p>
-
         {/* Footer section at the bottom */}
         <div className="absolute bottom-16 left-16 right-16 flex justify-between items-end">
             <div className="flex items-end gap-4">
