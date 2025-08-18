@@ -5,9 +5,9 @@ import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { getStudentDetailsByUsername } from '@/lib/actions/users';
-import { getParentCourseByCode } from '@/lib/actions/courses';
+import { getBatchByCode, getParentCourseById } from '@/lib/actions/courses';
 import { getCertificatePrintStatusById } from '@/lib/actions/certificates';
-import type { UserFullDetails, ParentCourse, UserCertificatePrintStatus } from '@/lib/types';
+import type { UserFullDetails, ParentCourse, UserCertificatePrintStatus, ApiCourse } from '@/lib/types';
 import { CertificateLayout } from '@/components/print/CertificateLayout';
 import { Button } from '@/components/ui/button';
 import { Printer, Loader2 } from 'lucide-react';
@@ -30,13 +30,19 @@ export default function PrintCertificatePage() {
         enabled: !!certData?.student_number,
     });
     
-    const { data: courseData, isLoading: isLoadingCourse } = useQuery<ParentCourse>({
-        queryKey: ['courseDetailsForCert', certData?.course_code],
-        queryFn: () => getParentCourseByCode(certData!.course_code),
+    const { data: batchData, isLoading: isLoadingBatch } = useQuery<ApiCourse>({
+        queryKey: ['batchDataForCert', certData?.course_code],
+        queryFn: () => getBatchByCode(certData!.course_code),
         enabled: !!certData?.course_code,
     });
 
-    const isLoading = isLoadingCert || isLoadingStudent || isLoadingCourse;
+    const { data: courseData, isLoading: isLoadingCourse } = useQuery<ParentCourse>({
+        queryKey: ['parentCourseDataForCert', batchData?.parent_course_id],
+        queryFn: () => getParentCourseById(batchData!.parent_course_id),
+        enabled: !!batchData?.parent_course_id,
+    });
+
+    const isLoading = isLoadingCert || isLoadingStudent || isLoadingBatch || isLoadingCourse;
 
     useEffect(() => {
         if (!isLoading) {
@@ -64,7 +70,7 @@ export default function PrintCertificatePage() {
         return (
              <div className="flex flex-col items-center justify-center min-h-screen bg-gray-200 p-8">
                 <h1 className="text-2xl font-bold text-destructive">Certificate Not Found</h1>
-                <p className="text-muted-foreground">The requested certificate could not be loaded.</p>
+                <p className="text-muted-foreground">The requested certificate could not be loaded. Check if all details are correct.</p>
             </div>
         )
     }

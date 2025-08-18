@@ -120,10 +120,23 @@ export const getParentCourse = async (id: string): Promise<ParentCourse> => {
     return response.json();
 };
 
-export const getParentCourseByCode = async (code: string): Promise<ParentCourse> => {
-    const response = await fetch(`${QA_API_BASE_URL}/parent-main-course/by-code/${code}`);
+export const getBatchByCode = async (code: string): Promise<ApiCourse> => {
+    const response = await fetch(`${QA_API_BASE_URL}/course/code/${code}`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: `Failed to fetch course for code ${code}` }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    const apiResponse: ApiCourseResponse = await response.json();
+    if (!apiResponse[code]) {
+      throw new Error(`Course with code ${code} not found in API response.`);
+    }
+    return apiResponse[code];
+};
+
+export const getParentCourseById = async (id: string): Promise<ParentCourse> => {
+    const response = await fetch(`${QA_API_BASE_URL}/parent-main-course/${id}`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to fetch parent course for id ${id}` }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
