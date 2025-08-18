@@ -18,59 +18,64 @@ export default function PrintCertificatePage() {
     const params = useParams();
     const certificateId = params.id as string;
 
-    const { data: certData, isLoading: isLoadingCert } = useQuery<UserCertificatePrintStatus | null>({
+    // Step 1: Fetch the core certificate data first.
+    const { data: certData, isLoading: isLoadingCert, isError: isErrorCert } = useQuery<UserCertificatePrintStatus | null>({
         queryKey: ['certificateData', certificateId],
         queryFn: () => getCertificatePrintStatusById(certificateId),
         enabled: !!certificateId,
+        retry: false, // Don't retry if the certificate is not found
     });
 
+    // Step 2: Fetch student details only if certData is available.
     const { data: studentData, isLoading: isLoadingStudent } = useQuery<UserFullDetails>({
         queryKey: ['studentDetailsForCert', certData?.student_number],
         queryFn: () => getStudentDetailsByUsername(certData!.student_number),
         enabled: !!certData?.student_number,
     });
     
+    // Step 3: Fetch batch details only if certData is available.
     const { data: batchData, isLoading: isLoadingBatch } = useQuery<ApiCourse>({
         queryKey: ['batchDataForCert', certData?.course_code],
         queryFn: () => getBatchByCode(certData!.course_code),
         enabled: !!certData?.course_code,
     });
 
+    // Step 4: Fetch parent course details only if batchData is available.
     const { data: courseData, isLoading: isLoadingCourse } = useQuery<ParentCourse>({
         queryKey: ['parentCourseDataForCert', batchData?.parent_course_id],
         queryFn: () => getParentCourseById(batchData!.parent_course_id),
         enabled: !!batchData?.parent_course_id,
     });
-
-    const isLoading = isLoadingCert || isLoadingStudent || isLoadingBatch || isLoadingCourse;
-
+    
     useEffect(() => {
-        if (!isLoading) {
-            document.title = `Certificate - ${studentData?.full_name || certificateId}`;
+        if (!isLoadingCert && certData) {
+            document.title = `Certificate - ${certData.student_number}`;
         }
-    }, [isLoading, studentData, certificateId]);
+    }, [isLoadingCert, certData]);
 
     const handlePrint = () => {
         window.print();
     };
 
-    if (isLoading) {
+    // Show a full-screen loader only for the initial certificate data fetch.
+    if (isLoadingCert) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-gray-200 p-8">
                 <Loader2 className="h-8 w-8 animate-spin mb-4" />
-                <p>Loading Certificate...</p>
-                <div className="w-[210mm] h-[297mm] bg-white shadow-lg mt-8">
+                <p>Loading Certificate Data...</p>
+                 <div className="w-[210mm] h-[297mm] bg-white shadow-lg mt-8">
                     <Skeleton className="w-full h-full" />
                 </div>
             </div>
         );
     }
     
-    if (!certData || !studentData || !courseData) {
+    // Show an error if the initial certificate data fails to load.
+    if (isErrorCert || !certData) {
         return (
              <div className="flex flex-col items-center justify-center min-h-screen bg-gray-200 p-8">
                 <h1 className="text-2xl font-bold text-destructive">Certificate Not Found</h1>
-                <p className="text-muted-foreground">The requested certificate could not be loaded. Check if all details are correct.</p>
+                <p className="text-muted-foreground">The certificate ID might be invalid or there was an error.</p>
             </div>
         )
     }
@@ -86,9 +91,9 @@ export default function PrintCertificatePage() {
             <main className="flex justify-center items-start min-h-screen p-8 print:p-0">
                 <div className="print-container bg-white shadow-lg print:shadow-none">
                      <CertificateLayout
-                        studentName={studentData.name_on_certificate}
-                        studentIndex={studentData.username}
-                        courseName={courseData.course_name}
+                        studentName={studentData?.name_on_certificate || 'Loading Student...'}
+                        studentIndex={certData.student_number}
+                        courseName={courseData?.course_name || 'Loading Course...'}
                         issueDate={certData.print_date}
                         certificateId={certData.certificate_id}
                      />
