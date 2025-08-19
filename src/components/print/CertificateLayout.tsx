@@ -96,6 +96,10 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
             </div>
         </div>
       </div>
+       {/* Company Registration Number */}
+        <div className="absolute bottom-8 right-16 text-right text-xs text-gray-500 font-mono z-20">
+            <p>PV00253555</p>
+        </div>
     </div>
   );
 };
