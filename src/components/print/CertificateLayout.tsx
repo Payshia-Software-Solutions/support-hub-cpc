@@ -58,6 +58,14 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
         <div className="w-full flex justify-start items-end ml-8 gap-12">
            <div className="text-center">
             <div className="relative h-16 w-48">
+              <Image src="https://content-provider.pharmacollege.lk/certificates/hansi-sign-1.png" alt="Academic Instructor Signature" layout="fill" objectFit="contain"/>
+            </div>
+            <div className="border-t border-gray-600 w-48 mt-1"></div>
+            <p className="text-sm font-semibold mt-1">Academic Instructor</p>
+          </div>
+          
+           <div className="text-center">
+            <div className="relative h-16 w-48">
               <Image src="https://content-provider.pharmacollege.lk/certificates/sign.png" alt="Director Signature" layout="fill" objectFit="contain"/>
             </div>
             <div className="border-t border-gray-600 w-48 mt-1"></div>
@@ -71,7 +79,6 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
             <div className="border-t border-gray-600 w-48 mt-1"></div>
             <p className="text-sm font-semibold mt-1">Date</p>
           </div>
-
         </div>
       </div>
     </div>
