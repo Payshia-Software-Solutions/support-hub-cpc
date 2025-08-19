@@ -39,7 +39,9 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
 
         {/* Logo Section */}
         <div className="w-full flex justify-start -mt-8 ml-8">
-            {/* The logo was intentionally removed as per user request. This space is kept for layout consistency. */}
+            <div className="relative h-24 w-24">
+                <Image src="https://content-provider.pharmacollege.lk/app-icon/logo.png" alt="Logo" layout="fill" objectFit="contain" />
+            </div>
         </div>
 
         {/* Body section */}
