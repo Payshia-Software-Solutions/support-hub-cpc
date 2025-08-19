@@ -52,7 +52,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
             {studentName}
           </h1>
           <p className="text-lg text-gray-600 max-w-lg">
-            in recognition of the successful participation in the 06 days English program
+            Awarded in recognition of the successful participation and dedication to the English Language Development Program.
           </p>
           <p className="text-lg text-gray-600 max-w-lg mt-4">
             conducted by
