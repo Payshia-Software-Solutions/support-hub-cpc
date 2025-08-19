@@ -330,7 +330,7 @@ export default function AdminDashboardPage() {
                 <CardTitle>Ticket Analytics by Category</CardTitle>
                 <CardDescription>Distribution of tickets across different support categories.</CardDescription>
             </CardHeader>
-            <CardContent className="h-[400px]">
+            <CardContent className="h-[450px] md:h-[400px]">
                 {isLoading ? (
                     <div className="flex h-full items-center justify-center">
                         <Skeleton className="h-full w-full" />
@@ -338,20 +338,27 @@ export default function AdminDashboardPage() {
                 ) : (
                     <ChartContainer config={categoryChartConfig} className="w-full h-full">
                         <ResponsiveContainer width="100%" height="100%">
-                           <BarChart data={ticketCategoryData} layout="vertical" margin={{ right: 20 }}>
+                           <BarChart data={ticketCategoryData} layout="vertical" margin={{ left: 10, right: 30 }}>
                                 <CartesianGrid horizontal={false} />
-                                <YAxis dataKey="name" type="category" width={120} tickLine={false} axisLine={false} fontSize={12} />
+                                <YAxis 
+                                    dataKey="name" 
+                                    type="category" 
+                                    width={100} 
+                                    tickLine={false} 
+                                    axisLine={false} 
+                                    fontSize={12} 
+                                    interval={0}
+                                    tick={{ fill: 'hsl(var(--muted-foreground))', dy: 2 }}
+                                />
                                 <XAxis type="number" hide />
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                                <Bar dataKey="total" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={20}>
-                                     {ticketCategoryData.map((entry) => (
-                                        <Label
-                                            key={entry.name}
-                                            content={({ x, y, width, height, value }) => 
-                                                <text x={x + width + 5} y={y + height / 2} dy={4} className="text-sm fill-muted-foreground">{value}</text>
-                                            }
-                                        />
-                                     ))}
+                                <Bar dataKey="total" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={18}>
+                                     <Label
+                                        position="right"
+                                        content={({ x, y, width, height, value }) => 
+                                            <text x={x + width + 8} y={y + height / 2} dy={4} className="text-sm font-medium fill-foreground">{value}</text>
+                                        }
+                                    />
                                 </Bar>
                            </BarChart>
                         </ResponsiveContainer>
