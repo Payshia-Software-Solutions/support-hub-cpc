@@ -38,7 +38,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
         {/* Logo Section */}
         <div className="w-full flex justify-start -mt-8 ml-8">
             <div className="relative h-28 w-28">
-              <Image src="https://content-provider.pharmacollege.lk/certificates/cpc-logo.png" alt="Ceylon Pharma College Logo" layout="fill" objectFit="contain"/>
+              <Image src="https://content-provider.pharmacollege.lk/certificates/logo-cropped.png" alt="Ceylon Pharma College Logo" layout="fill" objectFit="contain"/>
             </div>
         </div>
 
