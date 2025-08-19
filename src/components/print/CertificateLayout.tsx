@@ -27,7 +27,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
   return (
     <div className={cn("relative w-[297mm] h-[210mm] bg-white text-black", roboto.className)}
       style={{
-        backgroundImage: `url('https://content-provider.pharmacollege.lk/certificates/certificate-bg.png')`,
+        backgroundImage: `url('https://content-provider.pharmacollege.lk/certificates/certificate-bg-english.png')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
