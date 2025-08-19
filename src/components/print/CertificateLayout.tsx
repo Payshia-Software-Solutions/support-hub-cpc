@@ -46,15 +46,24 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
 
         {/* Body section */}
         <div className="w-full text-left pl-4">
+           <h2 className="text-3xl font-bold mb-4 tracking-wider text-gray-800">
+                CERTIFICATE OF PARTICIPATION
+            </h2>
           <p className="text-lg text-gray-600">This certificate is awarded to</p>
           <h2 className="text-5xl font-bold my-4 text-gray-900 leading-tight">
             {studentName}
           </h2>
           <p className="text-lg text-gray-600">
-            for the successful completion of the
+            in recognition of the successful participation in the 06 days
           </p>
           <h3 className="text-3xl font-bold my-2 text-primary">
-             {courseName}
+             English program
+          </h3>
+           <p className="text-lg text-gray-600">
+            conducted by
+          </p>
+          <h3 className="text-2xl font-semibold my-2 text-gray-800">
+             Ceylon Pharma College
           </h3>
         </div>
 
