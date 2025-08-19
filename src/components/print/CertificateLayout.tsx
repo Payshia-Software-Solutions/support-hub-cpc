@@ -23,14 +23,11 @@ interface CertificateLayoutProps {
 }
 
 export const CertificateLayout = ({ studentName, studentIndex, courseName, issueDate, certificateId, courseData }: CertificateLayoutProps) => {
-  const qrCodeUrl = (courseData?.course_code && studentIndex)
-    ? `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(`https://pharmacollege.lk/result-view.php?CourseCode=${courseData.course_code}&LoggedUser=${studentIndex}`)}`
-    : '';
 
   return (
     <div className={cn("relative w-[297mm] h-[210mm] bg-white text-black", roboto.className)}
       style={{
-        backgroundImage: `url('https://content-provider.pharmacollege.lk/certificates/certificate-bg.png')`,
+        backgroundImage: `url('https://content-provider.pharmacollege.lk/certificates/english-free-bg.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -59,14 +56,9 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
 
         {/* Footer section */}
         <div className="w-full flex justify-between items-end ml-8">
-          <div className="text-left">
-            {qrCodeUrl ? (
-                <Image src={qrCodeUrl} alt="QR Code" width={80} height={80} />
-            ) : (
-                <div className="w-[80px] h-[80px] bg-gray-200 animate-pulse rounded-md"></div>
-            )}
-            <p className="text-xs text-gray-500 mt-1">Certificate ID: {certificateId}</p>
-          </div>
+            <div className="text-left">
+                <p className="text-xs text-gray-500 mt-1">Certificate ID: {certificateId}</p>
+             </div>
 
           <div className="text-center">
             <div className="relative h-16 w-48">
@@ -76,10 +68,20 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
             <p className="text-sm font-semibold mt-1">Academic Instructor</p>
           </div>
           
+           <div className="text-center">
+            <div className="relative h-16 w-48">
+              <Image src="https://content-provider.pharmacollege.lk/certificates/sign.png" alt="Director Signature" layout="fill" objectFit="contain"/>
+            </div>
+            <div className="border-t border-gray-600 w-48 mt-1"></div>
+            <p className="text-sm font-semibold mt-1">Director</p>
+          </div>
+
           <div className="text-center">
-            <p className="text-xs text-gray-600 relative -top-5">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
-            <div className="border-t border-gray-600 w-48 relative -top-5"></div>
-            <p className="text-sm font-semibold relative -top-4">Date</p>
+            <div className="h-16 w-48 flex items-center justify-center">
+              <p className="text-sm text-gray-600">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
+            </div>
+            <div className="border-t border-gray-600 w-48 mt-1"></div>
+            <p className="text-sm font-semibold mt-1">Date</p>
           </div>
 
            <div className="w-1/4"></div>
