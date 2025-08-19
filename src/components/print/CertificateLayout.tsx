@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -54,11 +55,10 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
         </div>
 
         {/* Footer section */}
-        <div className="w-full flex justify-between items-end ml-8">
+        <div className="w-full flex justify-start items-end ml-8 gap-12">
             <div className="text-left">
                 <p className="text-xs text-gray-500 mt-1">Certificate ID: {certificateId}</p>
              </div>
-
           <div className="text-center">
             <div className="relative h-16 w-48">
               <Image src="https://content-provider.pharmacollege.lk/certificates/hansi-sign-1.png" alt="Instructor Signature" layout="fill" objectFit="contain"/>
@@ -83,7 +83,6 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
             <p className="text-sm font-semibold mt-1">Date</p>
           </div>
 
-           <div className="w-1/4"></div>
         </div>
       </div>
     </div>
