@@ -71,11 +71,9 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
         <div className="w-full flex justify-between items-end">
           <div className="text-left">
             <div className="w-48 h-0.5 bg-gray-700 mb-2"></div>
-            <p className="text-sm font-semibold text-gray-800">Academic Instructor</p>
           </div>
           <div className="text-left">
              <div className="w-48 h-0.5 bg-gray-700 mb-2"></div>
-            <p className="text-sm font-semibold text-gray-800">Date</p>
             <p className="text-xs font-mono text-gray-700 mt-1">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
           </div>
            {qrCodeUrl && (
