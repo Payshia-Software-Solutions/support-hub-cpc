@@ -22,7 +22,9 @@ interface CertificateLayoutProps {
 }
 
 export const CertificateLayout = ({ studentName, studentIndex, courseName, issueDate, certificateId, courseCode }: CertificateLayoutProps) => {
-  const qrCodeUrl = `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(`https://pharmacollege.lk/result-view.php?CourseCode=${courseCode}&LoggedUser=${studentIndex}`)}`;
+  const qrCodeUrl = (courseCode && studentIndex) 
+    ? `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(`https://pharmacollege.lk/result-view.php?CourseCode=${courseCode}&LoggedUser=${studentIndex}`)}`
+    : '';
 
   return (
     <div className={cn("relative w-[210mm] h-[297mm] bg-white p-16 flex flex-col text-black", roboto.className)}>
@@ -59,13 +61,15 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
         {/* Footer section at the bottom */}
         <div className="absolute bottom-16 left-16 right-16 flex justify-between items-end">
             <div className="flex items-end gap-4">
-                <Image
-                    src={qrCodeUrl}
-                    alt="Certificate QR Code"
-                    width={80}
-                    height={80}
-                    data-ai-hint="qr code"
-                />
+                {qrCodeUrl && (
+                  <Image
+                      src={qrCodeUrl}
+                      alt="Certificate QR Code"
+                      width={80}
+                      height={80}
+                      data-ai-hint="qr code"
+                  />
+                )}
                 <div className="text-left text-xs font-mono text-gray-700">
                     <p>Date: {format(new Date(issueDate), 'MMMM d, yyyy')}</p>
                     <p>Index Number: {studentIndex}</p>
