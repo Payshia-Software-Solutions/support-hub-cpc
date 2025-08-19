@@ -28,7 +28,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
   return (
     <div className={cn("relative w-[297mm] h-[210mm] bg-white text-black", roboto.className)}
       style={{
-        backgroundImage: `url('https://content-provider.pharmacollege.lk/certificates/certificate-bg-english-free.png')`,
+        backgroundImage: `url('https://content-provider.pharmacollege.lk/certificates/certificate-bg-english-free-v1.png')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -39,9 +39,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
 
         {/* Logo Section */}
         <div className="w-full flex justify-start -mt-8 ml-8">
-            <div className="relative h-28 w-28">
-              <Image src="https://content-provider.pharmacollege.lk/certificates/logo-cropped.png" alt="Ceylon Pharma College Logo" layout="fill" objectFit="contain"/>
-            </div>
+            {/* The logo was intentionally removed as per user request. This space is kept for layout consistency. */}
         </div>
 
         {/* Body section */}
@@ -64,7 +62,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
 
         {/* Footer section */}
         <div className="w-full flex justify-between items-end ml-8">
-           <div className="text-left text-sm text-gray-500 font-mono">
+           <div className="text-left text-xs text-gray-500 font-mono">
                 <p>Cert. ID: {certificateId}</p>
                 <p>Student No: {studentIndex}</p>
                 <p>Batch: {batchCode}</p>
