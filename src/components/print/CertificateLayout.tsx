@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -27,7 +26,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
   return (
     <div className={cn("relative w-[297mm] h-[210mm] bg-white text-black", roboto.className)}
       style={{
-        backgroundImage: `url('https://content-provider.pharmacollege.lk/certificates/english-free-bg.jpg')`,
+        backgroundImage: `url('https://content-provider.pharmacollege.lk/certificates/certificate-bg.png')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
