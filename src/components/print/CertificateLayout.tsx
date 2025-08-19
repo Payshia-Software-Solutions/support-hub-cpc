@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -22,14 +23,14 @@ interface CertificateLayoutProps {
 }
 
 export const CertificateLayout = ({ studentName, studentIndex, courseName, issueDate, certificateId, courseData }: CertificateLayoutProps) => {
-  const qrCodeUrl = (courseData?.course_code && studentIndex) 
+  const qrCodeUrl = (courseData?.course_code && studentIndex)
     ? `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(`https://pharmacollege.lk/result-view.php?CourseCode=${courseData.course_code}&LoggedUser=${studentIndex}`)}`
     : '';
 
   return (
     <div className={cn("relative w-[297mm] h-[210mm] bg-white text-black", roboto.className)}
       style={{
-        backgroundImage: `url('https://content-provider.pharmacollege.lk/certificates/english-free-bg.jpg')`,
+        backgroundImage: `url('https://content-provider.pharmacollege.lk/certificates/certificate-bg.png')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -38,59 +39,50 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
       {/* Main content overlay */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-between p-16">
 
-        {/* Header section */}
-        <div className="w-full flex justify-start">
-          {/* This part is in the background image now */}
+        {/* Header section - empty as it's in the background */}
+        <div className="w-full h-1/4">
         </div>
 
         {/* Body section */}
-        <div className="w-full text-left pl-4">
-           <h2 className="text-3xl font-bold mb-4 tracking-wider text-gray-800">
-                CERTIFICATE OF PARTICIPATION
-            </h2>
-          <p className="text-lg text-gray-600">This certificate is awarded to</p>
-          <h2 className="text-5xl font-bold my-4 text-gray-900 leading-tight">
-            L. R. Hasintha Menaka Kumara
+        <div className="w-full text-center flex-grow flex flex-col justify-center -mt-8">
+          <p className="text-xl text-gray-600">This certificate is awarded to</p>
+          <h1 className="text-5xl font-bold my-4 text-gray-900 leading-tight">
+            {studentName}
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            in recognition of the successful completion of the
+          </p>
+          <h2 className="text-4xl font-bold my-2 text-primary">
+            {courseName}
           </h2>
-          <p className="text-lg text-gray-600">
-            in recognition of the successful participation in the 06 days
-          </p>
-          <h3 className="text-3xl font-bold my-2 text-primary">
-             English program 
-          </h3>
-           <p className="text-lg text-gray-600">
-            conducted by
-          </p>
-          <h3 className="text-2xl font-semibold my-2 text-gray-800">
-             Ceylon Pharma College
-          </h3>
         </div>
 
         {/* Footer section */}
-        <div className="w-full flex justify-between items-end pl-4">
-           <div className="flex-1">
-             {/* Intentionally empty for spacing */}
-           </div>
-
-          <div className="flex-1 text-left relative bottom-[30px] left-[155px]">
-            <p className="text-xs font-mono text-gray-700">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
+        <div className="w-full flex justify-between items-end">
+          <div className="text-left">
+            {qrCodeUrl ? (
+                <Image src={qrCodeUrl} alt="QR Code" width={80} height={80} />
+            ) : (
+                <div className="w-[80px] h-[80px] bg-gray-200 animate-pulse rounded-md"></div>
+            )}
+            <p className="text-xs text-gray-500 mt-1">Certificate ID: {certificateId}</p>
           </div>
 
-           {qrCodeUrl && (
-              <div className="flex items-end gap-2 text-left text-xs font-mono text-gray-700">
-                <Image
-                    src={qrCodeUrl}
-                    alt="Certificate QR Code"
-                    width={70}
-                    height={70}
-                    data-ai-hint="qr code"
-                />
-                <div>
-                  <p>Index: {studentIndex}</p>
-                  <p>Cert. ID: {certificateId}</p>
-                </div>
-              </div>
-            )}
+          <div className="text-center">
+            <div className="relative h-16 w-48">
+              <Image src="https://content-provider.pharmacollege.lk/certificates/hansi-sign-1.png" alt="Instructor Signature" layout="fill" objectFit="contain"/>
+            </div>
+            <div className="border-t border-gray-600 w-48 mt-1"></div>
+            <p className="text-sm font-semibold mt-1">Academic Instructor</p>
+          </div>
+          
+          <div className="text-center">
+             <div className="h-16 w-48"></div>
+             <div className="border-t border-gray-600 w-48 mt-1"></div>
+            <p className="text-sm font-semibold mt-1">Date</p>
+            <p className="text-xs text-gray-600">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
+          </div>
+
         </div>
       </div>
     </div>
