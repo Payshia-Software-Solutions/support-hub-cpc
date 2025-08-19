@@ -96,10 +96,11 @@ export default function PrintCertificatePage() {
                         courseName={courseData?.course_name || 'Loading Course...'}
                         issueDate={certData.print_date}
                         certificateId={certData.certificate_id}
-                        courseCode={certData.course_code}
+                        courseData={courseData}
                      />
                 </div>
             </main>
         </div>
     );
 }
+

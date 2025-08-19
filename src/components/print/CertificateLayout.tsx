@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { Roboto } from 'next/font/google';
 import { cn } from '@/lib/utils';
+import type { ParentCourse } from '@/lib/types';
 
 const roboto = Roboto({
   subsets: ['latin'],
@@ -18,12 +19,12 @@ interface CertificateLayoutProps {
   courseName: string;
   issueDate: string;
   certificateId: string;
-  courseCode: string;
+  courseData?: ParentCourse;
 }
 
-export const CertificateLayout = ({ studentName, studentIndex, courseName, issueDate, certificateId, courseCode }: CertificateLayoutProps) => {
-  const qrCodeUrl = (courseCode && studentIndex) 
-    ? `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(`https://pharmacollege.lk/result-view.php?CourseCode=${courseCode}&LoggedUser=${studentIndex}`)}`
+export const CertificateLayout = ({ studentName, studentIndex, courseName, issueDate, certificateId, courseData }: CertificateLayoutProps) => {
+  const qrCodeUrl = (courseData?.course_code && studentIndex) 
+    ? `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(`https://pharmacollege.lk/result-view.php?CourseCode=${courseData.course_code}&LoggedUser=${studentIndex}`)}`
     : '';
 
   return (
