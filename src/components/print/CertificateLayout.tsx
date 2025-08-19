@@ -56,10 +56,6 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
 
         {/* Footer section */}
         <div className="w-full flex justify-start items-end ml-8 gap-12">
-            <div className="text-left">
-                <p className="text-xs text-gray-500 mt-1">Certificate ID: {certificateId}</p>
-             </div>
-          
            <div className="text-center">
             <div className="relative h-16 w-48">
               <Image src="https://content-provider.pharmacollege.lk/certificates/sign.png" alt="Director Signature" layout="fill" objectFit="contain"/>
