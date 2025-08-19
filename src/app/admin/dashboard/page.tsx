@@ -27,12 +27,11 @@ import {
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
-  const isMobile = useIsMobile();
 
   const { data: tickets, isLoading: isLoadingTickets, isError: isErrorTickets, error: errorTickets } = useQuery<TicketType[]>({
     queryKey: ['admin-tickets-dashboard'], 
@@ -333,40 +332,30 @@ export default function AdminDashboardPage() {
                 <CardTitle>Ticket Analytics by Category</CardTitle>
                 <CardDescription>Distribution of tickets across different support categories.</CardDescription>
             </CardHeader>
-            <CardContent className="h-[450px]">
+            <CardContent>
                 {isLoading ? (
                     <div className="flex h-full items-center justify-center">
-                        <Skeleton className="h-full w-full" />
+                        <Skeleton className="h-64 w-full" />
                     </div>
                 ) : (
-                    <ChartContainer config={categoryChartConfig} className="w-full h-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                           <BarChart data={ticketCategoryData} layout="vertical" margin={{ left: 10, right: 30, top: 10, bottom: 10 }}>
-                                <CartesianGrid horizontal={false} />
-                                <YAxis 
-                                    dataKey="name" 
-                                    type="category" 
-                                    width={isMobile ? 60 : 120}
-                                    tickLine={false} 
-                                    axisLine={false} 
-                                    fontSize={12} 
-                                    interval={0}
-                                    tick={{ fill: 'hsl(var(--muted-foreground))', dy: 2, textAnchor: 'start' }}
-                                    wrapperStyle={{ overflow: 'visible' }}
-                                />
-                                <XAxis type="number" hide />
-                                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                                <Bar dataKey="total" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={18}>
-                                     <Label
-                                        position="right"
-                                        content={({ x, y, width, height, value }) => 
-                                            <text x={x + width + 8} y={y + height / 2} dy={4} className="text-sm font-medium fill-foreground">{value}</text>
-                                        }
-                                    />
-                                </Bar>
-                           </BarChart>
-                        </ResponsiveContainer>
-                    </ChartContainer>
+                    <div className="relative w-full overflow-auto border rounded-lg">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Category</TableHead>
+                                    <TableHead className="text-right">Count</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {ticketCategoryData.map((category) => (
+                                    <TableRow key={category.name}>
+                                        <TableCell className="font-medium">{category.name}</TableCell>
+                                        <TableCell className="text-right font-bold">{category.total}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                 )}
             </CardContent>
         </Card>
@@ -465,5 +454,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
-    
