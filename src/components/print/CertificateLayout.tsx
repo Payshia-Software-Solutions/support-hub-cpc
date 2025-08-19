@@ -59,13 +59,6 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
             <div className="text-left">
                 <p className="text-xs text-gray-500 mt-1">Certificate ID: {certificateId}</p>
              </div>
-          <div className="text-center">
-            <div className="relative h-16 w-48">
-              <Image src="https://content-provider.pharmacollege.lk/certificates/hansi-sign-1.png" alt="Instructor Signature" layout="fill" objectFit="contain"/>
-            </div>
-            <div className="border-t border-gray-600 w-48 mt-1"></div>
-            <p className="text-sm font-semibold mt-1">Academic Instructor</p>
-          </div>
           
            <div className="text-center">
             <div className="relative h-16 w-48">
