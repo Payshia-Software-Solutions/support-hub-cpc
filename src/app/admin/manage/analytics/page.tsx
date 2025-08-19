@@ -27,6 +27,8 @@ import {
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 import { differenceInYears } from 'date-fns';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 
 interface AgeGroup {
     name: string;
@@ -34,6 +36,7 @@ interface AgeGroup {
 }
 
 export default function StudentAnalyticsPage() {
+    const isMobile = useIsMobile();
     const { data: students, isLoading: isLoadingStudents, isError: isErrorStudents, error: studentsError } = useQuery<UserFullDetails[]>({
         queryKey: ['allStudentDetailsForAnalytics'],
         queryFn: getAllUserFullDetails,
@@ -240,7 +243,7 @@ export default function StudentAnalyticsPage() {
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={analyticsData.districts} layout="vertical" margin={{ left: 20, right: 20 }}>
                                          <CartesianGrid horizontal={false} />
-                                        <YAxis dataKey="name" type="category" width={80} tickLine={false} axisLine={false} fontSize={10} interval={0} />
+                                        <YAxis dataKey="name" type="category" width={isMobile ? 80 : 120} tickLine={false} axisLine={false} fontSize={10} interval={0} />
                                         <XAxis type="number" hide />
                                         <Tooltip cursor={false} content={<ChartTooltipContent />} />
                                         <Bar dataKey="count" name="Students" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={12} />
@@ -308,3 +311,5 @@ export default function StudentAnalyticsPage() {
         </div>
     );
 }
+
+    
