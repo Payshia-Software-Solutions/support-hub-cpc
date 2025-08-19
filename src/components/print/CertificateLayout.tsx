@@ -72,8 +72,8 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
              {/* Intentionally empty for spacing */}
            </div>
 
-          <div className="flex-1 text-left">
-            <p className="text-xs font-mono text-gray-700 mt-1">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
+          <div className="flex-1 text-left relative -bottom-4">
+            <p className="text-xs font-mono text-gray-700">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
           </div>
 
            {qrCodeUrl && (
