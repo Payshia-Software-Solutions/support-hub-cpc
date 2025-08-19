@@ -56,7 +56,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
             in recognition of the successful participation in the 06 days
           </p>
           <h3 className="text-3xl font-bold my-2 text-primary">
-             English program
+             English program 
           </h3>
            <p className="text-lg text-gray-600">
             conducted by
@@ -68,13 +68,15 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
 
         {/* Footer section */}
         <div className="w-full flex justify-between items-end">
-          <div className="text-left">
-            <div className="w-48 h-0.5 bg-gray-700 mb-2"></div>
-          </div>
-          <div className="text-left">
+           <div className="flex-1">
+             <div className="w-48 h-0.5 bg-gray-700 mb-2"></div>
+           </div>
+
+          <div className="flex-1 text-left">
              <div className="w-48 h-0.5 bg-gray-700 mb-2"></div>
             <p className="text-xs font-mono text-gray-700 mt-1">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
           </div>
+
            {qrCodeUrl && (
               <div className="flex items-end gap-2 text-left text-xs font-mono text-gray-700">
                 <Image
