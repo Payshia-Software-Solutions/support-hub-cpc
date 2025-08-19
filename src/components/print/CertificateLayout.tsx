@@ -67,13 +67,12 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
         </div>
 
         {/* Footer section */}
-        <div className="w-full flex justify-between items-end">
+        <div className="w-full flex justify-between items-end pl-4">
            <div className="flex-1">
-             <div className="w-48 h-0.5 bg-gray-700 mb-2"></div>
+             {/* Intentionally empty for spacing */}
            </div>
 
           <div className="flex-1 text-left">
-             <div className="w-48 h-0.5 bg-gray-700 mb-2"></div>
             <p className="text-xs font-mono text-gray-700 mt-1">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
           </div>
 
