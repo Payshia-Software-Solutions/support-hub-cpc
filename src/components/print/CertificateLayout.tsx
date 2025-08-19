@@ -37,14 +37,17 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
       }}
     >
       {/* Main content overlay */}
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-between p-16">
+      <div className="absolute inset-0 z-10 flex flex-col justify-between p-16">
 
-        {/* Header section - empty as it's in the background */}
-        <div className="w-full h-1/4">
+        {/* Header section */}
+        <div className="w-full">
+            <div className="bg-gray-800 text-white font-bold text-xl p-3 w-fit">
+                Ceylon Pharma College
+            </div>
         </div>
 
         {/* Body section */}
-        <div className="w-full text-center flex-grow flex flex-col justify-center -mt-8">
+        <div className="w-full flex-grow flex flex-col justify-center items-start text-left -mt-8 ml-8 max-w-xl">
           <p className="text-xl text-gray-600">This certificate is awarded to</p>
           <h1 className="text-5xl font-bold my-4 text-gray-900 leading-tight">
             {studentName}
@@ -58,7 +61,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
         </div>
 
         {/* Footer section */}
-        <div className="w-full flex justify-between items-end">
+        <div className="w-full flex justify-between items-end ml-8">
           <div className="text-left">
             {qrCodeUrl ? (
                 <Image src={qrCodeUrl} alt="QR Code" width={80} height={80} />
@@ -83,6 +86,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
             <p className="text-xs text-gray-600">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
           </div>
 
+           <div className="w-1/4"></div>
         </div>
       </div>
     </div>
