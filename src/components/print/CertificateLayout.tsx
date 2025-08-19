@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -37,14 +36,14 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
       <div className="absolute inset-0 z-10 flex flex-col justify-between p-16">
 
         {/* Logo Section */}
-        <div className="w-full flex justify-center -mt-8">
+        <div className="w-full flex justify-start -mt-8 ml-8">
             <div className="relative h-28 w-28">
               <Image src="https://content-provider.pharmacollege.lk/certificates/cpc-logo.png" alt="Ceylon Pharma College Logo" layout="fill" objectFit="contain"/>
             </div>
         </div>
 
         {/* Body section */}
-        <div className="w-full flex-grow flex flex-col justify-center items-start text-left ml-8 max-w-xl -mt-16">
+        <div className="w-full flex-grow flex flex-col justify-center items-start text-left ml-8 max-w-xl -mt-24">
           <p className="text-2xl text-gray-700 tracking-wider">CERTIFICATE OF PARTICIPATION</p>
           <p className="text-lg text-gray-600 mt-8">This certificate is awarded to</p>
           <h1 className="text-5xl font-bold my-4 text-gray-900 leading-tight">
