@@ -3,6 +3,14 @@
 
 import Image from 'next/image';
 import { format } from 'date-fns';
+import { Roboto } from 'next/font/google';
+import { cn } from '@/lib/utils';
+
+const roboto = Roboto({
+  subsets: ['latin'],
+  weight: ['400', '700', '900'],
+});
+
 
 interface CertificateLayoutProps {
   studentName: string;
@@ -10,13 +18,14 @@ interface CertificateLayoutProps {
   courseName: string;
   issueDate: string;
   certificateId: string;
+  courseCode: string;
 }
 
-export const CertificateLayout = ({ studentName, studentIndex, courseName, issueDate, certificateId }: CertificateLayoutProps) => {
-  const qrCodeUrl = `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(`ID: ${certificateId} | Name: ${studentName}`)}`;
+export const CertificateLayout = ({ studentName, studentIndex, courseName, issueDate, certificateId, courseCode }: CertificateLayoutProps) => {
+  const qrCodeUrl = `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(`https://pharmacollege.lk/result-view.php?CourseCode=${courseCode}&LoggedUser=${studentIndex}`)}`;
 
   return (
-    <div className="relative w-[210mm] h-[297mm] bg-white p-16 flex flex-col font-sans text-black">
+    <div className={cn("relative w-[210mm] h-[297mm] bg-white p-16 flex flex-col text-black", roboto.className)}>
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col h-full items-center justify-center text-center">
