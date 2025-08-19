@@ -30,7 +30,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
   return (
     <div className={cn("relative w-[297mm] h-[210mm] bg-white text-black", roboto.className)}
       style={{
-        backgroundImage: `url('https://storage.googleapis.com/project-isaac-ai/ask-studio/v2-b1-180724/cert_landscape.png')`,
+        backgroundImage: `url('https://content-provider.pharmacollege.lk/certificates/english-free-bg.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -51,7 +51,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
             </h2>
           <p className="text-lg text-gray-600">This certificate is awarded to</p>
           <h2 className="text-5xl font-bold my-4 text-gray-900 leading-tight">
-            {studentName}
+            L. R. Hasintha Menaka Kumara
           </h2>
           <p className="text-lg text-gray-600">
             in recognition of the successful participation in the 06 days
