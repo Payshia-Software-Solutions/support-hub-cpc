@@ -28,7 +28,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
   return (
     <div className={cn("relative w-[297mm] h-[210mm] bg-white text-black", roboto.className)}
       style={{
-        backgroundImage: `url('https://content-provider.pharmacollege.lk/certificates/certificate-bg-english.png')`,
+        backgroundImage: `url('https://content-provider.pharmacollege.lk/certificates/certificate-bg-english-free.png')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -64,7 +64,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
 
         {/* Footer section */}
         <div className="w-full flex justify-between items-end ml-8">
-           <div className="text-left text-[8px] text-gray-500 font-mono">
+           <div className="text-left text-sm text-gray-500 font-mono">
                 <p>Cert. ID: {certificateId}</p>
                 <p>Student No: {studentIndex}</p>
                 <p>Batch: {batchCode}</p>
