@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -19,9 +20,10 @@ interface CertificateLayoutProps {
   issueDate: string;
   certificateId: string;
   courseData?: ParentCourse;
+  batchCode?: string;
 }
 
-export const CertificateLayout = ({ studentName, studentIndex, courseName, issueDate, certificateId, courseData }: CertificateLayoutProps) => {
+export const CertificateLayout = ({ studentName, studentIndex, courseName, issueDate, certificateId, courseData, batchCode }: CertificateLayoutProps) => {
 
   return (
     <div className={cn("relative w-[297mm] h-[210mm] bg-white text-black", roboto.className)}
@@ -61,30 +63,37 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
         </div>
 
         {/* Footer section */}
-        <div className="w-full flex justify-start items-end ml-8 gap-12">
-           <div className="text-center">
-            <div className="relative h-16 w-48">
-              <Image src="https://content-provider.pharmacollege.lk/certificates/hansi-sign-1.png" alt="Academic Instructor Signature" layout="fill" objectFit="contain"/>
+        <div className="w-full flex justify-between items-end ml-8">
+           <div className="text-left text-[8px] text-gray-500 font-mono">
+                <p>Cert. ID: {certificateId}</p>
+                <p>Student No: {studentIndex}</p>
+                <p>Batch: {batchCode}</p>
             </div>
-            <div className="border-t border-gray-600 w-48 mt-1"></div>
-            <p className="text-sm font-semibold mt-1">Academic Instructor</p>
-          </div>
-          
-           <div className="text-center">
-            <div className="relative h-16 w-48">
-              <Image src="https://content-provider.pharmacollege.lk/certificates/sign.png" alt="Director Signature" layout="fill" objectFit="contain"/>
-            </div>
-            <div className="border-t border-gray-600 w-48 mt-1"></div>
-            <p className="text-sm font-semibold mt-1">Director</p>
-          </div>
+            <div className="flex gap-12">
+                <div className="text-center">
+                    <div className="relative h-16 w-48">
+                    <Image src="https://content-provider.pharmacollege.lk/certificates/hansi-sign-1.png" alt="Academic Instructor Signature" layout="fill" objectFit="contain"/>
+                    </div>
+                    <div className="border-t border-gray-600 w-48 mt-1"></div>
+                    <p className="text-sm font-semibold mt-1">Academic Instructor</p>
+                </div>
+                
+                <div className="text-center">
+                    <div className="relative h-16 w-48">
+                    <Image src="https://content-provider.pharmacollege.lk/certificates/sign.png" alt="Director Signature" layout="fill" objectFit="contain"/>
+                    </div>
+                    <div className="border-t border-gray-600 w-48 mt-1"></div>
+                    <p className="text-sm font-semibold mt-1">Director</p>
+                </div>
 
-          <div className="text-center">
-            <div className="h-16 w-48 flex items-center justify-center">
-              <p className="text-sm text-gray-600">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
+                <div className="text-center">
+                    <div className="h-16 w-48 flex items-center justify-center">
+                    <p className="text-sm text-gray-600">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
+                    </div>
+                    <div className="border-t border-gray-600 w-48 mt-1"></div>
+                    <p className="text-sm font-semibold mt-1">Date</p>
+                </div>
             </div>
-            <div className="border-t border-gray-600 w-48 mt-1"></div>
-            <p className="text-sm font-semibold mt-1">Date</p>
-          </div>
         </div>
       </div>
     </div>

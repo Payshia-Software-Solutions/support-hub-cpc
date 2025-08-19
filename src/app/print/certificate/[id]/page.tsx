@@ -97,6 +97,7 @@ export default function PrintCertificatePage() {
                         issueDate={certData.print_date}
                         certificateId={certData.certificate_id}
                         courseData={courseData}
+                        batchCode={certData.course_code}
                      />
                 </div>
             </main>
