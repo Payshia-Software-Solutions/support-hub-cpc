@@ -77,10 +77,9 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
           </div>
           
           <div className="text-center">
-             <div className="h-16 w-48"></div>
-             <div className="border-t border-gray-600 w-48 mt-1"></div>
-            <p className="text-sm font-semibold mt-1">Date</p>
-            <p className="text-xs text-gray-600">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
+            <p className="text-xs text-gray-600 relative -top-5">{format(new Date(issueDate), 'MMMM d, yyyy')}</p>
+            <div className="border-t border-gray-600 w-48 relative -top-5"></div>
+            <p className="text-sm font-semibold relative -top-4">Date</p>
           </div>
 
            <div className="w-1/4"></div>
