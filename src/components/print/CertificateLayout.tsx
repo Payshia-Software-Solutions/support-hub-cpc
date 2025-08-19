@@ -46,7 +46,7 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
 
         {/* Body section */}
         <div className="w-full flex-grow flex flex-col justify-center items-start text-left ml-8 max-w-xl -mt-24">
-          <p className="text-2xl text-gray-700 tracking-wider">CERTIFICATE OF PARTICIPATION</p>
+          <p className="text-2xl text-gray-700 tracking-wider">CERTIFICATE OF COMPLETION</p>
           <p className="text-lg text-gray-600 mt-8">This certificate is awarded to</p>
           <h1 className="text-5xl font-bold my-4 text-gray-900 leading-tight">
             {studentName}
