@@ -39,24 +39,21 @@ export const CertificateLayout = ({ studentName, studentIndex, courseName, issue
       {/* Main content overlay */}
       <div className="absolute inset-0 z-10 flex flex-col justify-between p-16">
 
-        {/* Header section */}
-        <div className="w-full">
-            <div className="bg-gray-800 text-white font-bold text-xl p-3 w-fit">
-                Ceylon Pharma College
-            </div>
-        </div>
-
         {/* Body section */}
-        <div className="w-full flex-grow flex flex-col justify-center items-start text-left -mt-8 ml-8 max-w-xl">
-          <p className="text-xl text-gray-600">This certificate is awarded to</p>
+        <div className="w-full flex-grow flex flex-col justify-center items-start text-left ml-8 max-w-xl">
+          <p className="text-2xl text-gray-700 tracking-wider">CERTIFICATE OF PARTICIPATION</p>
+          <p className="text-lg text-gray-600 mt-8">This certificate is awarded to</p>
           <h1 className="text-5xl font-bold my-4 text-gray-900 leading-tight">
-            {studentName}
+            L. R. Hasintha Menaka Kumara
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            in recognition of the successful completion of the
+          <p className="text-lg text-gray-600 max-w-lg">
+            in recognition of the successful participation in the 06 days English program
           </p>
-          <h2 className="text-4xl font-bold my-2 text-primary">
-            {courseName}
+          <p className="text-lg text-gray-600 max-w-lg mt-4">
+            conducted by
+          </p>
+          <h2 className="text-3xl font-bold my-2 text-primary">
+            Ceylon Pharma College
           </h2>
         </div>
 
