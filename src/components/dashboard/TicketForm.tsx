@@ -31,7 +31,7 @@ interface Attachment extends ApiAttachment {
 
 
 const ticketFormSchema = z.object({
-  category: z.enum(["Course", "Payment", "Games", "Study Packs", "Recordings", "Assignments", "Quiz", "Exam", "Other", "Convocation", "Registration", "English Course", "Contact Dilip sir", "Technical Issue"], {
+  category: z.enum(["Course", "Payment", "Games", "Study Packs", "Recordings", "Assignments", "Quiz", "Exam", "Other", "Convocation", "Registration", "English Course", "Technical Issue"], {
     required_error: "You need to select a ticket category.",
   }),
   description: z.string().min(1, "Description cannot be empty.").max(1000, "Description must be at most 1000 characters."),
@@ -56,7 +56,6 @@ const categoryOptions: { name: TicketCategory; icon: React.ElementType }[] = [
     { name: "Convocation", icon: GraduationCap },
     { name: "Registration", icon: UserPlus },
     { name: "English Course", icon: BookOpen },
-    { name: "Contact Dilip sir", icon: UserCog },
     { name: "Technical Issue", icon: Wrench },
     { name: "Other", icon: MoreHorizontal },
 ];
