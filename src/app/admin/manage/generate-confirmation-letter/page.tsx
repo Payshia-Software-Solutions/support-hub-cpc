@@ -221,6 +221,7 @@ export default function GenerateConfirmationLetterPage() {
                                         <div>
                                             <Label>Start Date</Label>
                                             <Input 
+                                                type="date"
                                                 value={startDate} 
                                                 onChange={(e) => setStartDate(e.target.value)} 
                                                 placeholder="YYYY-MM-DD"
@@ -230,6 +231,7 @@ export default function GenerateConfirmationLetterPage() {
                                          <div>
                                             <Label>End Date</Label>
                                             <Input 
+                                                type="date"
                                                 value={endDate}
                                                 onChange={(e) => setEndDate(e.target.value)} 
                                                 placeholder="YYYY-MM-DD"
