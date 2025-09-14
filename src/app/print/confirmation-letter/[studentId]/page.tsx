@@ -41,7 +41,7 @@ const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
             <div className="mt-12 text-base leading-loose">
                 <p>This is to certify that <strong className="font-bold">{student.full_name}</strong>, holding National Identity Card number <strong className="font-bold">{student.nic}</strong>, is a registered student at Ceylon Pharma College.</p>
                 <br />
-                <p>The student's registration number is <strong className="font-bold">{student.student_id}</strong>.</p>
+                <p>The student's registration number is <strong className="font-bold">{student.student_id.replace(/\//g, '')}</strong>.</p>
                 <br />
                 <p>This letter is issued upon the request of the student for whatever purpose it may serve.</p>
                 <br />
