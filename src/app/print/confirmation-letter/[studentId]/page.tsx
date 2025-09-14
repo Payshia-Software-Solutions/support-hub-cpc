@@ -58,10 +58,6 @@ const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
                     <p>Ceylon Pharma College</p>
                 </div>
             </div>
-            
-            <div className="absolute bottom-12 left-12 text-xs text-gray-500">
-                This is a computer-generated letter and does not require a physical signature.
-            </div>
         </div>
     );
 };
