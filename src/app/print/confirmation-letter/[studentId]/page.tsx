@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect } from 'react';
@@ -9,10 +8,10 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Printer, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Poppins } from 'next/font/google';
+import { Roboto } from 'next/font/google';
 import { cn } from '@/lib/utils';
 
-const poppins = Poppins({
+const roboto = Roboto({
   subsets: ['latin'],
   weight: ['400', '700', '900'],
 });
@@ -38,7 +37,7 @@ const ConfirmationLetter = ({ student, course, startDate, endDate }: { student: 
     const studentTitle = getGenderTitle(student.gender);
     return (
         <div 
-            className={cn("bg-white text-black w-[210mm] h-[297mm] relative", poppins.className)}
+            className={cn("bg-white text-black w-[210mm] h-[297mm] relative", roboto.className)}
             style={{
                 backgroundImage: `url('https://content-provider.pharmacollege.lk/site-images/lettter_page-0001.jpg')`,
                 backgroundSize: 'cover',
@@ -46,7 +45,7 @@ const ConfirmationLetter = ({ student, course, startDate, endDate }: { student: 
                 backgroundRepeat: 'no-repeat',
             }}
         >
-            <div className="absolute top-[280px] left-[50px] right-[50px]">
+            <div className="absolute top-[250px] left-[50px] right-[50px]">
                 <div className="flex justify-between items-start mb-12">
                     <div></div>
                     <div className="text-right">
