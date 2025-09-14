@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef } from 'react';
@@ -58,7 +59,7 @@ const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
                     <h2 className="text-lg font-bold underline text-left mb-6">Confirmation of Studentship</h2>
                 </div>
 
-                <div className="text-base leading-relaxed space-y-4 text-left">
+                <div className="text-base leading-relaxed space-y-4 text-justify">
                     <p>This is to formally certify that <strong className="font-bold">{studentTitle} {student.full_name}</strong>, holder of National Identity Card (NIC) number <strong className="font-bold">{student.nic}</strong> and student number <strong className="font-bold">{student.student_id.replace(/\//g, '')}</strong>, is a duly registered student of Ceylon Pharma College.</p>
                     
                     <p>{studentTitle} {student.full_name.split(' ')[0]} has successfully completed the Certificate Course in Pharmacy Practice offered by our institution. She remains an active student and is entitled to all the rights and privileges associated with her studentship at Ceylon Pharma College.</p>
