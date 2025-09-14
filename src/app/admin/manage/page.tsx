@@ -93,6 +93,13 @@ const managementTasks: ManagementTask[] = [
     category: "Content & System"
   },
   {
+    title: "Generate Confirmation Letter",
+    description: "Generate a proof of registration letter for a student.",
+    icon: <FileSignature className="w-8 h-8 text-white" />,
+    href: "/admin/manage/generate-confirmation-letter",
+    category: "Student Management"
+  },
+  {
     title: "Convocation",
     description: "Handle registrations for convocation ceremonies.",
     icon: <GraduationCap className="w-8 h-8 text-white" />,
