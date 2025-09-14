@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { getStudentFullInfo } from '@/lib/actions/users';
-import { getBatchByCode } from '@/lib/actions/courses'; // Import the new function
+import { getBatchByCode } from '@/lib/actions/courses'; 
 import type { FullStudentData, ApiCourse } from '@/lib/types';
 
 // --- Type Definitions for the API response ---
@@ -47,6 +47,11 @@ export default function GenerateConfirmationLetterPage() {
     const [selectedCourseId, setSelectedCourseId] = useState('');
     const [selectedCourseData, setSelectedCourseData] = useState<ApiCourse | null>(null);
     const [isLoadingCourseData, setIsLoadingCourseData] = useState(false);
+    
+    // States for editable dates
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -86,6 +91,8 @@ export default function GenerateConfirmationLetterPage() {
             const selectedEnrollment = enrollmentsArray.find(e => e.id === selectedCourseId);
             if (!selectedEnrollment) {
                 setSelectedCourseData(null);
+                setStartDate('');
+                setEndDate('');
                 return;
             }
 
@@ -93,10 +100,14 @@ export default function GenerateConfirmationLetterPage() {
             try {
                 const courseDetails = await getBatchByCode(selectedEnrollment.course_code);
                 setSelectedCourseData(courseDetails);
+                setStartDate(courseDetails.start_date || '');
+                setEndDate(courseDetails.end_date || '');
             } catch (error) {
                 console.error(error);
                 toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch course details.' });
                 setSelectedCourseData(null);
+                setStartDate('');
+                setEndDate('');
             } finally {
                 setIsLoadingCourseData(false);
             }
@@ -120,11 +131,11 @@ export default function GenerateConfirmationLetterPage() {
             const course = enrollmentsArray.find(e => e.id === selectedCourseId);
             if(course) params.set('course', course.parent_course_name);
         }
-        if (selectedCourseData?.start_date) params.set('startDate', selectedCourseData.start_date);
-        if (selectedCourseData?.end_date) params.set('endDate', selectedCourseData.end_date);
+        if (startDate) params.set('startDate', startDate);
+        if (endDate) params.set('endDate', endDate);
         
         return `/print/confirmation-letter/${studentNumberForUrl}?${params.toString()}`;
-    }, [studentNumberForUrl, selectedCourseId, enrollmentsArray, selectedCourseData]);
+    }, [studentNumberForUrl, selectedCourseId, enrollmentsArray, startDate, endDate]);
 
 
     return (
@@ -200,30 +211,41 @@ export default function GenerateConfirmationLetterPage() {
                                         </SelectContent>
                                      </Select>
                                 </div>
-                                {isLoadingCourseData && (
+                                {isLoadingCourseData ? (
                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <Skeleton className="h-10 w-full" />
                                         <Skeleton className="h-10 w-full" />
                                     </div>
-                                )}
-                                {selectedCourseData && (
+                                ) : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <Label>Start Date</Label>
-                                            <Input value={selectedCourseData.start_date || 'N/A'} readOnly disabled />
+                                            <Input 
+                                                value={startDate} 
+                                                onChange={(e) => setStartDate(e.target.value)} 
+                                                placeholder="YYYY-MM-DD"
+                                                disabled={!selectedCourseId}
+                                            />
                                         </div>
                                          <div>
                                             <Label>End Date</Label>
-                                            <Input value={selectedCourseData.end_date || 'N/A'} readOnly disabled />
+                                            <Input 
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)} 
+                                                placeholder="YYYY-MM-DD"
+                                                disabled={!selectedCourseId}
+                                            />
                                         </div>
                                     </div>
                                 )}
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button asChild className="w-full" disabled={!selectedCourseId || !selectedCourseData || isLoadingCourseData}>
+                            <Button asChild className="w-full" disabled={!selectedCourseId || isLoadingCourseData}>
                                 <Link href={printHref} target="_blank">
-                                    <Printer className="mr-2 h-4 w-4" /> Print Letter
+                                    {isLoadingCourseData && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                    <Printer className="mr-2 h-4 w-4" /> 
+                                    Print Letter
                                 </Link>
                             </Button>
                         </CardFooter>
