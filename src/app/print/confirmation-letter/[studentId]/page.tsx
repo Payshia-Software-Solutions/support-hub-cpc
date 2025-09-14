@@ -16,10 +16,19 @@ interface StudentInfo {
     student_id: string;
     full_name: string;
     nic: string;
+    gender: 'Male' | 'Female' | string;
 }
+
+const getGenderTitle = (gender: string) => {
+    if (gender === 'Male') return 'Mr.';
+    if (gender === 'Female') return 'Miss';
+    return ''; // Default if gender is not specified or other
+}
+
 
 // --- Letter Component ---
 const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
+    const studentTitle = getGenderTitle(student.gender);
     return (
         <div 
             className="bg-white text-black font-serif w-[210mm] h-[297mm] relative"
@@ -30,31 +39,41 @@ const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
                 backgroundRepeat: 'no-repeat',
             }}
         >
-            <div className="absolute top-[200px] left-[100px] right-[100px]">
-                <div className="flex justify-between items-start mb-16">
+            <div className="absolute top-[180px] left-[100px] right-[100px]">
+                <div className="flex justify-between items-start mb-12">
                     <div></div>
                     <div className="text-right">
                         <p className="font-semibold">{format(new Date(), 'MMMM dd, yyyy')}</p>
                     </div>
                 </div>
 
-                <div className="mt-16">
-                    <h2 className="text-lg font-bold underline text-center">TO WHOM IT MAY CONCERN</h2>
+                <div className="mt-8">
+                    <p className="mb-4">To whom it may concern,</p>
+                    <h2 className="text-lg font-bold underline text-center mb-6">Confirmation of Studentship</h2>
                 </div>
 
-                <div className="mt-12 text-base leading-loose">
-                    <p>This is to certify that <strong className="font-bold">{student.full_name}</strong>, holding National Identity Card number <strong className="font-bold">{student.nic}</strong>, is a registered student at Ceylon Pharma College.</p>
-                    <br />
-                    <p>The student's registration number is <strong className="font-bold">{student.student_id.replace(/\//g, '')}</strong>.</p>
-                    <br />
-                    <p>This letter is issued upon the request of the student for whatever purpose it may serve.</p>
-                    <br />
+                <div className="text-base leading-relaxed space-y-4 text-justify">
+                    <p>This is to formally certify that <strong className="font-bold">{studentTitle} {student.full_name}</strong>, holder of National Identity Card (NIC) number <strong className="font-bold">{student.nic}</strong> and student number <strong className="font-bold">{student.student_id.replace(/\//g, '')}</strong>, is a duly registered student of Ceylon Pharma College.</p>
+                    
+                    <p>{studentTitle} {student.full_name.split(' ')[0]} has successfully completed the Certificate Course in Pharmacy Practice offered by our institution. She remains an active student and is entitled to all the rights and privileges associated with her studentship at Ceylon Pharma College.</p>
+
+                    <p>This letter serves as official confirmation of {studentTitle} {student.full_name.split(' ')[0]}’s enrollment and academic status. It may be presented as valid proof for interviews, examinations, and other official purposes during her tenure with us.</p>
+                    
+                    <p>Should you require any additional information or clarification, please feel free to contact us via email at info@pharmacollege.lk.</p>
+                </div>
+
+                <div className="mt-12">
                     <p>Yours faithfully,</p>
+                    <p>Sincerely,</p>
                 </div>
 
-                <div className="mt-24">
+                <div className="mt-16">
+                     <div className="relative h-16 w-48">
+                        {/* Signature Image can be placed here if available */}
+                    </div>
                     <p className="font-semibold">_________________________</p>
-                    <p className="font-bold">Director,</p>
+                    <p className="font-bold">Dilip Fonseka,</p>
+                    <p>Course Director,</p>
                     <p>Ceylon Pharma College</p>
                 </div>
             </div>
