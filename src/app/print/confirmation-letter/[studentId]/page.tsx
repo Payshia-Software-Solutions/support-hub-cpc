@@ -22,7 +22,7 @@ interface StudentInfo {
 const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
     return (
         <div 
-            className="bg-white text-black font-serif w-[210mm] min-h-[297mm] relative"
+            className="bg-white text-black font-serif w-[210mm] h-[297mm] relative"
             style={{
                 backgroundImage: `url('https://content-provider.pharmacollege.lk/site-images/lettter_page-0001.jpg')`,
                 backgroundSize: 'cover',
@@ -112,18 +112,43 @@ export default function PrintConfirmationLetterPage() {
     }
 
     return (
-        <div className="bg-gray-200 print:bg-white">
-            <div className="fixed top-4 right-4 z-50 no-print">
-                <Button onClick={() => window.print()}>
-                    <Printer className="mr-2 h-4 w-4" />
-                    Print Letter
-                </Button>
-            </div>
-            <main className="flex justify-center items-start min-h-screen p-8 print:p-0">
-                <div className="print-container bg-white shadow-lg print:shadow-none">
-                     <ConfirmationLetter student={studentData.studentInfo} />
+        <>
+            <style jsx global>{`
+                @media print {
+                  @page {
+                    size: A4 portrait;
+                    margin: 0;
+                  }
+                  body {
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                  }
+                  .no-print {
+                    display: none;
+                  }
+                  .print-container {
+                    width: 210mm;
+                    height: 297mm;
+                    margin: 0;
+                    padding: 0;
+                    box-shadow: none;
+                    border: none;
+                  }
+                }
+            `}</style>
+            <div className="bg-gray-200 print:bg-white">
+                <div className="fixed top-4 right-4 z-50 no-print">
+                    <Button onClick={() => window.print()}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print Letter
+                    </Button>
                 </div>
-            </main>
-        </div>
+                <main className="flex justify-center items-start min-h-screen p-8 print:p-0">
+                    <div className="print-container bg-white shadow-lg print:shadow-none">
+                         <ConfirmationLetter student={studentData.studentInfo} />
+                    </div>
+                </main>
+            </div>
+        </>
     );
 }
