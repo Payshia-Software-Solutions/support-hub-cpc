@@ -9,6 +9,13 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Printer, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Poppins } from 'next/font/google';
+import { cn } from '@/lib/utils';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '700', '900'],
+});
 
 // --- Type Definitions ---
 interface StudentInfo {
@@ -31,9 +38,8 @@ const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
     const studentTitle = getGenderTitle(student.gender);
     return (
         <div 
-            className="bg-white text-black w-[210mm] h-[297mm] relative"
+            className={cn("bg-white text-black w-[210mm] h-[297mm] relative", poppins.className)}
             style={{
-                fontFamily: "'Times New Roman', Times, serif",
                 backgroundImage: `url('https://content-provider.pharmacollege.lk/site-images/lettter_page-0001.jpg')`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
