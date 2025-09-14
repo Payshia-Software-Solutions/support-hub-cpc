@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef } from 'react';
@@ -30,8 +31,9 @@ const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
     const studentTitle = getGenderTitle(student.gender);
     return (
         <div 
-            className="bg-white text-black font-serif w-[210mm] h-[297mm] relative"
+            className="bg-white text-black w-[210mm] h-[297mm] relative"
             style={{
+                fontFamily: "'Times New Roman', Times, serif",
                 backgroundImage: `url('https://content-provider.pharmacollege.lk/site-images/lettter_page-0001.jpg')`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
