@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useRef } from 'react';
@@ -39,7 +38,7 @@ const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
                 backgroundRepeat: 'no-repeat',
             }}
         >
-            <div className="absolute top-[350px] left-[100px] right-[100px]">
+            <div className="absolute top-[290px] left-[50px] right-[50px]">
                 <div className="flex justify-between items-start mb-12">
                     <div></div>
                     <div className="text-right">
@@ -47,7 +46,7 @@ const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
                     </div>
                 </div>
 
-                <div className="mt-8">
+                <div className="mt-6">
                     <p className="mb-4">To whom it may concern,</p>
                     <h2 className="text-lg font-bold underline text-center mb-6">Confirmation of Studentship</h2>
                 </div>
@@ -62,14 +61,14 @@ const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
                     <p>Should you require any additional information or clarification, please feel free to contact us via email at info@pharmacollege.lk.</p>
                 </div>
 
-                <div className="mt-12">
+                <div className="mt-6">
                     <p>Yours faithfully,</p>
                     <p>Sincerely,</p>
                 </div>
 
-                <div className="mt-16">
+                <div className="mt-2">
                      <div className="relative h-16 w-48">
-                        {/* Signature Image can be placed here if available */}
+                        <Image src="https://content-provider.pharmacollege.lk/certificates/sign.png" alt="Director Signature" layout="fill" objectFit="contain"/>
                     </div>
                     <p className="font-semibold">_________________________</p>
                     <p className="font-bold">Dilip Fonseka,</p>
