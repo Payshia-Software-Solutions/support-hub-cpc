@@ -38,7 +38,7 @@ const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
                 backgroundRepeat: 'no-repeat',
             }}
         >
-            <div className="absolute top-[290px] left-[50px] right-[50px]">
+            <div className="absolute top-[260px] left-[50px] right-[50px]">
                 <div className="flex justify-between items-start mb-12">
                     <div></div>
                     <div className="text-right">
