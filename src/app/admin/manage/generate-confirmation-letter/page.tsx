@@ -67,6 +67,8 @@ export default function GenerateConfirmationLetterPage() {
         }
     };
 
+    const studentNumberForUrl = studentData?.studentInfo.student_id.replace(/\//g, '');
+
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
@@ -131,7 +133,7 @@ export default function GenerateConfirmationLetterPage() {
                         </CardContent>
                         <CardFooter>
                             <Button asChild className="w-full">
-                                <Link href={`/print/confirmation-letter/${studentData.studentInfo.student_id}`} target="_blank">
+                                <Link href={`/print/confirmation-letter/${studentNumberForUrl}`} target="_blank">
                                     <Printer className="mr-2 h-4 w-4" /> Print Letter
                                 </Link>
                             </Button>
