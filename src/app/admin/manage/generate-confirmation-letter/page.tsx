@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef } from 'react';
@@ -180,9 +181,11 @@ export default function GenerateConfirmationLetterPage() {
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full" onClick={handlePrint}>
-                                    <Printer className="mr-2 h-4 w-4" /> Print Letter
-                                </Button>
+                                <div onClick={handlePrint} className="w-full">
+                                    <Button className="w-full">
+                                        <Printer className="mr-2 h-4 w-4" /> Print Letter
+                                    </Button>
+                                </div>
                             </CardFooter>
                         </Card>
                     </div>
