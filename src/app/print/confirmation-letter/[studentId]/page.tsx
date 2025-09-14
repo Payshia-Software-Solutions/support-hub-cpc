@@ -21,37 +21,42 @@ interface StudentInfo {
 // --- Letter Component ---
 const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
     return (
-        <div className="bg-white text-black p-12 font-serif w-[210mm] min-h-[297mm]">
-            <div className="flex justify-between items-start">
-                <div>
-                    <h1 className="text-2xl font-bold">Ceylon Pharma College</h1>
-                    <p className="text-sm">No 28, S.D.S Jayasinghe Mawatha,</p>
-                    <p className="text-sm">Kalubowila, Dehiwala</p>
-                    <p className="text-sm">www.pharmacollege.lk | 0112 768 260</p>
+        <div 
+            className="bg-white text-black font-serif w-[210mm] min-h-[297mm] relative"
+            style={{
+                backgroundImage: `url('https://content-provider.pharmacollege.lk/site-images/lettter_page-0001.jpg')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+            }}
+        >
+            <div className="absolute top-[200px] left-[100px] right-[100px]">
+                <div className="flex justify-between items-start mb-16">
+                    <div></div>
+                    <div className="text-right">
+                        <p className="font-semibold">{format(new Date(), 'MMMM dd, yyyy')}</p>
+                    </div>
                 </div>
-                <div className="text-right">
-                    <p className="font-semibold">{format(new Date(), 'MMMM dd, yyyy')}</p>
+
+                <div className="mt-16">
+                    <h2 className="text-lg font-bold underline text-center">TO WHOM IT MAY CONCERN</h2>
                 </div>
-            </div>
 
-            <div className="mt-16">
-                <h2 className="text-lg font-bold underline text-center">TO WHOM IT MAY CONCERN</h2>
-            </div>
+                <div className="mt-12 text-base leading-loose">
+                    <p>This is to certify that <strong className="font-bold">{student.full_name}</strong>, holding National Identity Card number <strong className="font-bold">{student.nic}</strong>, is a registered student at Ceylon Pharma College.</p>
+                    <br />
+                    <p>The student's registration number is <strong className="font-bold">{student.student_id.replace(/\//g, '')}</strong>.</p>
+                    <br />
+                    <p>This letter is issued upon the request of the student for whatever purpose it may serve.</p>
+                    <br />
+                    <p>Yours faithfully,</p>
+                </div>
 
-            <div className="mt-12 text-base leading-loose">
-                <p>This is to certify that <strong className="font-bold">{student.full_name}</strong>, holding National Identity Card number <strong className="font-bold">{student.nic}</strong>, is a registered student at Ceylon Pharma College.</p>
-                <br />
-                <p>The student's registration number is <strong className="font-bold">{student.student_id.replace(/\//g, '')}</strong>.</p>
-                <br />
-                <p>This letter is issued upon the request of the student for whatever purpose it may serve.</p>
-                <br />
-                <p>Yours faithfully,</p>
-            </div>
-
-            <div className="mt-24">
-                <p className="font-semibold">_________________________</p>
-                <p className="font-bold">Director,</p>
-                <p>Ceylon Pharma College</p>
+                <div className="mt-24">
+                    <p className="font-semibold">_________________________</p>
+                    <p className="font-bold">Director,</p>
+                    <p>Ceylon Pharma College</p>
+                </div>
             </div>
             
             <div className="absolute bottom-12 left-12 text-xs text-gray-500">
