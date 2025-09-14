@@ -1,6 +1,6 @@
 
 
-import type { Course, ApiCourseResponse, Batch, ParentCourse } from '../types';
+import type { Course, ApiCourseResponse, Batch, ParentCourse, ApiCourse } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 

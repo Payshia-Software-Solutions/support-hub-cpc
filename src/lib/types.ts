@@ -519,6 +519,8 @@ export interface ApiCourse {
     course_img: string | null;
     certification: string;
     mini_description: string;
+    start_date?: string;
+    end_date?: string;
 }
 
 export interface ApiCourseResponse {

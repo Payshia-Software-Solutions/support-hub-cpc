@@ -1,21 +1,20 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, AlertTriangle, User, Mail, Phone, Printer, CalendarIcon } from 'lucide-react';
+import { Search, Loader2, AlertTriangle, User, Mail, Phone, Printer } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import { getStudentFullInfo } from '@/lib/actions/users';
+import { getBatchByCode } from '@/lib/actions/courses'; // Import the new function
+import type { FullStudentData, ApiCourse } from '@/lib/types';
 
 // --- Type Definitions for the API response ---
 interface StudentInfo {
@@ -38,11 +37,6 @@ interface StudentEnrollment {
     parent_course_name: string;
 }
 
-interface FullStudentData {
-    studentInfo: StudentInfo;
-    studentEnrollments: Record<string, StudentEnrollment>;
-}
-
 // --- Main Page Component ---
 export default function GenerateConfirmationLetterPage() {
     const [studentId, setStudentId] = useState('');
@@ -50,9 +44,9 @@ export default function GenerateConfirmationLetterPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [selectedCourse, setSelectedCourse] = useState('');
-    const [startDate, setStartDate] = useState<Date | undefined>();
-    const [endDate, setEndDate] = useState<Date | undefined>();
+    const [selectedCourseId, setSelectedCourseId] = useState('');
+    const [selectedCourseData, setSelectedCourseData] = useState<ApiCourse | null>(null);
+    const [isLoadingCourseData, setIsLoadingCourseData] = useState(false);
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -64,9 +58,8 @@ export default function GenerateConfirmationLetterPage() {
         setIsLoading(true);
         setError(null);
         setStudentData(null);
-        setSelectedCourse('');
-        setStartDate(undefined);
-        setEndDate(undefined);
+        setSelectedCourseId('');
+        setSelectedCourseData(null);
 
         try {
             const response = await fetch(`https://qa-api.pharmacollege.lk/get-student-full-info?loggedUser=${studentId.trim().toUpperCase()}`);
@@ -87,6 +80,35 @@ export default function GenerateConfirmationLetterPage() {
             setIsLoading(false);
         }
     };
+    
+    useEffect(() => {
+        const fetchCourseDetails = async () => {
+            const selectedEnrollment = enrollmentsArray.find(e => e.id === selectedCourseId);
+            if (!selectedEnrollment) {
+                setSelectedCourseData(null);
+                return;
+            }
+
+            setIsLoadingCourseData(true);
+            try {
+                const courseDetails = await getBatchByCode(selectedEnrollment.course_code);
+                setSelectedCourseData(courseDetails);
+            } catch (error) {
+                console.error(error);
+                toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch course details.' });
+                setSelectedCourseData(null);
+            } finally {
+                setIsLoadingCourseData(false);
+            }
+        };
+
+        if (selectedCourseId) {
+            fetchCourseDetails();
+        } else {
+            setSelectedCourseData(null);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedCourseId]);
 
     const studentNumberForUrl = studentData?.studentInfo.student_id.replace(/\//g, '');
     const enrollmentsArray = studentData ? Object.values(studentData.studentEnrollments) : [];
@@ -94,15 +116,15 @@ export default function GenerateConfirmationLetterPage() {
     const printHref = useMemo(() => {
         if (!studentNumberForUrl) return '#';
         const params = new URLSearchParams();
-        if (selectedCourse) {
-            const course = enrollmentsArray.find(e => e.id === selectedCourse);
+        if (selectedCourseId) {
+            const course = enrollmentsArray.find(e => e.id === selectedCourseId);
             if(course) params.set('course', course.parent_course_name);
         }
-        if (startDate) params.set('startDate', format(startDate, 'yyyy-MM-dd'));
-        if (endDate) params.set('endDate', format(endDate, 'yyyy-MM-dd'));
+        if (selectedCourseData?.start_date) params.set('startDate', selectedCourseData.start_date);
+        if (selectedCourseData?.end_date) params.set('endDate', selectedCourseData.end_date);
         
         return `/print/confirmation-letter/${studentNumberForUrl}?${params.toString()}`;
-    }, [studentNumberForUrl, selectedCourse, startDate, endDate, enrollmentsArray]);
+    }, [studentNumberForUrl, selectedCourseId, enrollmentsArray, selectedCourseData]);
 
 
     return (
@@ -171,37 +193,35 @@ export default function GenerateConfirmationLetterPage() {
                                 <h3 className="font-semibold text-card-foreground">Letter Options</h3>
                                 <div className="space-y-2">
                                      <Label htmlFor="course-select">Course for Confirmation</Label>
-                                     <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                                     <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
                                         <SelectTrigger id="course-select"><SelectValue placeholder="Select an enrolled course..."/></SelectTrigger>
                                         <SelectContent>
                                              {enrollmentsArray.map(e => <SelectItem key={e.id} value={e.id}>{e.parent_course_name}</SelectItem>)}
                                         </SelectContent>
                                      </Select>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Start Date</Label>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{startDate ? format(startDate, "PPP") : <span>Pick a start date</span>}</Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus /></PopoverContent>
-                                        </Popover>
+                                {isLoadingCourseData && (
+                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <Skeleton className="h-10 w-full" />
+                                        <Skeleton className="h-10 w-full" />
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label>End Date</Label>
-                                         <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{endDate ? format(endDate, "PPP") : <span>Pick an end date</span>}</Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus /></PopoverContent>
-                                        </Popover>
+                                )}
+                                {selectedCourseData && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <Label>Start Date</Label>
+                                            <Input value={selectedCourseData.start_date || 'N/A'} readOnly disabled />
+                                        </div>
+                                         <div>
+                                            <Label>End Date</Label>
+                                            <Input value={selectedCourseData.end_date || 'N/A'} readOnly disabled />
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button asChild className="w-full" disabled={!selectedCourse || !startDate || !endDate}>
+                            <Button asChild className="w-full" disabled={!selectedCourseId || !selectedCourseData || isLoadingCourseData}>
                                 <Link href={printHref} target="_blank">
                                     <Printer className="mr-2 h-4 w-4" /> Print Letter
                                 </Link>
