@@ -1,18 +1,18 @@
 
 "use client";
 
-import { useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Printer, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Roboto } from 'next/font/google';
+import { Poppins } from 'next/font/google';
 import { cn } from '@/lib/utils';
 
-const roboto = Roboto({
+const poppins = Poppins({
   subsets: ['latin'],
   weight: ['400', '700', '900'],
 });
@@ -34,11 +34,11 @@ const getGenderTitle = (gender: string) => {
 
 
 // --- Letter Component ---
-const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
+const ConfirmationLetter = ({ student, course, startDate, endDate }: { student: StudentInfo, course?: string, startDate?: string, endDate?: string }) => {
     const studentTitle = getGenderTitle(student.gender);
     return (
         <div 
-            className={cn("bg-white text-black w-[210mm] h-[297mm] relative", roboto.className)}
+            className={cn("bg-white text-black w-[210mm] h-[297mm] relative", poppins.className)}
             style={{
                 backgroundImage: `url('https://content-provider.pharmacollege.lk/site-images/lettter_page-0001.jpg')`,
                 backgroundSize: 'cover',
@@ -46,7 +46,7 @@ const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
                 backgroundRepeat: 'no-repeat',
             }}
         >
-            <div className="absolute top-[250px] left-[50px] right-[50px]">
+            <div className="absolute top-[280px] left-[50px] right-[50px]">
                 <div className="flex justify-between items-start mb-12">
                     <div></div>
                     <div className="text-right">
@@ -62,7 +62,11 @@ const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
                 <div className="text-base leading-relaxed space-y-4 text-justify">
                     <p>This is to formally certify that <strong className="font-bold">{studentTitle} {student.full_name}</strong>, holder of National Identity Card (NIC) number <strong className="font-bold">{student.nic}</strong> and student number <strong className="font-bold">{student.student_id.replace(/\//g, '')}</strong>, is a duly registered student of Ceylon Pharma College.</p>
                     
-                    <p>{studentTitle} {student.full_name.split(' ')[0]} has successfully completed the Certificate Course in Pharmacy Practice offered by our institution. She remains an active student and is entitled to all the rights and privileges associated with her studentship at Ceylon Pharma College.</p>
+                    <p>
+                        {studentTitle} {student.full_name.split(' ')[0]} has successfully completed the <strong className="font-bold">{course || 'Certificate Course in Pharmacy Practice'}</strong> offered by our institution
+                        {startDate && endDate ? ` from ${format(new Date(startDate), 'MMMM dd, yyyy')} to ${format(new Date(endDate), 'MMMM dd, yyyy')}` : ''}.
+                        She remains an active student and is entitled to all the rights and privileges associated with her studentship at Ceylon Pharma College.
+                    </p>
 
                     <p>This letter serves as official confirmation of {studentTitle} {student.full_name.split(' ')[0]}’s enrollment and academic status. It may be presented as valid proof for interviews, examinations, and other official purposes during her tenure with us.</p>
                     
@@ -92,7 +96,12 @@ const ConfirmationLetter = ({ student }: { student: StudentInfo }) => {
 // --- Main Page Component ---
 export default function PrintConfirmationLetterPage() {
     const params = useParams();
+    const searchParams = useSearchParams();
     const studentId = params.studentId as string;
+
+    const course = searchParams.get('course') || undefined;
+    const startDate = searchParams.get('startDate') || undefined;
+    const endDate = searchParams.get('endDate') || undefined;
 
     const { data: studentData, isLoading, isError } = useQuery<{ studentInfo: StudentInfo }>({
         queryKey: ['studentInfoForLetter', studentId],
@@ -171,7 +180,12 @@ export default function PrintConfirmationLetterPage() {
                 </div>
                 <main className="flex justify-center items-start min-h-screen p-8 print:p-0">
                     <div className="print-container bg-white shadow-lg print:shadow-none">
-                         <ConfirmationLetter student={studentData.studentInfo} />
+                         <ConfirmationLetter 
+                            student={studentData.studentInfo} 
+                            course={course}
+                            startDate={startDate}
+                            endDate={endDate}
+                         />
                     </div>
                 </main>
             </div>
