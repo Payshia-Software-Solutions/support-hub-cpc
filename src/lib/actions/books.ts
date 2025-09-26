@@ -67,7 +67,7 @@ export async function getBookById(bookId: string): Promise<Book> {
 }
 
 export async function createBook(payload: CreateBookPayload): Promise<Book> {
-    return apiFetch('', {
+    return apiFetch('/books', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
@@ -98,4 +98,5 @@ export async function deleteChapter(chapterId: string): Promise<void> {
         method: 'DELETE',
     });
 }
+
 
