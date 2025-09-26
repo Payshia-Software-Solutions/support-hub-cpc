@@ -1,7 +1,7 @@
 
 "use server";
 
-import type { Book, CreateBookPayload } from '../types';
+import type { Book, CreateBookPayload, Chapter, CreateChapterPayload } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BOOKS_API_URL;
 
@@ -40,6 +40,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     }
     
     const result = await response.json();
+    // The API wraps the actual data in a `data` property.
     return result.data as T;
 
   } catch (error) {
@@ -52,11 +53,35 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 
 // --- Books API Functions ---
 export async function getBooks(): Promise<Book[]> {
+    // The main URL already points to /books, so we fetch with an empty endpoint.
     return apiFetch('');
 }
 
+export async function getBookById(bookId: string): Promise<Book> {
+    const books = await getBooks();
+    const book = books.find(b => b.book_id === bookId);
+    if (!book) {
+        throw new Error(`Book with ID ${bookId} not found.`);
+    }
+    return book;
+}
+
 export async function createBook(payload: CreateBookPayload): Promise<Book> {
+    // The main URL already points to /books, so we post to it directly.
     return apiFetch('', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+    });
+}
+
+
+// --- Chapters API Functions ---
+export async function getChaptersByBook(bookId: string): Promise<Chapter[]> {
+    return apiFetch(`/chapters/by-book/${bookId}`);
+}
+
+export async function createChapter(payload: CreateChapterPayload): Promise<Chapter> {
+    return apiFetch('/chapters', {
         method: 'POST',
         body: JSON.stringify(payload),
     });

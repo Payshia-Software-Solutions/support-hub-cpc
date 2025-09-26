@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, BookOpen, PlusCircle, Loader2 } from 'lucide-react';
+import { AlertTriangle, BookOpen, PlusCircle, Loader2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -20,6 +20,7 @@ import { getBooks, createBook } from '@/lib/actions/books';
 import type { Book, CreateBookPayload } from '@/lib/types';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 
 
 const bookFormSchema = z.object({
@@ -144,6 +145,7 @@ export default function BooksManagementPage() {
                                     <TableHead>Book Name</TableHead>
                                     <TableHead>Author</TableHead>
                                     <TableHead>Created At</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -154,6 +156,7 @@ export default function BooksManagementPage() {
                                             <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                                             <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                                             <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                            <TableCell><Skeleton className="h-8 w-20" /></TableCell>
                                         </TableRow>
                                     ))
                                 ) : books && books.length > 0 ? (
@@ -163,11 +166,19 @@ export default function BooksManagementPage() {
                                             <TableCell>{book.book_name}</TableCell>
                                             <TableCell>{book.author}</TableCell>
                                             <TableCell>{format(new Date(book.created_at), 'PPP')}</TableCell>
+                                             <TableCell className="text-right">
+                                                <Button asChild variant="outline" size="sm">
+                                                    <Link href={`/admin/manage/books/${book.book_id}`}>
+                                                        <Eye className="mr-2 h-4 w-4" />
+                                                        Open
+                                                    </Link>
+                                                </Button>
+                                            </TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="text-center h-24">
+                                        <TableCell colSpan={5} className="text-center h-24">
                                             No books found.
                                         </TableCell>
                                     </TableRow>

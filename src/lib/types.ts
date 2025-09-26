@@ -642,6 +642,26 @@ export interface CreateBookPayload {
     update_by: string;
 }
 
+export interface Chapter {
+  chapter_id: string;
+  book_id: string;
+  chapter_number: string;
+  chapter_title: string;
+  created_at: string;
+  update_by: string;
+  updated_at: string;
+  created_by: string;
+}
+
+export interface CreateChapterPayload {
+    book_id: string;
+    chapter_number: string;
+    chapter_title: string;
+    created_by: string;
+    update_by: string;
+}
+
+
 export interface ParentCourseListItem {
     id: string;
     course_name: string;
