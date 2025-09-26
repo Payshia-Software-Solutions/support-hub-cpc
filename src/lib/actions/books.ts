@@ -51,5 +51,5 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 
 // --- Books API Functions ---
 export async function getBooks(): Promise<Book[]> {
-    return apiFetch('/books/');
+    return apiFetch('');
 }
