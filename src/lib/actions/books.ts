@@ -16,8 +16,10 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     if (!(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
     }
-
-    const url = endpoint ? `${API_BASE_URL}${endpoint}` : API_BASE_URL;
+    
+    // Correctly construct the URL
+    const baseUrl = new URL(API_BASE_URL);
+    const url = endpoint ? `${baseUrl.origin}${endpoint}` : API_BASE_URL;
 
     const response = await fetch(url, {
       ...options,
@@ -40,7 +42,6 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     }
     
     const result = await response.json();
-    // The API wraps the actual data in a `data` property.
     return result.data as T;
 
   } catch (error) {
@@ -53,7 +54,6 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 
 // --- Books API Functions ---
 export async function getBooks(): Promise<Book[]> {
-    // The main URL already points to /books, so we fetch with an empty endpoint.
     return apiFetch('');
 }
 
@@ -67,7 +67,6 @@ export async function getBookById(bookId: string): Promise<Book> {
 }
 
 export async function createBook(payload: CreateBookPayload): Promise<Book> {
-    // The main URL already points to /books, so we post to it directly.
     return apiFetch('', {
         method: 'POST',
         body: JSON.stringify(payload),
