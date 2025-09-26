@@ -64,7 +64,7 @@ const ChapterForm = ({ bookId, chapter, onClose }: { bookId: string, chapter?: C
                 throw new Error('You must be logged in.');
             }
             if (chapter) {
-                 const payload: UpdateChapterPayload = { ...data, update_by: user.username };
+                 const payload: UpdateChapterPayload = { ...data, book_id: bookId, update_by: user.username };
                  return updateChapter(chapter.chapter_id, payload);
             } else {
                  const payload: CreateChapterPayload = { ...data, book_id: bookId, created_by: user.username, update_by: user.username };

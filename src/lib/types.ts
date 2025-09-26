@@ -1,6 +1,5 @@
 
 
-
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -662,7 +661,7 @@ export interface CreateChapterPayload {
     update_by: string;
 }
 
-export interface UpdateChapterPayload extends Partial<Omit<CreateChapterPayload, 'book_id' | 'created_by'>> {}
+export interface UpdateChapterPayload extends Partial<Omit<CreateChapterPayload, 'created_by'>> {}
 
 
 export interface ParentCourseListItem {
