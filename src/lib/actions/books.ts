@@ -1,7 +1,8 @@
 
+
 "use server";
 
-import type { Book, CreateBookPayload, Chapter, CreateChapterPayload } from '../types';
+import type { Book, CreateBookPayload, Chapter, CreateChapterPayload, UpdateChapterPayload } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BOOKS_API_URL;
 
@@ -17,7 +18,6 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
       headers['Content-Type'] = 'application/json';
     }
     
-    // Correctly construct the URL
     const baseUrl = new URL(API_BASE_URL);
     const url = endpoint ? `${baseUrl.origin}${endpoint}` : API_BASE_URL;
 
@@ -85,3 +85,17 @@ export async function createChapter(payload: CreateChapterPayload): Promise<Chap
         body: JSON.stringify(payload),
     });
 }
+
+export async function updateChapter(chapterId: string, payload: UpdateChapterPayload): Promise<Chapter> {
+    return apiFetch(`/chapters/${chapterId}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+    });
+}
+
+export async function deleteChapter(chapterId: string): Promise<void> {
+    await apiFetch<null>(`/chapters/${chapterId}`, {
+        method: 'DELETE',
+    });
+}
+

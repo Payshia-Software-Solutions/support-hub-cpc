@@ -1,24 +1,26 @@
 
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Book, PlusCircle, Loader2, ArrowLeft } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertTriangle, Book, PlusCircle, Loader2, ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getChaptersByBook, createChapter, getBookById } from '@/lib/actions/books';
-import type { Chapter, CreateChapterPayload, Book } from '@/lib/types';
+import { getChaptersByBook, createChapter, updateChapter, deleteChapter, getBookById } from '@/lib/actions/books';
+import type { Chapter, CreateChapterPayload, Book, UpdateChapterPayload } from '@/lib/types';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
@@ -30,36 +32,55 @@ const chapterFormSchema = z.object({
 
 type ChapterFormValues = z.infer<typeof chapterFormSchema>;
 
-const ChapterForm = ({ bookId, onClose }: { bookId: string, onClose: () => void; }) => {
+const ChapterForm = ({ bookId, chapter, onClose }: { bookId: string, chapter?: Chapter | null, onClose: () => void; }) => {
     const queryClient = useQueryClient();
     const { user } = useAuth();
+    
     const form = useForm<ChapterFormValues>({
         resolver: zodResolver(chapterFormSchema),
-        defaultValues: { chapter_number: '', chapter_title: '' }
+        defaultValues: {
+            chapter_number: chapter?.chapter_number || '',
+            chapter_title: chapter?.chapter_title || '',
+        }
     });
 
+    useEffect(() => {
+        if(chapter) {
+            form.reset({
+                chapter_number: chapter.chapter_number,
+                chapter_title: chapter.chapter_title,
+            });
+        } else {
+             form.reset({
+                chapter_number: '',
+                chapter_title: '',
+            });
+        }
+    }, [chapter, form]);
+
     const mutation = useMutation({
-        mutationFn: (data: CreateChapterPayload) => createChapter(data),
+        mutationFn: (data: ChapterFormValues) => {
+            if (!user?.username) {
+                throw new Error('You must be logged in.');
+            }
+            if (chapter) {
+                 const payload: UpdateChapterPayload = { ...data, update_by: user.username };
+                 return updateChapter(chapter.chapter_id, payload);
+            } else {
+                 const payload: CreateChapterPayload = { ...data, book_id: bookId, created_by: user.username, update_by: user.username };
+                 return createChapter(payload);
+            }
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['chapters', bookId] });
-            toast({ title: 'Success', description: 'Chapter created successfully.' });
+            toast({ title: 'Success', description: `Chapter ${chapter ? 'updated' : 'created'} successfully.` });
             onClose();
         },
         onError: (error: Error) => toast({ variant: 'destructive', title: 'Error', description: error.message })
     });
 
     const onSubmit = (data: ChapterFormValues) => {
-        if (!user?.username) {
-            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
-            return;
-        }
-        const payload: CreateChapterPayload = {
-            ...data,
-            book_id: bookId,
-            created_by: user.username,
-            update_by: user.username,
-        };
-        mutation.mutate(payload);
+        mutation.mutate(data);
     };
 
     return (
@@ -78,7 +99,7 @@ const ChapterForm = ({ bookId, onClose }: { bookId: string, onClose: () => void;
                 <DialogClose asChild><Button type="button" variant="outline" disabled={mutation.isPending}>Cancel</Button></DialogClose>
                 <Button type="submit" disabled={mutation.isPending}>
                     {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Create Chapter
+                    {chapter ? "Save Changes" : "Create Chapter"}
                 </Button>
             </DialogFooter>
         </form>
@@ -90,6 +111,9 @@ export default function BookChaptersPage() {
     const router = useRouter();
     const bookId = params.bookId as string;
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
+    const [chapterToDelete, setChapterToDelete] = useState<Chapter | null>(null);
+    const queryClient = useQueryClient();
 
     const { data: book, isLoading: isLoadingBook } = useQuery<Book>({
         queryKey: ['book', bookId],
@@ -103,6 +127,26 @@ export default function BookChaptersPage() {
         enabled: !!bookId,
     });
 
+    const deleteMutation = useMutation({
+        mutationFn: (chapterId: string) => deleteChapter(chapterId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['chapters', bookId] });
+            toast({ title: 'Success', description: 'Chapter deleted successfully.' });
+        },
+        onError: (error: Error) => toast({ variant: 'destructive', title: 'Error', description: error.message }),
+        onSettled: () => setChapterToDelete(null),
+    });
+
+    const handleCreate = () => {
+        setSelectedChapter(null);
+        setIsFormOpen(true);
+    }
+    
+    const handleEdit = (chapter: Chapter) => {
+        setSelectedChapter(chapter);
+        setIsFormOpen(true);
+    }
+
     const isLoading = isLoadingBook || isLoadingChapters;
 
     return (
@@ -110,12 +154,33 @@ export default function BookChaptersPage() {
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Add New Chapter</DialogTitle>
-                        <DialogDescription>Add a new chapter to "{book?.book_name}".</DialogDescription>
+                        <DialogTitle>{selectedChapter ? "Edit" : "Add New"} Chapter</DialogTitle>
+                        <DialogDescription>
+                          {selectedChapter ? `Editing chapter for "${book?.book_name}"` : `Add a new chapter to "${book?.book_name}"`}.
+                        </DialogDescription>
                     </DialogHeader>
-                    <ChapterForm bookId={bookId} onClose={() => setIsFormOpen(false)} />
+                    <ChapterForm bookId={bookId} chapter={selectedChapter} onClose={() => setIsFormOpen(false)} />
                 </DialogContent>
             </Dialog>
+
+             <AlertDialog open={!!chapterToDelete} onOpenChange={() => setChapterToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the chapter "{chapterToDelete?.chapter_title}". This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteMutation.mutate(chapterToDelete!.chapter_id)} disabled={deleteMutation.isPending}>
+                            {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
 
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
@@ -126,7 +191,7 @@ export default function BookChaptersPage() {
                         {isLoadingBook ? <Skeleton className="h-8 w-64" /> : `Chapters for "${book?.book_name}"`}
                     </h1>
                 </div>
-                <Button onClick={() => setIsFormOpen(true)}>
+                <Button onClick={handleCreate}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Add New Chapter
                 </Button>
             </header>
@@ -151,6 +216,7 @@ export default function BookChaptersPage() {
                                     <TableHead>Chapter #</TableHead>
                                     <TableHead>Title</TableHead>
                                     <TableHead>Created At</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -160,6 +226,7 @@ export default function BookChaptersPage() {
                                             <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                                             <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                                             <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                            <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
                                         </TableRow>
                                     ))
                                 ) : chapters && chapters.length > 0 ? (
@@ -168,11 +235,19 @@ export default function BookChaptersPage() {
                                             <TableCell className="font-medium">{chapter.chapter_number}</TableCell>
                                             <TableCell>{chapter.chapter_title}</TableCell>
                                             <TableCell>{format(new Date(chapter.created_at), 'PPP')}</TableCell>
+                                            <TableCell className="text-right space-x-1">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(chapter)}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setChapterToDelete(chapter)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="text-center h-24">
+                                        <TableCell colSpan={4} className="text-center h-24">
                                             No chapters found for this book yet.
                                         </TableCell>
                                     </TableRow>
