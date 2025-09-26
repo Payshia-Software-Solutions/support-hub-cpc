@@ -170,8 +170,8 @@ const managementTasks: ManagementTask[] = [
     category: "Student Management"
   },
   {
-    title: "BNF Management",
-    description: "Add, edit, and manage BNF content.",
+    title: "Books Management",
+    description: "Add, edit, and manage book index.",
     icon: <BookOpen className="w-8 h-8 text-white" />,
     href: "/admin/manage/bnf",
     category: "Content & System"

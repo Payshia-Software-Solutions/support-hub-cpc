@@ -625,25 +625,16 @@ export interface Announcement {
   imageUrl?: string;
 }
 
-export interface BnfPage {
-  id: number;
-  chapter_id: number;
-  title: string;
-  index_words: string;
-  left_content: string; // Storing as HTML string
-  right_content: string; // Storing as HTML string
+export interface Book {
+  book_id: number;
+  book_name: string;
+  author: string;
+  created_by: string;
+  created_at: string;
+  update_by: string;
+  updated_at: string;
 }
 
-export interface BnfChapter {
-    id: number;
-    title: string;
-}
-
-export interface BnfWordIndexEntry {
-    id: number;
-    word: string;
-    page_id: number;
-}
 export interface ParentCourseListItem {
     id: string;
     course_name: string;
