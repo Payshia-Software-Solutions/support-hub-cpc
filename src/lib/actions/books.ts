@@ -1,7 +1,7 @@
 
 "use server";
 
-import type { Book } from '../types';
+import type { Book, CreateBookPayload } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BOOKS_API_URL;
 
@@ -17,7 +17,9 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
       headers['Content-Type'] = 'application/json';
     }
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const url = endpoint ? `${API_BASE_URL}${endpoint}` : API_BASE_URL;
+
+    const response = await fetch(url, {
       ...options,
       headers,
       credentials: 'omit',
@@ -37,7 +39,6 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
       return null as T;
     }
     
-    // The API response has a 'data' key.
     const result = await response.json();
     return result.data as T;
 
@@ -52,4 +53,11 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 // --- Books API Functions ---
 export async function getBooks(): Promise<Book[]> {
     return apiFetch('');
+}
+
+export async function createBook(payload: CreateBookPayload): Promise<Book> {
+    return apiFetch('', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+    });
 }

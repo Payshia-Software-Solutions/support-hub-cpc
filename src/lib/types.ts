@@ -626,13 +626,20 @@ export interface Announcement {
 }
 
 export interface Book {
-  book_id: number;
+  book_id: string;
   book_name: string;
   author: string;
   created_by: string;
   created_at: string;
   update_by: string;
   updated_at: string;
+}
+
+export interface CreateBookPayload {
+    book_name: string;
+    author: string;
+    created_by: string;
+    update_by: string;
 }
 
 export interface ParentCourseListItem {
