@@ -50,4 +50,4 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 }
 
 // --- Books API Functions ---
-export const getBooks = (): Promise<Book[]> => apiFetch('/books');
+export const getBooks = async (): Promise<Book[]> => apiFetch('/books');
