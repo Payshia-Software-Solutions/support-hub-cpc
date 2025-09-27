@@ -2,7 +2,7 @@
 
 "use server";
 
-import type { Book, CreateBookPayload, Chapter, CreateChapterPayload, UpdateChapterPayload, Section, CreateSectionPayload, UpdateSectionPayload } from '../types';
+import type { Book, CreateBookPayload, Chapter, CreateChapterPayload, UpdateChapterPayload, Section, CreateSectionPayload, UpdateSectionPayload, PageContent, CreatePagePayload, UpdatePagePayload } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BOOKS_API_URL;
 
@@ -81,10 +81,11 @@ export async function getChaptersByBook(bookId: string): Promise<Chapter[]> {
 }
 
 export async function createChapter(payload: CreateChapterPayload): Promise<Chapter> {
-    return apiFetch('/chapters', {
+    const response = await apiFetch<{data: Chapter}>('/chapters', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
+    return response.data;
 }
 
 export async function updateChapter(chapterId: string, payload: UpdateChapterPayload): Promise<Chapter> {
@@ -125,3 +126,27 @@ export async function deleteSection(sectionId: string): Promise<void> {
     });
 }
 
+// --- Page Content API Functions ---
+export async function getPagesByBookChapterSection(bookId: string, chapterId: string, sectionId: string): Promise<PageContent[]> {
+    return apiFetch(`/pages/by-book-section-chapter/${bookId}/${sectionId}/${chapterId}`);
+}
+
+export async function createPage(payload: CreatePagePayload): Promise<PageContent> {
+    return apiFetch('/pages', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+    });
+}
+
+export async function updatePage(pageId: string, payload: UpdatePagePayload): Promise<PageContent> {
+    return apiFetch(`/pages/${pageId}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+    });
+}
+
+export async function deletePage(pageId: string): Promise<void> {
+    await apiFetch<null>(`/pages/${pageId}`, {
+        method: 'DELETE',
+    });
+}

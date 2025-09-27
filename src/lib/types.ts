@@ -685,6 +685,31 @@ export interface CreateSectionPayload {
 
 export interface UpdateSectionPayload extends Partial<Omit<CreateSectionPayload, 'created_by'>> {}
 
+export interface PageContent {
+    pege_entry_id: string;
+    book_id: string;
+    section_id: string;
+    page_number: string;
+    content_order: string;
+    page_content_text: string;
+    created_by: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CreatePagePayload {
+    book_id: string;
+    chapter_id: string;
+    section_id: string;
+    page_number: string;
+    content_order: string;
+    page_content_text: string;
+    created_by: string;
+}
+
+export interface UpdatePagePayload extends Partial<Omit<CreatePagePayload, 'created_by'>> {}
+
+
 export interface ParentCourseListItem {
     id: string;
     course_name: string;

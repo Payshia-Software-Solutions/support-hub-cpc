@@ -149,6 +149,10 @@ export default function ChapterSectionsPage() {
         setSelectedSection(section);
         setIsFormOpen(true);
     }
+    
+    const handleRowClick = (sectionId: string) => {
+        router.push(`/admin/manage/books/${bookId}/chapters/${chapterId}/sections/${sectionId}`);
+    };
 
     const isLoading = isLoadingSections || isLoadingBook;
 
@@ -233,11 +237,11 @@ export default function ChapterSectionsPage() {
                                     ))
                                 ) : chapterSections && chapterSections.length > 0 ? (
                                     chapterSections.sort((a, b) => parseInt(a.section_order) - parseInt(b.section_order)).map(section => (
-                                        <TableRow key={section.section_id}>
+                                        <TableRow key={section.section_id} onClick={() => handleRowClick(section.section_id)} className="cursor-pointer">
                                             <TableCell className="font-medium">{section.section_order}</TableCell>
                                             <TableCell>{section.section_heading}</TableCell>
                                             <TableCell>{format(new Date(section.created_at), 'PPP')}</TableCell>
-                                            <TableCell className="text-right space-x-1">
+                                            <TableCell className="text-right space-x-1" onClick={(e) => e.stopPropagation()}>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(section)}>
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
