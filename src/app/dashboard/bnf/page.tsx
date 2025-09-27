@@ -3,30 +3,30 @@
 
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Book, ChevronDown, ChevronRight, ListOrdered, Search, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Book, ChevronDown, ChevronRight, ListOrdered, Search, Loader2, AlertTriangle, ArrowRight, BookOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getBooks, getChaptersByBook, getSectionsByBook, getBnfPage } from '@/lib/actions/books';
+import { getBooks, getChaptersByBook, getSectionsByBook, getPagesByBookChapterSection } from '@/lib/actions/books';
 import type { Book as BookType, Chapter, Section, PageContent } from '@/lib/types';
 import { Alert, AlertTitle as ShadcnAlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 
-// Simplified view state
+// View states
 type BnfView = 'books' | 'chapters' | 'page';
 
 export default function BnfPage() {
     const [view, setView] = useState<BnfView>('books');
     const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
-    const [selectedPage, setSelectedPage] = useState<PageContent | null>(null);
+    const [selectedSection, setSelectedSection] = useState<Section | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
     const { data: books, isLoading: isLoadingBooks, isError: isBooksError, error: booksError } = useQuery<BookType[]>({
         queryKey: ['allBooks'],
         queryFn: getBooks,
-        staleTime: 1000 * 60 * 10, // 10 minutes
+        staleTime: 1000 * 60 * 10,
     });
 
     const { data: chapters, isLoading: isLoadingChapters } = useQuery<Chapter[]>({
@@ -40,27 +40,31 @@ export default function BnfPage() {
         queryFn: () => getSectionsByBook(selectedBook!.book_id),
         enabled: !!selectedBook,
     });
+    
+    const { data: pageContents, isLoading: isLoadingPageContents } = useQuery<PageContent[]>({
+        queryKey: ['pageContents', selectedBook?.book_id, selectedSection?.chapter_id, selectedSection?.section_id],
+        queryFn: () => getPagesByBookChapterSection(selectedBook!.book_id, selectedSection!.chapter_id, selectedSection!.section_id),
+        enabled: !!selectedBook && !!selectedSection,
+    });
 
     const handleSelectBook = (book: BookType) => {
         setSelectedBook(book);
         setView('chapters');
     };
 
-    const handleSelectPage = async (pageId: string) => {
-        // This is a simplified fetch; in reality, you'd fetch page content by its ID
-        // For now, we'll just simulate selecting a page.
-        // const pageContent = await getBnfPage(pageId);
-        // setSelectedPage(pageContent);
+    const handleSelectSection = (section: Section) => {
+        setSelectedSection(section);
         setView('page');
     };
 
     const handleBackToBooks = () => {
         setSelectedBook(null);
+        setSelectedSection(null);
         setView('books');
     };
     
     const handleBackToChapters = () => {
-        setSelectedPage(null);
+        setSelectedSection(null);
         setView('chapters');
     };
 
@@ -134,7 +138,7 @@ export default function BnfPage() {
                                 <CollapsibleContent className="mt-2 pt-2 border-t">
                                      <div className="space-y-1 pl-4">
                                         {chapter.sections.map(section => (
-                                             <button key={section.section_id} onClick={() => alert('Viewing page content is not yet implemented.')} className="flex items-center gap-2 w-full text-left p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-accent-foreground transition-colors">
+                                             <button key={section.section_id} onClick={() => handleSelectSection(section)} className="flex items-center gap-2 w-full text-left p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-accent-foreground transition-colors">
                                                 <span>{chapter.chapter_number}.{section.section_order}</span>
                                                 <span className="flex-1">{section.section_heading}</span>
                                                 <ChevronRight className="h-4 w-4"/>
@@ -149,6 +153,38 @@ export default function BnfPage() {
 
             </div>
         )
+    }
+    
+    if (view === 'page' && selectedBook && selectedSection) {
+         return (
+             <div className="p-4 md:p-8 space-y-6 pb-20">
+                 <header>
+                    <Button variant="ghost" onClick={handleBackToChapters} className="-ml-4">
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Table of Contents
+                    </Button>
+                    <h1 className="text-3xl font-headline font-semibold mt-2">{selectedSection.section_heading}</h1>
+                    <p className="text-muted-foreground">From: {selectedBook.book_name}</p>
+                </header>
+                <Card>
+                    <CardContent className="p-6">
+                        {isLoadingPageContents ? (
+                            <div className="space-y-4"><Skeleton className="h-6 w-3/4" /><Skeleton className="h-24 w-full" /></div>
+                        ) : pageContents && pageContents.length > 0 ? (
+                            <div className="prose prose-sm dark:prose-invert max-w-none space-y-4">
+                                {pageContents.sort((a,b) => parseInt(a.content_order) - parseInt(b.content_order)).map(page => (
+                                    <div key={page.pege_entry_id}>
+                                        <h4 className="font-bold border-b pb-1 mb-2">Page {page.page_number}</h4>
+                                        <p className="whitespace-pre-wrap">{page.page_content_text}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-muted-foreground text-center py-8">No content available for this section.</p>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+         )
     }
 
     return (
@@ -173,7 +209,7 @@ export default function BnfPage() {
                      <Card key={book.book_id} className="shadow-lg hover:shadow-xl hover:border-primary transition-all flex flex-col group cursor-pointer" onClick={() => handleSelectBook(book)}>
                         <CardHeader className="flex-row items-center gap-4">
                             <div className="p-3 bg-primary/10 rounded-lg">
-                                <Book className="w-8 h-8 text-primary" />
+                                <BookOpen className="w-8 h-8 text-primary" />
                             </div>
                             <div>
                                 <CardTitle className="text-base group-hover:text-primary">{book.book_name}</CardTitle>
