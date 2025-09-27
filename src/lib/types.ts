@@ -662,7 +662,7 @@ export interface CreateChapterPayload {
 }
 
 export interface UpdateChapterPayload extends Partial<Omit<CreateChapterPayload, 'created_by'>> {
-  book_id: string; // Ensure book_id is always present
+  book_id: string;
 }
 
 export interface Section {
@@ -692,6 +692,7 @@ export interface PageContent {
     page_number: string;
     content_order: string;
     page_content_text: string;
+    keywords: string;
     created_by: string;
     created_at: string;
     updated_at: string;
@@ -704,6 +705,7 @@ export interface CreatePagePayload {
     page_number: string;
     content_order: string;
     page_content_text: string;
+    keywords?: string;
     created_by: string;
 }
 

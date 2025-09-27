@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -27,6 +28,7 @@ const pageFormSchema = z.object({
   page_number: z.string().min(1, "Page number is required."),
   content_order: z.string().min(1, "Content order is required."),
   page_content_text: z.string().min(1, "Page content is required."),
+  keywords: z.string().optional(),
 });
 
 type PageFormValues = z.infer<typeof pageFormSchema>;
@@ -41,6 +43,7 @@ const PageForm = ({ bookId, chapterId, sectionId, page, onClose }: { bookId: str
             page_number: page?.page_number || '',
             content_order: page?.content_order || '',
             page_content_text: page?.page_content_text || '',
+            keywords: page?.keywords || '',
         }
     });
 
@@ -49,6 +52,7 @@ const PageForm = ({ bookId, chapterId, sectionId, page, onClose }: { bookId: str
             page_number: page?.page_number || '',
             content_order: page?.content_order || '',
             page_content_text: page?.page_content_text || '',
+            keywords: page?.keywords || '',
         });
     }, [page, form]);
 
@@ -78,6 +82,7 @@ const PageForm = ({ bookId, chapterId, sectionId, page, onClose }: { bookId: str
                 <div className="space-y-2"><Label htmlFor="page_number">Page Number</Label><Input id="page_number" {...form.register('page_number')} />{form.formState.errors.page_number && <p className="text-sm text-destructive">{form.formState.errors.page_number.message}</p>}</div>
                 <div className="space-y-2"><Label htmlFor="content_order">Order</Label><Input id="content_order" {...form.register('content_order')} />{form.formState.errors.content_order && <p className="text-sm text-destructive">{form.formState.errors.content_order.message}</p>}</div>
             </div>
+            <div className="space-y-2"><Label htmlFor="keywords">Keywords</Label><Input id="keywords" {...form.register('keywords')} placeholder="e.g. pharmacology, dosage"/>{form.formState.errors.keywords && <p className="text-sm text-destructive">{form.formState.errors.keywords.message}</p>}</div>
             <div className="space-y-2"><Label htmlFor="page_content_text">Content</Label><Textarea id="page_content_text" {...form.register('page_content_text')} rows={8} />{form.formState.errors.page_content_text && <p className="text-sm text-destructive">{form.formState.errors.page_content_text.message}</p>}</div>
             <DialogFooter>
                 <DialogClose asChild><Button type="button" variant="outline" disabled={mutation.isPending}>Cancel</Button></DialogClose>
@@ -178,6 +183,11 @@ export default function SectionPagesPage() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">{page.page_content_text}</div>
+                                    {page.keywords && (
+                                        <div className="mt-2 text-xs text-muted-foreground">
+                                            <strong>Keywords:</strong> {page.keywords}
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         ))
@@ -189,3 +199,4 @@ export default function SectionPagesPage() {
         </div>
     );
 }
+
