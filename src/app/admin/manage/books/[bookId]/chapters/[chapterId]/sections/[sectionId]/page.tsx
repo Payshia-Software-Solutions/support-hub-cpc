@@ -1,13 +1,9 @@
 
-
 "use client";
 
-import { useState, useEffect, forwardRef } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,112 +11,17 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { AlertTriangle, PlusCircle, Loader2, ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { getPagesByBookChapterSection, createPage, updatePage, deletePage } from '@/lib/actions/books';
-import type { PageContent, CreatePagePayload, UpdatePagePayload } from '@/lib/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { deletePage, getPagesByBookChapterSection } from '@/lib/actions/books';
+import type { PageContent } from '@/lib/types';
 import { format } from 'date-fns';
-import { TiptapEditor } from '@/components/admin/TiptapEditor';
 import parse from 'html-react-parser';
-
-const pageFormSchema = z.object({
-  page_number: z.string().min(1, "Page number is required."),
-  content_order: z.string().min(1, "Content order is required."),
-  page_content_text: z.string().min(1, "Page content is required."),
-  keywords: z.string().optional(),
-});
-
-type PageFormValues = z.infer<typeof pageFormSchema>;
-
-const PageForm = ({ bookId, chapterId, sectionId, page, onClose }: { bookId: string, chapterId: string, sectionId: string, page?: PageContent | null, onClose: () => void; }) => {
-    const queryClient = useQueryClient();
-    const { user } = useAuth();
-    
-    const form = useForm<PageFormValues>({
-        resolver: zodResolver(pageFormSchema),
-        defaultValues: {
-            page_number: page?.page_number || '',
-            content_order: page?.content_order || '',
-            page_content_text: page?.page_content_text || '',
-            keywords: page?.keywords || '',
-        }
-    });
-
-    useEffect(() => {
-        form.reset({
-            page_number: page?.page_number || '',
-            content_order: page?.content_order || '',
-            page_content_text: page?.page_content_text || '',
-            keywords: page?.keywords || '',
-        });
-    }, [page, form]);
-
-    const mutation = useMutation({
-        mutationFn: (data: PageFormValues) => {
-            if (!user?.username) throw new Error('You must be logged in.');
-            
-            if (page) {
-                 const payload: UpdatePagePayload = { 
-                    ...data, 
-                    book_id: bookId, 
-                    chapter_id: chapterId, 
-                    section_id: sectionId 
-                 };
-                 return updatePage(page.pege_entry_id, payload);
-            } else {
-                 const payload: CreatePagePayload = { ...data, book_id: bookId, chapter_id: chapterId, section_id: sectionId, created_by: user.username };
-                 return createPage(payload);
-            }
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['pages', bookId, chapterId, sectionId] });
-            toast({ title: 'Success', description: `Page content ${page ? 'updated' : 'created'} successfully.` });
-            onClose();
-        },
-        onError: (error: Error) => toast({ variant: 'destructive', title: 'Error', description: error.message })
-    });
-
-    return (
-        <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label htmlFor="page_number">Page Number</Label><Input id="page_number" {...form.register('page_number')} />{form.formState.errors.page_number && <p className="text-sm text-destructive">{form.formState.errors.page_number.message}</p>}</div>
-                <div className="space-y-2"><Label htmlFor="content_order">Order</Label><Input id="content_order" {...form.register('content_order')} />{form.formState.errors.content_order && <p className="text-sm text-destructive">{form.formState.errors.content_order.message}</p>}</div>
-            </div>
-            <div className="space-y-2"><Label htmlFor="keywords">Keywords</Label><Input id="keywords" {...form.register('keywords')} placeholder="e.g. pharmacology, dosage"/>{form.formState.errors.keywords && <p className="text-sm text-destructive">{form.formState.errors.keywords.message}</p>}</div>
-            
-            <Controller
-                name="page_content_text"
-                control={form.control}
-                render={({ field }) => (
-                    <div className="space-y-2">
-                        <Label>Content</Label>
-                        <TiptapEditor
-                            content={field.value}
-                            onChange={field.onChange}
-                        />
-                         {form.formState.errors.page_content_text && <p className="text-sm text-destructive">{form.formState.errors.page_content_text.message}</p>}
-                    </div>
-                )}
-            />
-            
-            <DialogFooter>
-                <DialogClose asChild><Button type="button" variant="outline" disabled={mutation.isPending}>Cancel</Button></DialogClose>
-                <Button type="submit" disabled={mutation.isPending}>{mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{page ? "Save Changes" : "Create Page"}</Button>
-            </DialogFooter>
-        </form>
-    );
-}
-
+import Link from 'next/link';
 
 export default function SectionPagesPage() {
     const params = useParams();
     const router = useRouter();
     const { bookId, chapterId, sectionId } = params as { bookId: string; chapterId: string; sectionId: string; };
 
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [selectedPage, setSelectedPage] = useState<PageContent | null>(null);
     const [pageToDelete, setPageToDelete] = useState<PageContent | null>(null);
     const queryClient = useQueryClient();
 
@@ -140,21 +41,8 @@ export default function SectionPagesPage() {
         onSettled: () => setPageToDelete(null),
     });
 
-    const handleCreate = () => { setSelectedPage(null); setIsFormOpen(true); }
-    const handleEdit = (page: PageContent) => { setSelectedPage(page); setIsFormOpen(true); }
-
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle>{selectedPage ? "Edit" : "Add New"} Page Content</DialogTitle>
-                        <DialogDescription>Manage the content for this section.</DialogDescription>
-                    </DialogHeader>
-                    <PageForm bookId={bookId} chapterId={chapterId} sectionId={sectionId} page={selectedPage} onClose={() => setIsFormOpen(false)} />
-                </DialogContent>
-            </Dialog>
-
             <AlertDialog open={!!pageToDelete} onOpenChange={() => setPageToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this page content. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
@@ -174,7 +62,11 @@ export default function SectionPagesPage() {
                     </Button>
                     <h1 className="text-3xl font-headline font-semibold mt-2">Page Content</h1>
                 </div>
-                <Button onClick={handleCreate}><PlusCircle className="mr-2 h-4 w-4" /> Add Page Content</Button>
+                <Button asChild>
+                    <Link href={`/admin/manage/books/${bookId}/chapters/${chapterId}/sections/${sectionId}/create`}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Page Content
+                    </Link>
+                </Button>
             </header>
 
             <Card className="shadow-lg">
@@ -198,7 +90,11 @@ export default function SectionPagesPage() {
                                         <CardDescription className="text-xs">Last updated: {format(new Date(page.updated_at), 'PPP')}</CardDescription>
                                     </div>
                                     <div className="space-x-1">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(page)}><Edit className="h-4 w-4" /></Button>
+                                        <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                                            <Link href={`/admin/manage/books/${bookId}/chapters/${chapterId}/sections/${sectionId}/edit/${page.pege_entry_id}`}>
+                                                <Edit className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setPageToDelete(page)}><Trash2 className="h-4 w-4" /></Button>
                                     </div>
                                 </CardHeader>
@@ -220,4 +116,3 @@ export default function SectionPagesPage() {
         </div>
     );
 }
-
