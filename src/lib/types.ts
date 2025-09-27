@@ -625,25 +625,93 @@ export interface Announcement {
   imageUrl?: string;
 }
 
-export interface BnfPage {
-  id: number;
-  chapter_id: number;
-  title: string;
-  index_words: string;
-  left_content: string; // Storing as HTML string
-  right_content: string; // Storing as HTML string
+export interface Book {
+  book_id: string;
+  book_name: string;
+  author: string;
+  created_by: string;
+  created_at: string;
+  update_by: string;
+  updated_at: string;
 }
 
-export interface BnfChapter {
-    id: number;
-    title: string;
+export interface CreateBookPayload {
+    book_name: string;
+    author: string;
+    created_by: string;
+    update_by: string;
 }
 
-export interface BnfWordIndexEntry {
-    id: number;
-    word: string;
-    page_id: number;
+export interface Chapter {
+  chapter_id: string;
+  book_id: string;
+  chapter_number: string;
+  chapter_title: string;
+  created_at: string;
+  update_by: string;
+  updated_at: string;
+  created_by: string;
 }
+
+export interface CreateChapterPayload {
+    book_id: string;
+    chapter_number: string;
+    chapter_title: string;
+    created_by: string;
+    update_by: string;
+}
+
+export interface UpdateChapterPayload extends Partial<Omit<CreateChapterPayload, 'created_by'>> {
+  book_id: string;
+}
+
+export interface Section {
+  section_id: string;
+  chapter_id: string;
+  section_order: string;
+  section_heading: string;
+  created_at: string;
+  update_by: string;
+  updated_at: string;
+}
+
+export interface CreateSectionPayload {
+  chapter_id: string;
+  section_order: string;
+  section_heading: string;
+  created_by: string;
+  update_by: string;
+}
+
+export interface UpdateSectionPayload extends Partial<Omit<CreateSectionPayload, 'created_by'>> {}
+
+export interface PageContent {
+    pege_entry_id: string;
+    book_id: string;
+    section_id: string;
+    page_number: string;
+    content_order: string;
+    page_content_text: string;
+    keywords: string;
+    created_by: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CreatePagePayload {
+    book_id: string;
+    chapter_id: string;
+    section_id: string;
+    page_number: string;
+    content_order: string;
+    page_content_text: string;
+    keywords?: string;
+    created_by: string;
+}
+
+export interface UpdatePagePayload extends Partial<Omit<CreatePagePayload, 'created_by'>> {}
+
+
 export interface ParentCourseListItem {
     id: string;
     course_name: string;
@@ -680,4 +748,24 @@ export interface Course {
   id: string;
   name: string;
   courseCode: string;
+}
+
+// BNF Specific Types
+export interface BnfPage {
+  id: number;
+  title: string;
+  indexWords: string;
+  left_content: string;
+  right_content: string;
+}
+
+export interface BnfChapter {
+    id: number;
+    title: string;
+    pages: BnfPage[];
+}
+
+export interface BnfWordIndexEntry {
+    word: string;
+    page_id: number;
 }
