@@ -127,6 +127,11 @@ export async function deleteSection(sectionId: string): Promise<void> {
 }
 
 // --- Page Content API Functions ---
+export async function getPagesByBook(bookId: string): Promise<PageContent[]> {
+    return apiFetch(`/pages/by-book/${bookId}`);
+}
+
+
 export async function getPagesByBookChapterSection(bookId: string, chapterId: string, sectionId: string): Promise<PageContent[]> {
     return apiFetch(`/pages/by-book-section-chapter/${bookId}/${sectionId}/${chapterId}`);
 }
