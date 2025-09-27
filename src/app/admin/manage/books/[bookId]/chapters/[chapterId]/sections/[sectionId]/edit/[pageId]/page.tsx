@@ -120,7 +120,11 @@ export default function EditPageContentPage() {
                             render={({ field }) => (
                                 <div className="space-y-2">
                                     <Label>Content</Label>
-                                    <TiptapEditor content={field.value} onChange={field.onChange} />
+                                    <TiptapEditor 
+                                        key={page.pege_entry_id}
+                                        content={field.value} 
+                                        onChange={field.onChange} 
+                                    />
                                     {form.formState.errors.page_content_text && <p className="text-sm text-destructive">{form.formState.errors.page_content_text.message}</p>}
                                 </div>
                             )}

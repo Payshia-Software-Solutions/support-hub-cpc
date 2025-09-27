@@ -7,6 +7,7 @@ import Underline from '@tiptap/extension-underline';
 import { Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Strikethrough, Pilcrow, Quote, Redo, Undo } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { Separator } from '@/components/ui/separator';
+import { useEffect } from 'react';
 
 const TiptapToolbar = ({ editor }: { editor: any }) => {
     if (!editor) return null;
@@ -56,6 +57,12 @@ export const TiptapEditor = ({ content, onChange }: { content: string, onChange:
             onChange(editor.getHTML());
         },
     });
+
+    useEffect(() => {
+        if (editor && content !== editor.getHTML()) {
+            editor.commands.setContent(content);
+        }
+    }, [content, editor]);
 
     return (
         <div>
