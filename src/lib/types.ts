@@ -749,3 +749,23 @@ export interface Course {
   name: string;
   courseCode: string;
 }
+
+// BNF Specific Types
+export interface BnfPage {
+  id: number;
+  title: string;
+  indexWords: string;
+  left_content: string;
+  right_content: string;
+}
+
+export interface BnfChapter {
+    id: number;
+    title: string;
+    pages: BnfPage[];
+}
+
+export interface BnfWordIndexEntry {
+    word: string;
+    page_id: number;
+}

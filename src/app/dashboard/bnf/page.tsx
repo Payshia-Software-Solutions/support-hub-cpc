@@ -113,7 +113,7 @@ export default function BnfPage() {
                             <Button variant="link" onClick={handleBackToContents} className="font-sans text-muted-foreground pl-0">
                                 <ArrowLeft className="mr-2 h-4 w-4"/> Back to Contents
                             </Button>
-                            <h3 className="text-sm font-sans font-semibold text-muted-foreground">{bnfPage.index_words}</h3>
+                            <h3 className="text-sm font-sans font-semibold text-muted-foreground">{bnfPage.indexWords}</h3>
                         </header>
                          <article className="space-y-6">
                             <div dangerouslySetInnerHTML={{ __html: bnfPage.left_content }} />

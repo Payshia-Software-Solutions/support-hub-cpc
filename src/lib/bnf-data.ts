@@ -72,26 +72,31 @@ export const bnfChapters: BnfChapter[] = [
 
 export const allPages: BnfPage[] = bnfChapters.flatMap(chapter => chapter.pages);
 
+export interface BnfWordIndexEntry {
+    word: string;
+    page_id: number;
+}
+
 export const wordIndexData = [
-  { word: "Absorption", page: 5 },
-  { word: "Administration, routes of", page: 2 },
-  { word: "Adverse Drug Reactions (ADRs)", page: 4 },
-  { word: "Beta-blockers", page: 7 },
-  { word: "Bizarre reactions (Type B)", page: 4 },
-  { word: "Distribution", page: 5 },
-  { word: "Diuretics", page: 7 },
-  { word: "Dose-Response", page: 6 },
-  { word: "Drug Interactions", page: 3 },
-  { word: "Enteral", page: 2 },
-  { word: "Excretion", page: 5 },
-  { word: "Hypertension", page: 7 },
-  { word: "Metabolism", page: 5 },
-  { word: "Parenteral", page: 2 },
-  { word: "Pharmacodynamics", page: 1 },
-  { word: "Pharmacodynamics", page: 6 },
-  { word: "Pharmacokinetics", page: 1 },
-  { word: "Pharmacokinetics", page: 5 },
-  { word: "Pharmacology", page: 1 },
-  { word: "Receptor Binding", page: 6 },
-  { word: "Topical", page: 2 },
+  { word: "Absorption", page_id: 5 },
+  { word: "Administration, routes of", page_id: 2 },
+  { word: "Adverse Drug Reactions (ADRs)", page_id: 4 },
+  { word: "Beta-blockers", page_id: 7 },
+  { word: "Bizarre reactions (Type B)", page_id: 4 },
+  { word: "Distribution", page_id: 5 },
+  { word: "Diuretics", page_id: 7 },
+  { word: "Dose-Response", page_id: 6 },
+  { word: "Drug Interactions", page_id: 3 },
+  { word: "Enteral", page_id: 2 },
+  { word: "Excretion", page_id: 5 },
+  { word: "Hypertension", page_id: 7 },
+  { word: "Metabolism", page_id: 5 },
+  { word: "Parenteral", page_id: 2 },
+  { word: "Pharmacodynamics", page_id: 1 },
+  { word: "Pharmacodynamics", page_id: 6 },
+  { word: "Pharmacokinetics", page_id: 1 },
+  { word: "Pharmacokinetics", page_id: 5 },
+  { word: "Pharmacology", page_id: 1 },
+  { word: "Receptor Binding", page_id: 6 },
+  { word: "Topical", page_id: 2 },
 ].sort((a, b) => a.word.localeCompare(b.word));
