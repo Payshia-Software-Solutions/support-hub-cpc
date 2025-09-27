@@ -3,8 +3,8 @@
 
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Book, ChevronDown, ChevronRight, ListOrdered, Search, Loader2, AlertTriangle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ArrowLeft, Book, ChevronDown, ChevronRight, ListOrdered, Search, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -198,4 +198,3 @@ export default function BnfPage() {
         </div>
     );
 }
-
