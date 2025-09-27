@@ -50,7 +50,7 @@ export const TiptapEditor = ({ content, onChange }: { content: string, onChange:
         content: content,
         editorProps: {
             attributes: {
-                class: 'prose prose-sm dark:prose-invert min-h-[150px] w-full rounded-b-md border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 border border-t-0',
+                class: 'prose prose-sm dark:prose-invert max-w-none min-h-[150px] w-full rounded-b-md border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 border border-t-0',
             },
         },
         onUpdate({ editor }) {
