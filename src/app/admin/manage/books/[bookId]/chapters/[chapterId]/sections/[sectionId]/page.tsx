@@ -61,7 +61,12 @@ const PageForm = ({ bookId, chapterId, sectionId, page, onClose }: { bookId: str
             if (!user?.username) throw new Error('You must be logged in.');
             
             if (page) {
-                 const payload: UpdatePagePayload = { ...data };
+                 const payload: UpdatePagePayload = { 
+                    ...data, 
+                    book_id: bookId, 
+                    chapter_id: chapterId, 
+                    section_id: sectionId 
+                 };
                  return updatePage(page.pege_entry_id, payload);
             } else {
                  const payload: CreatePagePayload = { ...data, book_id: bookId, chapter_id: chapterId, section_id: sectionId, created_by: user.username };
