@@ -32,7 +32,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
       try {
         errorData = await response.json();
       } catch (e) {
-        errorData = { message: `Request failed. Server returned status: ${response.status}` };
+        errorData = { message: `Request failed. Server returned status: ${response.status}. The response was not valid JSON.` };
       }
       throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
