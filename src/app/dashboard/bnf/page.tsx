@@ -15,6 +15,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import parse from 'html-react-parser';
 
 // View states
 type BnfView = 'books' | 'reader';
@@ -179,7 +180,7 @@ export default function BnfPage() {
                             <div className="prose prose-sm dark:prose-invert max-w-none space-y-4">
                                 {pageContent?.map(content => (
                                     <div key={content.pege_entry_id}>
-                                        <p className="whitespace-pre-wrap">{content.page_content_text}</p>
+                                        {parse(content.page_content_text)}
                                     </div>
                                 ))}
                                 {!pageContent && <p>No content for this page.</p>}

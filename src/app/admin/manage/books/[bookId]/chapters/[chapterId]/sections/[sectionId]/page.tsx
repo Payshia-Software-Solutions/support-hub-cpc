@@ -2,10 +2,10 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from '@/hooks/use-toast';
@@ -18,11 +18,12 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { getPagesByBookChapterSection, createPage, updatePage, deletePage } from '@/lib/actions/books';
 import type { PageContent, CreatePagePayload, UpdatePagePayload } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+import { TiptapEditor } from '@/components/admin/TiptapEditor';
+import parse from 'html-react-parser';
 
 const pageFormSchema = z.object({
   page_number: z.string().min(1, "Page number is required."),
@@ -88,7 +89,22 @@ const PageForm = ({ bookId, chapterId, sectionId, page, onClose }: { bookId: str
                 <div className="space-y-2"><Label htmlFor="content_order">Order</Label><Input id="content_order" {...form.register('content_order')} />{form.formState.errors.content_order && <p className="text-sm text-destructive">{form.formState.errors.content_order.message}</p>}</div>
             </div>
             <div className="space-y-2"><Label htmlFor="keywords">Keywords</Label><Input id="keywords" {...form.register('keywords')} placeholder="e.g. pharmacology, dosage"/>{form.formState.errors.keywords && <p className="text-sm text-destructive">{form.formState.errors.keywords.message}</p>}</div>
-            <div className="space-y-2"><Label htmlFor="page_content_text">Content</Label><Textarea id="page_content_text" {...form.register('page_content_text')} rows={8} />{form.formState.errors.page_content_text && <p className="text-sm text-destructive">{form.formState.errors.page_content_text.message}</p>}</div>
+            
+            <Controller
+                name="page_content_text"
+                control={form.control}
+                render={({ field }) => (
+                    <div className="space-y-2">
+                        <Label>Content</Label>
+                        <TiptapEditor
+                            content={field.value}
+                            onChange={field.onChange}
+                        />
+                         {form.formState.errors.page_content_text && <p className="text-sm text-destructive">{form.formState.errors.page_content_text.message}</p>}
+                    </div>
+                )}
+            />
+            
             <DialogFooter>
                 <DialogClose asChild><Button type="button" variant="outline" disabled={mutation.isPending}>Cancel</Button></DialogClose>
                 <Button type="submit" disabled={mutation.isPending}>{mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{page ? "Save Changes" : "Create Page"}</Button>
@@ -187,7 +203,7 @@ export default function SectionPagesPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">{page.page_content_text}</div>
+                                    <div className="prose prose-sm dark:prose-invert max-w-none">{parse(page.page_content_text)}</div>
                                     {page.keywords && (
                                         <div className="mt-2 text-xs text-muted-foreground">
                                             <strong>Keywords:</strong> {page.keywords}
