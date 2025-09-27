@@ -661,8 +661,29 @@ export interface CreateChapterPayload {
     update_by: string;
 }
 
-export interface UpdateChapterPayload extends Partial<Omit<CreateChapterPayload, 'created_by'>> {}
+export interface UpdateChapterPayload extends Partial<Omit<CreateChapterPayload, 'created_by'>> {
+  book_id: string; // Ensure book_id is always present
+}
 
+export interface Section {
+  section_id: string;
+  chapter_id: string;
+  section_order: string;
+  section_heading: string;
+  created_at: string;
+  update_by: string;
+  updated_at: string;
+}
+
+export interface CreateSectionPayload {
+  chapter_id: string;
+  section_order: string;
+  section_heading: string;
+  created_by: string;
+  update_by: string;
+}
+
+export interface UpdateSectionPayload extends Partial<Omit<CreateSectionPayload, 'created_by'>> {}
 
 export interface ParentCourseListItem {
     id: string;
