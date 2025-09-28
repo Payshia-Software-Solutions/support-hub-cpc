@@ -204,9 +204,9 @@ export default function BnfReaderPage() {
                     <div className="prose prose-sm dark:prose-invert max-w-none space-y-4">
                         {pageContent?.map(content => (
                             <div key={content.pege_entry_id}>
-                                {content.page_type === 'image' && content.image_url ? (
+                                {content.page_type === 'image' && content.page_content_text ? (
                                     <ImageViewer 
-                                        src={`${CONTENT_PROVIDER_URL}${content.image_url}`}
+                                        src={`${CONTENT_PROVIDER_URL}${content.page_content_text}`}
                                         alt={`Content for page ${content.page_number}`}
                                     />
                                 ) : content.page_content_text ? (
