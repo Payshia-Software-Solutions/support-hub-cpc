@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,12 +15,78 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TiptapEditor } from '@/components/admin/TiptapEditor';
-import { ArrowLeft, Loader2, Save, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Image as ImageIcon, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
+
+// --- Tag Input Component ---
+const TagInput = ({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder?: string }) => {
+    const [tags, setTags] = useState<string[]>([]);
+    const [inputValue, setInputValue] = useState('');
+
+    useEffect(() => {
+        if (value) {
+            setTags(value.split(',').map(s => s.trim()).filter(Boolean));
+        } else {
+            setTags([]);
+        }
+    }, [value]);
+
+    const addTag = (tag: string) => {
+        const newTag = tag.trim();
+        if (newTag && !tags.includes(newTag)) {
+            const newTags = [...tags, newTag];
+            setTags(newTags);
+            onChange(newTags.join(', '));
+            setInputValue('');
+        }
+    };
+
+    const removeTag = (tagToRemove: string) => {
+        const newTags = tags.filter(tag => tag !== tagToRemove);
+        setTags(newTags);
+        onChange(newTags.join(', '));
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Tab' || e.key === ',') {
+            e.preventDefault();
+            addTag(inputValue);
+        } else if (e.key === 'Backspace' && inputValue === '' && tags.length > 0) {
+            removeTag(tags[tags.length - 1]);
+        }
+    };
+
+    return (
+        <div>
+            <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px] bg-background">
+                {tags.map(tag => (
+                    <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                        {tag}
+                        <button type="button" onClick={() => removeTag(tag)} className="rounded-full hover:bg-muted-foreground/20">
+                            <X className="h-3 w-3" />
+                        </button>
+                    </Badge>
+                ))}
+                <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={placeholder}
+                    className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground"
+                />
+            </div>
+        </div>
+    );
+};
+
 
 const pageFormSchema = z.object({
   page_number: z.string().min(1, "Page number is required."),
@@ -73,7 +139,6 @@ export default function EditPageContentPage() {
 
     const mutation = useMutation({
         mutationFn: async (formData: FormData) => {
-            formData.append('_method', 'PUT');
             const response = await fetch(`${process.env.NEXT_PUBLIC_BOOKS_API_URL}pages/${pageId}`, {
                 method: 'POST',
                 body: formData,
@@ -146,7 +211,21 @@ export default function EditPageContentPage() {
                             <div className="space-y-2"><Label htmlFor="page_number">Page Number</Label><Input id="page_number" {...form.register('page_number')} />{form.formState.errors.page_number && <p className="text-sm text-destructive">{form.formState.errors.page_number.message}</p>}</div>
                             <div className="space-y-2"><Label htmlFor="content_order">Order</Label><Input id="content_order" {...form.register('content_order')} />{form.formState.errors.content_order && <p className="text-sm text-destructive">{form.formState.errors.content_order.message}</p>}</div>
                         </div>
-                        <div className="space-y-2"><Label htmlFor="keywords">Keywords</Label><Input id="keywords" {...form.register('keywords')} placeholder="e.g. pharmacology, dosage"/>{form.formState.errors.keywords && <p className="text-sm text-destructive">{form.formState.errors.keywords.message}</p>}</div>
+                        <div className="space-y-2">
+                             <Label htmlFor="keywords">Keywords</Label>
+                            <Controller
+                                name="keywords"
+                                control={form.control}
+                                render={({ field }) => (
+                                    <TagInput
+                                        value={field.value || ''}
+                                        onChange={field.onChange}
+                                        placeholder="Add keywords..."
+                                    />
+                                )}
+                            />
+                            {form.formState.errors.keywords && <p className="text-sm text-destructive">{form.formState.errors.keywords.message}</p>}
+                        </div>
                         
                         <Controller
                             name="page_type"

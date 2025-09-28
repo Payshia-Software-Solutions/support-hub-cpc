@@ -770,8 +770,3 @@ export interface BnfChapter {
     title: string;
     pages: BnfPage[];
 }
-
-export interface BnfWordIndexEntry {
-    word: string;
-    page_id: number;
-}

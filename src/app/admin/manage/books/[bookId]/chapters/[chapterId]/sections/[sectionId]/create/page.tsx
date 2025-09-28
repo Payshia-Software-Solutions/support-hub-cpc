@@ -7,15 +7,80 @@ import * as z from 'zod';
 import { useRouter, useParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import type { CreatePagePayload } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TiptapEditor } from '@/components/admin/TiptapEditor';
-import { ArrowLeft, Loader2, Save, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Image as ImageIcon, X } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useEffect, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
+// --- Tag Input Component ---
+const TagInput = ({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder?: string }) => {
+    const [tags, setTags] = useState<string[]>([]);
+    const [inputValue, setInputValue] = useState('');
+
+    useEffect(() => {
+        if (value) {
+            setTags(value.split(',').map(s => s.trim()).filter(Boolean));
+        } else {
+            setTags([]);
+        }
+    }, [value]);
+
+    const addTag = (tag: string) => {
+        const newTag = tag.trim();
+        if (newTag && !tags.includes(newTag)) {
+            const newTags = [...tags, newTag];
+            setTags(newTags);
+            onChange(newTags.join(', '));
+            setInputValue('');
+        }
+    };
+
+    const removeTag = (tagToRemove: string) => {
+        const newTags = tags.filter(tag => tag !== tagToRemove);
+        setTags(newTags);
+        onChange(newTags.join(', '));
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Tab' || e.key === ',') {
+            e.preventDefault();
+            addTag(inputValue);
+        } else if (e.key === 'Backspace' && inputValue === '' && tags.length > 0) {
+            removeTag(tags[tags.length - 1]);
+        }
+    };
+
+    return (
+        <div>
+            <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px] bg-background">
+                {tags.map(tag => (
+                    <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                        {tag}
+                        <button type="button" onClick={() => removeTag(tag)} className="rounded-full hover:bg-muted-foreground/20">
+                            <X className="h-3 w-3" />
+                        </button>
+                    </Badge>
+                ))}
+                <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={placeholder}
+                    className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground"
+                />
+            </div>
+        </div>
+    );
+};
+
 
 const pageFormSchema = z.object({
   page_number: z.string().min(1, "Page number is required."),
@@ -49,9 +114,32 @@ export default function CreatePageContentPage() {
     
     const form = useForm<PageFormValues>({
         resolver: zodResolver(pageFormSchema),
-        defaultValues: { page_number: '', content_order: '', page_type: 'text', page_content_text: '', keywords: '' }
+        defaultValues: { page_number: '', content_order: '1', page_type: 'image', page_content_text: '', keywords: '' }
     });
     const pageType = form.watch('page_type');
+
+    useEffect(() => {
+        const fetchNextPageNumber = async () => {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_BOOKS_API_URL}pages/next-page-number/${bookId}`);
+                if (!response.ok) throw new Error('Failed to fetch next page number.');
+                const data = await response.json();
+                if (data.status === 'success' && data.next_page_number) {
+                    form.setValue('page_number', String(data.next_page_number));
+                }
+            } catch (error) {
+                console.error(error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: 'Could not fetch the next page number.'
+                });
+            }
+        };
+        if (bookId) {
+            fetchNextPageNumber();
+        }
+    }, [bookId, form]);
 
     const mutation = useMutation({
         mutationFn: async (formData: FormData) => {
@@ -112,7 +200,21 @@ export default function CreatePageContentPage() {
                             <div className="space-y-2"><Label htmlFor="page_number">Page Number</Label><Input id="page_number" {...form.register('page_number')} />{form.formState.errors.page_number && <p className="text-sm text-destructive">{form.formState.errors.page_number.message}</p>}</div>
                             <div className="space-y-2"><Label htmlFor="content_order">Order</Label><Input id="content_order" {...form.register('content_order')} />{form.formState.errors.content_order && <p className="text-sm text-destructive">{form.formState.errors.content_order.message}</p>}</div>
                         </div>
-                        <div className="space-y-2"><Label htmlFor="keywords">Keywords</Label><Input id="keywords" {...form.register('keywords')} placeholder="e.g. pharmacology, dosage"/>{form.formState.errors.keywords && <p className="text-sm text-destructive">{form.formState.errors.keywords.message}</p>}</div>
+                        <div className="space-y-2">
+                            <Label htmlFor="keywords">Keywords</Label>
+                            <Controller
+                                name="keywords"
+                                control={form.control}
+                                render={({ field }) => (
+                                    <TagInput
+                                        value={field.value || ''}
+                                        onChange={field.onChange}
+                                        placeholder="Add keywords..."
+                                    />
+                                )}
+                            />
+                            {form.formState.errors.keywords && <p className="text-sm text-destructive">{form.formState.errors.keywords.message}</p>}
+                        </div>
                         
                         <Controller
                             name="page_type"
@@ -121,8 +223,8 @@ export default function CreatePageContentPage() {
                                 <div className="space-y-2">
                                     <Label>Content Type</Label>
                                     <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4">
-                                        <div className="flex items-center space-x-2"><RadioGroupItem value="text" id="type-text" /><Label htmlFor="type-text">Text</Label></div>
                                         <div className="flex items-center space-x-2"><RadioGroupItem value="image" id="type-image" /><Label htmlFor="type-image">Image</Label></div>
+                                        <div className="flex items-center space-x-2"><RadioGroupItem value="text" id="type-text" /><Label htmlFor="type-text">Text</Label></div>
                                     </RadioGroup>
                                     {form.formState.errors.page_type && <p className="text-sm text-destructive">{form.formState.errors.page_type.message}</p>}
                                 </div>
