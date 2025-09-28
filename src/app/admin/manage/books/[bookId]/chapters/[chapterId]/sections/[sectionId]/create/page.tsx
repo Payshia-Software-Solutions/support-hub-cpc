@@ -21,18 +21,18 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 const pageFormSchema = z.object({
   page_number: z.string().min(1, "Page number is required."),
   content_order: z.string().min(1, "Content order is required."),
-  content_type: z.enum(['text', 'image'], { required_error: 'You must select a content type.' }),
+  page_type: z.enum(['text', 'image'], { required_error: 'You must select a content type.' }),
   page_content_text: z.string().optional(),
   image_file: z.any().optional(),
   keywords: z.string().optional(),
 }).refine(data => {
-    if (data.content_type === 'text') return !!data.page_content_text && data.page_content_text.length > 0;
+    if (data.page_type === 'text') return !!data.page_content_text && data.page_content_text.length > 0;
     return true;
 }, {
     message: "Page content is required for text type.",
     path: ["page_content_text"],
 }).refine(data => {
-    if (data.content_type === 'image') return !!data.image_file && data.image_file.length > 0;
+    if (data.page_type === 'image') return !!data.image_file && data.image_file.length > 0;
     return true;
 }, {
     message: "An image file is required for image type.",
@@ -50,9 +50,9 @@ export default function CreatePageContentPage() {
     
     const form = useForm<PageFormValues>({
         resolver: zodResolver(pageFormSchema),
-        defaultValues: { page_number: '', content_order: '', content_type: 'text', page_content_text: '', keywords: '' }
+        defaultValues: { page_number: '', content_order: '', page_type: 'text', page_content_text: '', keywords: '' }
     });
-    const contentType = form.watch('content_type');
+    const pageType = form.watch('page_type');
 
     const mutation = useMutation({
         mutationFn: (formData: FormData) => createPage(formData),
@@ -73,13 +73,13 @@ export default function CreatePageContentPage() {
         formData.append('section_id', sectionId);
         formData.append('page_number', data.page_number);
         formData.append('content_order', data.content_order);
-        formData.append('content_type', data.content_type);
+        formData.append('page_type', data.page_type);
         formData.append('created_by', user.username);
         if (data.keywords) formData.append('keywords', data.keywords);
 
-        if (data.content_type === 'text' && data.page_content_text) {
+        if (data.page_type === 'text' && data.page_content_text) {
             formData.append('page_content_text', data.page_content_text);
-        } else if (data.content_type === 'image' && data.image_file?.[0]) {
+        } else if (data.page_type === 'image' && data.image_file?.[0]) {
             formData.append('image_file', data.image_file[0]);
         }
         
@@ -106,7 +106,7 @@ export default function CreatePageContentPage() {
                         <div className="space-y-2"><Label htmlFor="keywords">Keywords</Label><Input id="keywords" {...form.register('keywords')} placeholder="e.g. pharmacology, dosage"/>{form.formState.errors.keywords && <p className="text-sm text-destructive">{form.formState.errors.keywords.message}</p>}</div>
                         
                         <Controller
-                            name="content_type"
+                            name="page_type"
                             control={form.control}
                             render={({ field }) => (
                                 <div className="space-y-2">
@@ -115,12 +115,12 @@ export default function CreatePageContentPage() {
                                         <div className="flex items-center space-x-2"><RadioGroupItem value="text" id="type-text" /><Label htmlFor="type-text">Text</Label></div>
                                         <div className="flex items-center space-x-2"><RadioGroupItem value="image" id="type-image" /><Label htmlFor="type-image">Image</Label></div>
                                     </RadioGroup>
-                                    {form.formState.errors.content_type && <p className="text-sm text-destructive">{form.formState.errors.content_type.message}</p>}
+                                    {form.formState.errors.page_type && <p className="text-sm text-destructive">{form.formState.errors.page_type.message}</p>}
                                 </div>
                             )}
                         />
 
-                        {contentType === 'text' ? (
+                        {pageType === 'text' ? (
                             <Controller
                                 name="page_content_text"
                                 control={form.control}

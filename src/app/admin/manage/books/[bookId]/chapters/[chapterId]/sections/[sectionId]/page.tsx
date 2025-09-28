@@ -100,7 +100,7 @@ export default function SectionPagesPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    {page.content_type === 'image' && page.image_url ? (
+                                    {page.page_type === 'image' && page.image_url ? (
                                         <div className="relative h-48 w-full max-w-sm">
                                             <Image src={page.image_url} alt={`Content for page ${page.page_number}`} layout="fill" objectFit="contain" className="rounded-md bg-white"/>
                                         </div>

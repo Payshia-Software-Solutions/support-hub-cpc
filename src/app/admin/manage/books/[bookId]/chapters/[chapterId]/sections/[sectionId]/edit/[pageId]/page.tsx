@@ -25,12 +25,12 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 const pageFormSchema = z.object({
   page_number: z.string().min(1, "Page number is required."),
   content_order: z.string().min(1, "Content order is required."),
-  content_type: z.enum(['text', 'image']),
+  page_type: z.enum(['text', 'image']),
   page_content_text: z.string().optional(),
   image_file: z.any().optional(),
   keywords: z.string().optional(),
 }).refine(data => {
-    if (data.content_type === 'text') return !!data.page_content_text && data.page_content_text.length > 0;
+    if (data.page_type === 'text') return !!data.page_content_text && data.page_content_text.length > 0;
     return true;
 }, {
     message: "Page content is required for text type.",
@@ -57,14 +57,14 @@ export default function EditPageContentPage() {
     const form = useForm<PageFormValues>({
         resolver: zodResolver(pageFormSchema),
     });
-    const contentType = form.watch('content_type');
+    const pageType = form.watch('page_type');
 
     useEffect(() => {
         if (page) {
             form.reset({
                 page_number: page.page_number,
                 content_order: page.content_order,
-                content_type: page.content_type,
+                page_type: page.page_type,
                 page_content_text: page.page_content_text || '',
                 keywords: page.keywords,
             });
@@ -89,12 +89,12 @@ export default function EditPageContentPage() {
         formData.append('section_id', sectionId);
         formData.append('page_number', data.page_number);
         formData.append('content_order', data.content_order);
-        formData.append('content_type', data.content_type);
+        formData.append('page_type', data.page_type);
         if (data.keywords) formData.append('keywords', data.keywords);
 
-        if (data.content_type === 'text' && data.page_content_text) {
+        if (data.page_type === 'text' && data.page_content_text) {
             formData.append('page_content_text', data.page_content_text);
-        } else if (data.content_type === 'image' && data.image_file?.[0]) {
+        } else if (data.page_type === 'image' && data.image_file?.[0]) {
             formData.append('image_file', data.image_file[0]);
         }
         mutation.mutate(formData);
@@ -138,7 +138,7 @@ export default function EditPageContentPage() {
                         <div className="space-y-2"><Label htmlFor="keywords">Keywords</Label><Input id="keywords" {...form.register('keywords')} placeholder="e.g. pharmacology, dosage"/>{form.formState.errors.keywords && <p className="text-sm text-destructive">{form.formState.errors.keywords.message}</p>}</div>
                         
                         <Controller
-                            name="content_type"
+                            name="page_type"
                             control={form.control}
                             render={({ field }) => (
                                 <div className="space-y-2">
@@ -151,7 +151,7 @@ export default function EditPageContentPage() {
                             )}
                         />
 
-                        {contentType === 'text' ? (
+                        {pageType === 'text' ? (
                              <Controller
                                 name="page_content_text"
                                 control={form.control}

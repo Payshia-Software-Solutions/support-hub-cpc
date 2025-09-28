@@ -691,7 +691,7 @@ export interface PageContent {
     section_id: string;
     page_number: string;
     content_order: string;
-    content_type: 'text' | 'image';
+    page_type: 'text' | 'image';
     page_content_text: string | null;
     image_url: string | null;
     keywords: string;
@@ -706,7 +706,7 @@ export interface CreatePagePayload {
     section_id: string;
     page_number: string;
     content_order: string;
-    content_type: 'text' | 'image';
+    page_type: 'text' | 'image';
     page_content_text?: string | null;
     image_file?: File | null;
     keywords?: string;
