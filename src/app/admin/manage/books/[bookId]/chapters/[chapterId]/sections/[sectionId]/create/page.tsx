@@ -7,7 +7,6 @@ import * as z from 'zod';
 import { useRouter, useParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import type { CreatePagePayload } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { TiptapEditor } from '@/components/admin/TiptapEditor';
 import { ArrowLeft, Loader2, Save, Image as ImageIcon } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useEffect } from 'react';
 
 const pageFormSchema = z.object({
   page_number: z.string().min(1, "Page number is required."),
@@ -49,9 +49,32 @@ export default function CreatePageContentPage() {
     
     const form = useForm<PageFormValues>({
         resolver: zodResolver(pageFormSchema),
-        defaultValues: { page_number: '', content_order: '', page_type: 'text', page_content_text: '', keywords: '' }
+        defaultValues: { page_number: '', content_order: '1', page_type: 'image', page_content_text: '', keywords: '' }
     });
     const pageType = form.watch('page_type');
+
+    useEffect(() => {
+        const fetchNextPageNumber = async () => {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_BOOKS_API_URL}pages/next-page-number/${bookId}`);
+                if (!response.ok) throw new Error('Failed to fetch next page number.');
+                const data = await response.json();
+                if (data.status === 'success' && data.next_page_number) {
+                    form.setValue('page_number', String(data.next_page_number));
+                }
+            } catch (error) {
+                console.error(error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: 'Could not fetch the next page number.'
+                });
+            }
+        };
+        if (bookId) {
+            fetchNextPageNumber();
+        }
+    }, [bookId, form]);
 
     const mutation = useMutation({
         mutationFn: async (formData: FormData) => {
@@ -121,8 +144,8 @@ export default function CreatePageContentPage() {
                                 <div className="space-y-2">
                                     <Label>Content Type</Label>
                                     <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4">
-                                        <div className="flex items-center space-x-2"><RadioGroupItem value="text" id="type-text" /><Label htmlFor="type-text">Text</Label></div>
                                         <div className="flex items-center space-x-2"><RadioGroupItem value="image" id="type-image" /><Label htmlFor="type-image">Image</Label></div>
+                                        <div className="flex items-center space-x-2"><RadioGroupItem value="text" id="type-text" /><Label htmlFor="type-text">Text</Label></div>
                                     </RadioGroup>
                                     {form.formState.errors.page_type && <p className="text-sm text-destructive">{form.formState.errors.page_type.message}</p>}
                                 </div>
