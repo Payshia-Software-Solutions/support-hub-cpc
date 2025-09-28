@@ -3,13 +3,13 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Book, List, Search, Loader2, AlertTriangle, ArrowRight, BookOpen, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, BookText } from 'lucide-react';
+import { ArrowLeft, Book, List, Search, Loader2, AlertTriangle, ArrowRight, BookOpen, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight, RotateCw, BookText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getBookById, getChaptersByBook, getSectionsByBook, getPagesByBook } from '@/lib/actions/books';
-import type { Book as BookType, Chapter, Section, PageContent } from '@/lib/types';
+import { getBookById, getChaptersByBook, getSectionsByBook, getPagesByBook, getBnfWordIndex } from '@/lib/actions/books';
+import type { Book as BookType, Chapter, Section, PageContent, BnfWordIndexEntry } from '@/lib/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
@@ -35,17 +35,11 @@ const groupPages = (pages: PageContent[]) => {
 };
 
 const ImageViewer = ({ src, alt }: { src: string; alt: string }) => {
-    const [rotation, setRotation] = useState(0);
-
     return (
-        <div className="not-prose space-y-2 my-4">
-            <div className="flex items-center gap-2 justify-center">
-                <Button variant="outline" size="icon" onClick={() => setRotation(r => r + 90)}><RotateCw className="h-4 w-4" /></Button>
-            </div>
+        <div className="not-prose my-4">
             <div className="w-full overflow-auto border rounded-md bg-muted p-2">
                  <div
-                    className="flex justify-center items-center transition-transform duration-200"
-                    style={{ transform: `rotate(${rotation}deg)`}}
+                    className="flex justify-center items-center"
                 >
                     <Image 
                         src={src} 
