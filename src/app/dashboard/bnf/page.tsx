@@ -1,10 +1,9 @@
 
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Book, List, Search, Loader2, AlertTriangle, ArrowRight, BookOpen, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Index } from 'lucide-react';
+import { ArrowLeft, Book, List, Search, Loader2, AlertTriangle, ArrowRight, BookOpen, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, BookText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
@@ -234,7 +233,7 @@ export default function BnfPage() {
                         </Sheet>
                          <Sheet>
                             <SheetTrigger asChild>
-                                <Button variant="outline"><Index className="mr-2 h-4 w-4" />Index</Button>
+                                <Button variant="outline"><BookText className="mr-2 h-4 w-4" />Index</Button>
                             </SheetTrigger>
                             <SheetContent>
                                 <CardHeader>
@@ -351,3 +350,5 @@ export default function BnfPage() {
 }
 
 
+
+    
