@@ -77,46 +77,61 @@ export default function SectionPagesPage() {
                     <CardTitle>Content Entries</CardTitle>
                     <CardDescription>All content entries for this section, sorted by order.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent>
                     {isLoading ? (
-                        <div className="space-y-2">
-                            {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
                         </div>
                     ) : isError ? (
                         <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{(error as Error).message}</AlertDescription></Alert>
                     ) : pages && pages.length > 0 ? (
-                        pages.sort((a,b) => parseInt(a.content_order) - parseInt(b.content_order)).map(page => (
-                            <Card key={page.pege_entry_id} className="bg-muted/50">
-                                <CardHeader className="flex flex-row justify-between items-start">
-                                    <div>
-                                        <CardTitle className="text-base">Page {page.page_number} - Order {page.content_order}</CardTitle>
-                                        <CardDescription className="text-xs">Last updated: {format(new Date(page.updated_at), 'PPP')}</CardDescription>
-                                    </div>
-                                    <div className="space-x-1">
-                                        <Button asChild variant="ghost" size="icon" className="h-8 w-8">
-                                            <Link href={`/admin/manage/books/${bookId}/chapters/${chapterId}/sections/${sectionId}/edit/${page.pege_entry_id}`}>
-                                                <Edit className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setPageToDelete(page)}><Trash2 className="h-4 w-4" /></Button>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    {page.page_type === 'image' && page.page_content_text ? (
-                                        <div className="relative h-48 w-full max-w-sm">
-                                            <Image src={`${CONTENT_PROVIDER_URL}${page.page_content_text}`} alt={`Content for page ${page.page_number}`} layout="fill" objectFit="contain" className="rounded-md bg-white"/>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            {pages.sort((a,b) => {
+                                if (a.page_number === b.page_number) {
+                                    return parseInt(a.content_order) - parseInt(b.content_order);
+                                }
+                                return parseInt(a.page_number) - parseInt(b.page_number);
+                            }).map(page => (
+                                <Card key={page.pege_entry_id} className="bg-muted/50 flex flex-col">
+                                    <CardHeader className="flex flex-row justify-between items-start pb-2">
+                                        <div>
+                                            <CardTitle className="text-base">Page {page.page_number} - #{page.content_order}</CardTitle>
+                                            <CardDescription className="text-xs">
+                                                Updated: {format(new Date(page.updated_at), 'dd MMM, yyyy')}
+                                            </CardDescription>
                                         </div>
-                                    ) : page.page_type === 'text' && page.page_content_text ? (
-                                        <div className="prose prose-sm dark:prose-invert max-w-none">{parse(page.page_content_text)}</div>
-                                    ) : null}
-                                    {page.keywords && (
-                                        <div className="mt-2 text-xs text-muted-foreground">
+                                         <div className="flex flex-col items-center">
+                                            <Button asChild variant="ghost" size="icon" className="h-7 w-7">
+                                                <Link href={`/admin/manage/books/${bookId}/chapters/${chapterId}/sections/${sectionId}/edit/${page.pege_entry_id}`}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Link>
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setPageToDelete(page)}><Trash2 className="h-4 w-4" /></Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow flex items-center justify-center p-2">
+                                        {page.page_type === 'image' && page.page_content_text ? (
+                                            <div className="relative h-40 w-full rounded-md overflow-hidden border bg-white">
+                                                <Image src={`${CONTENT_PROVIDER_URL}${page.page_content_text}`} alt={`Content for page ${page.page_number}`} layout="fill" objectFit="contain"/>
+                                            </div>
+                                        ) : page.page_type === 'text' && page.page_content_text ? (
+                                            <div className="h-40 w-full overflow-y-auto p-2 border rounded-md text-xs prose prose-sm dark:prose-invert">
+                                                {parse(page.page_content_text)}
+                                            </div>
+                                        ) : (
+                                            <div className="h-40 w-full flex items-center justify-center text-muted-foreground text-xs italic">
+                                                No preview available
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                     {page.keywords && (
+                                        <div className="p-2 pt-0 text-xs text-muted-foreground truncate">
                                             <strong>Keywords:</strong> {page.keywords}
                                         </div>
                                     )}
-                                </CardContent>
-                            </Card>
-                        ))
+                                </Card>
+                            ))}
+                        </div>
                     ) : (
                         <p className="text-center text-muted-foreground py-10">No page content found for this section yet.</p>
                     )}
