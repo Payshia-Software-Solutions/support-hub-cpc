@@ -184,13 +184,13 @@ export default function BnfPage() {
                                 {pageContent?.map(content => (
                                     <div key={content.pege_entry_id}>
                                         {content.page_type === 'image' && content.page_content_text ? (
-                                            <div className="relative aspect-video">
+                                            <div className="relative w-full h-auto">
                                                 <Image 
                                                     src={`${CONTENT_PROVIDER_URL}${content.page_content_text}`} 
                                                     alt={`Content for page ${content.page_number}`} 
-                                                    layout="fill"
-                                                    objectFit="contain"
-                                                    className="rounded-md bg-white"
+                                                    width={1200}
+                                                    height={800}
+                                                    className="rounded-md bg-white w-full h-auto"
                                                 />
                                             </div>
                                         ) : content.page_content_text ? (
