@@ -772,6 +772,6 @@ export interface BnfChapter {
 }
 
 export interface BnfWordIndexEntry {
-    word: string;
-    page_id: number;
+    keyword: string;
+    page_number: string;
 }

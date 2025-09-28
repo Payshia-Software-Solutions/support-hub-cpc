@@ -135,8 +135,9 @@ export async function getPagesByBook(bookId: string): Promise<PageContent[]> {
     return apiFetch(`pages/by-book/${bookId}`);
 }
 
-export async function getBnfWordIndex(): Promise<BnfWordIndexEntry[]> {
-    return apiFetch('word-index');
+export async function getBnfWordIndex(bookId: string): Promise<BnfWordIndexEntry[]> {
+    const response = await apiFetch<{data: BnfWordIndexEntry[]}>(`pages/keywords-by-book/${bookId}`);
+    return response.data;
 }
 
 
@@ -149,4 +150,3 @@ export async function deletePage(pageId: string): Promise<void> {
         method: 'DELETE',
     });
 }
-
