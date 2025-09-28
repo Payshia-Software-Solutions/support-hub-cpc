@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -16,6 +15,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import parse from 'html-react-parser';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Label } from '@/components/ui/label';
 
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk/books/';
 
