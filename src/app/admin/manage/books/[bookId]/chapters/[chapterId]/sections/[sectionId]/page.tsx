@@ -18,6 +18,8 @@ import parse from 'html-react-parser';
 import Link from 'next/link';
 import Image from 'next/image';
 
+const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk/books/';
+
 export default function SectionPagesPage() {
     const params = useParams();
     const router = useRouter();
@@ -100,11 +102,11 @@ export default function SectionPagesPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    {page.page_type === 'image' && page.image_url ? (
+                                    {page.page_type === 'image' && page.page_content_text ? (
                                         <div className="relative h-48 w-full max-w-sm">
-                                            <Image src={page.image_url} alt={`Content for page ${page.page_number}`} layout="fill" objectFit="contain" className="rounded-md bg-white"/>
+                                            <Image src={`${CONTENT_PROVIDER_URL}${page.page_content_text}`} alt={`Content for page ${page.page_number}`} layout="fill" objectFit="contain" className="rounded-md bg-white"/>
                                         </div>
-                                    ) : page.page_content_text ? (
+                                    ) : page.page_type === 'text' && page.page_content_text ? (
                                         <div className="prose prose-sm dark:prose-invert max-w-none">{parse(page.page_content_text)}</div>
                                     ) : null}
                                     {page.keywords && (
