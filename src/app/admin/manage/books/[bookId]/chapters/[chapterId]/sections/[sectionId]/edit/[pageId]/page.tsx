@@ -73,9 +73,8 @@ export default function EditPageContentPage() {
 
     const mutation = useMutation({
         mutationFn: async (formData: FormData) => {
-            formData.append('_method', 'PUT');
             const response = await fetch(`${process.env.NEXT_PUBLIC_BOOKS_API_URL}pages/${pageId}`, {
-                method: 'POST',
+                method: 'PUT',
                 body: formData,
             });
              if (!response.ok) {
