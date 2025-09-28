@@ -2,7 +2,7 @@
 
 "use server";
 
-import type { Book, CreateBookPayload, Chapter, CreateChapterPayload, UpdateChapterPayload, Section, CreateSectionPayload, UpdateSectionPayload, PageContent, CreatePagePayload, UpdatePagePayload } from '../types';
+import type { Book, CreateBookPayload, Chapter, CreateChapterPayload, UpdateChapterPayload, Section, CreateSectionPayload, UpdateSectionPayload, PageContent } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BOOKS_API_URL;
 
@@ -18,8 +18,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
       headers['Content-Type'] = 'application/json';
     }
     
-    const baseUrl = new URL(API_BASE_URL);
-    const url = endpoint ? `${baseUrl.origin}${endpoint}` : API_BASE_URL;
+    const url = `${API_BASE_URL}${endpoint}`;
 
     const response = await fetch(url, {
       ...options,
@@ -54,7 +53,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 
 // --- Books API Functions ---
 export async function getBooks(): Promise<Book[]> {
-    return apiFetch('');
+    return apiFetch('books');
 }
 
 export async function getBookById(bookId: string): Promise<Book> {
@@ -67,7 +66,7 @@ export async function getBookById(bookId: string): Promise<Book> {
 }
 
 export async function createBook(payload: CreateBookPayload): Promise<Book> {
-    const response = await apiFetch<{ data: Book }>('/books', {
+    const response = await apiFetch<{ data: Book }>('books', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
@@ -77,11 +76,11 @@ export async function createBook(payload: CreateBookPayload): Promise<Book> {
 
 // --- Chapters API Functions ---
 export async function getChaptersByBook(bookId: string): Promise<Chapter[]> {
-    return apiFetch(`/chapters/by-book/${bookId}`);
+    return apiFetch(`chapters/by-book/${bookId}`);
 }
 
 export async function createChapter(payload: CreateChapterPayload): Promise<Chapter> {
-    const response = await apiFetch<{data: Chapter}>('/chapters', {
+    const response = await apiFetch<{data: Chapter}>('chapters', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
@@ -89,81 +88,55 @@ export async function createChapter(payload: CreateChapterPayload): Promise<Chap
 }
 
 export async function updateChapter(chapterId: string, payload: UpdateChapterPayload): Promise<Chapter> {
-    return apiFetch(`/chapters/${chapterId}`, {
+    return apiFetch(`chapters/${chapterId}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
     });
 }
 
 export async function deleteChapter(chapterId: string): Promise<void> {
-    await apiFetch<null>(`/chapters/${chapterId}`, {
+    await apiFetch<null>(`chapters/${chapterId}`, {
         method: 'DELETE',
     });
 }
 
 // --- Sections API Functions ---
 export async function getSectionsByBook(bookId: string): Promise<Section[]> {
-    return apiFetch(`/sections/by-book/${bookId}`);
+    return apiFetch(`sections/by-book/${bookId}`);
 }
 
 export async function createSection(payload: CreateSectionPayload): Promise<Section> {
-    return apiFetch('/sections', {
+    return apiFetch('sections', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
 }
 
 export async function updateSection(sectionId: string, payload: UpdateSectionPayload): Promise<Section> {
-    return apiFetch(`/sections/${sectionId}`, {
+    return apiFetch(`sections/${sectionId}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
     });
 }
 
 export async function deleteSection(sectionId: string): Promise<void> {
-    await apiFetch<null>(`/sections/${sectionId}`, {
+    await apiFetch<null>(`sections/${sectionId}`, {
         method: 'DELETE',
     });
 }
 
 // --- Page Content API Functions ---
 export async function getPagesByBook(bookId: string): Promise<PageContent[]> {
-    return apiFetch(`/pages/by-book/${bookId}`);
+    return apiFetch(`pages/by-book/${bookId}`);
 }
 
 
 export async function getPagesByBookChapterSection(bookId: string, chapterId: string, sectionId: string): Promise<PageContent[]> {
-    return apiFetch(`/pages/by-book-section-chapter/${bookId}/${sectionId}/${chapterId}`);
-}
-
-export async function createPage(formData: FormData): Promise<PageContent> {
-    const response = await fetch(`${API_BASE_URL}/pages`, {
-        method: 'POST',
-        body: formData,
-    });
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to create page content.' }));
-        throw new Error(errorData.message || 'Page creation failed.');
-    }
-    return response.json();
-}
-
-export async function updatePage(pageId: string, formData: FormData): Promise<PageContent> {
-    // Note: Using POST with _method=PUT to handle file uploads, a common Laravel practice.
-    formData.append('_method', 'PUT');
-    const response = await fetch(`${API_BASE_URL}/pages/${pageId}`, {
-        method: 'POST',
-        body: formData,
-    });
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to update page content.' }));
-        throw new Error(errorData.message || 'Page update failed.');
-    }
-    return response.json();
+    return apiFetch(`pages/by-book-section-chapter/${bookId}/${sectionId}/${chapterId}`);
 }
 
 export async function deletePage(pageId: string): Promise<void> {
-    await apiFetch<null>(`/pages/${pageId}`, {
+    await apiFetch<null>(`pages/${pageId}`, {
         method: 'DELETE',
     });
 }

@@ -8,7 +8,7 @@ import * as z from 'zod';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import { getPagesByBookChapterSection, updatePage } from '@/lib/actions/books';
+import { getPagesByBookChapterSection } from '@/lib/actions/books';
 import type { PageContent } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -72,7 +72,18 @@ export default function EditPageContentPage() {
     }, [page, form]);
 
     const mutation = useMutation({
-        mutationFn: (formData: FormData) => updatePage(pageId, formData),
+        mutationFn: async (formData: FormData) => {
+            formData.append('_method', 'PUT');
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BOOKS_API_URL}pages/${pageId}`, {
+                method: 'POST',
+                body: formData,
+            });
+             if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Failed to update page content.' }));
+                throw new Error(errorData.message || 'Page update failed.');
+            }
+            return response.json();
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['pages', bookId, chapterId, sectionId] });
             queryClient.invalidateQueries({ queryKey: ['page', pageId] });

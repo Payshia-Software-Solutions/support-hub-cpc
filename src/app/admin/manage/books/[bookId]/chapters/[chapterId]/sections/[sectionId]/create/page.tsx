@@ -7,7 +7,6 @@ import * as z from 'zod';
 import { useRouter, useParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import { createPage } from '@/lib/actions/books';
 import type { CreatePagePayload } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,7 +54,17 @@ export default function CreatePageContentPage() {
     const pageType = form.watch('page_type');
 
     const mutation = useMutation({
-        mutationFn: (formData: FormData) => createPage(formData),
+        mutationFn: async (formData: FormData) => {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BOOKS_API_URL}pages`, {
+                method: 'POST',
+                body: formData,
+            });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Failed to create page content.' }));
+                throw new Error(errorData.message || 'Page creation failed.');
+            }
+            return response.json();
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['pages', bookId, chapterId, sectionId] });
             toast({ title: 'Success', description: 'Page content created successfully.' });
