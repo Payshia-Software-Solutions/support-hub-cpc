@@ -16,6 +16,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import parse from 'html-react-parser';
+import Image from 'next/image';
+
+const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk/books/';
 
 // View states
 type BnfView = 'books' | 'reader';
@@ -180,7 +183,19 @@ export default function BnfPage() {
                             <div className="prose prose-sm dark:prose-invert max-w-none space-y-4">
                                 {pageContent?.map(content => (
                                     <div key={content.pege_entry_id}>
-                                        {parse(content.page_content_text)}
+                                        {content.page_type === 'image' && content.page_content_text ? (
+                                            <div className="relative aspect-video">
+                                                <Image 
+                                                    src={`${CONTENT_PROVIDER_URL}${content.page_content_text}`} 
+                                                    alt={`Content for page ${content.page_number}`} 
+                                                    layout="fill"
+                                                    objectFit="contain"
+                                                    className="rounded-md bg-white"
+                                                />
+                                            </div>
+                                        ) : content.page_content_text ? (
+                                            parse(content.page_content_text)
+                                        ) : null}
                                     </div>
                                 ))}
                                 {!pageContent && <p>No content for this page.</p>}

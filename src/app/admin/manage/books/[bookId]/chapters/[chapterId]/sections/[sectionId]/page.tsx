@@ -9,13 +9,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { AlertTriangle, PlusCircle, Loader2, ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { AlertTriangle, PlusCircle, Loader2, ArrowLeft, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { deletePage, getPagesByBookChapterSection } from '@/lib/actions/books';
 import type { PageContent } from '@/lib/types';
 import { format } from 'date-fns';
 import parse from 'html-react-parser';
 import Link from 'next/link';
+import Image from 'next/image';
+
+const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk/books/';
 
 export default function SectionPagesPage() {
     const params = useParams();
@@ -99,7 +102,13 @@ export default function SectionPagesPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="prose prose-sm dark:prose-invert max-w-none">{parse(page.page_content_text)}</div>
+                                    {page.page_type === 'image' && page.page_content_text ? (
+                                        <div className="relative h-48 w-full max-w-sm">
+                                            <Image src={`${CONTENT_PROVIDER_URL}${page.page_content_text}`} alt={`Content for page ${page.page_number}`} layout="fill" objectFit="contain" className="rounded-md bg-white"/>
+                                        </div>
+                                    ) : page.page_type === 'text' && page.page_content_text ? (
+                                        <div className="prose prose-sm dark:prose-invert max-w-none">{parse(page.page_content_text)}</div>
+                                    ) : null}
                                     {page.keywords && (
                                         <div className="mt-2 text-xs text-muted-foreground">
                                             <strong>Keywords:</strong> {page.keywords}

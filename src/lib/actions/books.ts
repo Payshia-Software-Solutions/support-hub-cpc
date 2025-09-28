@@ -1,8 +1,5 @@
 
-
-"use server";
-
-import type { Book, CreateBookPayload, Chapter, CreateChapterPayload, UpdateChapterPayload, Section, CreateSectionPayload, UpdateSectionPayload, PageContent, CreatePagePayload, UpdatePagePayload } from '../types';
+import type { Book, CreateBookPayload, Chapter, CreateChapterPayload, UpdateChapterPayload, Section, CreateSectionPayload, UpdateSectionPayload, PageContent } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BOOKS_API_URL;
 
@@ -18,8 +15,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
       headers['Content-Type'] = 'application/json';
     }
     
-    const baseUrl = new URL(API_BASE_URL);
-    const url = endpoint ? `${baseUrl.origin}${endpoint}` : API_BASE_URL;
+    const url = `${API_BASE_URL}${endpoint}`;
 
     const response = await fetch(url, {
       ...options,
@@ -42,7 +38,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     }
     
     const result = await response.json();
-    return result.data as T;
+    return result.data || result;
 
   } catch (error) {
     if (error instanceof Error) {
@@ -54,8 +50,15 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 
 // --- Books API Functions ---
 export async function getBooks(): Promise<Book[]> {
-    return apiFetch('');
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BOOKS_API_URL}books`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch books' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    const result = await response.json();
+    return result.data;
 }
+
 
 export async function getBookById(bookId: string): Promise<Book> {
     const books = await getBooks();
@@ -67,7 +70,7 @@ export async function getBookById(bookId: string): Promise<Book> {
 }
 
 export async function createBook(payload: CreateBookPayload): Promise<Book> {
-    const response = await apiFetch<{ data: Book }>('/books', {
+    const response = await apiFetch<{ data: Book }>('books', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
@@ -77,11 +80,11 @@ export async function createBook(payload: CreateBookPayload): Promise<Book> {
 
 // --- Chapters API Functions ---
 export async function getChaptersByBook(bookId: string): Promise<Chapter[]> {
-    return apiFetch(`/chapters/by-book/${bookId}`);
+    return apiFetch(`chapters/by-book/${bookId}`);
 }
 
 export async function createChapter(payload: CreateChapterPayload): Promise<Chapter> {
-    const response = await apiFetch<{data: Chapter}>('/chapters', {
+    const response = await apiFetch<{data: Chapter}>('chapters', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
@@ -89,69 +92,55 @@ export async function createChapter(payload: CreateChapterPayload): Promise<Chap
 }
 
 export async function updateChapter(chapterId: string, payload: UpdateChapterPayload): Promise<Chapter> {
-    return apiFetch(`/chapters/${chapterId}`, {
+    return apiFetch(`chapters/${chapterId}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
     });
 }
 
 export async function deleteChapter(chapterId: string): Promise<void> {
-    await apiFetch<null>(`/chapters/${chapterId}`, {
+    await apiFetch<null>(`chapters/${chapterId}`, {
         method: 'DELETE',
     });
 }
 
 // --- Sections API Functions ---
 export async function getSectionsByBook(bookId: string): Promise<Section[]> {
-    return apiFetch(`/sections/by-book/${bookId}`);
+    return apiFetch(`sections/by-book/${bookId}`);
 }
 
 export async function createSection(payload: CreateSectionPayload): Promise<Section> {
-    return apiFetch('/sections', {
+    return apiFetch('sections', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
 }
 
 export async function updateSection(sectionId: string, payload: UpdateSectionPayload): Promise<Section> {
-    return apiFetch(`/sections/${sectionId}`, {
+    return apiFetch(`sections/${sectionId}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
     });
 }
 
 export async function deleteSection(sectionId: string): Promise<void> {
-    await apiFetch<null>(`/sections/${sectionId}`, {
+    await apiFetch<null>(`sections/${sectionId}`, {
         method: 'DELETE',
     });
 }
 
 // --- Page Content API Functions ---
 export async function getPagesByBook(bookId: string): Promise<PageContent[]> {
-    return apiFetch(`/pages/by-book/${bookId}`);
+    return apiFetch(`pages/by-book/${bookId}`);
 }
 
 
 export async function getPagesByBookChapterSection(bookId: string, chapterId: string, sectionId: string): Promise<PageContent[]> {
-    return apiFetch(`/pages/by-book-section-chapter/${bookId}/${sectionId}/${chapterId}`);
-}
-
-export async function createPage(payload: CreatePagePayload): Promise<PageContent> {
-    return apiFetch('/pages', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-    });
-}
-
-export async function updatePage(pageId: string, payload: UpdatePagePayload): Promise<PageContent> {
-    return apiFetch(`/pages/${pageId}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-    });
+    return apiFetch(`pages/by-book-section-chapter/${bookId}/${sectionId}/${chapterId}`);
 }
 
 export async function deletePage(pageId: string): Promise<void> {
-    await apiFetch<null>(`/pages/${pageId}`, {
+    await fetch(`${API_BASE_URL}pages/${pageId}`, {
         method: 'DELETE',
     });
 }
