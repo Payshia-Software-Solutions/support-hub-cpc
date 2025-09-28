@@ -8,16 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getBookById, getChaptersByBook, getSectionsByBook, getPagesByBook, getBnfWordIndex } from '@/lib/actions/books';
-import type { Book as BookType, Chapter, Section, PageContent, BnfWordIndexEntry } from '@/lib/types';
+import { getBookById, getPagesByBook } from '@/lib/actions/books';
+import type { Book as BookType, PageContent } from '@/lib/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { toast } from '@/hooks/use-toast';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import parse from 'html-react-parser';
 import Image from 'next/image';
-import { toast } from '@/hooks/use-toast';
-import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk/books/';
 
@@ -58,9 +56,11 @@ const ImageViewer = ({ src, alt }: { src: string; alt: string }) => {
 export default function BnfReaderPage() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const bookId = params.bookId as string;
 
-    const [currentPage, setCurrentPage] = useState(1);
+    const initialPage = parseInt(searchParams.get('page') || '1', 10);
+    const [currentPage, setCurrentPage] = useState(initialPage);
     const [jumpToPageInput, setJumpToPageInput] = useState('');
 
 
@@ -70,19 +70,7 @@ export default function BnfReaderPage() {
         queryFn: () => getBookById(bookId),
         enabled: !!bookId,
     });
-
-    const { data: chapters, isLoading: isLoadingChapters } = useQuery<Chapter[]>({
-        queryKey: ['chaptersByBook', bookId],
-        queryFn: () => getChaptersByBook(bookId),
-        enabled: !!bookId,
-    });
     
-    const { data: sections, isLoading: isLoadingSections } = useQuery<Section[]>({
-        queryKey: ['sectionsByBook', bookId],
-        queryFn: () => getSectionsByBook(bookId),
-        enabled: !!bookId,
-    });
-
     const { data: allPageContents, isLoading: isLoadingAllPages } = useQuery<PageContent[]>({
         queryKey: ['allPagesByBook', bookId],
         queryFn: () => getPagesByBook(bookId),
@@ -90,14 +78,6 @@ export default function BnfReaderPage() {
     });
 
     // --- Memoized Data processing ---
-    const groupedToc = useMemo(() => {
-        if (!chapters || !sections) return [];
-        return chapters.map(chapter => ({
-            ...chapter,
-            sections: sections.filter(s => s.chapter_id === chapter.chapter_id).sort((a,b) => parseInt(a.section_order) - parseInt(b.section_order))
-        })).sort((a,b) => parseInt(a.chapter_number) - parseInt(b.chapter_number));
-    }, [chapters, sections]);
-    
     const groupedPages = useMemo(() => {
         if (!allPageContents) return {};
         return groupPages(allPageContents);
@@ -111,18 +91,13 @@ export default function BnfReaderPage() {
     const goToPage = (pageNumber: number) => {
         if (pageNumbers.includes(pageNumber)) {
             setCurrentPage(pageNumber);
+            // Update URL without full navigation
+            router.push(`/dashboard/bnf/${bookId}?page=${pageNumber}`, { scroll: false });
         } else {
             toast({
                 variant: 'destructive',
                 description: `Page ${pageNumber} does not exist in this book.`
             });
-        }
-    };
-    
-    const handleGoToSection = (section: Section) => {
-        const firstPageOfSection = allPageContents?.find(p => p.section_id === section.section_id);
-        if (firstPageOfSection) {
-            goToPage(parseInt(firstPageOfSection.page_number, 10));
         }
     };
     
@@ -157,34 +132,16 @@ export default function BnfReaderPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Library
             </Button>
             <div className="flex items-center gap-2">
-                <Sheet>
-                    <SheetTrigger asChild>
-                        <Button variant="outline"><List className="mr-2 h-4 w-4" />Contents</Button>
-                    </SheetTrigger>
-                    <SheetContent>
-                        <CardHeader><CardTitle>{selectedBook.book_name}</CardTitle><CardDescription>Table of Contents</CardDescription></CardHeader>
-                        <div className="h-[calc(100%-100px)] overflow-y-auto">
-                            <CardContent>
-                                {isLoadingChapters || isLoadingSections ? <p>Loading...</p> : (
-                                    <div className="space-y-1">
-                                        {groupedToc.map(chapter => (
-                                            <Collapsible key={chapter.chapter_id} className="p-2 border-b">
-                                                <CollapsibleTrigger className="w-full text-left font-semibold">{chapter.chapter_number}. {chapter.chapter_title}</CollapsibleTrigger>
-                                                <CollapsibleContent className="mt-2 pl-4">
-                                                    <div className="space-y-1">
-                                                        {chapter.sections.map(section => (
-                                                            <button key={section.section_id} onClick={() => handleGoToSection(section)} className="block w-full text-left text-sm p-1 rounded hover:bg-accent">{chapter.chapter_number}.{section.section_order} {section.section_heading}</button>
-                                                        ))}
-                                                    </div>
-                                                </CollapsibleContent>
-                                            </Collapsible>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </div>
-                    </SheetContent>
-                </Sheet>
+                 <Button variant="outline" asChild>
+                    <Link href={`/dashboard/bnf/${bookId}/contents`}>
+                        <List className="mr-2 h-4 w-4" />Contents
+                    </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                    <Link href={`/dashboard/bnf/${bookId}/index`}>
+                        <Search className="mr-2 h-4 w-4" />Index
+                    </Link>
+                </Button>
             </div>
         </header>
 

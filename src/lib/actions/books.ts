@@ -1,6 +1,7 @@
 
 
-import type { Book, CreateBookPayload, Chapter, CreateChapterPayload, UpdateChapterPayload, Section, CreateSectionPayload, UpdateSectionPayload, PageContent } from '../types';
+
+import type { Book, CreateBookPayload, Chapter, CreateChapterPayload, UpdateChapterPayload, Section, CreateSectionPayload, UpdateSectionPayload, PageContent, BnfWordIndexEntry } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BOOKS_API_URL;
 
@@ -144,3 +145,15 @@ export async function deletePage(pageId: string): Promise<void> {
         method: 'DELETE',
     });
 }
+
+// --- Word Index ---
+export async function getBnfWordIndex(bookId: string): Promise<BnfWordIndexEntry[]> {
+    const response = await fetch(`${API_BASE_URL}pages/keywords-by-book/${bookId}`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch keyword index.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    const result = await response.json();
+    return result.data;
+}
+
