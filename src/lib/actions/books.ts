@@ -136,18 +136,30 @@ export async function getPagesByBookChapterSection(bookId: string, chapterId: st
     return apiFetch(`/pages/by-book-section-chapter/${bookId}/${sectionId}/${chapterId}`);
 }
 
-export async function createPage(payload: CreatePagePayload): Promise<PageContent> {
-    return apiFetch('/pages', {
+export async function createPage(formData: FormData): Promise<PageContent> {
+    const response = await fetch(`${API_BASE_URL}/pages`, {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: formData,
     });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create page content.' }));
+        throw new Error(errorData.message || 'Page creation failed.');
+    }
+    return response.json();
 }
 
-export async function updatePage(pageId: string, payload: UpdatePagePayload): Promise<PageContent> {
-    return apiFetch(`/pages/${pageId}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload),
+export async function updatePage(pageId: string, formData: FormData): Promise<PageContent> {
+    // Note: Using POST with _method=PUT to handle file uploads, a common Laravel practice.
+    formData.append('_method', 'PUT');
+    const response = await fetch(`${API_BASE_URL}/pages/${pageId}`, {
+        method: 'POST',
+        body: formData,
     });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update page content.' }));
+        throw new Error(errorData.message || 'Page update failed.');
+    }
+    return response.json();
 }
 
 export async function deletePage(pageId: string): Promise<void> {

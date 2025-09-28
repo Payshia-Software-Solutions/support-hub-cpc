@@ -691,7 +691,9 @@ export interface PageContent {
     section_id: string;
     page_number: string;
     content_order: string;
-    page_content_text: string;
+    content_type: 'text' | 'image';
+    page_content_text: string | null;
+    image_url: string | null;
     keywords: string;
     created_by: string;
     created_at: string;
@@ -704,12 +706,16 @@ export interface CreatePagePayload {
     section_id: string;
     page_number: string;
     content_order: string;
-    page_content_text: string;
+    content_type: 'text' | 'image';
+    page_content_text?: string | null;
+    image_file?: File | null;
     keywords?: string;
     created_by: string;
 }
 
-export interface UpdatePagePayload extends Partial<Omit<CreatePagePayload, 'created_by'>> {}
+export interface UpdatePagePayload extends Partial<Omit<CreatePagePayload, 'created_by' | 'image_file'>> {
+    image_file?: File | null;
+}
 
 
 export interface ParentCourseListItem {
