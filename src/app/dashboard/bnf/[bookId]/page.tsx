@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getBookById, getChaptersByBook, getSectionsByBook, getPagesByBook, getBnfWordIndex } from '@/lib/actions/books';
-import type { Book as BookType, Chapter, Section, PageContent, BnfWordIndexEntry } from '@/lib/types';
+import { getBookById, getChaptersByBook, getSectionsByBook, getPagesByBook } from '@/lib/actions/books';
+import type { Book as BookType, Chapter, Section, PageContent } from '@/lib/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
@@ -69,7 +69,6 @@ export default function BnfReaderPage() {
     const params = useParams();
     const bookId = params.bookId as string;
 
-    const [indexSearchTerm, setIndexSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [jumpToPageInput, setJumpToPageInput] = useState('');
 
@@ -99,12 +98,6 @@ export default function BnfReaderPage() {
         enabled: !!bookId,
     });
 
-    const { data: wordIndex, isLoading: isLoadingWordIndex } = useQuery<BnfWordIndexEntry[]>({
-        queryKey: ['bnfWordIndex', bookId],
-        queryFn: () => getBnfWordIndex(bookId),
-        enabled: !!bookId,
-    });
-
     // --- Memoized Data processing ---
     const groupedToc = useMemo(() => {
         if (!chapters || !sections) return [];
@@ -122,11 +115,6 @@ export default function BnfReaderPage() {
     const pageNumbers = useMemo(() => {
         return Object.keys(groupedPages).map(Number).sort((a, b) => a - b);
     }, [groupedPages]);
-
-    const filteredWordIndex = useMemo(() => {
-        if (!wordIndex) return [];
-        return wordIndex.filter(entry => entry.keyword.toLowerCase().includes(indexSearchTerm.toLowerCase()));
-    }, [wordIndex, indexSearchTerm]);
 
     // --- Handlers ---
     const goToPage = (pageNumber: number) => {
@@ -206,41 +194,6 @@ export default function BnfReaderPage() {
                         </div>
                     </SheetContent>
                 </Sheet>
-                    <Sheet>
-                    <SheetTrigger asChild>
-                        <Button variant="outline"><BookText className="mr-2 h-4 w-4" />Index</Button>
-                    </SheetTrigger>
-                    <SheetContent>
-                        <CardHeader>
-                            <CardTitle>Keyword Index</CardTitle>
-                            <CardDescription>
-                                    <div className="relative pt-2">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input 
-                                        placeholder="Search index..." 
-                                        className="pl-10 h-9" 
-                                        value={indexSearchTerm}
-                                        onChange={(e) => setIndexSearchTerm(e.target.value)}
-                                    />
-                                </div>
-                            </CardDescription>
-                        </CardHeader>
-                        <div className="h-[calc(100%-140px)] overflow-y-auto">
-                            <CardContent>
-                                {isLoadingWordIndex ? <p>Loading...</p> : (
-                                    <div className="flex flex-col gap-1 text-sm">
-                                        {filteredWordIndex.map((entry, i) => (
-                                            <button key={i} onClick={() => goToPage(parseInt(entry.page_number, 10))} className="flex justify-between items-center p-2 rounded hover:bg-accent">
-                                                <span>{entry.keyword}</span>
-                                                <span className="text-muted-foreground">{entry.page_number}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </div>
-                    </SheetContent>
-                </Sheet>
             </div>
         </header>
 
@@ -254,9 +207,9 @@ export default function BnfReaderPage() {
                     <div className="prose prose-sm dark:prose-invert max-w-none space-y-4">
                         {pageContent?.map(content => (
                             <div key={content.pege_entry_id}>
-                                {content.page_type === 'image' && content.page_content_text ? (
+                                {content.page_type === 'image' && content.image_url ? (
                                     <ImageViewer 
-                                        src={`${CONTENT_PROVIDER_URL}${content.page_content_text}`}
+                                        src={`${CONTENT_PROVIDER_URL}${content.image_url}`}
                                         alt={`Content for page ${content.page_number}`}
                                     />
                                 ) : content.page_content_text ? (
