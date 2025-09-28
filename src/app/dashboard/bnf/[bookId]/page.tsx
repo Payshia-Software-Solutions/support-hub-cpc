@@ -3,21 +3,19 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Book, List, Search, Loader2, AlertTriangle, ArrowRight, BookOpen, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, BookText } from 'lucide-react';
+import { ArrowLeft, Book, List, Search, Loader2, AlertTriangle, ArrowRight, BookOpen, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight, RotateCw, BookText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getBookById, getChaptersByBook, getSectionsByBook, getPagesByBook } from '@/lib/actions/books';
-import type { Book as BookType, Chapter, Section, PageContent } from '@/lib/types';
+import { getBookById, getPagesByBook } from '@/lib/actions/books';
+import type { Book as BookType, PageContent } from '@/lib/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { toast } from '@/hooks/use-toast';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import parse from 'html-react-parser';
 import Image from 'next/image';
-import { toast } from '@/hooks/use-toast';
-import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk/books/';
 
@@ -35,20 +33,11 @@ const groupPages = (pages: PageContent[]) => {
 };
 
 const ImageViewer = ({ src, alt }: { src: string; alt: string }) => {
-    const [scale, setScale] = useState(1);
-    const [rotation, setRotation] = useState(0);
-
     return (
-        <div className="not-prose space-y-2 my-4">
-            <div className="flex items-center gap-2 justify-center">
-                <Button variant="outline" size="icon" onClick={() => setScale(s => s + 0.2)}><ZoomIn className="h-4 w-4" /></Button>
-                <Button variant="outline" size="icon" onClick={() => setScale(s => Math.max(0.2, s - 0.2))}><ZoomOut className="h-4 w-4" /></Button>
-                <Button variant="outline" size="icon" onClick={() => setRotation(r => r + 90)}><RotateCw className="h-4 w-4" /></Button>
-            </div>
+        <div className="not-prose my-4">
             <div className="w-full overflow-auto border rounded-md bg-muted p-2">
                  <div
-                    className="flex justify-center items-center transition-transform duration-200"
-                    style={{ transform: `scale(${scale}) rotate(${rotation}deg)`}}
+                    className="flex justify-center items-center"
                 >
                     <Image 
                         src={src} 
@@ -67,9 +56,11 @@ const ImageViewer = ({ src, alt }: { src: string; alt: string }) => {
 export default function BnfReaderPage() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const bookId = params.bookId as string;
 
-    const [currentPage, setCurrentPage] = useState(1);
+    const initialPage = parseInt(searchParams.get('page') || '1', 10);
+    const [currentPage, setCurrentPage] = useState(initialPage);
     const [jumpToPageInput, setJumpToPageInput] = useState('');
 
 
@@ -79,19 +70,7 @@ export default function BnfReaderPage() {
         queryFn: () => getBookById(bookId),
         enabled: !!bookId,
     });
-
-    const { data: chapters, isLoading: isLoadingChapters } = useQuery<Chapter[]>({
-        queryKey: ['chaptersByBook', bookId],
-        queryFn: () => getChaptersByBook(bookId),
-        enabled: !!bookId,
-    });
     
-    const { data: sections, isLoading: isLoadingSections } = useQuery<Section[]>({
-        queryKey: ['sectionsByBook', bookId],
-        queryFn: () => getSectionsByBook(bookId),
-        enabled: !!bookId,
-    });
-
     const { data: allPageContents, isLoading: isLoadingAllPages } = useQuery<PageContent[]>({
         queryKey: ['allPagesByBook', bookId],
         queryFn: () => getPagesByBook(bookId),
@@ -99,14 +78,6 @@ export default function BnfReaderPage() {
     });
 
     // --- Memoized Data processing ---
-    const groupedToc = useMemo(() => {
-        if (!chapters || !sections) return [];
-        return chapters.map(chapter => ({
-            ...chapter,
-            sections: sections.filter(s => s.chapter_id === chapter.chapter_id).sort((a,b) => parseInt(a.section_order) - parseInt(b.section_order))
-        })).sort((a,b) => parseInt(a.chapter_number) - parseInt(b.chapter_number));
-    }, [chapters, sections]);
-    
     const groupedPages = useMemo(() => {
         if (!allPageContents) return {};
         return groupPages(allPageContents);
@@ -120,18 +91,13 @@ export default function BnfReaderPage() {
     const goToPage = (pageNumber: number) => {
         if (pageNumbers.includes(pageNumber)) {
             setCurrentPage(pageNumber);
+            // Update URL without full navigation
+            router.push(`/dashboard/bnf/${bookId}?page=${pageNumber}`, { scroll: false });
         } else {
             toast({
                 variant: 'destructive',
                 description: `Page ${pageNumber} does not exist in this book.`
             });
-        }
-    };
-    
-    const handleGoToSection = (section: Section) => {
-        const firstPageOfSection = allPageContents?.find(p => p.section_id === section.section_id);
-        if (firstPageOfSection) {
-            goToPage(parseInt(firstPageOfSection.page_number, 10));
         }
     };
     
@@ -166,34 +132,16 @@ export default function BnfReaderPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Library
             </Button>
             <div className="flex items-center gap-2">
-                <Sheet>
-                    <SheetTrigger asChild>
-                        <Button variant="outline"><List className="mr-2 h-4 w-4" />Contents</Button>
-                    </SheetTrigger>
-                    <SheetContent>
-                        <CardHeader><CardTitle>{selectedBook.book_name}</CardTitle><CardDescription>Table of Contents</CardDescription></CardHeader>
-                        <div className="h-[calc(100%-100px)] overflow-y-auto">
-                            <CardContent>
-                                {isLoadingChapters || isLoadingSections ? <p>Loading...</p> : (
-                                    <div className="space-y-1">
-                                        {groupedToc.map(chapter => (
-                                            <Collapsible key={chapter.chapter_id} className="p-2 border-b">
-                                                <CollapsibleTrigger className="w-full text-left font-semibold">{chapter.chapter_number}. {chapter.chapter_title}</CollapsibleTrigger>
-                                                <CollapsibleContent className="mt-2 pl-4">
-                                                    <div className="space-y-1">
-                                                        {chapter.sections.map(section => (
-                                                            <button key={section.section_id} onClick={() => handleGoToSection(section)} className="block w-full text-left text-sm p-1 rounded hover:bg-accent">{chapter.chapter_number}.{section.section_order} {section.section_heading}</button>
-                                                        ))}
-                                                    </div>
-                                                </CollapsibleContent>
-                                            </Collapsible>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </div>
-                    </SheetContent>
-                </Sheet>
+                 <Button variant="outline" asChild>
+                    <Link href={`/dashboard/bnf/${bookId}/contents`}>
+                        <List className="mr-2 h-4 w-4" />Contents
+                    </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                    <Link href={`/dashboard/bnf/${bookId}/index`}>
+                        <Search className="mr-2 h-4 w-4" />Index
+                    </Link>
+                </Button>
             </div>
         </header>
 
