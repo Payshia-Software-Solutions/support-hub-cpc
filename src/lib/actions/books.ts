@@ -38,7 +38,6 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     }
     
     const result = await response.json();
-    // The book list API seems to return the data directly, not nested under a 'data' key.
     return result.data || result;
 
   } catch (error) {
@@ -51,7 +50,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 
 // --- Books API Functions ---
 export async function getBooks(): Promise<Book[]> {
-    const response = await fetch(`${API_BASE_URL}books`);
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BOOKS_API_URL}books`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch books' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
