@@ -1,5 +1,6 @@
 
-import type { Book, CreateBookPayload, Chapter, CreateChapterPayload, UpdateChapterPayload, Section, CreateSectionPayload, UpdateSectionPayload, PageContent } from '../types';
+
+import type { Book, CreateBookPayload, Chapter, CreateChapterPayload, UpdateChapterPayload, Section, CreateSectionPayload, UpdateSectionPayload, PageContent, BnfWordIndexEntry } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BOOKS_API_URL;
 
@@ -134,6 +135,10 @@ export async function getPagesByBook(bookId: string): Promise<PageContent[]> {
     return apiFetch(`pages/by-book/${bookId}`);
 }
 
+export async function getBnfWordIndex(): Promise<BnfWordIndexEntry[]> {
+    return apiFetch('word-index');
+}
+
 
 export async function getPagesByBookChapterSection(bookId: string, chapterId: string, sectionId: string): Promise<PageContent[]> {
     return apiFetch(`pages/by-book-section-chapter/${bookId}/${sectionId}/${chapterId}`);
@@ -144,3 +149,4 @@ export async function deletePage(pageId: string): Promise<void> {
         method: 'DELETE',
     });
 }
+

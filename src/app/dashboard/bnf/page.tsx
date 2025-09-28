@@ -4,13 +4,13 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Book, List, Search, Loader2, AlertTriangle, ArrowRight, BookOpen, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import { ArrowLeft, Book, List, Search, Loader2, AlertTriangle, ArrowRight, BookOpen, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Index } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getBooks, getChaptersByBook, getSectionsByBook, getPagesByBook } from '@/lib/actions/books';
-import type { Book as BookType, Chapter, Section, PageContent } from '@/lib/types';
+import { getBooks, getChaptersByBook, getSectionsByBook, getPagesByBook, getBnfWordIndex } from '@/lib/actions/books';
+import type { Book as BookType, Chapter, Section, PageContent, BnfWordIndexEntry } from '@/lib/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
@@ -71,6 +71,7 @@ export default function BnfPage() {
     const [view, setView] = useState<BnfView>('books');
     const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [indexSearchTerm, setIndexSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [jumpToPageInput, setJumpToPageInput] = useState('');
 
@@ -100,6 +101,12 @@ export default function BnfPage() {
         enabled: !!selectedBook,
     });
 
+    const { data: wordIndex, isLoading: isLoadingWordIndex } = useQuery<BnfWordIndexEntry[]>({
+        queryKey: ['bnfWordIndex', selectedBook?.book_id],
+        queryFn: getBnfWordIndex,
+        enabled: !!selectedBook,
+    });
+
     // --- Memoized Data processing ---
     const filteredBooks = useMemo(() => {
         if (!books) return [];
@@ -123,6 +130,11 @@ export default function BnfPage() {
         return Object.keys(groupedPages).map(Number).sort((a, b) => a - b);
     }, [groupedPages]);
 
+    const filteredWordIndex = useMemo(() => {
+        if (!wordIndex) return [];
+        return wordIndex.filter(entry => entry.word.toLowerCase().includes(indexSearchTerm.toLowerCase()));
+    }, [wordIndex, indexSearchTerm]);
+
     // --- Handlers ---
     const handleSelectBook = (book: BookType) => {
         setSelectedBook(book);
@@ -138,6 +150,11 @@ export default function BnfPage() {
     const goToPage = (pageNumber: number) => {
         if (pageNumbers.includes(pageNumber)) {
             setCurrentPage(pageNumber);
+        } else {
+            toast({
+                variant: 'destructive',
+                description: `Page ${pageNumber} does not exist in this book.`
+            });
         }
     };
     
@@ -152,10 +169,6 @@ export default function BnfPage() {
         const pageNum = parseInt(jumpToPageInput, 10);
         if (isNaN(pageNum)) {
             toast({ variant: 'destructive', description: 'Please enter a valid number.' });
-            return;
-        }
-        if (!pageNumbers.includes(pageNum)) {
-            toast({ variant: 'destructive', description: `Page ${pageNum} does not exist.` });
             return;
         }
         goToPage(pageNum);
@@ -186,44 +199,81 @@ export default function BnfPage() {
 
         return (
              <div className="p-4 md:p-8 space-y-6 pb-20">
-                <header className="flex justify-between items-center">
+                <header className="flex justify-between items-center gap-2">
                     <Button variant="ghost" onClick={handleBackToBooks} className="-ml-4">
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Library
                     </Button>
-                    <Sheet>
-                        <SheetTrigger asChild>
-                            <Button variant="outline"><List className="mr-2 h-4 w-4" />Table of Contents</Button>
-                        </SheetTrigger>
-                        <SheetContent>
-                            <CardHeader><CardTitle>{selectedBook.book_name}</CardTitle><CardDescription>Table of Contents</CardDescription></CardHeader>
-                            <div className="h-[calc(100%-100px)] overflow-y-auto">
-                                <CardContent>
-                                    {isLoadingChapters || isLoadingSections ? <p>Loading...</p> : (
-                                        <div className="space-y-1">
-                                            {groupedToc.map(chapter => (
-                                                <Collapsible key={chapter.chapter_id} className="p-2 border-b">
-                                                    <CollapsibleTrigger className="w-full text-left font-semibold">{chapter.chapter_number}. {chapter.chapter_title}</CollapsibleTrigger>
-                                                    <CollapsibleContent className="mt-2 pl-4">
-                                                        <div className="space-y-1">
-                                                            {chapter.sections.map(section => (
-                                                                <button key={section.section_id} onClick={() => handleGoToSection(section)} className="block w-full text-left text-sm p-1 rounded hover:bg-accent">{chapter.chapter_number}.{section.section_order} {section.section_heading}</button>
-                                                            ))}
-                                                        </div>
-                                                    </CollapsibleContent>
-                                                </Collapsible>
-                                            ))}
+                    <div className="flex items-center gap-2">
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button variant="outline"><List className="mr-2 h-4 w-4" />Contents</Button>
+                            </SheetTrigger>
+                            <SheetContent>
+                                <CardHeader><CardTitle>{selectedBook.book_name}</CardTitle><CardDescription>Table of Contents</CardDescription></CardHeader>
+                                <div className="h-[calc(100%-100px)] overflow-y-auto">
+                                    <CardContent>
+                                        {isLoadingChapters || isLoadingSections ? <p>Loading...</p> : (
+                                            <div className="space-y-1">
+                                                {groupedToc.map(chapter => (
+                                                    <Collapsible key={chapter.chapter_id} className="p-2 border-b">
+                                                        <CollapsibleTrigger className="w-full text-left font-semibold">{chapter.chapter_number}. {chapter.chapter_title}</CollapsibleTrigger>
+                                                        <CollapsibleContent className="mt-2 pl-4">
+                                                            <div className="space-y-1">
+                                                                {chapter.sections.map(section => (
+                                                                    <button key={section.section_id} onClick={() => handleGoToSection(section)} className="block w-full text-left text-sm p-1 rounded hover:bg-accent">{chapter.chapter_number}.{section.section_order} {section.section_heading}</button>
+                                                                ))}
+                                                            </div>
+                                                        </CollapsibleContent>
+                                                    </Collapsible>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+                         <Sheet>
+                            <SheetTrigger asChild>
+                                <Button variant="outline"><Index className="mr-2 h-4 w-4" />Index</Button>
+                            </SheetTrigger>
+                            <SheetContent>
+                                <CardHeader>
+                                    <CardTitle>Keyword Index</CardTitle>
+                                    <CardDescription>
+                                         <div className="relative pt-2">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input 
+                                                placeholder="Search index..." 
+                                                className="pl-10 h-9" 
+                                                value={indexSearchTerm}
+                                                onChange={(e) => setIndexSearchTerm(e.target.value)}
+                                            />
                                         </div>
-                                    )}
-                                </CardContent>
-                            </div>
-                        </SheetContent>
-                    </Sheet>
+                                    </CardDescription>
+                                </CardHeader>
+                                <div className="h-[calc(100%-140px)] overflow-y-auto">
+                                    <CardContent>
+                                        {isLoadingWordIndex ? <p>Loading...</p> : (
+                                            <div className="flex flex-col gap-1 text-sm">
+                                                {filteredWordIndex.map((entry, i) => (
+                                                    <button key={i} onClick={() => goToPage(entry.page_id)} className="flex justify-between items-center p-2 rounded hover:bg-accent">
+                                                        <span>{entry.word}</span>
+                                                        <span className="text-muted-foreground">{entry.page_id}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+                    </div>
                 </header>
 
                 <Card>
                     <CardHeader>
                          <CardTitle className="text-2xl font-headline">{selectedBook.book_name}</CardTitle>
-                         <CardDescription>Page {currentPage} of {pageNumbers.length}</CardDescription>
+                         <CardDescription>Page {currentPage} of {pageNumbers[pageNumbers.length - 1] || 1}</CardDescription>
                     </CardHeader>
                     <CardContent className="min-h-[50vh]">
                         {isLoadingAllPages ? <Loader2 className="mx-auto h-8 w-8 animate-spin" /> : (
@@ -299,4 +349,5 @@ export default function BnfPage() {
         </div>
     );
 }
+
 
