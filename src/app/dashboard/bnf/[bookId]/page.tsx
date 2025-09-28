@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -16,6 +15,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import parse from 'html-react-parser';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Label } from '@/components/ui/label';
 
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk/books/';
 
@@ -127,70 +127,82 @@ export default function BnfReaderPage() {
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
-        <header className="flex justify-between items-center gap-2">
-            <Button variant="ghost" onClick={() => router.push('/dashboard/bnf')} className="-ml-4">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Library
-            </Button>
-            <div className="flex items-center gap-2">
-                 <Button variant="outline" asChild>
-                    <Link href={`/dashboard/bnf/${bookId}/contents`}>
-                        <List className="mr-2 h-4 w-4" />Contents
-                    </Link>
+            <header className="flex justify-between items-center gap-2">
+                <Button variant="ghost" onClick={() => router.push('/dashboard/bnf')} className="-ml-4">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Library
                 </Button>
-                <Button variant="outline" asChild>
-                    <Link href={`/dashboard/bnf/${bookId}/index`}>
-                        <Search className="mr-2 h-4 w-4" />Index
-                    </Link>
-                </Button>
-            </div>
-        </header>
-
-        <Card>
-            <CardHeader>
-                    <CardTitle className="text-2xl font-headline">{selectedBook.book_name}</CardTitle>
-                    <CardDescription>Page {currentPage} of {pageNumbers[pageNumbers.length - 1] || 1}</CardDescription>
-            </CardHeader>
-            <CardContent className="min-h-[50vh]">
-                {isLoadingAllPages ? <Loader2 className="mx-auto h-8 w-8 animate-spin" /> : (
-                    <div className="prose prose-sm dark:prose-invert max-w-none space-y-4">
-                        {pageContent?.map(content => (
-                            <div key={content.pege_entry_id}>
-                                {content.page_type === 'image' && content.page_content_text ? (
-                                    <ImageViewer 
-                                        src={`${CONTENT_PROVIDER_URL}${content.page_content_text}`}
-                                        alt={`Content for page ${content.page_number}`}
-                                    />
-                                ) : content.page_content_text ? (
-                                    parse(content.page_content_text)
-                                ) : null}
-                            </div>
-                        ))}
-                        {!pageContent && <p>No content for this page.</p>}
-                    </div>
-                )}
-            </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" onClick={() => goToPage(1)} disabled={currentPage === 1}><ChevronsLeft className="h-4 w-4"/></Button>
-                    <Button variant="outline" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4"/> Prev</Button>
+                     <Button variant="outline" asChild>
+                        <Link href={`/dashboard/bnf/${bookId}/contents`}>
+                            <List className="mr-2 h-4 w-4" />Contents
+                        </Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                        <Link href={`/dashboard/bnf/${bookId}/index`}>
+                            <Search className="mr-2 h-4 w-4" />Index
+                        </Link>
+                    </Button>
                 </div>
-                <div className="flex items-center gap-2">
+            </header>
+
+            <div>
+                <div className="mb-4">
+                    <h1 className="text-2xl font-headline font-semibold">{selectedBook.book_name}</h1>
+                    <p className="text-sm text-muted-foreground">Page {currentPage} of {pageNumbers[pageNumbers.length - 1] || 1}</p>
+                </div>
+                <div className="min-h-[50vh]">
+                    {isLoadingAllPages ? <Loader2 className="mx-auto h-8 w-8 animate-spin" /> : (
+                        <div className="prose prose-sm dark:prose-invert max-w-none space-y-4">
+                            {pageContent?.map(content => (
+                                <div key={content.pege_entry_id}>
+                                    {content.page_type === 'image' && content.page_content_text ? (
+                                        <ImageViewer 
+                                            src={`${CONTENT_PROVIDER_URL}${content.page_content_text}`}
+                                            alt={`Content for page ${content.page_number}`}
+                                        />
+                                    ) : content.page_content_text ? (
+                                        parse(content.page_content_text)
+                                    ) : null}
+                                </div>
+                            ))}
+                            {!pageContent && <p>No content for this page.</p>}
+                        </div>
+                    )}
+                </div>
+                 <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 p-4 border rounded-lg bg-card">
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" onClick={() => goToPage(1)} disabled={currentPage === 1} aria-label="Go to first page">
+                            <ChevronsLeft className="h-4 w-4"/>
+                        </Button>
+                        <Button variant="outline" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
+                            <ChevronLeft className="h-4 w-4 mr-2"/>
+                            Prev
+                        </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Label htmlFor="jump-to-page" className="text-sm text-muted-foreground whitespace-nowrap">Page</Label>
                         <Input 
+                        id="jump-to-page"
                         type="number" 
-                        placeholder={`Page...`} 
                         className="w-20 h-9 text-center"
                         value={jumpToPageInput}
                         onChange={(e) => setJumpToPageInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleJumpToPage()}
+                        placeholder={`${currentPage}`}
                         />
                         <Button size="sm" onClick={handleJumpToPage}>Go</Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === pageNumbers[pageNumbers.length - 1]}>
+                            Next
+                            <ChevronRight className="h-4 w-4 ml-2"/>
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => goToPage(pageNumbers[pageNumbers.length - 1])} disabled={currentPage === pageNumbers[pageNumbers.length - 1]} aria-label="Go to last page">
+                            <ChevronsRight className="h-4 w-4"/>
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === pageNumbers[pageNumbers.length - 1]}>Next <ChevronRight className="h-4 w-4"/></Button>
-                        <Button variant="outline" size="icon" onClick={() => goToPage(pageNumbers[pageNumbers.length - 1])} disabled={currentPage === pageNumbers[pageNumbers.length - 1]}><ChevronsRight className="h-4 w-4"/></Button>
-                </div>
-            </CardFooter>
-        </Card>
-    </div>
+            </div>
+        </div>
     )
 }
