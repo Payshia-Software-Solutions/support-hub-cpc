@@ -35,20 +35,17 @@ const groupPages = (pages: PageContent[]) => {
 };
 
 const ImageViewer = ({ src, alt }: { src: string; alt: string }) => {
-    const [scale, setScale] = useState(1);
     const [rotation, setRotation] = useState(0);
 
     return (
         <div className="not-prose space-y-2 my-4">
             <div className="flex items-center gap-2 justify-center">
-                <Button variant="outline" size="icon" onClick={() => setScale(s => s + 0.2)}><ZoomIn className="h-4 w-4" /></Button>
-                <Button variant="outline" size="icon" onClick={() => setScale(s => Math.max(0.2, s - 0.2))}><ZoomOut className="h-4 w-4" /></Button>
                 <Button variant="outline" size="icon" onClick={() => setRotation(r => r + 90)}><RotateCw className="h-4 w-4" /></Button>
             </div>
             <div className="w-full overflow-auto border rounded-md bg-muted p-2">
                  <div
                     className="flex justify-center items-center transition-transform duration-200"
-                    style={{ transform: `scale(${scale}) rotate(${rotation}deg)`}}
+                    style={{ transform: `rotate(${rotation}deg)`}}
                 >
                     <Image 
                         src={src} 
@@ -207,9 +204,9 @@ export default function BnfReaderPage() {
                     <div className="prose prose-sm dark:prose-invert max-w-none space-y-4">
                         {pageContent?.map(content => (
                             <div key={content.pege_entry_id}>
-                                {content.page_type === 'image' && content.page_content_text ? (
+                                {content.page_type === 'image' && content.image_url ? (
                                     <ImageViewer 
-                                        src={`${CONTENT_PROVIDER_URL}${content.page_content_text}`}
+                                        src={`${CONTENT_PROVIDER_URL}${content.image_url}`}
                                         alt={`Content for page ${content.page_number}`}
                                     />
                                 ) : content.page_content_text ? (
