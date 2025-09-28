@@ -169,25 +169,37 @@ export default function BnfReaderPage() {
                         </div>
                     )}
                 </div>
-                <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 p-4 border rounded-lg bg-card">
+                 <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 p-4 border rounded-lg bg-card">
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" onClick={() => goToPage(1)} disabled={currentPage === 1}><ChevronsLeft className="h-4 w-4"/></Button>
-                        <Button variant="outline" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4"/> Prev</Button>
+                        <Button variant="outline" size="icon" onClick={() => goToPage(1)} disabled={currentPage === 1} aria-label="Go to first page">
+                            <ChevronsLeft className="h-4 w-4"/>
+                        </Button>
+                        <Button variant="outline" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
+                            <ChevronLeft className="h-4 w-4 mr-2"/>
+                            Prev
+                        </Button>
                     </div>
                     <div className="flex items-center gap-2">
-                            <Input 
-                            type="number" 
-                            placeholder={`Page...`} 
-                            className="w-20 h-9 text-center"
-                            value={jumpToPageInput}
-                            onChange={(e) => setJumpToPageInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleJumpToPage()}
-                            />
-                            <Button size="sm" onClick={handleJumpToPage}>Go</Button>
+                        <Label htmlFor="jump-to-page" className="text-sm text-muted-foreground whitespace-nowrap">Page</Label>
+                        <Input 
+                        id="jump-to-page"
+                        type="number" 
+                        className="w-20 h-9 text-center"
+                        value={jumpToPageInput}
+                        onChange={(e) => setJumpToPageInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleJumpToPage()}
+                        placeholder={`${currentPage}`}
+                        />
+                        <Button size="sm" onClick={handleJumpToPage}>Go</Button>
                     </div>
                     <div className="flex items-center gap-2">
-                            <Button variant="outline" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === pageNumbers[pageNumbers.length - 1]}>Next <ChevronRight className="h-4 w-4"/></Button>
-                            <Button variant="outline" size="icon" onClick={() => goToPage(pageNumbers[pageNumbers.length - 1])} disabled={currentPage === pageNumbers[pageNumbers.length - 1]}><ChevronsRight className="h-4 w-4"/></Button>
+                        <Button variant="outline" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === pageNumbers[pageNumbers.length - 1]}>
+                            Next
+                            <ChevronRight className="h-4 w-4 ml-2"/>
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => goToPage(pageNumbers[pageNumbers.length - 1])} disabled={currentPage === pageNumbers[pageNumbers.length - 1]} aria-label="Go to last page">
+                            <ChevronsRight className="h-4 w-4"/>
+                        </Button>
                     </div>
                 </div>
             </div>
