@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import parse from 'html-react-parser';
 import Image from 'next/image';
+import { toast } from '@/hooks/use-toast';
 
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk/books/';
 
@@ -71,6 +72,8 @@ export default function BnfPage() {
     const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [jumpToPageInput, setJumpToPageInput] = useState('');
+
 
     // --- Data Fetching ---
     const { data: books, isLoading: isLoadingBooks, isError: isBooksError, error: booksError } = useQuery<BookType[]>({
@@ -143,6 +146,20 @@ export default function BnfPage() {
         if (firstPageOfSection) {
             goToPage(parseInt(firstPageOfSection.page_number, 10));
         }
+    };
+    
+    const handleJumpToPage = () => {
+        const pageNum = parseInt(jumpToPageInput, 10);
+        if (isNaN(pageNum)) {
+            toast({ variant: 'destructive', description: 'Please enter a valid number.' });
+            return;
+        }
+        if (!pageNumbers.includes(pageNum)) {
+            toast({ variant: 'destructive', description: `Page ${pageNum} does not exist.` });
+            return;
+        }
+        goToPage(pageNum);
+        setJumpToPageInput('');
     };
 
 
@@ -227,14 +244,26 @@ export default function BnfPage() {
                             </div>
                         )}
                     </CardContent>
-                    <CardFooter className="flex justify-between items-center">
-                        <Button variant="outline" onClick={() => goToPage(1)} disabled={currentPage === 1}><ChevronsLeft className="h-4 w-4"/></Button>
+                    <CardFooter className="flex flex-col sm:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-2">
-                             <Button variant="outline" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4"/> Prev</Button>
-                             <span className="text-sm font-medium">Page {currentPage}</span>
-                             <Button variant="outline" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === pageNumbers[pageNumbers.length - 1]}>Next <ChevronRight className="h-4 w-4"/></Button>
+                            <Button variant="outline" size="icon" onClick={() => goToPage(1)} disabled={currentPage === 1}><ChevronsLeft className="h-4 w-4"/></Button>
+                            <Button variant="outline" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4"/> Prev</Button>
                         </div>
-                        <Button variant="outline" onClick={() => goToPage(pageNumbers[pageNumbers.length - 1])} disabled={currentPage === pageNumbers[pageNumbers.length - 1]}><ChevronsRight className="h-4 w-4"/></Button>
+                        <div className="flex items-center gap-2">
+                             <Input 
+                                type="number" 
+                                placeholder={`Page...`} 
+                                className="w-20 h-9 text-center"
+                                value={jumpToPageInput}
+                                onChange={(e) => setJumpToPageInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleJumpToPage()}
+                             />
+                             <Button size="sm" onClick={handleJumpToPage}>Go</Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                             <Button variant="outline" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === pageNumbers[pageNumbers.length - 1]}>Next <ChevronRight className="h-4 w-4"/></Button>
+                             <Button variant="outline" size="icon" onClick={() => goToPage(pageNumbers[pageNumbers.length - 1])} disabled={currentPage === pageNumbers[pageNumbers.length - 1]}><ChevronsRight className="h-4 w-4"/></Button>
+                        </div>
                     </CardFooter>
                 </Card>
             </div>
@@ -270,3 +299,4 @@ export default function BnfPage() {
         </div>
     );
 }
+
