@@ -171,7 +171,7 @@ export default function EditPageContentPage() {
                              <div className="space-y-2">
                                 <Label htmlFor="image_file">Upload New Image</Label>
                                  {page.image_url && <div className="relative h-48 w-full border rounded-md overflow-hidden bg-muted"><Image src={page.image_url} alt="Current image" layout="fill" objectFit="contain" /></div>}
-                                <div className="flex items-center gap-2 p-2 border rounded-lg">
+                                <div className="flex items-center gap-2 p-2 border rounded-lg mt-2">
                                     <ImageIcon className="h-5 w-5 text-muted-foreground"/>
                                     <Input id="image_file" type="file" {...form.register('image_file')} className="border-0 shadow-none file:mr-2 file:rounded-full file:bg-primary/10 file:text-primary file:font-semibold file:border-0 file:px-2 file:py-1 file:text-xs"/>
                                 </div>
