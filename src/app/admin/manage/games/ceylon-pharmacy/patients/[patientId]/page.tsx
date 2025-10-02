@@ -79,6 +79,20 @@ export default function PatientDetailsPage() {
         if (!patient) return;
         setPatient(prev => prev ? { ...prev, [field]: value } : null);
     }
+
+    const handlePrescriptionDetailChange = (field: keyof Patient['prescription'], value: any) => {
+        if (!patient) return;
+        setPatient(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                prescription: {
+                    ...prev.prescription,
+                    [field]: value
+                }
+            };
+        });
+    };
     
     const handleSavePatientDetails = () => {
         // In a real app, this would be a mutation to an API
@@ -134,17 +148,30 @@ export default function PatientDetailsPage() {
                            </Link>
                         </Button>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                        {patient.prescription.drugs.map(drug => (
-                            <PrescriptionItem 
-                                key={drug.id} 
-                                patientId={patientId}
-                                drug={drug} 
+                    <CardContent className="space-y-4">
+                         <div className="space-y-2">
+                            <Label htmlFor="total-bill-value">Total Bill Value (LKR)</Label>
+                            <Input 
+                                id="total-bill-value" 
+                                type="number" 
+                                value={patient.prescription.totalBillValue} 
+                                onChange={(e) => handlePrescriptionDetailChange('totalBillValue', Number(e.target.value))}
+                                placeholder="e.g., 1250.00"
                             />
-                        ))}
-                         {patient.prescription.drugs.length === 0 && (
-                            <p className="text-center text-muted-foreground py-8">No drugs in this prescription yet.</p>
-                         )}
+                        </div>
+                        <div className="space-y-3 pt-4 border-t">
+                            <h4 className="font-medium text-sm">Prescribed Drugs</h4>
+                            {patient.prescription.drugs.map(drug => (
+                                <PrescriptionItem 
+                                    key={drug.id} 
+                                    patientId={patientId}
+                                    drug={drug} 
+                                />
+                            ))}
+                            {patient.prescription.drugs.length === 0 && (
+                                <p className="text-center text-muted-foreground py-8">No drugs in this prescription yet.</p>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
             </div>
