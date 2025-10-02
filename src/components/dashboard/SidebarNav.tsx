@@ -17,7 +17,8 @@ import {
   Award,
   CreditCard,
   MoreHorizontal,
-  BookOpen
+  BookOpen,
+  Gamepad2
 } from "lucide-react";
 import {
   Sidebar,
@@ -42,6 +43,8 @@ const navItems = [
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
   { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
   { href: "/dashboard/bnf", label: "BNF", icon: BookOpen },
+  { href: "/dashboard/d-pad", label: "D-Pad", icon: Gamepad2 },
+  { href: "/dashboard/ceylon-pharmacy", label: "Ceylon Pharmacy", icon: Gamepad2 },
   { href: "/dashboard/more", label: "More", icon: MoreHorizontal },
 ];
 

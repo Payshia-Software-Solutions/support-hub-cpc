@@ -7,7 +7,8 @@ import {
   LayoutDashboard,
   Ticket,
   Megaphone, 
-  MoreHorizontal
+  MoreHorizontal,
+  Gamepad2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -16,7 +17,7 @@ import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
-  { href: "/dashboard/announcements", label: "Updates", icon: Megaphone },
+  { href: "/dashboard/d-pad", label: "Games", icon: Gamepad2 },
   { href: "/dashboard/more", label: "More", icon: MoreHorizontal },
 ];
 
