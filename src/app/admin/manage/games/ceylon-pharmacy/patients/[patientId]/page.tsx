@@ -3,163 +3,24 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, User, PlusCircle, Edit, Trash2, MessageSquare } from "lucide-react";
-import { ceylonPharmacyPatients, generalStoreItems, allInstructions as mockAllInstructions, type Patient, type PrescriptionDrug, type PrescriptionFormValues } from '@/lib/ceylon-pharmacy-data';
+import { ceylonPharmacyPatients, allInstructions as mockAllInstructions, type Patient, type PrescriptionDrug, type PrescriptionFormValues } from '@/lib/ceylon-pharmacy-data';
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 
-
-// --- Prescription Drug Form Dialog ---
-const PrescriptionDrugFormDialog = ({
-  isOpen,
-  onOpenChange,
-  onSave,
-  drug,
-}: {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSave: (drugData: PrescriptionDrug) => void;
-  drug: PrescriptionDrug | null;
-}) => {
-  const [formData, setFormData] = useState<PrescriptionDrug>(
-    drug || {
-      id: `new-${Date.now()}`,
-      lines: [],
-      price: 0,
-      correctInstructionIds: [],
-      acceptedFrequencyAnswers: [],
-      correctAnswers: {
-        drugName: '',
-        genericName: '',
-        dosage: '',
-        frequency: '',
-        duration: '',
-        quantity: 0,
-      } as PrescriptionFormValues,
-    }
-  );
-
-  useEffect(() => {
-    if (drug) {
-      setFormData(drug);
-    } else {
-      // Reset for new drug
-      setFormData({
-        id: `new-${Date.now()}`,
-        lines: [],
-        price: 0,
-        correctInstructionIds: [],
-        acceptedFrequencyAnswers: [],
-        correctAnswers: {
-            drugName: '',
-            genericName: '',
-            dosage: '',
-            frequency: '',
-            duration: '',
-            quantity: 0,
-        } as PrescriptionFormValues,
-      });
-    }
-  }, [drug]);
-
-  const handleChange = (field: keyof PrescriptionFormValues, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      correctAnswers: { ...prev.correctAnswers, [field]: value },
-    }));
-  };
-  
-  const handleLinesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const lines = e.target.value.split('\n');
-      setFormData(prev => ({...prev, lines}));
-  }
-
-  const handleInstructionToggle = (instructionId: string) => {
-    setFormData(prev => {
-      const newIds = new Set(prev.correctInstructionIds);
-      if (newIds.has(instructionId)) {
-        newIds.delete(instructionId);
-      } else {
-        newIds.add(instructionId);
-      }
-      return { ...prev, correctInstructionIds: Array.from(newIds) };
-    });
-  };
-
-  const handleSaveChanges = () => {
-    // Basic validation
-    if (!formData.correctAnswers.drugName || !formData.correctAnswers.quantity) {
-        toast({ variant: 'destructive', title: 'Missing required fields', description: 'Drug Name and Quantity are required.' });
-        return;
-    }
-    onSave(formData);
-    onOpenChange(false);
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{drug ? 'Edit' : 'Add'} Prescription Drug</DialogTitle>
-          <DialogDescription>Fill in the details for this medication.</DialogDescription>
-        </DialogHeader>
-        <div className="py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-                <Label>Drug Name</Label>
-                <Input value={formData.correctAnswers.drugName} onChange={(e) => handleChange('drugName', e.target.value)} />
-            </div>
-             <div className="space-y-2">
-                <Label>Generic Name</Label>
-                <Input value={formData.correctAnswers.genericName} onChange={(e) => handleChange('genericName', e.target.value)} />
-            </div>
-             <div className="space-y-2">
-                <Label>Quantity</Label>
-                <Input type="number" value={formData.correctAnswers.quantity} onChange={(e) => handleChange('quantity', Number(e.target.value))} />
-            </div>
-             <div className="space-y-2">
-                <Label>Price (per unit)</Label>
-                <Input type="number" value={formData.price} onChange={(e) => setFormData(p => ({...p, price: Number(e.target.value)}))} />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-                <Label>Prescription Lines (one per line)</Label>
-                <Textarea value={formData.lines.join('\n')} onChange={handleLinesChange} rows={3}/>
-            </div>
-             <div className="space-y-2 md:col-span-2">
-                <Label>Correct Counselling Instructions</Label>
-                <div className="p-3 border rounded-md max-h-48 overflow-y-auto space-y-2">
-                    {mockAllInstructions.map(inst => (
-                        <div key={inst.id} className="flex items-center space-x-2">
-                            <Checkbox 
-                                id={`inst-${inst.id}`} 
-                                checked={formData.correctInstructionIds.includes(inst.id)}
-                                onCheckedChange={() => handleInstructionToggle(inst.id)}
-                            />
-                            <Label htmlFor={`inst-${inst.id}`} className="text-sm font-normal">{inst.text}</Label>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-        <DialogFooter>
-          <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-          <Button onClick={handleSaveChanges}>Save Drug</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-
-// This would be a form in a real application
-const PrescriptionItem = ({ drug, onEdit, onDelete }: { drug: PrescriptionDrug; onEdit: () => void; onDelete: () => void; }) => {
+// This component now only displays the list of drugs and links to edit/add pages.
+const PrescriptionItem = ({ patientId, drug }: { patientId: string; drug: PrescriptionDrug; }) => {
     const correctInstructions = mockAllInstructions.filter(inst => drug.correctInstructionIds.includes(inst.id));
+
+    const handleDeleteDrug = () => {
+        // This would be a mutation in a real app. For now, we'll just show a toast.
+        toast({ title: 'Delete Clicked', description: `Would delete drug: ${drug.correctAnswers.drugName}` });
+    };
 
     return (
         <div className="p-3 border rounded-lg bg-muted/50">
@@ -173,8 +34,12 @@ const PrescriptionItem = ({ drug, onEdit, onDelete }: { drug: PrescriptionDrug; 
                     </div>
                 </div>
                 <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit}><Edit className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={onDelete}><Trash2 className="h-4 w-4" /></Button>
+                    <Button asChild variant="ghost" size="icon" className="h-7 w-7">
+                       <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/prescription/edit/${drug.id}`}>
+                         <Edit className="h-4 w-4" />
+                       </Link>
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={handleDeleteDrug}><Trash2 className="h-4 w-4" /></Button>
                 </div>
             </div>
              <div className="mt-2 pt-2 border-t">
@@ -201,8 +66,6 @@ export default function PatientDetailsPage() {
     const patientId = params.patientId as string;
 
     const [patient, setPatient] = useState<Patient | null>(null);
-    const [isDrugFormOpen, setIsDrugFormOpen] = useState(false);
-    const [selectedDrug, setSelectedDrug] = useState<PrescriptionDrug | null>(null);
 
     useEffect(() => {
         const foundPatient = ceylonPharmacyPatients.find(p => p.id === patientId);
@@ -225,56 +88,12 @@ export default function PatientDetailsPage() {
         toast({ title: 'Patient details saved!' });
     };
 
-    const handleOpenDrugDialog = (drug: PrescriptionDrug | null) => {
-        setSelectedDrug(drug);
-        setIsDrugFormOpen(true);
-    };
-    
-    const handleSaveDrug = (drugData: PrescriptionDrug) => {
-        if (!patient) return;
-
-        setPatient(prev => {
-            if (!prev) return null;
-            
-            const existingIndex = prev.prescription.drugs.findIndex(d => d.id === drugData.id);
-            const newDrugs = [...prev.prescription.drugs];
-
-            if (existingIndex > -1) {
-                newDrugs[existingIndex] = drugData; // Update
-            } else {
-                newDrugs.push(drugData); // Add
-            }
-
-            return { ...prev, prescription: { ...prev.prescription, drugs: newDrugs } };
-        });
-        
-        toast({ title: drugData.id.startsWith('new-') ? 'Drug Added' : 'Drug Updated' });
-    }
-
-    const handleDeleteDrug = (drugId: string) => {
-        if (!patient) return;
-        
-        setPatient(prev => {
-            if (!prev) return null;
-            const newDrugs = prev.prescription.drugs.filter(d => d.id !== drugId);
-            return { ...prev, prescription: { ...prev.prescription, drugs: newDrugs } };
-        });
-        
-        toast({ title: 'Drug removed' });
-    };
-
     if (!patient) {
         return <div className="p-8">Loading...</div>;
     }
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
-             <PrescriptionDrugFormDialog 
-                isOpen={isDrugFormOpen}
-                onOpenChange={setIsDrugFormOpen}
-                drug={selectedDrug}
-                onSave={handleSaveDrug}
-             />
              <header>
                 <Button variant="ghost" onClick={() => router.push('/admin/manage/games/ceylon-pharmacy/patients')} className="-ml-4">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Patient List
@@ -311,17 +130,18 @@ export default function PatientDetailsPage() {
                             <CardTitle>Prescription Management</CardTitle>
                             <CardDescription>Drugs prescribed to {patient.name}.</CardDescription>
                         </div>
-                        <Button variant="outline" onClick={() => handleOpenDrugDialog(null)}>
-                            <PlusCircle className="mr-2 h-4 w-4"/> Add Drug
+                        <Button variant="outline" asChild>
+                           <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/prescription/add`}>
+                             <PlusCircle className="mr-2 h-4 w-4"/> Add Drug
+                           </Link>
                         </Button>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         {patient.prescription.drugs.map(drug => (
                             <PrescriptionItem 
                                 key={drug.id} 
+                                patientId={patientId}
                                 drug={drug} 
-                                onEdit={() => handleOpenDrugDialog(drug)}
-                                onDelete={() => handleDeleteDrug(drug.id)}
                             />
                         ))}
                          {patient.prescription.drugs.length === 0 && (
@@ -333,5 +153,3 @@ export default function PatientDetailsPage() {
         </div>
     );
 }
-
-    
