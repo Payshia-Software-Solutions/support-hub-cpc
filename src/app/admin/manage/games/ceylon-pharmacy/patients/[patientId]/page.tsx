@@ -29,8 +29,6 @@ const PrescriptionItem = ({ patientId, drug }: { patientId: string; drug: Prescr
                     <p className="font-semibold">{drug.correctAnswers.drugName}</p>
                     <div className="text-xs text-muted-foreground space-x-2">
                         <span>Qty: {drug.correctAnswers.quantity}</span>
-                        <span>|</span>
-                        <span>Price: LKR {drug.price.toFixed(2)}</span>
                     </div>
                 </div>
                 <div className="flex gap-1">
