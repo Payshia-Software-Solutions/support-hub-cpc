@@ -15,8 +15,8 @@ export interface PrescriptionFormValues {
   nightQty: string;
   mealType: string;
   usingFrequency: string;
-  bagin: string;
-  payaWarak: string;
+  bagin: string; // Sinhala "බැගින්"
+  payaWarak: string; // Sinhala "පැය __ වරක්"
   additionalInstruction: string;
 };
 
@@ -26,6 +26,7 @@ export interface PrescriptionDrug {
   price: number;
   correctAnswers: PrescriptionFormValues;
   acceptedFrequencyAnswers: string[];
+  correctInstructionIds: string[]; // <-- ADDED THIS FIELD
 }
 
 export interface GeneralStoreItem {
@@ -97,6 +98,7 @@ export const ceylonPharmacyPatients: Patient[] = [
             additionalInstruction: "Monitor blood sugar levels."
           },
           acceptedFrequencyAnswers: ['bd', 'bid', 'twice a day'],
+          correctInstructionIds: ['2'], // Complete the full course
         }
       ]
     }
@@ -138,6 +140,7 @@ export const ceylonPharmacyPatients: Patient[] = [
             additionalInstruction: "Shake well before use."
           },
           acceptedFrequencyAnswers: ['tds', 'tid', 'three times a day'],
+          correctInstructionIds: ['2', '6'], // Complete the course, Finish all medication
         }
       ]
     }
@@ -179,6 +182,7 @@ export const ceylonPharmacyPatients: Patient[] = [
             additionalInstruction: "Take with plenty of water."
           },
           acceptedFrequencyAnswers: ['mane', 'om', 'in the morning'],
+          correctInstructionIds: ['1'], // Take with a full glass of water
         },
         {
           id: 'drug-cp3-2',
@@ -205,6 +209,7 @@ export const ceylonPharmacyPatients: Patient[] = [
             additionalInstruction: "Avoid grapefruit juice."
           },
           acceptedFrequencyAnswers: ['nocte', 'on', 'at night'],
+          correctInstructionIds: ['7'], // None
         }
       ]
     }
