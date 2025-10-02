@@ -1,14 +1,38 @@
 
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, UserPlus, FileText, Settings } from "lucide-react";
+import { ArrowLeft, UserPlus, FileText, Settings, List, MessageSquare, ShoppingBasket, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from 'next/link';
 import { CeylonPharmacyIcon } from "@/components/icons/module-icons";
 
 export default function CeylonPharmacySetupPage() {
     const router = useRouter();
+
+    const managementLinks = [
+        {
+            title: "Manage Patients & Prescriptions",
+            description: "Create and edit patient profiles and their associated prescriptions for the challenges.",
+            href: "/admin/manage/games/ceylon-pharmacy/patients",
+            icon: UserPlus,
+        },
+        {
+            title: "Manage Instructions",
+            description: "Add, edit, or remove the counselling instructions available during the game.",
+            href: "/admin/manage/games/ceylon-pharmacy/instructions",
+            icon: MessageSquare,
+        },
+        {
+            title: "Manage Store Items",
+            description: "Configure the general items available for purchase in the POS system.",
+            href: "/admin/manage/games/ceylon-pharmacy/store-items",
+            icon: ShoppingBasket,
+        }
+    ];
+
+
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
@@ -26,43 +50,22 @@ export default function CeylonPharmacySetupPage() {
                 </div>
             </header>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><UserPlus/> Manage Patients</CardTitle>
-                        <CardDescription>Create and edit patient profiles for the game scenarios.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">Define patient names, ages, and other details used in the challenges.</p>
-                        <Button variant="outline" className="w-full" disabled>Manage Patients</Button>
-                    </CardContent>
-                </Card>
-                 <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><FileText/> Manage Prescriptions</CardTitle>
-                        <CardDescription>Design prescriptions with specific drugs, dosages, and correct answers.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">This is the core of the challenge. Define what the student needs to enter correctly.</p>
-                        <Button variant="outline" className="w-full" disabled>Manage Prescriptions</Button>
-                    </CardContent>
-                </Card>
-                 <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Settings/> Game Settings</CardTitle>
-                        <CardDescription>Adjust global settings like timers and scoring rules.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">Set the time limit for each patient and define how points are awarded.</p>
-                        <Button variant="outline" className="w-full" disabled>Adjust Settings</Button>
-                    </CardContent>
-                </Card>
+               {managementLinks.map(link => (
+                    <Link key={link.href} href={link.href} className="group block h-full">
+                        <Card className="shadow-lg h-full flex flex-col hover:border-primary transition-all">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-lg group-hover:text-primary"><link.icon className="w-5 h-5"/> {link.title}</CardTitle>
+                                <CardDescription>{link.description}</CardDescription>
+                            </CardHeader>
+                             <CardFooter className="mt-auto">
+                                <Button variant="outline" className="w-full">
+                                    Manage <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </Link>
+               ))}
             </div>
-             <Card className="mt-6">
-                <CardHeader>
-                    <CardTitle>Under Construction</CardTitle>
-                    <CardDescription>The full functionality for managing game content will be available here soon.</CardDescription>
-                </CardHeader>
-            </Card>
         </div>
     );
 }
