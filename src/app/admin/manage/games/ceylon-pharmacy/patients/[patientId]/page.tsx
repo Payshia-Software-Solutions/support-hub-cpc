@@ -333,3 +333,5 @@ export default function PatientDetailsPage() {
         </div>
     );
 }
+
+    

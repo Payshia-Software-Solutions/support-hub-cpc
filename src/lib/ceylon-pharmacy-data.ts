@@ -1,4 +1,5 @@
 
+
 export interface PrescriptionFormValues {
   date: string;
   patientName: string;
@@ -26,7 +27,7 @@ export interface PrescriptionDrug {
   price: number;
   correctAnswers: PrescriptionFormValues;
   acceptedFrequencyAnswers: string[];
-  correctInstructionIds: string[]; // <-- ADDED THIS FIELD
+  correctInstructionIds: string[];
 }
 
 export interface GeneralStoreItem {
@@ -225,3 +226,15 @@ export const generalStoreItems: GeneralStoreItem[] = [
     { id: 'gen-6', name: 'Herbal Toothpaste', price: 350.00, category: 'Personal Care' },
     { id: 'gen-7', name: 'Sunscreen SPF 50', price: 1200.00, category: 'Personal Care' },
 ];
+
+export const allInstructions = [
+  { id: '1', text: 'Take with a full glass of water.' },
+  { id: '2', text: 'Complete the full course of medication.' },
+  { id: '3', text: 'May cause drowsiness. Do not operate heavy machinery.' },
+  { id: '4', text: 'Avoid direct sunlight.' },
+  { id: '5', text: 'Take 30 minutes before food.' },
+  { id: '6', text: 'Finish all medication even if you feel better.' },
+  { id: '7', text: 'None' },
+];
+
+    
