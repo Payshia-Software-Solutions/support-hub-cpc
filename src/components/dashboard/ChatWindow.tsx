@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { getChatMessages } from "@/lib/api";
+import { getChatMessages } from "@/lib/actions/tickets";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { Skeleton } from "../ui/skeleton";
 

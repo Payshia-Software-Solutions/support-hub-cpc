@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChatWindow } from "@/components/dashboard/ChatWindow";
 import type { Chat, Message, Attachment } from "@/lib/types";
-import { getChats, createChatMessage, createChat } from "@/lib/api";
+import { getChats, createChatMessage, createChat } from "@/lib/actions/tickets";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MessageSquarePlus, ArrowLeft } from "lucide-react";
