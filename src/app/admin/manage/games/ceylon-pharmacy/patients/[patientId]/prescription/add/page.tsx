@@ -19,7 +19,6 @@ const drugSchema = z.object({
   drugName: z.string().min(1, 'Drug name is required'),
   genericName: z.string().optional(),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
-  price: z.coerce.number().min(0, 'Price cannot be negative'),
   lines: z.string().transform(val => val.split('\n').filter(Boolean)),
   correctInstructionIds: z.array(z.string()).optional(),
 });
@@ -37,7 +36,6 @@ export default function AddPrescriptionDrugPage() {
             drugName: '',
             genericName: '',
             quantity: 1,
-            price: 0,
             lines: '',
             correctInstructionIds: [],
         },
@@ -45,7 +43,6 @@ export default function AddPrescriptionDrugPage() {
 
     const onSubmit = (data: DrugFormValues) => {
         // In a real app, this would be a useMutation call to the API.
-        // We'll simulate it here.
         console.log('Adding new drug to patient:', patientId, data);
         toast({
             title: 'Drug Added!',
@@ -72,7 +69,6 @@ export default function AddPrescriptionDrugPage() {
                         <div className="space-y-2"><Label>Drug Name*</Label><Input {...form.register('drugName')} />{form.formState.errors.drugName && <p className="text-sm text-destructive">{form.formState.errors.drugName.message}</p>}</div>
                         <div className="space-y-2"><Label>Generic Name</Label><Input {...form.register('genericName')} /></div>
                         <div className="space-y-2"><Label>Quantity*</Label><Input type="number" {...form.register('quantity')} />{form.formState.errors.quantity && <p className="text-sm text-destructive">{form.formState.errors.quantity.message}</p>}</div>
-                        <div className="space-y-2"><Label>Price (per unit)*</Label><Input type="number" step="0.01" {...form.register('price')} />{form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}</div>
                         <div className="md:col-span-2 space-y-2"><Label>Prescription Lines (one per line)</Label><Textarea {...form.register('lines')} rows={3}/></div>
                         <div className="md:col-span-2 space-y-2">
                             <Label>Correct Counselling Instructions</Label>

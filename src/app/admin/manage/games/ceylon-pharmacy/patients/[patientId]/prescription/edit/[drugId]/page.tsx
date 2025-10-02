@@ -20,7 +20,6 @@ const drugSchema = z.object({
   drugName: z.string().min(1, 'Drug name is required'),
   genericName: z.string().optional(),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
-  price: z.coerce.number().min(0, 'Price cannot be negative'),
   lines: z.string().transform(val => val.split('\n').filter(Boolean)),
   correctInstructionIds: z.array(z.string()).optional(),
 });
@@ -43,7 +42,6 @@ export default function EditPrescriptionDrugPage() {
             drugName: '',
             genericName: '',
             quantity: 1,
-            price: 0,
             lines: '',
             correctInstructionIds: [],
         },
@@ -55,7 +53,6 @@ export default function EditPrescriptionDrugPage() {
                 drugName: drugToEdit.correctAnswers.drugName,
                 genericName: drugToEdit.correctAnswers.genericName,
                 quantity: drugToEdit.correctAnswers.quantity,
-                price: drugToEdit.price,
                 lines: drugToEdit.lines.join('\n'),
                 correctInstructionIds: drugToEdit.correctInstructionIds,
             });
@@ -97,7 +94,6 @@ export default function EditPrescriptionDrugPage() {
                         <div className="space-y-2"><Label>Drug Name*</Label><Input {...form.register('drugName')} />{form.formState.errors.drugName && <p className="text-sm text-destructive">{form.formState.errors.drugName.message}</p>}</div>
                         <div className="space-y-2"><Label>Generic Name</Label><Input {...form.register('genericName')} /></div>
                         <div className="space-y-2"><Label>Quantity*</Label><Input type="number" {...form.register('quantity')} />{form.formState.errors.quantity && <p className="text-sm text-destructive">{form.formState.errors.quantity.message}</p>}</div>
-                        <div className="space-y-2"><Label>Price (per unit)*</Label><Input type="number" step="0.01" {...form.register('price')} />{form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}</div>
                         <div className="md:col-span-2 space-y-2"><Label>Prescription Lines (one per line)</Label><Textarea {...form.register('lines')} rows={3}/></div>
                         <div className="md:col-span-2 space-y-2">
                             <Label>Correct Counselling Instructions</Label>
@@ -129,4 +125,3 @@ export default function EditPrescriptionDrugPage() {
         </div>
     );
 }
-
