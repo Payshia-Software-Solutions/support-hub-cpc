@@ -326,6 +326,21 @@ export default function CertificateOrdersListPage() {
         const allCourseIds = [...currentCourses, ...newEligibleCourseIds];
         updateCourses({ orderId: orderToUpdate.id, courseCodes: allCourseIds.join(',') });
     };
+
+    const handlePageInputChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            const pageNum = parseInt(e.currentTarget.value, 10);
+            if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+                setCurrentPage(pageNum);
+            } else {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Invalid Page Number',
+                    description: `Please enter a number between 1 and ${totalPages}.`
+                });
+            }
+        }
+    };
     
     if (isLoadingOrders) return <div className="p-8"><Skeleton className="h-64 w-full" /></div>;
     if (isError) {
@@ -466,7 +481,23 @@ export default function CertificateOrdersListPage() {
                     {(isLoadingStudentData && paginatedOrders.length > 0) && <div className="text-center py-4 text-sm text-muted-foreground flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin"/> Loading student data...</div>}
                     {paginatedOrders.length === 0 && <div className="text-center py-10"><p className="text-muted-foreground">No orders found.</p></div>}
                 </CardContent>
-                {totalPages > 1 && <CardFooter className="flex items-center justify-center space-x-2 pt-6"><Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>Previous</Button><span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</span><Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>Next</Button></CardFooter>}
+                {totalPages > 1 && (
+                    <CardFooter className="flex items-center justify-center space-x-2 pt-6">
+                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>Previous</Button>
+                        <div className="flex items-center justify-center text-sm font-medium">
+                            Page
+                            <Input
+                                key={currentPage}
+                                type="number"
+                                defaultValue={currentPage}
+                                onKeyDown={handlePageInputChange}
+                                className="h-8 w-12 mx-2 text-center"
+                            />
+                            of {totalPages}
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>Next</Button>
+                    </CardFooter>
+                )}
             </Card>
         </div>
     );
