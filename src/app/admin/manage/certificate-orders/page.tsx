@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy, Trash2, Printer } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
@@ -339,6 +339,12 @@ export default function CertificateOrdersListPage() {
         );
     }
 
+    const getStatusVariant = (status: string) => {
+        if (status?.toLowerCase() === 'printed') return 'default';
+        if (status?.toLowerCase() === 'generated') return 'secondary';
+        return 'outline';
+    }
+
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header><h1 className="text-3xl font-headline font-semibold">Certificate Orders</h1><p className="text-muted-foreground">View all certificate orders and check student eligibility.</p></header>
@@ -413,7 +419,7 @@ export default function CertificateOrdersListPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="relative w-full overflow-auto border rounded-lg hidden md:block">
-                        <Table><TableHeader><TableRow><TableHead>Order ID</TableHead><TableHead>Student</TableHead><TableHead>Course(s)</TableHead><TableHead>Cert Status</TableHead><TableHead>Convocation Status</TableHead><TableHead>Order Date</TableHead><TableHead>Eligibility</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                        <Table><TableHeader><TableRow><TableHead>Order ID</TableHead><TableHead>Student</TableHead><TableHead>Course(s)</TableHead><TableHead>Cert Status</TableHead><TableHead>Print Status</TableHead><TableHead>Convocation Status</TableHead><TableHead>Order Date</TableHead><TableHead>Eligibility</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {paginatedOrders.map(order => (
                                     <TableRow key={order.id}>
@@ -421,6 +427,11 @@ export default function CertificateOrdersListPage() {
                                         <TableCell className="font-medium"><p>{order.created_by}</p><p className="text-xs text-muted-foreground">{order.name_on_certificate}</p></TableCell>
                                         <TableCell>{order.course_code}</TableCell>
                                         <TableCell><div className="flex flex-wrap gap-2 items-center">{order.course_code.split(',').map(code => <CertificateStatusCell key={code.trim()} order={order} studentDataMap={studentDataMap} />)}</div></TableCell>
+                                        <TableCell>
+                                            <Badge variant={getStatusVariant(order.print_status)}>
+                                                {order.print_status || 'N/A'}
+                                            </Badge>
+                                        </TableCell>
                                         <TableCell><ConvocationStatusCell studentNumber={order.created_by} /></TableCell>
                                         <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell><OrderActionsCell order={order} onUpdateClick={() => openUpdateDialog(order)} studentData={studentDataMap.get(order.created_by)?.studentData} balanceData={studentDataMap.get(order.created_by)?.balanceData} isLoading={isLoadingStudentData && !studentDataMap.has(order.created_by)} /></TableCell>
@@ -438,7 +449,8 @@ export default function CertificateOrdersListPage() {
                             <div key={order.id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
                                 <div className="flex justify-between items-start"><div><p className="font-bold">{order.created_by}</p><p className="text-sm text-muted-foreground">{order.name_on_certificate}</p></div><div className="text-right text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</div></div>
                                 <div className="text-sm space-y-2 pt-2 border-t">
-                                    <div className="flex items-center justify-between"><p className="text-muted-foreground font-medium">Status</p><Badge variant="secondary">{order.certificate_status}</Badge></div>
+                                    <div className="flex items-center justify-between"><p className="text-muted-foreground font-medium">Order Status</p><Badge variant={order.certificate_status === 'Delivered' ? 'default' : 'secondary'}>{order.certificate_status}</Badge></div>
+                                    <div className="flex items-center justify-between"><p className="text-muted-foreground font-medium">Print Status</p><Badge variant={getStatusVariant(order.print_status)}>{order.print_status || 'N/A'}</Badge></div>
                                     <div className="flex items-start justify-between"><p className="text-muted-foreground font-medium shrink-0 pr-2">Convocation</p><ConvocationStatusCell studentNumber={order.created_by} /></div>
                                     <div className="flex flex-col items-start justify-between"><p className="text-muted-foreground font-medium mb-1">Course(s)</p><div className="flex flex-wrap gap-1">{order.course_code.split(',').map(code => <Badge key={code.trim()} variant="outline">{code.trim()}</Badge>)}</div></div>
                                     <div className="flex items-start justify-between"><p className="text-muted-foreground font-medium shrink-0 pr-2">Certificates</p><div className="text-right flex flex-wrap gap-1 justify-end">{order.course_code.split(',').map(code => <CertificateStatusCell key={code.trim()} order={order} studentDataMap={studentDataMap} />)}</div></div>
