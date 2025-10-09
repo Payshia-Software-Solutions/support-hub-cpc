@@ -5,13 +5,14 @@ import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, 
 import Link from "next/link";
 import { useMemo } from 'react';
 import { cn } from "@/lib/utils";
+import { CeylonPharmacyIcon, DPadIcon, HunterProIcon, LuckyWheelIcon, PharmaHunterIcon, PharmaReaderIcon, WinPharmaIcon, WordPalletIcon } from "@/components/icons/module-icons";
 
 type ManagementTask = {
     title: string;
     description: string;
     icon: React.ReactElement;
     href: string;
-    category: 'Student Management' | 'Financial' | 'Content & System' | 'Certificates & Convocation';
+    category: 'Student Management' | 'Financial' | 'Content & System' | 'Certificates & Convocation' | 'Games Management';
 };
 
 const managementTasks: ManagementTask[] = [
@@ -170,8 +171,8 @@ const managementTasks: ManagementTask[] = [
     category: "Student Management"
   },
   {
-    title: "BNF Management",
-    description: "Add, edit, and manage BNF content.",
+    title: "Books Management",
+    description: "Add, edit, and manage book index.",
     icon: <BookOpen className="w-8 h-8 text-white" />,
     href: "/admin/manage/bnf",
     category: "Content & System"
@@ -204,6 +205,49 @@ const managementTasks: ManagementTask[] = [
     href: "/admin/settings",
     category: "Content & System"
   },
+  // Game Management
+  {
+    title: "Ceylon Pharmacy",
+    description: "Manage Ceylon Pharmacy game settings.",
+    icon: <CeylonPharmacyIcon className="w-8 h-8 text-white" />,
+    href: "/admin/manage/games/ceylon-pharmacy",
+    category: "Games Management"
+  },
+  {
+    title: "Pharma Hunter",
+    description: "Manage Pharma Hunter game settings.",
+    icon: <PharmaHunterIcon className="w-8 h-8 text-white" />,
+    href: "/admin/manage/games/pharma-hunter",
+    category: "Games Management"
+  },
+   {
+    title: "Pharma Hunter Pro",
+    description: "Manage Pharma Hunter Pro game settings.",
+    icon: <HunterProIcon className="w-8 h-8 text-white" />,
+    href: "/admin/manage/games/pharma-hunter-pro",
+    category: "Games Management"
+  },
+  {
+    title: "WinPharma",
+    description: "Manage WinPharma game settings.",
+    icon: <WinPharmaIcon className="w-8 h-8 text-white" />,
+    href: "/admin/manage/games/winpharma",
+    category: "Games Management"
+  },
+  {
+    title: "Pharma Reader",
+    description: "Manage Pharma Reader game settings.",
+    icon: <PharmaReaderIcon className="w-8 h-8 text-white" />,
+    href: "/admin/manage/games/pharma-reader",
+    category: "Games Management"
+  },
+  {
+    title: "Word Pallet",
+    description: "Manage Word Pallet game settings.",
+    icon: <WordPalletIcon className="w-8 h-8 text-white" />,
+    href: "/admin/manage/games/word-pallet",
+    category: "Games Management"
+  },
 ];
 
 const categoryColors: Record<ManagementTask['category'], string> = {
@@ -211,6 +255,7 @@ const categoryColors: Record<ManagementTask['category'], string> = {
     'Certificates & Convocation': 'from-purple-400 to-pink-500',
     'Financial': 'from-green-400 to-teal-500',
     'Content & System': 'from-orange-400 to-rose-500',
+    'Games Management': 'from-yellow-400 to-amber-500',
 }
 
 const TaskCard = ({ task }: { task: ManagementTask }) => (
@@ -244,6 +289,7 @@ export default function AdminManagePage() {
 
     const categoryOrder: (keyof typeof groupedTasks)[] = [
         'Student Management',
+        'Games Management',
         'Certificates & Convocation',
         'Financial',
         'Content & System'
@@ -259,17 +305,19 @@ export default function AdminManagePage() {
       
       <div className="space-y-10">
         {categoryOrder.map(category => (
-            <section key={category}>
-                <div className="flex items-center gap-3 mb-4">
-                    <UserCog className="h-6 w-6 text-primary" />
-                    <h2 className="text-2xl font-semibold font-headline">{category}</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {groupedTasks[category].sort((a,b) => a.title.localeCompare(b.title)).map(task => (
-                        <TaskCard key={task.href} task={task} />
-                    ))}
-                </div>
-            </section>
+            groupedTasks[category] && (
+                <section key={category}>
+                    <div className="flex items-center gap-3 mb-4">
+                        <UserCog className="h-6 w-6 text-primary" />
+                        <h2 className="text-2xl font-semibold font-headline">{category}</h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {groupedTasks[category].sort((a,b) => a.title.localeCompare(b.title)).map(task => (
+                            <TaskCard key={task.href} task={task} />
+                        ))}
+                    </div>
+                </section>
+            )
         ))}
       </div>
     </div>

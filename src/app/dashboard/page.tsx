@@ -12,8 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, Award, Library, BookOpen, FileText } from "lucide-react";
+import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, Award, Library, BookOpen, FileText, Gamepad2 } from "lucide-react";
 import { UnreadBadge } from "@/components/dashboard/UnreadBadge";
+import { CeylonPharmacyIcon, DPadIcon, HunterProIcon, LuckyWheelIcon, PharmaHunterIcon, PharmaReaderIcon, WinPharmaIcon, WordPalletIcon } from "@/components/icons/module-icons";
 
 // --- Sub Components ---
 const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boolean }) => {
@@ -66,6 +67,23 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
     );
 };
 
+const QuickActionCard = ({ title, description, href, icon, colorClass }: { title: string, description: string, href: string, icon: React.ReactNode, colorClass: string }) => (
+    <Link href={href} className="group block">
+        <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
+            <CardContent className="p-4 flex items-center gap-4">
+                <div className={`p-3 rounded-lg bg-gradient-to-br ${colorClass}`}>
+                    {icon}
+                </div>
+                <div className="flex-1">
+                    <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{title}</h3>
+                    <p className="text-sm text-muted-foreground">{description}</p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
+            </CardContent>
+        </Card>
+    </Link>
+);
+
 
 // --- Main Page Component ---
 export default function StudentDashboardPage() {
@@ -96,58 +114,26 @@ export default function StudentDashboardPage() {
                     </Avatar>
                     <div className="flex-grow">
                         <h1 className="text-2xl font-bold font-headline">Welcome back, {user?.name?.split(' ')[0]}!</h1>
-                        <p className="text-muted-foreground">Here's a summary of your support tickets.</p>
+                        <p className="text-muted-foreground">Here's a summary of your support tickets and available modules.</p>
                     </div>
                 </div>
             </Card>
+            
+             <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-400">
+                 <h2 className="text-2xl font-semibold font-headline mb-4">Games & Challenges</h2>
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                     <QuickActionCard title="Ceylon Pharmacy" description="Patient simulation game." href="/dashboard/ceylon-pharmacy" icon={<CeylonPharmacyIcon className="w-8 h-8 text-white"/>} colorClass="from-cyan-400 to-sky-500" />
+                     <QuickActionCard title="D-Pad Challenge" description="Dispensing accuracy test." href="/dashboard/d-pad" icon={<DPadIcon className="w-8 h-8 text-white"/>} colorClass="from-rose-400 to-red-500" />
+                     <QuickActionCard title="Sentence Builder" description="English language practice." href="/dashboard/games/sentence-builder" icon={<BookOpen className="w-8 h-8 text-white"/>} colorClass="from-amber-400 to-orange-500" />
+                 </div>
+            </section>
 
             <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-150">
                 <h2 className="text-2xl font-semibold font-headline mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <Link href="/dashboard/create-ticket" className="group block">
-                        <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
-                            <CardContent className="p-4 flex items-center gap-4">
-                                <div className="p-3 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500">
-                                    <PlusCircle className="w-8 h-8 text-white" />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">Create Ticket</h3>
-                                    <p className="text-sm text-muted-foreground">Open a new support request for any issue.</p>
-                                </div>
-                                <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
-                            </CardContent>
-                        </Card>
-                    </Link>
-                    <Link href="/dashboard/certificate-order" className="group block">
-                      <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
-                        <CardContent className="p-4 flex items-center gap-4">
-                          <div className="p-3 rounded-lg bg-gradient-to-br from-green-400 to-teal-500">
-                            <Award className="w-8 h-8 text-white" />
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">Order Certificate</h3>
-                            <p className="text-sm text-muted-foreground">Request official certificates for completed courses.</p>
-                          </div>
-                          <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
-                        </CardContent>
-                      </Card>
-                    </Link>
-                    {user?.role === 'staff' && (
-                        <Link href="/dashboard/bnf" className="group block">
-                            <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
-                                <CardContent className="p-4 flex items-center gap-4">
-                                    <div className="p-3 rounded-lg bg-gradient-to-br from-red-400 to-rose-500">
-                                        <BookOpen className="w-8 h-8 text-white" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">BNF</h3>
-                                        <p className="text-sm text-muted-foreground">Access the British National Formulary tasks.</p>
-                                    </div>
-                                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
-                                    </CardContent>
-                                </Card>
-                        </Link>
-                    )}
+                     <QuickActionCard title="Create Ticket" description="Open a new support request for any issue." href="/dashboard/create-ticket" icon={<PlusCircle className="w-8 h-8 text-white" />} colorClass="from-blue-400 to-indigo-500" />
+                     <QuickActionCard title="Order Certificate" description="Request official certificates for completed courses." href="/dashboard/certificate-order" icon={<Award className="w-8 h-8 text-white" />} colorClass="from-green-400 to-teal-500" />
+                     <QuickActionCard title="BNF" description="Access the British National Formulary." href="/dashboard/bnf" icon={<BookOpen className="w-8 h-8 text-white" />} colorClass="from-red-400 to-rose-500" />
                 </div>
             </section>
             

@@ -45,6 +45,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="https://content-provider.pharmacollege.lk/app-icon/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="https://content-provider.pharmacollege.lk/app-icon/favicon-16x16.png" />
         <link rel="shortcut icon" href="https://content-provider.pharmacollege.lk/app-icon/favicon.ico" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={cn("font-body antialiased", ptSans.variable)}>
         <ThemeProvider

@@ -12,7 +12,8 @@ import {
   ChevronRight,
   LogOut,
   Moon,
-  Sun
+  Sun,
+  BookOpen,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,6 +29,7 @@ export default function MorePage() {
     { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
     { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
     { href: "/dashboard/certificate-order", label: "Certificate Order", icon: Award },
+    { href: "/dashboard/bnf", label: "BNF", icon: BookOpen },
   ];
 
   const adminNavItem = { href: "/admin/dashboard", label: "Admin Panel", icon: Shield };
