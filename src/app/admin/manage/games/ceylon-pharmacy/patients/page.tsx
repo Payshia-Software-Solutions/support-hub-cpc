@@ -7,22 +7,94 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, User, PlusCircle } from "lucide-react";
 import Link from 'next/link';
-import { ceylonPharmacyPatients } from '@/lib/ceylon-pharmacy-data'; // Using mock data
+import { ceylonPharmacyPatients } from '@/lib/ceylon-pharmacy-data';
 import type { Patient } from '@/lib/ceylon-pharmacy-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+const AddPatientDialog = ({ onAddPatient }: { onAddPatient: (patient: Patient) => void }) => {
+    const [name, setName] = useState('');
+    const [age, setAge] = useState('');
+    const [initialTime, setInitialTime] = useState('300');
+
+    const handleAdd = () => {
+        if (!name.trim() || !age.trim() || !initialTime.trim()) {
+            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please fill out all fields.' });
+            return;
+        }
+
+        const newPatient: Patient = {
+            id: `patient-${Date.now()}`,
+            name,
+            age: `${age} Years`,
+            status: 'waiting',
+            initialTime: parseInt(initialTime, 10),
+            prescription: {
+                id: `rx-${Date.now()}`,
+                doctor: { name: 'Dr. Placeholder', specialty: 'General Practice', regNo: '00000' },
+                patient: { name, age },
+                date: new Date().toISOString().split('T')[0],
+                drugs: [],
+                totalBillValue: 0,
+            },
+        };
+        onAddPatient(newPatient);
+    };
+
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Add New Patient</DialogTitle>
+                <DialogDescription>Create a new patient profile for the Ceylon Pharmacy game.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="patient-name">Patient Name</Label>
+                    <Input id="patient-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Nimal Silva" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="patient-age">Age</Label>
+                        <Input id="patient-age" type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="e.g., 45" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="initial-time">Initial Time (seconds)</Label>
+                        <Input id="initial-time" type="number" value={initialTime} onChange={(e) => setInitialTime(e.target.value)} placeholder="e.g., 300" />
+                    </div>
+                </div>
+            </div>
+            <DialogFooter>
+                <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                    <Button onClick={handleAdd}>Add Patient</Button>
+                </DialogClose>
+            </DialogFooter>
+        </DialogContent>
+    );
+};
+
 
 export default function ManagePatientsPage() {
     const router = useRouter();
     const [patients, setPatients] = useState<Patient[]>(ceylonPharmacyPatients);
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-    const handleAddNew = () => {
-        // In a real app, this would likely navigate to a 'new' page or open a creation dialog
-        toast({ title: "Coming Soon!", description: "Functionality to add new patients will be implemented." });
+    const handleAddPatient = (newPatient: Patient) => {
+        setPatients(prev => [newPatient, ...prev]);
+        toast({ title: "Patient Added", description: `${newPatient.name} has been added to the list.` });
     };
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <AddPatientDialog onAddPatient={handleAddPatient} />
+            </Dialog>
+
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
                     <Button variant="ghost" onClick={() => router.push('/admin/manage/games/ceylon-pharmacy')} className="-ml-4">
@@ -31,7 +103,7 @@ export default function ManagePatientsPage() {
                     <h1 className="text-3xl font-headline font-semibold mt-2">Manage Patients & Prescriptions</h1>
                     <p className="text-muted-foreground">Select a patient to view or edit their profile and prescription details.</p>
                 </div>
-                <Button onClick={handleAddNew}>
+                <Button onClick={() => setIsAddDialogOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Add New Patient
                 </Button>
             </header>
