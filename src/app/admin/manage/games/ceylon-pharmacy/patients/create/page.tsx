@@ -71,41 +71,39 @@ export default function CreatePatientPage() {
                 <p className="text-muted-foreground">Fill in the patient and initial prescription details.</p>
             </header>
             
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                <Card className="lg:col-span-2 shadow-lg">
-                    <CardHeader>
-                        <CardTitle>Patient & Prescription Information</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-4 p-4 border rounded-lg">
-                             <h4 className="font-semibold text-md">Patient Details</h4>
-                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                 <div className="space-y-1"><Label>Patient Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Nimal Silva" /></div>
-                                 <div className="space-y-1"><Label>Age</Label><Input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="e.g., 45" /></div>
-                                 <div className="space-y-1"><Label>Initial Time (sec)</Label><Input type="number" value={initialTime} onChange={(e) => setInitialTime(e.target.value)} /></div>
-                            </div>
-                             <div className="space-y-1"><Label>Address</Label><Textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Patient's address" rows={2}/></div>
-                             <div className="space-y-1"><Label>Patient Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Any relevant patient notes..." rows={2}/></div>
+             <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle>Patient & Prescription Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-4 p-4 border rounded-lg">
+                         <h4 className="font-semibold text-md">Patient Details</h4>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                             <div className="space-y-1"><Label htmlFor="p-name">Patient Name</Label><Input id="p-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Nimal Silva" /></div>
+                             <div className="space-y-1"><Label htmlFor="p-age">Age</Label><Input id="p-age" type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="e.g., 45" /></div>
+                             <div className="space-y-1"><Label htmlFor="p-time">Initial Time (sec)</Label><Input id="p-time" type="number" value={initialTime} onChange={(e) => setInitialTime(e.target.value)} /></div>
                         </div>
+                         <div className="space-y-1"><Label htmlFor="p-address">Address</Label><Textarea id="p-address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Patient's address" rows={2}/></div>
+                         <div className="space-y-1"><Label htmlFor="p-desc">Patient Description</Label><Textarea id="p-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Any relevant patient notes..." rows={2}/></div>
+                    </div>
 
-                        <div className="space-y-4 p-4 border rounded-lg">
-                            <h4 className="font-semibold text-md">Initial Prescription Details</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1"><Label>Prescription Name</Label><Input value={prescriptionName} onChange={(e) => setPrescriptionName(e.target.value)} placeholder="e.g., Weekly Medication" /></div>
-                                 <div className="space-y-1"><Label>Doctor's Name</Label><Input value={doctorName} onChange={(e) => setDoctorName(e.target.value)} placeholder="e.g., Dr. Perera" /></div>
-                            </div>
-                             <div className="space-y-1"><Label>Prescription Notes</Label><Textarea value={prescriptionNotes} onChange={(e) => setPrescriptionNotes(e.target.value)} placeholder="e.g., Review after 1 week" rows={2}/></div>
+                    <div className="space-y-4 p-4 border rounded-lg">
+                        <h4 className="font-semibold text-md">Initial Prescription Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1"><Label htmlFor="rx-name">Prescription Name</Label><Input id="rx-name" value={prescriptionName} onChange={(e) => setPrescriptionName(e.target.value)} placeholder="e.g., Weekly Medication" /></div>
+                             <div className="space-y-1"><Label htmlFor="rx-doc">Doctor's Name</Label><Input id="rx-doc" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} placeholder="e.g., Dr. Perera" /></div>
                         </div>
+                         <div className="space-y-1"><Label htmlFor="rx-notes">Prescription Notes</Label><Textarea id="rx-notes" value={prescriptionNotes} onChange={(e) => setPrescriptionNotes(e.target.value)} placeholder="e.g., Review after 1 week" rows={2}/></div>
+                    </div>
 
-                    </CardContent>
-                    <CardFooter>
-                        <Button onClick={handleSave}>
-                            <Save className="mr-2 h-4 w-4" />
-                            Save Patient
-                        </Button>
-                    </CardFooter>
-                </Card>
-            </div>
+                </CardContent>
+                <CardFooter>
+                    <Button onClick={handleSave}>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Patient
+                    </Button>
+                </CardFooter>
+            </Card>
         </div>
     );
 }
