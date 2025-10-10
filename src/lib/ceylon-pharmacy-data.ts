@@ -38,6 +38,8 @@ export interface GeneralStoreItem {
 
 export interface Prescription {
   id: string;
+  name: string; // prescription_name
+  status: string; // prescription_status
   doctor: {
     name: string;
     specialty: string;
@@ -48,6 +50,8 @@ export interface Prescription {
     age: string;
   };
   date: string;
+  method: string; // Pres_Method
+  notes?: string;
   drugs: PrescriptionDrug[];
   totalBillValue: number;
 }
@@ -58,8 +62,13 @@ export interface Patient {
   age: string;
   status: 'waiting' | 'recovered' | 'dead';
   initialTime: number; // in seconds
+  description?: string; // patient_description
+  address?: string;
+  createdBy?: string;
+  createdAt?: string;
   prescription: Prescription;
 }
+
 
 export const allInstructions = [
   { id: '1', text: 'Take with a full glass of water.' },
@@ -80,9 +89,12 @@ export const ceylonPharmacyPatients: Patient[] = [
     initialTime: 300, // 5 minutes
     prescription: {
       id: 'rx-cp1',
+      name: "Metformin Treatment",
+      status: "Active",
       doctor: { name: 'Dr. S. Perera', specialty: 'General Physician', regNo: '11223' },
       patient: { name: 'Nimal Silva', age: '45' },
       date: '2024-08-01',
+      method: 'Standard',
       totalBillValue: 930.00,
       drugs: [
         {
@@ -122,9 +134,12 @@ export const ceylonPharmacyPatients: Patient[] = [
     initialTime: 240, // 4 minutes
     prescription: {
       id: 'rx-cp2',
+      name: "Antibiotic Course",
+      status: "Active",
       doctor: { name: 'Dr. K. Fernando', specialty: 'Pediatrician', regNo: '44556' },
       patient: { name: 'Saman Kumara', age: '32' },
       date: '2024-08-01',
+      method: 'Standard',
       totalBillValue: 250.00,
       drugs: [
         {
@@ -164,9 +179,12 @@ export const ceylonPharmacyPatients: Patient[] = [
     initialTime: 360, // 6 minutes
     prescription: {
       id: 'rx-cp3',
+      name: "Cardiovascular Care",
+      status: "Active",
       doctor: { name: 'Dr. T. Rajapakse', specialty: 'Cardiologist', regNo: '77889' },
       patient: { name: 'Fathima Rizvi', age: '55' },
       date: '2024-08-01',
+      method: 'Standard',
       totalBillValue: 1057.50,
       drugs: [
         {

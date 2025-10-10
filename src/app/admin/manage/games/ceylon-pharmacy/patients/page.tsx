@@ -5,24 +5,33 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, User, PlusCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, User, PlusCircle, ChevronDown, UserPlus } from "lucide-react";
 import Link from 'next/link';
 import { ceylonPharmacyPatients } from '@/lib/ceylon-pharmacy-data';
-import type { Patient } from '@/lib/ceylon-pharmacy-data';
+import type { Patient, Prescription } from '@/lib/ceylon-pharmacy-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
 
-const AddPatientDialog = ({ onAddPatient }: { onAddPatient: (patient: Patient) => void }) => {
+
+const AddPatientForm = ({ onAddPatient }: { onAddPatient: (patient: Patient) => void }) => {
     const [name, setName] = useState('');
     const [age, setAge] = useState('');
     const [initialTime, setInitialTime] = useState('300');
+    const [description, setDescription] = useState('');
+    const [address, setAddress] = useState('');
+    const [prescriptionName, setPrescriptionName] = useState('');
+    const [doctorName, setDoctorName] = useState('');
+    const [prescriptionNotes, setPrescriptionNotes] = useState('');
+    const [isOpen, setIsOpen] = useState(false);
 
     const handleAdd = () => {
-        if (!name.trim() || !age.trim() || !initialTime.trim()) {
-            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please fill out all fields.' });
+        if (!name.trim() || !age.trim() || !initialTime.trim() || !prescriptionName.trim() || !doctorName.trim()) {
+            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please fill out all required fields.' });
             return;
         }
 
@@ -32,49 +41,78 @@ const AddPatientDialog = ({ onAddPatient }: { onAddPatient: (patient: Patient) =
             age: `${age} Years`,
             status: 'waiting',
             initialTime: parseInt(initialTime, 10),
+            description: description,
+            address: address,
+            createdBy: 'admin', // Placeholder
+            createdAt: new Date().toISOString(),
             prescription: {
                 id: `rx-${Date.now()}`,
-                doctor: { name: 'Dr. Placeholder', specialty: 'General Practice', regNo: '00000' },
+                name: prescriptionName,
+                status: "Active",
+                doctor: { name: doctorName, specialty: 'General Practice', regNo: '00000' },
                 patient: { name, age },
                 date: new Date().toISOString().split('T')[0],
+                method: 'Standard',
+                notes: prescriptionNotes,
                 drugs: [],
                 totalBillValue: 0,
             },
         };
         onAddPatient(newPatient);
+        // Reset form
+        setName('');
+        setAge('');
+        setInitialTime('300');
+        setDescription('');
+        setAddress('');
+        setPrescriptionName('');
+        setDoctorName('');
+        setPrescriptionNotes('');
+        setIsOpen(false);
     };
 
     return (
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Add New Patient</DialogTitle>
-                <DialogDescription>Create a new patient profile for the Ceylon Pharmacy game.</DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="patient-name">Patient Name</Label>
-                    <Input id="patient-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Nimal Silva" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="patient-age">Age</Label>
-                        <Input id="patient-age" type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="e.g., 45" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="initial-time">Initial Time (seconds)</Label>
-                        <Input id="initial-time" type="number" value={initialTime} onChange={(e) => setInitialTime(e.target.value)} placeholder="e.g., 300" />
-                    </div>
-                </div>
-            </div>
-            <DialogFooter>
-                <DialogClose asChild>
-                    <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <DialogClose asChild>
-                    <Button onClick={handleAdd}>Add Patient</Button>
-                </DialogClose>
-            </DialogFooter>
-        </DialogContent>
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+            <Card className="shadow-none border-dashed">
+                <CardHeader className="p-4">
+                    <CollapsibleTrigger asChild>
+                        <div className="flex justify-between items-center cursor-pointer">
+                             <div className="flex items-center gap-3">
+                                <UserPlus className="w-8 h-8 text-primary" />
+                                <div>
+                                    <CardTitle className="text-lg">Add New Patient</CardTitle>
+                                    <CardDescription>Click to expand and create a new patient profile.</CardDescription>
+                                </div>
+                            </div>
+                            <ChevronDown className={cn("h-5 w-5 transition-transform", isOpen && "rotate-180")} />
+                        </div>
+                    </CollapsibleTrigger>
+                </CardHeader>
+                <CollapsibleContent>
+                    <CardContent className="p-4 space-y-4">
+                        <h4 className="font-semibold text-md">Patient Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                             <div className="space-y-1"><Label>Patient Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Nimal Silva" /></div>
+                             <div className="space-y-1"><Label>Age</Label><Input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="e.g., 45" /></div>
+                             <div className="space-y-1"><Label>Initial Time (sec)</Label><Input type="number" value={initialTime} onChange={(e) => setInitialTime(e.target.value)} /></div>
+                        </div>
+                         <div className="space-y-1"><Label>Address</Label><Textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Patient's address" rows={2}/></div>
+                         <div className="space-y-1"><Label>Patient Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Any relevant patient notes..." rows={2}/></div>
+                        
+                        <h4 className="font-semibold text-md pt-4 border-t">Prescription Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1"><Label>Prescription Name</Label><Input value={prescriptionName} onChange={(e) => setPrescriptionName(e.target.value)} placeholder="e.g., Weekly Medication" /></div>
+                             <div className="space-y-1"><Label>Doctor's Name</Label><Input value={doctorName} onChange={(e) => setDoctorName(e.target.value)} placeholder="e.g., Dr. Perera" /></div>
+                        </div>
+                         <div className="space-y-1"><Label>Prescription Notes</Label><Textarea value={prescriptionNotes} onChange={(e) => setPrescriptionNotes(e.target.value)} placeholder="e.g., Review after 1 week" rows={2}/></div>
+
+                    </CardContent>
+                     <CardFooter className="p-4">
+                        <Button onClick={handleAdd}>Save New Patient</Button>
+                    </CardFooter>
+                </CollapsibleContent>
+            </Card>
+        </Collapsible>
     );
 };
 
@@ -82,7 +120,6 @@ const AddPatientDialog = ({ onAddPatient }: { onAddPatient: (patient: Patient) =
 export default function ManagePatientsPage() {
     const router = useRouter();
     const [patients, setPatients] = useState<Patient[]>(ceylonPharmacyPatients);
-    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
     const handleAddPatient = (newPatient: Patient) => {
         setPatients(prev => [newPatient, ...prev]);
@@ -91,22 +128,15 @@ export default function ManagePatientsPage() {
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <AddPatientDialog onAddPatient={handleAddPatient} />
-            </Dialog>
-
-            <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-                <div>
-                    <Button variant="ghost" onClick={() => router.push('/admin/manage/games/ceylon-pharmacy')} className="-ml-4">
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Game Setup
-                    </Button>
-                    <h1 className="text-3xl font-headline font-semibold mt-2">Manage Patients & Prescriptions</h1>
-                    <p className="text-muted-foreground">Select a patient to view or edit their profile and prescription details.</p>
-                </div>
-                <Button onClick={() => setIsAddDialogOpen(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Patient
+            <header>
+                <Button variant="ghost" onClick={() => router.push('/admin/manage/games/ceylon-pharmacy')} className="-ml-4">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Game Setup
                 </Button>
+                <h1 className="text-3xl font-headline font-semibold mt-2">Manage Patients & Prescriptions</h1>
+                <p className="text-muted-foreground">Add new patients or select one to edit their profile and prescription details.</p>
             </header>
+            
+            <AddPatientForm onAddPatient={handleAddPatient} />
 
             <Card className="shadow-lg">
                 <CardHeader>
