@@ -10,11 +10,6 @@ import Link from 'next/link';
 import { ceylonPharmacyPatients } from '@/lib/ceylon-pharmacy-data';
 import type { Patient } from '@/lib/ceylon-pharmacy-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { toast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-
 
 export default function ManagePatientsPage() {
     const router = useRouter();
@@ -65,3 +60,5 @@ export default function ManagePatientsPage() {
         </div>
     );
 }
+
+    
