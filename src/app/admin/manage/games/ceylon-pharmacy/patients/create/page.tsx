@@ -35,8 +35,6 @@ const patientFormSchema = z.object({
   // Prescription Details
   prescription_name: z.string().min(1, 'Prescription name is required'),
   doctor_name: z.string().min(1, 'Doctor name is required'),
-  doctor_specialty: z.string().optional(),
-  doctor_regNo: z.string().optional(),
   notes: z.string().optional(),
   totalBillValue: z.coerce.number().min(0, 'Bill value must be a positive number'),
   
@@ -101,8 +99,6 @@ export default function CreatePatientPage() {
                         <CardContent className="space-y-4">
                             <div className="space-y-2"><Label>Prescription Name*</Label><Input {...form.register('prescription_name')} />{form.formState.errors.prescription_name && <p className="text-xs text-destructive">{form.formState.errors.prescription_name.message}</p>}</div>
                             <div className="space-y-2"><Label>Doctor's Name*</Label><Input {...form.register('doctor_name')} />{form.formState.errors.doctor_name && <p className="text-xs text-destructive">{form.formState.errors.doctor_name.message}</p>}</div>
-                            <div className="space-y-2"><Label>Doctor's Specialty</Label><Input {...form.register('doctor_specialty')} /></div>
-                            <div className="space-y-2"><Label>Doctor's Reg. No.</Label><Input {...form.register('doctor_regNo')} /></div>
                             <div className="space-y-2"><Label>Total Bill Value (LKR)*</Label><Input type="number" step="0.01" {...form.register('totalBillValue')} />{form.formState.errors.totalBillValue && <p className="text-xs text-destructive">{form.formState.errors.totalBillValue.message}</p>}</div>
                             <div className="space-y-2"><Label>Notes</Label><Textarea {...form.register('notes')} rows={2}/></div>
                         </CardContent>
