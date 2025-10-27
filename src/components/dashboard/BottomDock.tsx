@@ -7,16 +7,18 @@ import {
   LayoutDashboard,
   Ticket,
   Megaphone, 
-  MoreHorizontal
+  MoreHorizontal,
+  Gamepad2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileDetailActive } from '@/contexts/MobileDetailActiveContext';
+import { MediMindIcon } from "../icons/module-icons";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
-  { href: "/dashboard/announcements", label: "Updates", icon: Megaphone },
+  { href: "/dashboard/medimind", label: "Games", icon: MediMindIcon },
   { href: "/dashboard/more", label: "More", icon: MoreHorizontal },
 ];
 

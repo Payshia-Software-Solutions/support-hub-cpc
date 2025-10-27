@@ -244,6 +244,7 @@ export interface CertificateOrder {
   is_active: string;
   name_on_certificate: string;
   telephone_1?: string;
+  print_status: string;
 }
 
 export interface CreateCertificateOrderPayload {

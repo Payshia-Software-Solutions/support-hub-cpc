@@ -16,17 +16,17 @@ export interface PrescriptionFormValues {
   nightQty: string;
   mealType: string;
   usingFrequency: string;
-  bagin: string;
-  payaWarak: string;
+  bagin: string; // Sinhala "බැගින්"
+  payaWarak: string; // Sinhala "පැය __ වරක්"
   additionalInstruction: string;
 };
 
 export interface PrescriptionDrug {
   id: string;
   lines: string[];
-  price: number;
   correctAnswers: PrescriptionFormValues;
   acceptedFrequencyAnswers: string[];
+  correctInstructionIds: string[];
 }
 
 export interface GeneralStoreItem {
@@ -38,6 +38,8 @@ export interface GeneralStoreItem {
 
 export interface Prescription {
   id: string;
+  name: string; // prescription_name
+  status: string; // prescription_status
   doctor: {
     name: string;
     specialty: string;
@@ -48,7 +50,10 @@ export interface Prescription {
     age: string;
   };
   date: string;
+  method: string; // Pres_Method
+  notes?: string;
   drugs: PrescriptionDrug[];
+  totalBillValue: number;
 }
 
 export interface Patient {
@@ -57,8 +62,23 @@ export interface Patient {
   age: string;
   status: 'waiting' | 'recovered' | 'dead';
   initialTime: number; // in seconds
+  description?: string; // patient_description
+  address?: string;
+  createdBy?: string;
+  createdAt?: string;
   prescription: Prescription;
 }
+
+
+export const allInstructions = [
+  { id: '1', text: 'Take with a full glass of water.' },
+  { id: '2', text: 'Complete the full course of medication.' },
+  { id: '3', text: 'May cause drowsiness. Do not operate heavy machinery.' },
+  { id: '4', text: 'Avoid direct sunlight.' },
+  { id: '5', text: 'Take 30 minutes before food.' },
+  { id: '6', text: 'Finish all medication even if you feel better.' },
+  { id: '7', text: 'None' },
+];
 
 export const ceylonPharmacyPatients: Patient[] = [
   {
@@ -69,14 +89,17 @@ export const ceylonPharmacyPatients: Patient[] = [
     initialTime: 300, // 5 minutes
     prescription: {
       id: 'rx-cp1',
+      name: "Metformin Treatment",
+      status: "Active",
       doctor: { name: 'Dr. S. Perera', specialty: 'General Physician', regNo: '11223' },
       patient: { name: 'Nimal Silva', age: '45' },
       date: '2024-08-01',
+      method: 'Standard',
+      totalBillValue: 930.00,
       drugs: [
         {
           id: 'drug-cp1-1',
           lines: ['Metformin 500mg', '1 bd', '30d'],
-          price: 15.50,
           correctAnswers: {
             date: '2024-08-01',
             patientName: "Nimal Silva",
@@ -98,6 +121,7 @@ export const ceylonPharmacyPatients: Patient[] = [
             additionalInstruction: "Monitor blood sugar levels."
           },
           acceptedFrequencyAnswers: ['bd', 'bid', 'twice a day'],
+          correctInstructionIds: ['2'], // Complete the full course
         }
       ]
     }
@@ -110,14 +134,17 @@ export const ceylonPharmacyPatients: Patient[] = [
     initialTime: 240, // 4 minutes
     prescription: {
       id: 'rx-cp2',
+      name: "Antibiotic Course",
+      status: "Active",
       doctor: { name: 'Dr. K. Fernando', specialty: 'Pediatrician', regNo: '44556' },
       patient: { name: 'Saman Kumara', age: '32' },
       date: '2024-08-01',
+      method: 'Standard',
+      totalBillValue: 250.00,
       drugs: [
         {
           id: 'drug-cp2-1',
           lines: ['Amoxicillin 250mg/5ml', '5ml tds', '7d'],
-          price: 250.00,
           correctAnswers: {
             date: '2024-08-01',
             patientName: "Saman Kumara",
@@ -139,6 +166,7 @@ export const ceylonPharmacyPatients: Patient[] = [
             additionalInstruction: "Shake well before use."
           },
           acceptedFrequencyAnswers: ['tds', 'tid', 'three times a day'],
+          correctInstructionIds: ['2', '6'], // Complete the course, Finish all medication
         }
       ]
     }
@@ -151,14 +179,17 @@ export const ceylonPharmacyPatients: Patient[] = [
     initialTime: 360, // 6 minutes
     prescription: {
       id: 'rx-cp3',
+      name: "Cardiovascular Care",
+      status: "Active",
       doctor: { name: 'Dr. T. Rajapakse', specialty: 'Cardiologist', regNo: '77889' },
       patient: { name: 'Fathima Rizvi', age: '55' },
       date: '2024-08-01',
+      method: 'Standard',
+      totalBillValue: 1057.50,
       drugs: [
         {
           id: 'drug-cp3-1',
           lines: ['Aspirin 75mg', '1 mane', '30d'],
-          price: 5.25,
           correctAnswers: {
              date: '2024-08-01',
             patientName: "Fathima Rizvi",
@@ -180,11 +211,11 @@ export const ceylonPharmacyPatients: Patient[] = [
             additionalInstruction: "Take with plenty of water."
           },
           acceptedFrequencyAnswers: ['mane', 'om', 'in the morning'],
+          correctInstructionIds: ['1'], // Take with a full glass of water
         },
         {
           id: 'drug-cp3-2',
           lines: ['Atorvastatin 20mg', '1 nocte', '30d'],
-          price: 30.00,
           correctAnswers: {
             date: '2024-08-01',
             patientName: "Fathima Rizvi",
@@ -206,6 +237,7 @@ export const ceylonPharmacyPatients: Patient[] = [
             additionalInstruction: "Avoid grapefruit juice."
           },
           acceptedFrequencyAnswers: ['nocte', 'on', 'at night'],
+          correctInstructionIds: ['7'], // None
         }
       ]
     }

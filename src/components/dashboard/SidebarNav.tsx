@@ -17,7 +17,8 @@ import {
   Award,
   CreditCard,
   MoreHorizontal,
-  BookOpen
+  BookOpen,
+  Gamepad2
 } from "lucide-react";
 import {
   Sidebar,
@@ -36,12 +37,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ThemeSwitcher } from "../ui/ThemeSwitcher";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Image from "next/image";
+import { MediMindIcon } from "../icons/module-icons";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
   { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
   { href: "/dashboard/bnf", label: "BNF", icon: BookOpen },
+  { href: "/dashboard/d-pad", label: "D-Pad", icon: Gamepad2 },
+  { href: "/dashboard/ceylon-pharmacy", label: "Ceylon Pharmacy", icon: Gamepad2 },
+  { href: "/dashboard/medimind", label: "MediMind", icon: MediMindIcon },
   { href: "/dashboard/more", label: "More", icon: MoreHorizontal },
 ];
 
