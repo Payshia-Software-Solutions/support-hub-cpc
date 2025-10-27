@@ -39,7 +39,11 @@ export const mediMindGameData: MediMindGameData = {
       "Proton Pump Inhibitor",
       "Antihistamine",
       "Corticosteroid",
-      "Bronchodilator"
+      "Bronchodilator",
+      "Biguanide",
+      "Sulfonylurea",
+      "Cardiac glycoside",
+      "5-HT3 antagonist"
     ],
     "q2": [
       "Pain and fever",
@@ -55,7 +59,8 @@ export const mediMindGameData: MediMindGameData = {
       "High cholesterol",
       "Acid reflux",
       "Asthma",
-      "Nausea and vomiting"
+      "Nausea and vomiting",
+      "Type 2 diabetes"
     ],
     "q3": [
       "Inhibits COX enzymes",
@@ -69,7 +74,15 @@ export const mediMindGameData: MediMindGameData = {
       "Blocks H2 receptors",
       "Irreversibly inhibits H+/K+ ATPase",
       "Blocks H1 receptors",
-      "Stimulates beta-2 adrenergic receptors"
+      "Stimulates beta-2 adrenergic receptors",
+      "Disrupts bacterial DNA",
+      "Inhibits vitamin K-dependent clotting factors",
+      "Decreases hepatic glucose production",
+      "Stimulates insulin secretion",
+      "Inhibits Na+/K+ ATPase pump",
+      "Inhibits DNA gyrase",
+      "Blocks serotonin receptors",
+      "Modulates gene expression"
     ],
     "q4": [
       "Liver damage (in overdose)",
@@ -83,7 +96,12 @@ export const mediMindGameData: MediMindGameData = {
       "Constipation",
       "Dry mouth",
       "Muscle pain",
-      "Increased heart rate"
+      "Increased heart rate",
+      "Bleeding",
+      "Hypoglycemia",
+      "Tendon rupture",
+      "Arrhythmias",
+      "Weight gain"
     ],
     "q5": [
       "Tablet",
@@ -109,7 +127,9 @@ export const mediMindGameData: MediMindGameData = {
       "Sulfa allergy",
       "Hypersensitivity to the drug",
       "Glaucoma",
-      "Myasthenia gravis"
+      "Myasthenia gravis",
+      "Systemic fungal infection",
+      "Ventricular fibrillation"
     ]
   },
   "medicine_data": [
