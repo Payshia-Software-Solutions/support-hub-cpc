@@ -146,79 +146,77 @@ export default function MediMindPage() {
       };
       
       return (
-        <Card className="shadow-lg">
-            <CardHeader>
-                <div className="flex justify-between items-start">
-                    <div>
-                         <Button variant="ghost" onClick={() => router.back()} className="h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-                        </Button>
-                        <div className="flex items-center gap-4">
-                             <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                                <Image src={`https://picsum.photos/seed/${activeModule.name}/200`} alt={activeModule.name} layout="fill" objectFit="cover" />
-                             </div>
-                            <div>
-                                <CardTitle className="text-2xl font-headline">{activeModule.name}</CardTitle>
-                                <CardDescription>Question {correctlyAnsweredIds.size + 1} of {questionSet.length}</CardDescription>
-                            </div>
+        <div className="space-y-6">
+            <Card className="shadow-lg overflow-hidden">
+                <div className="relative aspect-video bg-muted">
+                    <Image src={`https://picsum.photos/seed/${activeModule.name}/800/450`} alt={activeModule.name} layout="fill" objectFit="cover" />
+                </div>
+            </Card>
+
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle className="text-2xl font-headline">{activeModule.name}</CardTitle>
+                            <CardDescription>Question {correctlyAnsweredIds.size + 1} of {questionSet.length}</CardDescription>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-sm font-bold text-primary mt-1">Score: {score}</p>
                         </div>
                     </div>
-                    <div className="text-right">
-                        <p className="text-sm font-bold text-primary mt-1">Score: {score}</p>
+                    <Progress value={progress} className="mt-4" />
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <Card className="bg-muted min-h-[6rem] p-4 flex flex-col justify-center items-center text-center">
+                        <h3 className="text-lg font-semibold">{currentQuestion.text}</h3>
+                    </Card>
+
+                    {isAnswerCorrect === true && (
+                        <Alert variant="default" className="bg-green-100 border-green-300 text-green-800">
+                            <Check className="h-4 w-4 !text-green-800" />
+                            <AlertTitle>Correct!</AlertTitle>
+                            <AlertDescription>The right answer was <span className="font-semibold">{activeModule.answers[currentQuestion.id]}</span></AlertDescription>
+                        </Alert>
+                    )}
+
+                    {isAnswerCorrect === false && (
+                        <Alert variant="destructive">
+                            <X className="h-4 w-4" />
+                            <AlertTitle>Incorrect!</AlertTitle>
+                            <AlertDescription>The correct answer is <span className="font-semibold">{activeModule.answers[currentQuestion.id]}</span>.</AlertDescription>
+                        </Alert>
+                    )}
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {answerOptions.map(answer => (
+                            <Button
+                                key={answer}
+                                variant={selectedAnswer === answer ? 'default' : 'outline'}
+                                onClick={() => setSelectedAnswer(answer)}
+                                disabled={isAnswerCorrect !== null}
+                                className="h-auto py-3 text-sm"
+                            >
+                                {answer}
+                            </Button>
+                        ))}
                     </div>
-                </div>
-                <Progress value={progress} className="mt-4" />
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <Card className="bg-muted min-h-[6rem] p-4 flex flex-col justify-center items-center text-center">
-                    <h3 className="text-lg font-semibold">{currentQuestion.text}</h3>
-                </Card>
-
-                {isAnswerCorrect === true && (
-                    <Alert variant="default" className="bg-green-100 border-green-300 text-green-800">
-                        <Check className="h-4 w-4 !text-green-800" />
-                        <AlertTitle>Correct!</AlertTitle>
-                        <AlertDescription>The right answer was <span className="font-semibold">{activeModule.answers[currentQuestion.id]}</span></AlertDescription>
-                    </Alert>
-                )}
-
-                {isAnswerCorrect === false && (
-                    <Alert variant="destructive">
-                        <X className="h-4 w-4" />
-                        <AlertTitle>Incorrect!</AlertTitle>
-                        <AlertDescription>The correct answer is <span className="font-semibold">{activeModule.answers[currentQuestion.id]}</span>.</AlertDescription>
-                    </Alert>
-                )}
-
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {answerOptions.map(answer => (
-                        <Button
-                            key={answer}
-                            variant={selectedAnswer === answer ? 'default' : 'outline'}
-                            onClick={() => setSelectedAnswer(answer)}
-                            disabled={isAnswerCorrect !== null}
-                            className="h-auto py-3 text-sm"
-                        >
-                            {answer}
+                </CardContent>
+                <CardFooter className="flex-col sm:flex-row justify-between gap-2">
+                    <Button variant="outline" onClick={handleSkipModule} disabled={isAnswerCorrect !== null}>
+                        <SkipForward className="mr-2 h-4 w-4" /> Skip Medicine
+                    </Button>
+                    {isAnswerCorrect !== null ? (
+                        <Button onClick={handleNextQuestion}>
+                            {correctlyAnsweredIds.size === questionSet.length ? 'Finish Module' : 'Next Question'} <Sparkles className="ml-2 h-4 w-4" />
                         </Button>
-                    ))}
-                </div>
-            </CardContent>
-            <CardFooter className="flex-col sm:flex-row justify-between gap-2">
-                <Button variant="outline" onClick={handleSkipModule} disabled={isAnswerCorrect !== null}>
-                    <SkipForward className="mr-2 h-4 w-4" /> Skip Medicine
-                </Button>
-                {isAnswerCorrect !== null ? (
-                    <Button onClick={handleNextQuestion}>
-                        {correctlyAnsweredIds.size === questionSet.length ? 'Finish Module' : 'Next Question'} <Sparkles className="ml-2 h-4 w-4" />
-                    </Button>
-                ) : (
-                    <Button onClick={handleCheckAnswer} disabled={!selectedAnswer}>
-                        <Check className="mr-2 h-4 w-4" /> Check Answer
-                    </Button>
-                )}
-            </CardFooter>
-        </Card>
+                    ) : (
+                        <Button onClick={handleCheckAnswer} disabled={!selectedAnswer}>
+                            <Check className="mr-2 h-4 w-4" /> Check Answer
+                        </Button>
+                    )}
+                </CardFooter>
+            </Card>
+        </div>
       );
   };
   
