@@ -15,11 +15,11 @@ import { cn } from '@/lib/utils';
 import { MediMindIcon } from '@/components/icons/module-icons';
 import Image from 'next/image';
 
-type View = 'levels' | 'game' | 'results';
+type View = 'loading' | 'game' | 'results' | 'all_completed';
 
 export default function MediMindPage() {
   const router = useRouter();
-  const [view, setView] = useState<View>('levels');
+  const [view, setView] = useState<View>('loading');
   const [modules, setModules] = useState<MedicineModule[]>(mediMindGameData.medicine_data);
   const [activeModule, setActiveModule] = useState<MedicineModule | null>(null);
   const [correctlyAnsweredIds, setCorrectlyAnsweredIds] = useState<Set<string>>(new Set());
@@ -27,6 +27,9 @@ export default function MediMindPage() {
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
   const [levelScore, setLevelScore] = useState(0);
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const questionSet = mediMindGameData.question_set;
 
@@ -38,12 +41,22 @@ export default function MediMindPage() {
     setLevelScore(0);
     setView('game');
   };
-
-  const handleBackToLevels = () => {
-    setView('levels');
-    setActiveModule(null);
-  };
   
+  const startRandomModule = () => {
+    const openModules = modules.filter(m => m.status === 'open');
+    if (openModules.length > 0) {
+      const randomIndex = Math.floor(Math.random() * openModules.length);
+      startModule(openModules[randomIndex]);
+    } else {
+      setView('all_completed');
+    }
+  };
+
+  useEffect(() => {
+    startRandomModule();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSkipModule = () => {
     const openModules = modules.filter(m => m.status === 'open' && m.name !== activeModule?.name);
     if (openModules.length > 0) {
@@ -63,7 +76,7 @@ export default function MediMindPage() {
 
   const answerOptions = currentQuestion ? mediMindGameData.answer_sets[currentQuestion.id] : [];
 
-  const handleCheckAnswer = () => {
+  const handleCheckAnswer = async () => {
     if (!selectedAnswer || !activeModule || !currentQuestion) return;
 
     const correctAnswer = activeModule.answers[currentQuestion.id];
@@ -80,10 +93,11 @@ export default function MediMindPage() {
       toast({ variant: 'destructive', title: "Not quite!", description: "That's not the right answer." });
     }
   };
-
+  
   const handleNextQuestion = () => {
     setSelectedAnswer(null);
     setIsAnswerCorrect(null);
+    setAudioSrc(null);
 
     const isModuleComplete = (correctlyAnsweredIds.size === questionSet.length);
 
@@ -94,52 +108,50 @@ export default function MediMindPage() {
       setModules(updatedModules);
       setView('results');
     }
-    // The next question will be determined automatically by the `currentQuestion` useMemo hook.
   };
 
   const handleFinish = () => {
-    setView('levels');
-    setActiveModule(null);
+    startRandomModule();
   };
   
   const progress = activeModule ? (correctlyAnsweredIds.size / questionSet.length) * 100 : 0;
   
-  const renderLevelSelection = () => (
-    <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-2xl font-headline flex items-center gap-3"><MediMindIcon className="w-8 h-8"/> MediMind Challenge</CardTitle>
-        <CardDescription>Select a medicine to test your pharmacology knowledge.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="text-center p-4 rounded-lg bg-muted">
-            <p className="text-muted-foreground">Total Score</p>
-            <p className="text-4xl font-bold text-primary">{score}</p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {modules.map((module) => (
-            <button key={module.name} onClick={() => startModule(module)} disabled={module.status === 'completed'} className="group block h-full text-left">
-              <Card className={cn("shadow-md hover:shadow-lg hover:border-primary/50 transition-all h-full", module.status === 'completed' && "bg-green-100 border-green-300")}>
-                <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2">
-                   {module.status === 'completed' ? <CheckCircle className="w-8 h-8 text-green-500" /> : <BookCopy className="w-8 h-8 text-primary group-hover:text-primary/80" />}
-                   <span className="text-sm font-semibold text-card-foreground">{module.name}</span>
-                </CardContent>
-              </Card>
-            </button>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const playAudio = () => {
+      audioRef.current?.play();
+  };
 
   const renderGameView = () => {
-      if (!activeModule || !currentQuestion) return null;
+      if (!activeModule || !currentQuestion) {
+        if(view === 'all_completed') {
+             return (
+                <Card className="shadow-lg text-center">
+                    <CardHeader>
+                        <Trophy className="h-24 w-24 text-amber-400 mx-auto mb-4" />
+                        <CardTitle className="text-3xl font-bold text-primary">Congratulations!</CardTitle>
+                        <CardDescription>You have completed all available medicine modules.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-lg">Your final score is:</p>
+                        <p className="text-6xl font-bold my-2">{score}</p>
+                    </CardContent>
+                    <CardFooter className="justify-center">
+                        <Button onClick={() => router.push('/dashboard')}>
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                        </Button>
+                    </CardFooter>
+                </Card>
+            )
+        }
+        return <Loader2 className="mx-auto h-12 w-12 animate-spin" />;
+      };
+      
       return (
         <Card className="shadow-lg">
             <CardHeader>
                 <div className="flex justify-between items-start">
                     <div>
-                        <Button variant="ghost" onClick={() => setView('levels')} className="h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Modules
+                         <Button variant="ghost" onClick={() => router.back()} className="h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
                         </Button>
                         <div className="flex items-center gap-4">
                              <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
@@ -224,22 +236,40 @@ export default function MediMindPage() {
         </CardContent>
         <CardFooter className="justify-center">
             <Button onClick={handleFinish}>
-                Back to All Modules <ChevronRight className="ml-2 h-4 w-4" />
+                Next Module <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
         </CardFooter>
     </Card>
   );
 
   return (
-    <div className="p-4 md:p-8 space-y-6 pb-20">
-      <header>
-        <Button onClick={() => router.back()} variant="ghost" className="-ml-4">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-        </Button>
-      </header>
-      {view === 'levels' && renderLevelSelection()}
-      {view === 'game' && renderGameView()}
-      {view === 'results' && renderResultsView()}
+     <div className="p-4 md:p-8 space-y-6 pb-20">
+        <header>
+            <Button onClick={() => router.back()} variant="ghost" className="-ml-4">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+            </Button>
+        </header>
+        {view === 'game' && renderGameView()}
+        {view === 'results' && renderResultsView()}
+        {view === 'loading' && <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />}
+        {view === 'all_completed' && (
+            <Card className="shadow-lg text-center">
+                <CardHeader>
+                    <Trophy className="h-24 w-24 text-amber-400 mx-auto mb-4" />
+                    <CardTitle className="text-3xl font-bold text-primary">Congratulations!</CardTitle>
+                    <CardDescription>You have completed all available medicine modules.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-lg">Your final score is:</p>
+                    <p className="text-6xl font-bold my-2">{score}</p>
+                </CardContent>
+                <CardFooter className="justify-center">
+                    <Button onClick={() => router.push('/dashboard')}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                    </Button>
+                </CardFooter>
+            </Card>
+        )}
     </div>
   );
 }
