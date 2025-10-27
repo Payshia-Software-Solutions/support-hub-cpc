@@ -1,5 +1,4 @@
 
-
 import { SVGProps } from 'react';
 import { cn } from "@/lib/utils";
 
@@ -393,6 +392,31 @@ export const DoctorIcon = (props: SVGProps<SVGSVGElement>) => (
             <path d="M29 14L28 12L26 16L24 12L23 14L26 19L29 14Z" fill="white"/>
             <path d="M20 26C20 23.7909 22.2386 22 25 22H27C29.7614 22 32 23.7909 32 26V32H20V26Z" fill="#93C5FD"/>
         </g>
+    </svg>
+);
+
+export const MediMindIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="1em" height="1em" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" {...props} className={cn("module-icon-group", props.className)}>
+        <style>{`
+          .sparkle-sm { animation: sparkle 2s ease-in-out infinite; }
+          .sparkle-md { animation: sparkle 2s ease-in-out infinite; animation-delay: 0.3s; }
+          .sparkle-lg { animation: sparkle 2s ease-in-out infinite; animation-delay: 0.6s; }
+          @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1); }
+          }
+        `}</style>
+        <path d="M26 10C20.4772 10 16 14.4772 16 20V26C16 31.5228 20.4772 36 26 36C31.5228 36 36 31.5228 36 26V20C36 14.4772 31.5228 10 26 10Z" fill="#A78BFA"/>
+        <path d="M26 36H18C12.4772 36 8 31.5228 8 26C8 20.4772 12.4772 16 18 16H26V36Z" fill="#8B5CF6"/>
+        <path d="M26 36H34C39.5228 36 44 31.5228 44 26C44 20.4772 39.5228 16 34 16H26V36Z" fill="#7C3AED"/>
+        <path d="M26 22V26" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+        <path d="M22 26H30" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+        <path d="M26 10V4" stroke="#D1FAE5" strokeWidth="3" strokeLinecap="round"/>
+        <path d="M16 46V40" stroke="#D1FAE5" strokeWidth="3" strokeLinecap="round"/>
+        <path d="M36 46V40" stroke="#D1FAE5" strokeWidth="3" strokeLinecap="round"/>
+        <circle cx="12" cy="10" r="2" fill="#FBBF24" className="sparkle-sm"/>
+        <circle cx="42" cy="14" r="3" fill="#FBBF24" className="sparkle-md"/>
+        <circle cx="38" cy="44" r="2" fill="#FBBF24" className="sparkle-lg"/>
     </svg>
 );
 
