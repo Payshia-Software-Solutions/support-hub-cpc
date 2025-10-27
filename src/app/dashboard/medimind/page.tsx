@@ -1,18 +1,19 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Check, Lightbulb, RefreshCw, Sparkles, Trophy, ChevronRight, BrainCircuit, X, CheckCircle, BookCopy } from 'lucide-react';
+import { ArrowLeft, Check, Lightbulb, RefreshCw, Sparkles, Trophy, ChevronRight, Volume2, Loader2, BrainCircuit, X, CheckCircle, BookCopy, SkipForward } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { mediMindGameData, MedicineModule } from '@/lib/medimind-data';
 import { cn } from '@/lib/utils';
 import { MediMindIcon } from '@/components/icons/module-icons';
+import Image from 'next/image';
 
 type View = 'levels' | 'game' | 'results';
 
@@ -21,7 +22,7 @@ export default function MediMindPage() {
   const [view, setView] = useState<View>('levels');
   const [modules, setModules] = useState<MedicineModule[]>(mediMindGameData.medicine_data);
   const [activeModule, setActiveModule] = useState<MedicineModule | null>(null);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [correctlyAnsweredIds, setCorrectlyAnsweredIds] = useState<Set<string>>(new Set());
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
@@ -31,17 +32,40 @@ export default function MediMindPage() {
 
   const startModule = (module: MedicineModule) => {
     setActiveModule(module);
-    setCurrentQuestionIndex(0);
+    setCorrectlyAnsweredIds(new Set());
     setSelectedAnswer(null);
     setIsAnswerCorrect(null);
     setLevelScore(0);
     setView('game');
   };
 
-  const handleCheckAnswer = () => {
-    if (!selectedAnswer || !activeModule) return;
+  const handleBackToLevels = () => {
+    setView('levels');
+    setActiveModule(null);
+  };
+  
+  const handleSkipModule = () => {
+    const openModules = modules.filter(m => m.status === 'open' && m.name !== activeModule?.name);
+    if (openModules.length > 0) {
+      const randomIndex = Math.floor(Math.random() * openModules.length);
+      const nextModule = openModules[randomIndex];
+      startModule(nextModule);
+      toast({ title: "Module Skipped", description: `Now trying: ${nextModule.name}` });
+    } else {
+      toast({ title: "No more modules to skip to!", description: "You've attempted all available modules." });
+    }
+  };
 
-    const currentQuestion = questionSet[currentQuestionIndex];
+  const currentQuestion = useMemo(() => {
+    if (!activeModule) return null;
+    return questionSet.find(q => !correctlyAnsweredIds.has(q.id)) || null;
+  }, [activeModule, correctlyAnsweredIds, questionSet]);
+
+  const answerOptions = currentQuestion ? mediMindGameData.answer_sets[currentQuestion.id] : [];
+
+  const handleCheckAnswer = () => {
+    if (!selectedAnswer || !activeModule || !currentQuestion) return;
+
     const correctAnswer = activeModule.answers[currentQuestion.id];
 
     if (selectedAnswer === correctAnswer) {
@@ -49,10 +73,11 @@ export default function MediMindPage() {
       const points = 10;
       setScore(prev => prev + points);
       setLevelScore(prev => prev + points);
+      setCorrectlyAnsweredIds(prev => new Set(prev).add(currentQuestion.id));
       toast({ title: "Correct!", description: `+${points} points!` });
     } else {
       setIsAnswerCorrect(false);
-      toast({ variant: 'destructive', title: "Not quite!", description: "That's not the right answer. Try to remember!" });
+      toast({ variant: 'destructive', title: "Not quite!", description: "That's not the right answer." });
     }
   };
 
@@ -60,16 +85,16 @@ export default function MediMindPage() {
     setSelectedAnswer(null);
     setIsAnswerCorrect(null);
 
-    if (currentQuestionIndex < questionSet.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-    } else {
-      // Module finished
+    const isModuleComplete = (correctlyAnsweredIds.size === questionSet.length);
+
+    if (isModuleComplete) {
       const updatedModules = modules.map(m =>
         m.name === activeModule?.name ? { ...m, status: 'completed' } : m
       );
       setModules(updatedModules);
       setView('results');
     }
+    // The next question will be determined automatically by the `currentQuestion` useMemo hook.
   };
 
   const handleFinish = () => {
@@ -77,10 +102,8 @@ export default function MediMindPage() {
     setActiveModule(null);
   };
   
-  const currentQuestion = activeModule ? questionSet[currentQuestionIndex] : null;
-  const answerOptions = currentQuestion ? mediMindGameData.answer_sets[currentQuestion.id] : [];
-  const progress = activeModule ? ((currentQuestionIndex) / questionSet.length) * 100 : 0;
-
+  const progress = activeModule ? (correctlyAnsweredIds.size / questionSet.length) * 100 : 0;
+  
   const renderLevelSelection = () => (
     <Card className="shadow-lg">
       <CardHeader>
@@ -118,8 +141,15 @@ export default function MediMindPage() {
                         <Button variant="ghost" onClick={() => setView('levels')} className="h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
                             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Modules
                         </Button>
-                        <CardTitle className="text-2xl font-headline">{activeModule.name}</CardTitle>
-                        <CardDescription>Question {currentQuestionIndex + 1} of {questionSet.length}</CardDescription>
+                        <div className="flex items-center gap-4">
+                             <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                                <Image src={`https://picsum.photos/seed/${activeModule.name}/200`} alt={activeModule.name} layout="fill" objectFit="cover" />
+                             </div>
+                            <div>
+                                <CardTitle className="text-2xl font-headline">{activeModule.name}</CardTitle>
+                                <CardDescription>Question {correctlyAnsweredIds.size + 1} of {questionSet.length}</CardDescription>
+                            </div>
+                        </div>
                     </div>
                     <div className="text-right">
                         <p className="text-sm font-bold text-primary mt-1">Score: {score}</p>
@@ -162,10 +192,13 @@ export default function MediMindPage() {
                     ))}
                 </div>
             </CardContent>
-            <CardFooter className="justify-end">
+            <CardFooter className="flex-col sm:flex-row justify-between gap-2">
+                <Button variant="outline" onClick={handleSkipModule} disabled={isAnswerCorrect !== null}>
+                    <SkipForward className="mr-2 h-4 w-4" /> Skip Medicine
+                </Button>
                 {isAnswerCorrect !== null ? (
                     <Button onClick={handleNextQuestion}>
-                        {currentQuestionIndex === questionSet.length - 1 ? 'Finish' : 'Next Question'} <Sparkles className="ml-2 h-4 w-4" />
+                        {correctlyAnsweredIds.size === questionSet.length ? 'Finish Module' : 'Next Question'} <Sparkles className="ml-2 h-4 w-4" />
                     </Button>
                 ) : (
                     <Button onClick={handleCheckAnswer} disabled={!selectedAnswer}>
