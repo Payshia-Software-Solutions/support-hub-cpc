@@ -3,9 +3,9 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ceylonPharmacyPatients, type Patient, type PrescriptionDrug, type PrescriptionFormValues } from '@/lib/ceylon-pharmacy-data';
 import { toast } from '@/hooks/use-toast';
 import { useForm, Controller, Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,18 +15,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogTr
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User } from 'lucide-react';
+import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User, Loader2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
-
+import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getDispensingAnswers } from '@/lib/actions/games';
+import type { GamePrescription, PrescriptionDetail, DispensingAnswer } from '@/lib/types';
+import type { PrescriptionFormValues } from '@/lib/ceylon-pharmacy-data';
 
 const prescriptionSchema = z.object({
   date: z.string().nonempty("Date is required."),
   patientName: z.string().nonempty("Patient name is required."),
   drugName: z.string().nonempty("Drug name is required."),
-  dosage: z.string().nonempty("Dosage is required."),
-  frequency: z.string().nonempty("Frequency is required."),
-  duration: z.string().nonempty("Duration is required."),
   quantity: z.coerce.number().min(1, "Quantity must be greater than 0."),
   dosageForm: z.string().nonempty("Dosage form is required."),
   morningQty: z.string().nonempty("Morning quantity is required."),
@@ -35,9 +34,6 @@ const prescriptionSchema = z.object({
   nightQty: z.string().nonempty("Night quantity is required."),
   mealType: z.string().nonempty("Meal type is required."),
   usingFrequency: z.string().nonempty("Using frequency is required."),
-  bagin: z.string().nonempty("This field is required."),
-  payaWarak: z.string().nonempty("This field is required."),
-  additionalInstruction: z.string().optional(),
 });
 
 type ResultState = {
@@ -112,28 +108,23 @@ const DatePickerField = ({
   />
 );
 
-
 const DispensingForm = ({
-  drug,
+  correctAnswers,
   onSubmit,
   onReset,
   results,
-  patientName,
-  prescriptionDate,
 }: {
-  drug: PrescriptionDrug;
+  correctAnswers: DispensingAnswer;
   onSubmit: (data: PrescriptionFormValues) => void;
   onReset: () => void;
   results: ResultState | null;
-  patientName: string;
-  prescriptionDate: string;
 }) => {
   const form = useForm<PrescriptionFormValues>({
     resolver: zodResolver(prescriptionSchema),
     defaultValues: {
-      date: "", patientName: "", drugName: "", dosage: "", frequency: "", duration: "", quantity: undefined,
+      date: "", patientName: "", drugName: "", quantity: undefined,
       dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "",
-      usingFrequency: "", bagin: "", payaWarak: "", additionalInstruction: "",
+      usingFrequency: "",
     },
   });
 
@@ -148,12 +139,9 @@ const DispensingForm = ({
     return null;
   };
   
-  const nameOptions = [patientName, "John Smith", "Jane Doe", "Peter Pan"];
-  const drugOptions = [drug.correctAnswers.drugName, "Paracetamol 250mg", "Amoxicillin 500mg", "Metformin 250mg"];
-  const dosageOptions = ["1", "2", "1/2", "3"];
-  const frequencyOptions = ["tds", "bd", "mane", "nocte", "qid", "sos"];
-  const durationOptions = [drug.correctAnswers.duration, "3d", "7d", "10d", "1m"];
-  const quantityOptions = [String(drug.correctAnswers.quantity), "10", "20", "30"];
+  const nameOptions = [correctAnswers.name, "John Smith", "Jane Doe", "Peter Pan"];
+  const drugOptions = [correctAnswers.drug_name, "Paracetamol 500mg", "Amoxicillin 500mg", "Metformin 250mg"];
+  const quantityOptions = [correctAnswers.drug_qty, "10", "20", "30"];
   const dosageFormOptions = ["Tablet", "Capsule", "Syrup", "Inhaler"];
   const mealTypeOptions = ["Before Meal", "With Meal", "After Meal", "N/A"];
   const dailyQtyOptions = ["-", "1", "2", "3", "1/2"];
@@ -161,7 +149,7 @@ const DispensingForm = ({
   return (
     <div className="h-full flex flex-col">
        <div className="flex-1 overflow-y-auto pr-2">
-        <form id={`dispensing-form-${drug.id}`} onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form id={`dispensing-form-${correctAnswers.cover_id}`} onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -197,7 +185,7 @@ const DispensingForm = ({
       <div className="mt-auto p-4 bg-background border-t shrink-0">
         <div className="flex items-center gap-2">
             <Button type="button" variant="outline" onClick={handleReset} className="w-auto"> <RotateCw className="mr-2 h-4 w-4" /> Reset </Button>
-            <Button type="submit" form={`dispensing-form-${drug.id}`} className="flex-grow"> <ClipboardList className="mr-2 h-5 w-5" /> Check Answers </Button>
+            <Button type="submit" form={`dispensing-form-${correctAnswers.cover_id}`} className="flex-grow"> <ClipboardList className="mr-2 h-5 w-5" /> Check Answers </Button>
         </div>
       </div>
     </div>
@@ -212,47 +200,88 @@ export default function DispensePage() {
     const isMobile = useIsMobile();
 
     const patientId = params.id as string;
-    const drugId = searchParams.get('drug');
+    const coverId = searchParams.get('drug');
 
-    const [patient, setPatient] = useState<Patient | null>(null);
-    const [drugToDispense, setDrugToDispense] = useState<PrescriptionDrug | null>(null);
     const [dispenseFormResults, setDispenseFormResults] = useState<Record<string, ResultState>>({});
 
-    useEffect(() => {
-        const foundPatient = ceylonPharmacyPatients.find(p => p.id === patientId);
-        if (foundPatient) {
-            setPatient(foundPatient);
-            const foundDrug = foundPatient.prescription.drugs.find(d => d.id === drugId);
-            if (foundDrug) {
-                setDrugToDispense(foundDrug);
-            } else {
-                 toast({ variant: 'destructive', title: 'Drug not found' });
-                 router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
-            }
-        } else {
-             toast({ variant: 'destructive', title: 'Patient not found' });
-            router.push('/dashboard/ceylon-pharmacy');
-        }
-    }, [patientId, drugId, router]);
+    const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePrescription>({
+        queryKey: ['ceylonPharmacyPatient', patientId],
+        queryFn: async () => {
+            const prescriptions = await getCeylonPharmacyPrescriptions();
+            const found = prescriptions.find(p => p.prescription_id === patientId);
+            if (!found) throw new Error("Patient not found");
+            return found;
+        },
+        enabled: !!patientId,
+    });
+    
+    const { data: prescriptionDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
+        queryKey: ['prescriptionDetails', patientId],
+        queryFn: () => getPrescriptionDetails(patientId),
+        enabled: !!patient,
+    });
+    
+    const { data: correctAnswers, isLoading: isLoadingAnswers } = useQuery<DispensingAnswer>({
+        queryKey: ['dispensingAnswers', patientId, coverId],
+        queryFn: () => getDispensingAnswers(patientId, coverId!),
+        enabled: !!patientId && !!coverId,
+    });
 
-    const handleDispenseSubmit = (drug: PrescriptionDrug) => (data: PrescriptionFormValues) => {
+    const drugToDispense = useMemo(() => {
+        if (!prescriptionDetails) return null;
+        return prescriptionDetails.find(d => d.cover_id === coverId);
+    }, [prescriptionDetails, coverId]);
+
+
+    const handleDispenseSubmit = (data: PrescriptionFormValues) => {
+        if (!correctAnswers) return;
+
         const newResults: ResultState = {};
         let allCorrect = true;
 
-        (Object.keys(drug.correctAnswers) as Array<keyof PrescriptionFormValues>).forEach(key => {
-            const isCorrect = String(data[key]).toLowerCase().trim() === String(drug.correctAnswers[key]).toLowerCase().trim();
-            newResults[key] = isCorrect;
+        const keysToValidate: (keyof DispensingAnswer & keyof PrescriptionFormValues)[] = [
+            'date', 'name', 'drug_name', 'drug_qty', 'drug_type',
+            'morning_qty', 'afternoon_qty', 'evening_qty', 'night_qty',
+            'meal_type', 'using_type'
+        ];
+        
+        const formToApiMap: Record<keyof PrescriptionFormValues, keyof DispensingAnswer> = {
+            patientName: 'name',
+            drugName: 'drug_name',
+            quantity: 'drug_qty',
+            dosageForm: 'drug_type',
+            usingFrequency: 'using_type',
+            date: 'date',
+            morningQty: 'morning_qty',
+            afternoonQty: 'afternoon_qty',
+            eveningQty: 'evening_qty',
+            nightQty: 'night_qty',
+            mealType: 'meal_type',
+        };
+
+        (Object.keys(formToApiMap) as Array<keyof PrescriptionFormValues>).forEach(formKey => {
+            const apiKey = formToApiMap[formKey];
+            // @ts-ignore
+            const isCorrect = String(data[formKey] ?? '').toLowerCase().trim() === String(correctAnswers[apiKey] ?? '').toLowerCase().trim();
+            newResults[formKey] = isCorrect;
             if (!isCorrect) allCorrect = false;
         });
 
-        setDispenseFormResults(prev => ({ ...prev, [drug.id]: newResults }));
+        setDispenseFormResults(prev => ({ ...prev, [correctAnswers.cover_id]: newResults }));
 
         if (allCorrect) {
             toast({
                 title: "Drug Verified!",
-                description: `${drug.correctAnswers.drugName} details are correct.`,
+                description: `${correctAnswers.drug_name} details are correct.`,
             });
-            // In a real app, you would set the task as complete here
+            // Persist completion state
+            try {
+                const completed = JSON.parse(localStorage.getItem(`completed_drugs_${patientId}`) || '[]');
+                if (!completed.includes(coverId)) {
+                    completed.push(coverId);
+                    localStorage.setItem(`completed_drugs_${patientId}`, JSON.stringify(completed));
+                }
+            } catch (e) { console.error(e) }
             router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
         } else {
              toast({
@@ -271,11 +300,15 @@ export default function DispensePage() {
         });
     }
 
-    if (!patient || !drugToDispense) {
-        return <div className="p-8 text-center">Loading patient data...</div>;
+    const isLoading = isLoadingPatient || isLoadingDetails || isLoadingAnswers;
+
+    if (isLoading) {
+        return <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto"/></div>;
     }
-    
-    const currentPrescription = patient.prescription;
+
+    if (!patient || !drugToDispense || !prescriptionDetails || !correctAnswers) {
+        return <div className="p-8 text-center">Error loading game data. Please go back and try again.</div>;
+    }
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -292,37 +325,35 @@ export default function DispensePage() {
                     <CardContent className="flex justify-center p-4">
                         <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
                             <div className="text-center border-b pb-4 mb-4 border-gray-300">
-                                <h2 className="text-xl font-bold">{currentPrescription.doctor.name}</h2>
-                                <p className="text-sm text-gray-600">{currentPrescription.doctor.specialty}</p>
-                                <p className="text-sm text-gray-600">Reg. No: {currentPrescription.doctor.regNo}</p>
+                                <h2 className="text-xl font-bold">{patient.doctor_name}</h2>
+                                <p className="text-sm text-gray-600">MBBS, MD</p>
+                                <p className="text-sm text-gray-600">Reg. No: {patient.id}</p>
                             </div>
                             
                             <div className="flex justify-between text-sm mb-6">
                                 <div>
-                                <p><span className="font-semibold">Name:</span> {currentPrescription.patient.name}</p>
-                                <p><span className="font-semibold">Age:</span> {currentPrescription.patient.age}</p>
+                                <p><span className="font-semibold">Name:</span> {patient.Pres_Name}</p>
+                                <p><span className="font-semibold">Age:</span> {patient.Pres_Age}</p>
                                 </div>
                                 <div>
-                                <p><span className="font-semibold">Date:</span> {currentPrescription.date}</p>
+                                <p><span className="font-semibold">Date:</span> {patient.pres_date}</p>
                                 </div>
                             </div>
 
                             <div className="flex items-start min-h-[200px] pl-10 relative mb-6">
                                 <div className="absolute left-0 top-0 text-6xl font-serif text-gray-700 select-none">℞</div>
                                 <div className="flex-1 space-y-4 font-mono text-lg text-gray-800 pt-2">
-                                    {currentPrescription.drugs.map(drug => (
-                                        <div key={drug.id}>
-                                            {drug.lines.map((line, index) => (
-                                                <p key={index}>{line}</p>
-                                            ))}
+                                     {prescriptionDetails.map(detail => (
+                                        <div key={detail.cover_id}>
+                                            <p>{detail.content}</p>
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
                             <div className="text-right mt-8">
-                                <p className="italic font-serif text-xl text-gray-700">{currentPrescription.doctor.name.split(' ').slice(1).join(' ')}</p>
-                                <p className="text-xs text-muted-foreground">Signature</p>
+                                <p className="italic font-serif text-xl text-gray-700">{patient.doctor_name.split(' ').slice(1).join(' ')}</p>
+                                <p className="text-xs text-muted-foreground non-italic">Signature</p>
                             </div>
                         </div>
                     </CardContent>
@@ -335,17 +366,15 @@ export default function DispensePage() {
                                 <SheetContent side="bottom" className="h-[90%] p-0">
                                 <div className="h-full flex flex-col relative">
                                     <SheetHeader className="p-6 pb-2 shrink-0 text-left">
-                                        <SheetTitle>Dispensing: {drugToDispense.correctAnswers.drugName}</SheetTitle>
+                                        <SheetTitle>Dispensing: {correctAnswers.drug_name}</SheetTitle>
                                         <SheetDescription>Fill in the fields based on the prescription for this item.</SheetDescription>
                                     </SheetHeader>
                                     <div className="flex-1 overflow-hidden px-6 pb-6">
                                         <DispensingForm 
-                                            drug={drugToDispense}
-                                            onSubmit={handleDispenseSubmit(drugToDispense)}
-                                            onReset={() => handleDispenseReset(drugToDispense.id)}
-                                            results={dispenseFormResults[drugToDispense.id] || null}
-                                            patientName={patient.prescription.patient.name}
-                                            prescriptionDate={patient.prescription.date}
+                                            correctAnswers={correctAnswers}
+                                            onSubmit={handleDispenseSubmit}
+                                            onReset={() => handleDispenseReset(correctAnswers.cover_id)}
+                                            results={dispenseFormResults[correctAnswers.cover_id] || null}
                                         />
                                     </div>
                                     </div>
@@ -357,17 +386,15 @@ export default function DispensePage() {
                 {!isMobile && (
                     <Card className="flex flex-col">
                         <CardHeader>
-                            <CardTitle>Dispense: {drugToDispense.correctAnswers.drugName}</CardTitle>
+                            <CardTitle>Dispense: {correctAnswers.drug_name}</CardTitle>
                             <CardDescription>Fill out the label for the selected item.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1 overflow-hidden">
                              <DispensingForm 
-                                drug={drugToDispense}
-                                onSubmit={handleDispenseSubmit(drugToDispense)}
-                                onReset={() => handleDispenseReset(drugToDispense.id)}
-                                results={dispenseFormResults[drugToDispense.id] || null}
-                                patientName={patient.prescription.patient.name}
-                                prescriptionDate={patient.prescription.date}
+                                correctAnswers={correctAnswers}
+                                onSubmit={handleDispenseSubmit}
+                                onReset={() => handleDispenseReset(correctAnswers.cover_id)}
+                                results={dispenseFormResults[correctAnswers.cover_id] || null}
                             />
                         </CardContent>
                     </Card>

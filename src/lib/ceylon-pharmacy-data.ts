@@ -1,13 +1,16 @@
 
 
+// This file contains static mock data for the Ceylon Pharmacy game.
+// Much of this is now being replaced by live API calls.
+
 export interface PrescriptionFormValues {
   date: string;
   patientName: string;
   drugName: string;
-  genericName: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
+  genericName?: string;
+  dosage?: string;
+  frequency?: string;
+  duration?: string;
   quantity: number;
   dosageForm: string;
   morningQty: string;
@@ -16,15 +19,15 @@ export interface PrescriptionFormValues {
   nightQty: string;
   mealType: string;
   usingFrequency: string;
-  bagin: string; // Sinhala "බැගින්"
-  payaWarak: string; // Sinhala "පැය __ වරක්"
-  additionalInstruction: string;
+  bagin?: string; // Sinhala "බැගින්"
+  payaWarak?: string; // Sinhala "පැය __ වරක්"
+  additionalInstruction?: string;
 };
 
 export interface PrescriptionDrug {
   id: string;
   lines: string[];
-  correctAnswers: PrescriptionFormValues;
+  correctAnswers: PrescriptionFormValues; // This might become deprecated
   acceptedFrequencyAnswers: string[];
   correctInstructionIds: string[];
 }

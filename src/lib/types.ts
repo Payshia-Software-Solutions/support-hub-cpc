@@ -801,3 +801,24 @@ export interface PrescriptionDetail {
     cover_id: string;
     content: string;
 }
+
+export interface DispensingAnswer {
+    id: string;
+    answer_id: string;
+    pres_id: string;
+    cover_id: string;
+    date: string;
+    name: string;
+    drug_name: string;
+    drug_type: string;
+    drug_qty: string;
+    morning_qty: string;
+    afternoon_qty: string;
+    evening_qty: string;
+    night_qty: string;
+    meal_type: string;
+    using_type: string;
+    at_a_time: string;
+    hour_qty: string;
+    additional_description: string;
+}
