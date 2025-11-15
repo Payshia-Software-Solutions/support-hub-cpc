@@ -1,5 +1,6 @@
 
 
+
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -794,4 +795,9 @@ export interface GamePrescription {
     notes: string;
     patient_description: string;
     address: string;
+}
+
+export interface PrescriptionDetail {
+    cover_id: string;
+    content: string;
 }

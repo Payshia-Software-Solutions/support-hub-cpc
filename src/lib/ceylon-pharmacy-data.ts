@@ -81,7 +81,8 @@ export const allInstructions = [
   { id: '7', text: 'None' },
 ];
 
-export const ceylonPharmacyPatients: Patient[] = []; // This will be populated by API now
+// This is now effectively a fallback and will be replaced by API data
+export const ceylonPharmacyPatients: Patient[] = []; 
 
 export const generalStoreItems: GeneralStoreItem[] = [
     { id: 'gen-1', name: 'Vitamin C 500mg (30 tabs)', price: 450.00, category: 'Vitamins' },
