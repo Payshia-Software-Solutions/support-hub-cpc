@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,6 +21,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getDispensingAnswers, getFormSelectionData } from '@/lib/actions/games';
 import type { GamePrescription, PrescriptionDetail, DispensingAnswer, FormSelectionData } from '@/lib/types';
 import type { PrescriptionFormValues } from '@/lib/ceylon-pharmacy-data';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const prescriptionSchema = z.object({
   date: z.string().nonempty("Date is required."),
@@ -63,15 +64,17 @@ const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, va
       <DialogHeader>
         <DialogTitle>Select {title}</DialogTitle>
       </DialogHeader>
-      <div className="py-4 grid grid-cols-2 gap-2">
-        {options.map((option, index) => (
-           <DialogClose asChild key={`${option}-${index}`}>
-              <Button variant="outline" onClick={() => onSelect(option)}>
-                {option}
-              </Button>
-          </DialogClose>
-        ))}
-      </div>
+      <ScrollArea className="max-h-[50vh]">
+        <div className="py-4 grid grid-cols-2 gap-2 pr-4">
+            {options.map((option, index) => (
+            <DialogClose asChild key={`${option}-${index}`}>
+                <Button variant="outline" onClick={() => onSelect(option)}>
+                    {option}
+                </Button>
+            </DialogClose>
+            ))}
+        </div>
+      </ScrollArea>
     </DialogContent>
   </Dialog>
 );
