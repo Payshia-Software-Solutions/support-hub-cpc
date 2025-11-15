@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -24,7 +23,7 @@ const PatientStatusCard = ({ prescription }: { prescription: GamePrescription })
 
     return (
         <Card className="shadow-lg hover:shadow-xl hover:border-primary/50 transition-all duration-200 h-full flex flex-col">
-            <CardHeader>
+            <CardHeader className="flex-grow">
                 <div className="flex justify-between items-start">
                     <CardTitle className="text-lg">{prescription.Pres_Name}</CardTitle>
                     <Badge variant="secondary">
@@ -34,11 +33,6 @@ const PatientStatusCard = ({ prescription }: { prescription: GamePrescription })
                 </div>
                 <CardDescription>Age: {prescription.Pres_Age}</CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow">
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                    {prescription.notes || 'No specific drugs listed.'}
-                </p>
-            </CardContent>
             <CardFooter>
                  <Button asChild className="w-full" disabled={isDead}>
                     <Link href={`/dashboard/ceylon-pharmacy/${prescription.prescription_id}`}>
@@ -128,4 +122,3 @@ export default function CeylonPharmacyPage() {
     </div>
   );
 }
-
