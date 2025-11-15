@@ -821,4 +821,10 @@ export interface DispensingAnswer {
     at_a_time: string;
     hour_qty: string;
     additional_description: string;
+    created_at: string;
+    created_by: string;
+}
+
+export interface FormSelectionData {
+  [key: string]: string[];
 }

@@ -1,7 +1,7 @@
 
 "use server";
 
-import type { GamePrescription, PrescriptionDetail, DispensingAnswer } from '../types';
+import type { GamePrescription, PrescriptionDetail, DispensingAnswer, FormSelectionData } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -46,3 +46,12 @@ export const getDispensingAnswers = async (prescriptionId: string, coverId: stri
     }
     throw new Error("Invalid answer data format received from API.");
 };
+
+export const getFormSelectionData = async (): Promise<FormSelectionData> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-answers/form-selection-data/`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch form selection data' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+}

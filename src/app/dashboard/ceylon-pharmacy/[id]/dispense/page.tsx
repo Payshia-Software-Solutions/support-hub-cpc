@@ -18,8 +18,8 @@ import { format } from "date-fns";
 import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User, Loader2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getDispensingAnswers } from '@/lib/actions/games';
-import type { GamePrescription, PrescriptionDetail, DispensingAnswer } from '@/lib/types';
+import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getDispensingAnswers, getFormSelectionData } from '@/lib/actions/games';
+import type { GamePrescription, PrescriptionDetail, DispensingAnswer, FormSelectionData } from '@/lib/types';
 import type { PrescriptionFormValues } from '@/lib/ceylon-pharmacy-data';
 
 const prescriptionSchema = z.object({
@@ -110,11 +110,13 @@ const DatePickerField = ({
 
 const DispensingForm = ({
   correctAnswers,
+  selectionData,
   onSubmit,
   onReset,
   results,
 }: {
   correctAnswers: DispensingAnswer;
+  selectionData: FormSelectionData;
   onSubmit: (data: PrescriptionFormValues) => void;
   onReset: () => void;
   results: ResultState | null;
@@ -139,12 +141,19 @@ const DispensingForm = ({
     return null;
   };
   
-  const nameOptions = [correctAnswers.name, "John Smith", "Jane Doe", "Peter Pan"];
-  const drugOptions = [correctAnswers.drug_name, "Paracetamol 500mg", "Amoxicillin 500mg", "Metformin 250mg"];
-  const quantityOptions = [correctAnswers.drug_qty, "10", "20", "30"];
-  const dosageFormOptions = ["Tablet", "Capsule", "Syrup", "Inhaler"];
-  const mealTypeOptions = ["Before Meal", "With Meal", "After Meal", "N/A"];
-  const dailyQtyOptions = ["-", "1", "2", "3", "1/2"];
+  // Combine API options with the correct answer to ensure it's always available
+  const getOptions = (key: keyof FormSelectionData, correctAnswer: string) => {
+    const options = selectionData[key] || [];
+    return [...new Set([correctAnswer, ...options])];
+  };
+  
+  const nameOptions = getOptions('name', correctAnswers.name);
+  const drugOptions = getOptions('drug_name', correctAnswers.drug_name);
+  const quantityOptions = getOptions('drug_qty', correctAnswers.drug_qty);
+  const dosageFormOptions = getOptions('drug_type', correctAnswers.drug_type);
+  const mealTypeOptions = getOptions('meal_type', correctAnswers.meal_type);
+  const dailyQtyOptions = ['-', '1', '2', '3', '1/2', '4', '5']; 
+  const usingFrequencyOptions = getOptions('using_type', correctAnswers.using_type);
 
   return (
     <div className="h-full flex flex-col">
@@ -177,7 +186,7 @@ const DispensingForm = ({
             <h3 className="text-lg font-semibold border-b pb-2">Other</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2"> <Label>Meal Type</Label> <SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={mealTypeOptions} onSelect={(val) => setValue("mealType", val, { shouldValidate: true })} icon={Pill} value={formValues.mealType} resultIcon={getResultIcon("mealType")} /> </div>
-                 <div className="space-y-2"> <Label>Using Frequency</Label> <SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={["Daily", "Weekly", "As needed"]} onSelect={(val) => setValue("usingFrequency", val, { shouldValidate: true })} icon={Repeat} value={formValues.usingFrequency} resultIcon={getResultIcon("usingFrequency")} /> </div>
+                 <div className="space-y-2"> <Label>Using Frequency</Label> <SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={usingFrequencyOptions} onSelect={(val) => setValue("usingFrequency", val, { shouldValidate: true })} icon={Repeat} value={formValues.usingFrequency} resultIcon={getResultIcon("usingFrequency")} /> </div>
             </div>
           </div>
         </form>
@@ -227,6 +236,11 @@ export default function DispensePage() {
         enabled: !!patientId && !!coverId,
     });
 
+    const { data: selectionData, isLoading: isLoadingSelectionData } = useQuery<FormSelectionData>({
+        queryKey: ['formSelectionData'],
+        queryFn: getFormSelectionData,
+    });
+
     const drugToDispense = useMemo(() => {
         if (!prescriptionDetails) return null;
         return prescriptionDetails.find(d => d.cover_id === coverId);
@@ -239,12 +253,6 @@ export default function DispensePage() {
         const newResults: ResultState = {};
         let allCorrect = true;
 
-        const keysToValidate: (keyof DispensingAnswer & keyof PrescriptionFormValues)[] = [
-            'date', 'name', 'drug_name', 'drug_qty', 'drug_type',
-            'morning_qty', 'afternoon_qty', 'evening_qty', 'night_qty',
-            'meal_type', 'using_type'
-        ];
-        
         const formToApiMap: Record<keyof PrescriptionFormValues, keyof DispensingAnswer> = {
             patientName: 'name',
             drugName: 'drug_name',
@@ -300,13 +308,13 @@ export default function DispensePage() {
         });
     }
 
-    const isLoading = isLoadingPatient || isLoadingDetails || isLoadingAnswers;
+    const isLoading = isLoadingPatient || isLoadingDetails || isLoadingAnswers || isLoadingSelectionData;
 
     if (isLoading) {
         return <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto"/></div>;
     }
 
-    if (!patient || !drugToDispense || !prescriptionDetails || !correctAnswers) {
+    if (!patient || !drugToDispense || !prescriptionDetails || !correctAnswers || !selectionData) {
         return <div className="p-8 text-center">Error loading game data. Please go back and try again.</div>;
     }
 
@@ -372,6 +380,7 @@ export default function DispensePage() {
                                     <div className="flex-1 overflow-hidden px-6 pb-6">
                                         <DispensingForm 
                                             correctAnswers={correctAnswers}
+                                            selectionData={selectionData}
                                             onSubmit={handleDispenseSubmit}
                                             onReset={() => handleDispenseReset(correctAnswers.cover_id)}
                                             results={dispenseFormResults[correctAnswers.cover_id] || null}
@@ -392,6 +401,7 @@ export default function DispensePage() {
                         <CardContent className="flex-1 overflow-hidden">
                              <DispensingForm 
                                 correctAnswers={correctAnswers}
+                                selectionData={selectionData}
                                 onSubmit={handleDispenseSubmit}
                                 onReset={() => handleDispenseReset(correctAnswers.cover_id)}
                                 results={dispenseFormResults[correctAnswers.cover_id] || null}
