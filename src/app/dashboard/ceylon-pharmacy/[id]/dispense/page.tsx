@@ -42,7 +42,7 @@ const prescriptionSchema = z.object({
 });
 
 type ResultState = {
-  [K in keyof Omit<PrescriptionFormValues, 'bagin' | 'payaWarak'>]?: boolean;
+  [K in keyof Omit<PrescriptionFormValues, 'bagin' | 'payaWarak' | 'dosage' | 'frequency' | 'duration'>]?: boolean;
 };
 
 interface SelectionDialogProps {
@@ -89,7 +89,7 @@ const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, va
                 <div className="py-2 grid grid-cols-2 gap-2 pr-4">
                     {filteredOptions.map((option, index) => (
                     <DialogClose asChild key={`${option}-${index}`}>
-                        <Button variant="outline" onClick={() => onSelect(option)} className="h-auto min-h-12 whitespace-normal break-words">
+                        <Button variant="outline" onClick={() => onSelect(option)} className="h-auto min-h-12 whitespace-normal break-words text-left justify-start p-2">
                             {option}
                         </Button>
                     </DialogClose>
@@ -125,6 +125,9 @@ const DatePickerField = ({
         <PopoverContent className="w-auto p-0">
           <Calendar
             mode="single"
+            captionLayout="dropdown-buttons"
+            fromYear={1960}
+            toYear={new Date().getFullYear() + 5}
             selected={field.value ? new Date(field.value) : undefined}
             onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
             initialFocus

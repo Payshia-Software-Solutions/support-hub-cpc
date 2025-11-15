@@ -3,10 +3,11 @@
 
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { DayPicker } from "react-day-picker"
+import { DayPicker, useDayPicker, useNavigation } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
@@ -24,7 +25,8 @@ function Calendar({
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
         caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
+        caption_label: "text-sm font-medium hidden",
+        caption_dropdowns: "flex justify-center gap-1",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
@@ -57,6 +59,61 @@ function Calendar({
       components={{
         IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
         IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
+        Caption: ({ ...props }) => {
+          const { goToMonth, currentMonth } = useNavigation();
+          const { fromYear, toYear } = useDayPicker();
+
+          const handleYearChange = (value: string) => {
+              const newDate = new Date(currentMonth);
+              newDate.setFullYear(parseInt(value, 10));
+              goToMonth(newDate);
+          };
+
+          const handleMonthChange = (value: string) => {
+              const newDate = new Date(currentMonth);
+              newDate.setMonth(parseInt(value, 10));
+              goToMonth(newDate);
+          };
+
+          const years = Array.from({ length: (toYear || new Date().getFullYear()) - (fromYear || 1900) + 1 }, (_, i) => (fromYear || 1900) + i);
+          const months = Array.from({ length: 12 }, (_, i) => i);
+
+
+          return (
+              <div className="flex justify-center items-center gap-2">
+                   <Select
+                        onValueChange={handleMonthChange}
+                        value={String(currentMonth.getMonth())}
+                    >
+                        <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="Select month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {months.map(month => (
+                                <SelectItem key={month} value={String(month)}>
+                                    {format(new Date(currentMonth.getFullYear(), month, 1), 'MMMM')}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                   <Select
+                        onValueChange={handleYearChange}
+                        value={String(currentMonth.getFullYear())}
+                    >
+                        <SelectTrigger className="w-[100px]">
+                            <SelectValue placeholder="Select year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {years.reverse().map(year => (
+                                <SelectItem key={year} value={String(year)}>
+                                    {year}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+              </div>
+          )
+        }
       }}
       {...props}
     />
