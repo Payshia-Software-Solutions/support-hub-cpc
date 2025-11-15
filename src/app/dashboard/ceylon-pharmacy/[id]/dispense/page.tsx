@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -88,7 +89,7 @@ const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, va
                 <div className="py-2 grid grid-cols-2 gap-2 pr-4">
                     {filteredOptions.map((option, index) => (
                     <DialogClose asChild key={`${option}-${index}`}>
-                        <Button variant="outline" onClick={() => onSelect(option)}>
+                        <Button variant="outline" onClick={() => onSelect(option)} className="h-auto min-h-12 whitespace-normal break-words">
                             {option}
                         </Button>
                     </DialogClose>
@@ -442,3 +443,4 @@ export default function DispensePage() {
         </div>
     );
 }
+
