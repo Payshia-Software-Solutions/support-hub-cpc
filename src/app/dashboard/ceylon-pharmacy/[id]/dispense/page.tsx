@@ -286,17 +286,17 @@ export default function DispensePage() {
         let allCorrect = true;
 
         const formToApiMap: Record<keyof Omit<PrescriptionFormValues, 'bagin' | 'payaWarak' | 'dosage' | 'frequency' | 'duration'>, keyof DispensingAnswer> = {
+            date: 'date',
             patientName: 'name',
             drugName: 'drug_name',
             quantity: 'drug_qty',
             dosageForm: 'drug_type',
-            usingFrequency: 'using_type',
-            date: 'date',
             morningQty: 'morning_qty',
             afternoonQty: 'afternoon_qty',
             eveningQty: 'evening_qty',
             nightQty: 'night_qty',
             mealType: 'meal_type',
+            usingFrequency: 'using_type',
             additionalInstruction: 'additional_description'
         };
 
@@ -446,4 +446,3 @@ export default function DispensePage() {
         </div>
     );
 }
-
