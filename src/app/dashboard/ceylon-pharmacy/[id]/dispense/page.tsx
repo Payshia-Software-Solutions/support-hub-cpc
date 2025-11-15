@@ -15,13 +15,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogTr
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User, Loader2, Search } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getDispensingAnswers, getFormSelectionData } from '@/lib/actions/games';
 import type { GamePrescription, PrescriptionDetail, DispensingAnswer, FormSelectionData } from '@/lib/types';
 import type { PrescriptionFormValues } from '@/lib/ceylon-pharmacy-data';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+
 
 const prescriptionSchema = z.object({
   date: z.string().nonempty("Date is required."),
@@ -35,10 +37,11 @@ const prescriptionSchema = z.object({
   nightQty: z.string().nonempty("Night quantity is required."),
   mealType: z.string().nonempty("Meal type is required."),
   usingFrequency: z.string().nonempty("Using frequency is required."),
+  additionalInstruction: z.string().optional(),
 });
 
 type ResultState = {
-  [K in keyof PrescriptionFormValues]?: boolean;
+  [K in keyof Omit<PrescriptionFormValues, 'bagin' | 'payaWarak'>]?: boolean;
 };
 
 interface SelectionDialogProps {
@@ -51,33 +54,53 @@ interface SelectionDialogProps {
   resultIcon: React.ReactNode;
 }
 
-const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, value, resultIcon }: SelectionDialogProps) => (
-  <Dialog>
-    <DialogTrigger asChild>
-      <Button variant="outline" className="w-full justify-start pl-10 relative h-12 text-base">
-        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-        <span className="truncate">{value || triggerText}</span>
-         <div className="absolute right-3 top-1/2 -translate-y-1/2">{resultIcon}</div>
-      </Button>
-    </DialogTrigger>
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>Select {title}</DialogTitle>
-      </DialogHeader>
-      <ScrollArea className="max-h-[50vh]">
-        <div className="py-4 grid grid-cols-2 gap-2 pr-4">
-            {options.map((option, index) => (
-            <DialogClose asChild key={`${option}-${index}`}>
-                <Button variant="outline" onClick={() => onSelect(option)}>
-                    {option}
-                </Button>
-            </DialogClose>
-            ))}
-        </div>
-      </ScrollArea>
-    </DialogContent>
-  </Dialog>
-);
+const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, value, resultIcon }: SelectionDialogProps) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    
+    const filteredOptions = useMemo(() => {
+        if (!searchTerm) return options;
+        return options.filter(option => option.toLowerCase().includes(searchTerm.toLowerCase()));
+    }, [options, searchTerm]);
+
+    return (
+        <Dialog onOpenChange={(open) => !open && setSearchTerm('')}>
+            <DialogTrigger asChild>
+            <Button variant="outline" className="w-full justify-start pl-10 relative h-12 text-base">
+                <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <span className="truncate">{value || triggerText}</span>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">{resultIcon}</div>
+            </Button>
+            </DialogTrigger>
+            <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Select {title}</DialogTitle>
+                 <div className="relative pt-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search options..." 
+                        className="pl-10" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </DialogHeader>
+            <ScrollArea className="max-h-[50vh]">
+                <div className="py-2 grid grid-cols-2 gap-2 pr-4">
+                    {filteredOptions.map((option, index) => (
+                    <DialogClose asChild key={`${option}-${index}`}>
+                        <Button variant="outline" onClick={() => onSelect(option)}>
+                            {option}
+                        </Button>
+                    </DialogClose>
+                    ))}
+                    {filteredOptions.length === 0 && <p className="col-span-2 text-center text-sm text-muted-foreground py-4">No results found.</p>}
+                </div>
+            </ScrollArea>
+            </DialogContent>
+        </Dialog>
+    )
+};
+
 
 const DatePickerField = ({
   control,
@@ -129,7 +152,7 @@ const DispensingForm = ({
     defaultValues: {
       date: "", patientName: "", drugName: "", quantity: undefined,
       dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "",
-      usingFrequency: "",
+      usingFrequency: "", additionalInstruction: "",
     },
   });
 
@@ -157,6 +180,7 @@ const DispensingForm = ({
   const mealTypeOptions = getOptions('meal_type', correctAnswers.meal_type);
   const dailyQtyOptions = ['-', '1', '2', '3', '1/2', '4', '5']; 
   const usingFrequencyOptions = getOptions('using_type', correctAnswers.using_type);
+  const additionalDescriptionOptions = getOptions('additional_description', correctAnswers.additional_description);
 
   return (
     <div className="h-full flex flex-col">
@@ -190,6 +214,7 @@ const DispensingForm = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2"> <Label>Meal Type</Label> <SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={mealTypeOptions} onSelect={(val) => setValue("mealType", val, { shouldValidate: true })} icon={Pill} value={formValues.mealType} resultIcon={getResultIcon("mealType")} /> </div>
                  <div className="space-y-2"> <Label>Using Frequency</Label> <SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={usingFrequencyOptions} onSelect={(val) => setValue("usingFrequency", val, { shouldValidate: true })} icon={Repeat} value={formValues.usingFrequency} resultIcon={getResultIcon("usingFrequency")} /> </div>
+                 <div className="md:col-span-2 space-y-2"> <Label>Additional Description</Label> <SelectionDialog triggerText="Select Description" title="Additional Description" options={additionalDescriptionOptions} onSelect={(val) => setValue("additionalInstruction", val, { shouldValidate: true })} icon={Pill} value={formValues.additionalInstruction || ''} resultIcon={getResultIcon("additionalInstruction")} /> </div>
             </div>
           </div>
         </form>
@@ -256,7 +281,7 @@ export default function DispensePage() {
         const newResults: ResultState = {};
         let allCorrect = true;
 
-        const formToApiMap: Record<keyof PrescriptionFormValues, keyof DispensingAnswer> = {
+        const formToApiMap: Record<keyof Omit<PrescriptionFormValues, 'bagin' | 'payaWarak' | 'dosage' | 'frequency' | 'duration'>, keyof DispensingAnswer> = {
             patientName: 'name',
             drugName: 'drug_name',
             quantity: 'drug_qty',
@@ -268,9 +293,10 @@ export default function DispensePage() {
             eveningQty: 'evening_qty',
             nightQty: 'night_qty',
             mealType: 'meal_type',
+            additionalInstruction: 'additional_description'
         };
 
-        (Object.keys(formToApiMap) as Array<keyof PrescriptionFormValues>).forEach(formKey => {
+        (Object.keys(formToApiMap) as Array<keyof typeof formToApiMap>).forEach(formKey => {
             const apiKey = formToApiMap[formKey];
             // @ts-ignore
             const isCorrect = String(data[formKey] ?? '').toLowerCase().trim() === String(correctAnswers[apiKey] ?? '').toLowerCase().trim();
