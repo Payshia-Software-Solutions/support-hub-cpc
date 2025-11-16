@@ -16,15 +16,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogTr
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User, Loader2, Search } from 'lucide-react';
+import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User, Loader2, Search, Clock, CheckCircle } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getDispensingAnswers, getFormSelectionData } from '@/lib/actions/games';
-import type { GamePrescription, PrescriptionDetail, DispensingAnswer, FormSelectionData } from '@/lib/types';
+import type { GamePrescription, PrescriptionDetail, DispensingAnswer, FormSelectionData, GamePatient } from '@/lib/types';
 import type { PrescriptionFormValues } from '@/lib/ceylon-pharmacy-data';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
-
+import { Input } from "@/components/ui/input";
+import { useAuth } from '@/contexts/AuthContext';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const prescriptionSchema = z.object({
   date: z.string().nonempty("Date is required."),
@@ -234,26 +236,80 @@ const DispensingForm = ({
 };
 
 
+const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused, patientStatus }: { 
+    initialTime: number, 
+    startTime: number | null, 
+    onTimeEnd: () => void, 
+    isPaused: boolean,
+    patientStatus: 'dead' | 'active' | 'recovered' | 'pending'
+}) => {
+    const calculateTimeLeft = useCallback(() => {
+        if (!startTime) return initialTime;
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        return Math.max(0, initialTime - elapsed);
+    }, [startTime, initialTime]);
+
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft);
+
+    useEffect(() => {
+        if (isPaused || timeLeft <= 0 || !startTime || patientStatus !== 'active') {
+            if (timeLeft <= 0 && patientStatus === 'active') onTimeEnd();
+            return;
+        }
+
+        const timer = setInterval(() => {
+            setTimeLeft(calculateTimeLeft());
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [timeLeft, onTimeEnd, isPaused, startTime, calculateTimeLeft, patientStatus]);
+    
+    if (patientStatus === 'pending') {
+      return null; // Don't show the timer if it hasn't started
+    }
+
+    if (patientStatus === 'dead') {
+         return <Badge variant="destructive" className="text-lg"><Clock className="mr-2 h-5 w-5" />Timeout</Badge>;
+    }
+     if (patientStatus === 'recovered') {
+        return <Badge variant="default" className="bg-green-600 text-lg"><CheckCircle className="mr-2 h-5 w-5" />Recovered</Badge>;
+    }
+
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    const isCritical = timeLeft < 60 && timeLeft > 0;
+
+     return (
+        <Badge variant={isCritical ? 'destructive' : 'default'} className={cn("text-lg", isCritical && "animate-pulse")}>
+            <Clock className="mr-2 h-5 w-5" />
+            {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+        </Badge>
+    );
+}
+
 export default function DispensePage() {
     const router = useRouter();
     const params = useParams();
     const searchParams = useSearchParams();
     const isMobile = useIsMobile();
+    const { user } = useAuth();
+    const courseCode = 'CPCC20';
 
     const patientId = params.id as string;
     const coverId = searchParams.get('drug');
 
     const [dispenseFormResults, setDispenseFormResults] = useState<Record<string, ResultState>>({});
 
-    const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePrescription>({
-        queryKey: ['ceylonPharmacyPatient', patientId],
+    const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
+        queryKey: ['ceylonPharmacyPatient', patientId, user?.username],
         queryFn: async () => {
-            const prescriptions = await getCeylonPharmacyPrescriptions();
+            if (!user?.username) throw new Error("User not authenticated");
+            const prescriptions = await getCeylonPharmacyPrescriptions(user.username, courseCode);
             const found = prescriptions.find(p => p.prescription_id === patientId);
             if (!found) throw new Error("Patient not found");
             return found;
         },
-        enabled: !!patientId,
+        enabled: !!patientId && !!user?.username,
     });
     
     const { data: prescriptionDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
@@ -277,6 +333,19 @@ export default function DispensePage() {
         if (!prescriptionDetails) return null;
         return prescriptionDetails.find(d => d.cover_id === coverId);
     }, [prescriptionDetails, coverId]);
+
+
+    const startTime = patient?.start_data ? new Date(patient.start_data.time).getTime() : null;
+    
+    const patientStatus = useMemo<'active' | 'dead' | 'recovered' | 'pending'>(() => {
+        if (!patient?.start_data) return 'pending';
+        if (patient.start_data.patient_status === 'Recovered') return 'recovered';
+        
+        const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+        if (elapsed > 3600) return 'dead'; // 1 hour = 3600 seconds
+        
+        return 'active';
+    }, [patient, startTime]);
 
 
     const handleDispenseSubmit = (data: PrescriptionFormValues) => {
@@ -361,7 +430,16 @@ export default function DispensePage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                  <Card className="shadow-lg">
                     <CardHeader>
-                        <CardTitle>Prescription</CardTitle>
+                        <div className="flex justify-between items-start">
+                            <CardTitle>Prescription</CardTitle>
+                            <CountdownTimer 
+                                initialTime={3600} 
+                                startTime={startTime}
+                                onTimeEnd={() => {}} 
+                                isPaused={false}
+                                patientStatus={patientStatus}
+                            />
+                        </div>
                     </CardHeader>
                     <CardContent className="flex justify-center p-4">
                         <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
@@ -446,3 +524,5 @@ export default function DispensePage() {
         </div>
     );
 }
+
+    
