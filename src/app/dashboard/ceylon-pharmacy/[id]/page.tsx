@@ -212,7 +212,7 @@ export default function CeylonPharmacyPatientPage() {
                              <CardTitle>Prescription</CardTitle>
                              {treatmentStartTime && (
                                 <CountdownTimer 
-                                    initialTime={300} // Default value
+                                    initialTime={3600} 
                                     startTime={treatmentStartTime}
                                     onTimeEnd={handleTimeEnd} 
                                     isPaused={allTasksCompleted} 
