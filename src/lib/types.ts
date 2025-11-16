@@ -1,6 +1,5 @@
 
 
-
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -797,6 +796,11 @@ export interface GamePrescription {
     address: string;
 }
 
+export interface GamePatient extends GamePrescription {
+    start_data?: TreatmentStartRecord | null;
+}
+
+
 export interface PrescriptionDetail {
     cover_id: string;
     content: string;
@@ -837,3 +841,5 @@ export interface TreatmentStartRecord {
     created_at: string;
     patient_status: "Pending" | "Recovered";
 }
+
+```

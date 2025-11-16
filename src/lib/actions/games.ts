@@ -2,20 +2,24 @@
 
 "use server";
 
-import type { GamePrescription, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
-export const getCeylonPharmacyPrescriptions = async (): Promise<GamePrescription[]> => {
-    // In a real app, you might pass a course code or other filter
-    const response = await fetch(`${QA_API_BASE_URL}/care-center-courses/course/CPCC19`);
+export const getCeylonPharmacyPrescriptions = async (studentId: string, courseCode: string): Promise<GamePatient[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-center-courses/student/${studentId}/course/${courseCode}`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch game prescriptions' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     const data = await response.json();
-    // The API returns an object with prescription IDs as keys, so we convert it to an array
-    return Object.values(data);
+    
+    // The API returns an object with prescription IDs as keys. We need to convert it to an array.
+    // Each item in the array will be the value from the original object.
+    return Object.values(data).map((item: any) => ({
+        ...item.patient, // Spread the patient details
+        start_data: item.start_data // Add the start_data object
+    }));
 };
 
 export const getPrescriptionDetails = async (prescriptionId: string): Promise<PrescriptionDetail[]> => {

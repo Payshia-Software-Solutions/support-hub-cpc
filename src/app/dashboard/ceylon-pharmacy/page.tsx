@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -8,36 +9,53 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle, HeartPulse, Users, Clock, ArrowRight } from 'lucide-react';
 import { getCeylonPharmacyPrescriptions } from '@/lib/actions/games';
-import type { GamePrescription } from '@/lib/types';
+import type { GamePatient } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
 
-const PatientStatusCard = ({ prescription }: { prescription: GamePrescription }) => {
-    // Using a default time as it's not in the API response
-    const initialTime = 300; 
-    const minutes = Math.floor(initialTime / 60);
-    const seconds = initialTime % 60;
+
+const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
+    const initialTime = 3600; // 1 hour
+    const startTime = patient.start_data ? new Date(patient.start_data.time).getTime() : null;
     
-    // We assume all fetched patients are 'waiting' for this game version
-    const isDead = false;
+    const calculateTimeLeft = () => {
+        if (!startTime) return initialTime;
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        return Math.max(0, initialTime - elapsed);
+    };
+    
+    const timeLeft = calculateTimeLeft();
+    
+    const isDead = patient.start_data && patient.start_data.patient_status !== 'Recovered' && timeLeft <= 0;
+    const isRecovered = patient.start_data && patient.start_data.patient_status === 'Recovered';
 
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    
     return (
         <Card className="shadow-lg hover:shadow-xl hover:border-primary/50 transition-all duration-200 h-full flex flex-col">
             <CardHeader className="flex-grow">
                 <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{prescription.Pres_Name}</CardTitle>
-                    <Badge variant="secondary">
-                        <Clock className="mr-1.5 h-3.5 w-3.5" />
-                        {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
-                    </Badge>
+                    <CardTitle className="text-lg">{patient.Pres_Name}</CardTitle>
+                    {isRecovered ? (
+                         <Badge variant="default" className="bg-green-600">Recovered</Badge>
+                    ) : isDead ? (
+                        <Badge variant="destructive">Timeout</Badge>
+                    ) : (
+                         <Badge variant="secondary">
+                            <Clock className="mr-1.5 h-3.5 w-3.5" />
+                            {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+                        </Badge>
+                    )}
                 </div>
-                <CardDescription>Age: {prescription.Pres_Age}</CardDescription>
+                <CardDescription>Age: {patient.Pres_Age}</CardDescription>
             </CardHeader>
             <CardFooter>
                  <Button asChild className="w-full" disabled={isDead}>
-                    <Link href={`/dashboard/ceylon-pharmacy/${prescription.prescription_id}`}>
-                        {isDead ? 'Patient Lost' : 'Treat Patient'}
-                        {!isDead && <ArrowRight className="ml-2 h-4 w-4" />}
+                    <Link href={`/dashboard/ceylon-pharmacy/${patient.prescription_id}`}>
+                        {isDead ? 'Patient Lost' : (isRecovered ? 'View Case' : 'Treat Patient')}
+                        <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                 </Button>
             </CardFooter>
@@ -47,19 +65,41 @@ const PatientStatusCard = ({ prescription }: { prescription: GamePrescription })
 
 // --- MAIN PAGE ---
 export default function CeylonPharmacyPage() {
-    const { data: prescriptions, isLoading, isError, error } = useQuery<GamePrescription[]>({
-        queryKey: ['ceylonPharmacyPrescriptions'],
-        queryFn: getCeylonPharmacyPrescriptions,
+    const { user } = useAuth();
+    // Hardcoding course for now as per user instruction context
+    const courseCode = 'CPCC20';
+
+    const { data: patients, isLoading, isError, error } = useQuery<GamePatient[]>({
+        queryKey: ['ceylonPharmacyPrescriptions', user?.username, courseCode],
+        queryFn: () => getCeylonPharmacyPrescriptions(user!.username!, courseCode),
+        enabled: !!user?.username,
     });
 
     const stats = useMemo(() => {
-        if (!prescriptions) return { waiting: 0, recovered: 0, lost: 0 };
+        if (!patients) return { waiting: 0, recovered: 0, lost: 0 };
+        
+        let recovered = 0;
+        let lost = 0;
+        
+        patients.forEach(p => {
+            if (p.start_data?.patient_status === 'Recovered') {
+                recovered++;
+            }
+            if (p.start_data && p.start_data.patient_status !== 'Recovered') {
+                 const startTime = new Date(p.start_data.time).getTime();
+                 const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                 if (elapsed > 3600) {
+                    lost++;
+                 }
+            }
+        });
+
         return {
-            waiting: prescriptions.length, // All fetched are considered waiting
-            recovered: 0, // Mocked for now
-            lost: 0, // Mocked for now
+            waiting: patients.length - recovered - lost,
+            recovered,
+            lost,
         };
-    }, [prescriptions]);
+    }, [patients]);
     
   return (
     <div className="p-4 md:p-8 space-y-8 pb-20">
@@ -110,10 +150,10 @@ export default function CeylonPharmacyPage() {
             </div>
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {prescriptions && prescriptions.map(prescription => (
-                    <PatientStatusCard key={prescription.id} prescription={prescription} />
+                {patients && patients.map(patient => (
+                    <PatientStatusCard key={patient.id} patient={patient} />
                 ))}
-                {(!prescriptions || prescriptions.length === 0) && (
+                {(!patients || patients.length === 0) && (
                     <p className="md:col-span-3 text-center text-muted-foreground py-10">No patients are currently waiting.</p>
                 )}
             </div>

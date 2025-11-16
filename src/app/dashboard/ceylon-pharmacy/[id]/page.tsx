@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, ClipboardList, BookOpen, MessageCircle, PlayCircle, Loader2, RefreshCw } from 'lucide-react';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getTreatmentStartTime, createTreatmentStartRecord } from '@/lib/actions/games';
-import type { GamePrescription, PrescriptionDetail, TreatmentStartRecord } from '@/lib/types';
+import type { GamePatient, PrescriptionDetail, TreatmentStartRecord } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -34,7 +34,7 @@ const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused, patientSt
     startTime: number | null, 
     onTimeEnd: () => void, 
     isPaused: boolean,
-    patientStatus: 'dead' | 'active' | 'recovered'
+    patientStatus: 'dead' | 'active' | 'recovered' | 'pending'
 }) => {
     const calculateTimeLeft = useCallback(() => {
         if (!startTime) return initialTime;
@@ -56,6 +56,10 @@ const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused, patientSt
 
         return () => clearInterval(timer);
     }, [timeLeft, onTimeEnd, isPaused, startTime, calculateTimeLeft, patientStatus]);
+    
+    if (patientStatus === 'pending') {
+      return null; // Don't show the timer if it hasn't started
+    }
 
     if (patientStatus === 'dead') {
          return <Badge variant="destructive" className="text-lg"><Clock className="mr-2 h-5 w-5" />Timeout</Badge>;
@@ -134,30 +138,26 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks, isPa
 export default function CeylonPharmacyPatientPage() {
     const router = useRouter();
     const params = useParams();
-    const patientId = params.id as string;
+    const patientId = params.id as string; // This is the prescription_id
     const { user } = useAuth();
     const queryClient = useQueryClient();
+    const courseCode = 'CPCC20';
     
     const [completedDrugIds, setCompletedDrugIds] = useState<Set<string>>(new Set());
 
     // --- Data Fetching ---
-    const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePrescription>({
-        queryKey: ['ceylonPharmacyPatient', patientId],
+    const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
+        queryKey: ['ceylonPharmacyPatient', patientId, user?.username],
         queryFn: async () => {
-            const prescriptions = await getCeylonPharmacyPrescriptions();
+            if (!user?.username) throw new Error("User not authenticated");
+            const prescriptions = await getCeylonPharmacyPrescriptions(user.username, courseCode);
             const found = prescriptions.find(p => p.prescription_id === patientId);
-            if (!found) throw new Error("Patient not found");
+            if (!found) throw new Error("Patient not found for this user/course");
             return found;
         },
-        enabled: !!patientId,
+        enabled: !!patientId && !!user?.username,
     });
     
-    const { data: treatmentRecord, isLoading: isLoadingTreatment, refetch: refetchTreatment } = useQuery<TreatmentStartRecord | null>({
-        queryKey: ['treatmentStart', user?.username, patientId],
-        queryFn: () => getTreatmentStartTime(user!.username!, patientId),
-        enabled: !!user?.username && !!patientId,
-    });
-
     const { data: prescriptionDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
         queryKey: ['prescriptionDetails', patientId],
         queryFn: () => getPrescriptionDetails(patientId),
@@ -169,7 +169,7 @@ export default function CeylonPharmacyPatientPage() {
         mutationFn: () => createTreatmentStartRecord(user!.username!, patientId),
         onSuccess: () => {
             toast({ title: "Treatment Started!", description: "The timer is now running." });
-            refetchTreatment();
+            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username] });
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: "Failed to Start Treatment", description: error.message });
@@ -177,17 +177,17 @@ export default function CeylonPharmacyPatientPage() {
     });
 
     // --- Memos and State Calculations ---
-    const startTime = treatmentRecord ? new Date(treatmentRecord.time).getTime() : null;
+    const startTime = patient?.start_data ? new Date(patient.start_data.time).getTime() : null;
     
     const patientStatus = useMemo<'active' | 'dead' | 'recovered' | 'pending'>(() => {
-        if (!treatmentRecord) return 'pending';
-        if (treatmentRecord.patient_status === 'Recovered') return 'recovered';
+        if (!patient?.start_data) return 'pending';
+        if (patient.start_data.patient_status === 'Recovered') return 'recovered';
         
         const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
         if (elapsed > 3600) return 'dead'; // 1 hour = 3600 seconds
         
         return 'active';
-    }, [treatmentRecord, startTime]);
+    }, [patient, startTime]);
     
     useEffect(() => {
         if (patientStatus === 'dead') {
@@ -241,15 +241,13 @@ export default function CeylonPharmacyPatientPage() {
                     <CardHeader>
                         <div className="flex justify-between items-start">
                              <CardTitle>Prescription</CardTitle>
-                             {(treatmentRecord || isLoadingTreatment) && (
-                                <CountdownTimer 
-                                    initialTime={3600} 
-                                    startTime={startTime}
-                                    onTimeEnd={() => {}} 
-                                    isPaused={allTasksCompleted}
-                                    patientStatus={patientStatus}
-                                />
-                             )}
+                            <CountdownTimer 
+                                initialTime={3600} 
+                                startTime={startTime}
+                                onTimeEnd={() => {}} 
+                                isPaused={allTasksCompleted}
+                                patientStatus={patientStatus}
+                            />
                         </div>
                     </CardHeader>
                     <CardContent className="flex justify-center p-4">
@@ -287,7 +285,7 @@ export default function CeylonPharmacyPatientPage() {
                             </div>
                         </div>
                     </CardContent>
-                    {!treatmentRecord && !isLoadingTreatment && (
+                    {patientStatus === 'pending' && (
                          <CardFooter>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -330,7 +328,7 @@ export default function CeylonPharmacyPatientPage() {
                         </CardContent>
                     </Card>
                     
-                    {treatmentRecord && patientStatus !== 'pending' && (
+                    {patientStatus !== 'pending' && (
                         <div className="space-y-4 animate-in fade-in-50">
                             <TaskCard 
                                 title="Task 1: Dispense Prescription"
