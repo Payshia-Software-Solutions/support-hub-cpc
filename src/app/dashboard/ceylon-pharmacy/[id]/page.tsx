@@ -16,6 +16,17 @@ import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused, patientStatus }: { 
@@ -277,11 +288,29 @@ export default function CeylonPharmacyPatientPage() {
                         </div>
                     </CardContent>
                     {!treatmentRecord && !isLoadingTreatment && (
-                        <CardFooter>
-                            <Button size="lg" className="w-full" onClick={() => startTreatmentMutation.mutate()} disabled={startTreatmentMutation.isPending}>
-                               {startTreatmentMutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <PlayCircle className="mr-2 h-5 w-5" />}
-                                Start Treatment
-                            </Button>
+                         <CardFooter>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button size="lg" className="w-full" disabled={startTreatmentMutation.isPending}>
+                                        <PlayCircle className="mr-2 h-5 w-5" /> Start Treatment
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Start Treatment?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will begin the one-hour timer for this patient. This action cannot be undone. Are you ready to proceed?
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => startTreatmentMutation.mutate()} disabled={startTreatmentMutation.isPending}>
+                                            {startTreatmentMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                                            Yes, Start Timer
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </CardFooter>
                     )}
                 </Card>

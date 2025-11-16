@@ -79,7 +79,7 @@ export const createTreatmentStartRecord = async (studentId: string, presCode: st
         body: JSON.stringify({
             student_id: studentId,
             PresCode: presCode,
-            patient_status: "Pending"
+            patient_status: "Pending" // Explicitly set status on creation
         }),
     });
     if (!response.ok) {
