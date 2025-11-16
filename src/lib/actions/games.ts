@@ -88,7 +88,7 @@ export const createTreatmentStartRecord = async (studentId: string, presCode: st
         PresCode: presCode,
         time: time,
         created_at: dateTime,
-        patient_status: "new"
+        patient_status: "Pending"
     };
     
     const response = await fetch(`${QA_API_BASE_URL}/care-starts/`, {
