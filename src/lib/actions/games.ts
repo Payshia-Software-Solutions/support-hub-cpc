@@ -75,20 +75,32 @@ export const getTreatmentStartTime = async (studentId: string, presCode: string)
 }
 
 export const createTreatmentStartRecord = async (studentId: string, presCode: string): Promise<TreatmentStartRecord> => {
+    const now = new Date();
+    // Format date as YYYY-MM-DD
+    const date = now.toISOString().split('T')[0];
+    // Format time as HH:mm:ss
+    const time = now.toTimeString().split(' ')[0];
+    // Format datetime as YYYY-MM-DD HH:mm:ss
+    const dateTime = `${date} ${time}`;
+
+    const payload = {
+        student_id: studentId,
+        PresCode: presCode,
+        time: time,
+        created_at: dateTime,
+        patient_status: "new"
+    };
+    
     const response = await fetch(`${QA_API_BASE_URL}/care-starts/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            student_id: studentId,
-            PresCode: presCode,
-            patient_status: "Pending" // Explicitly set status on creation
-        }),
+        body: JSON.stringify(payload),
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to start treatment' }));
         throw new Error(errorData.message || 'API error');
     }
     return response.json();
-}
+};
