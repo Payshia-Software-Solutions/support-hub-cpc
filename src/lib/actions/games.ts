@@ -15,7 +15,6 @@ export const getCeylonPharmacyPrescriptions = async (studentId: string, courseCo
     const data = await response.json();
     
     // The API returns an object with prescription IDs as keys. We need to convert it to an array.
-    // Each item in the array will be the value from the original object.
     return Object.values(data).map((item: any) => ({
         ...item.patient, // Spread the patient details
         start_data: item.start_data // Add the start_data object
@@ -75,12 +74,20 @@ export const getTreatmentStartTime = async (studentId: string, presCode: string)
 }
 
 export const createTreatmentStartRecord = async (studentId: string, presCode: string): Promise<TreatmentStartRecord> => {
-    const now = new Date();
-    // Format date as YYYY-MM-DD
-    const date = now.toISOString().split('T')[0];
-    // Format time as HH:mm:ss
-    const time = now.toTimeString().split(' ')[0];
-    // Format datetime as YYYY-MM-DD HH:mm:ss
+    // Get current date and time in Sri Lanka timezone
+    const nowInSL = new Date().toLocaleString("en-US", { timeZone: "Asia/Colombo" });
+    const now = new Date(nowInSL);
+
+    // Format parts for the payload
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+
+    const date = `${year}-${month}-${day}`;
+    const time = `${hours}:${minutes}:${seconds}`;
     const dateTime = `${date} ${time}`;
 
     const payload = {
