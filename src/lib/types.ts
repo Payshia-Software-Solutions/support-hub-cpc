@@ -828,3 +828,12 @@ export interface DispensingAnswer {
 export interface FormSelectionData {
   [key: string]: string[];
 }
+
+export interface TreatmentStartRecord {
+    id: string;
+    student_id: string;
+    PresCode: string;
+    time: string; // ISO 8601 date string e.g. "2022-10-26 16:31:00.000000"
+    created_at: string;
+    patient_status: "Pending" | "Recovered";
+}

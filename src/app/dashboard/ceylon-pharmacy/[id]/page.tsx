@@ -1,21 +1,30 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, ClipboardList, BookOpen, MessageCircle, PlayCircle, Loader2 } from 'lucide-react';
-import { getCeylonPharmacyPrescriptions, getPrescriptionDetails } from '@/lib/actions/games';
-import type { GamePrescription, PrescriptionDetail } from '@/lib/types';
+import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, ClipboardList, BookOpen, MessageCircle, PlayCircle, Loader2, RefreshCw } from 'lucide-react';
+import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getTreatmentStartTime, createTreatmentStartRecord } from '@/lib/actions/games';
+import type { GamePrescription, PrescriptionDetail, TreatmentStartRecord } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/contexts/AuthContext';
 
-const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused }: { initialTime: number, startTime: number | null, onTimeEnd: () => void, isPaused: boolean }) => {
+
+const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused, patientStatus }: { 
+    initialTime: number, 
+    startTime: number | null, 
+    onTimeEnd: () => void, 
+    isPaused: boolean,
+    patientStatus: 'dead' | 'active' | 'recovered'
+}) => {
     const calculateTimeLeft = useCallback(() => {
         if (!startTime) return initialTime;
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -25,8 +34,8 @@ const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused }: { initi
     const [timeLeft, setTimeLeft] = useState(calculateTimeLeft);
 
     useEffect(() => {
-        if (isPaused || timeLeft <= 0 || !startTime) {
-            if (timeLeft <= 0) onTimeEnd();
+        if (isPaused || timeLeft <= 0 || !startTime || patientStatus !== 'active') {
+            if (timeLeft <= 0 && patientStatus === 'active') onTimeEnd();
             return;
         }
 
@@ -35,7 +44,14 @@ const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused }: { initi
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [timeLeft, onTimeEnd, isPaused, startTime, calculateTimeLeft]);
+    }, [timeLeft, onTimeEnd, isPaused, startTime, calculateTimeLeft, patientStatus]);
+
+    if (patientStatus === 'dead') {
+         return <Badge variant="destructive" className="text-lg"><Clock className="mr-2 h-5 w-5" />Timeout</Badge>;
+    }
+     if (patientStatus === 'recovered') {
+        return <Badge variant="default" className="bg-green-600 text-lg"><CheckCircle className="mr-2 h-5 w-5" />Recovered</Badge>;
+    }
 
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
@@ -49,22 +65,22 @@ const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused }: { initi
     );
 }
 
-const TaskCard = ({ title, description, href, status, icon: Icon, subtasks }: { 
+const TaskCard = ({ title, description, href, status, icon: Icon, subtasks, isPatientDead }: { 
     title: string, 
     description: string, 
     href: string, 
     status: 'pending' | 'completed', 
     icon: React.ElementType,
-    subtasks?: { id: string; name: string; href: string; completed: boolean; }[]
+    subtasks?: { id: string; name: string; href: string; completed: boolean; }[],
+    isPatientDead?: boolean;
 }) => {
     const isCompleted = status === 'completed';
-    // A task is only truly disabled if it's completed AND it has no incomplete subtasks.
-    const isParentLinkDisabled = isCompleted && !subtasks?.some(t => !t.completed);
+    const isParentLinkDisabled = isCompleted || isPatientDead;
 
     const firstIncompleteSubtaskHref = subtasks?.find(t => !t.completed)?.href;
 
     const content = (
-         <Card className={cn("shadow-md transition-shadow", isParentLinkDisabled ? "" : "group-hover:shadow-lg group-hover:border-primary/50", isCompleted ? "bg-green-100 border-green-300" : "")}>
+         <Card className={cn("shadow-md transition-all", isParentLinkDisabled ? "" : "group-hover:shadow-lg group-hover:border-primary/50", isCompleted ? "bg-green-100 border-green-300" : "", isPatientDead ? "opacity-60 bg-muted" : "")}>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div className='flex items-center gap-4'>
                     <Icon className={cn("w-8 h-8", isCompleted ? "text-green-600" : "text-primary")} />
@@ -78,7 +94,7 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks }: {
              {subtasks && (
                 <CardContent className="space-y-2 pt-0 pl-10 pr-4 pb-4">
                     {subtasks.map(task => (
-                        <Link key={task.id} href={task.completed ? '#' : task.href} className={cn("block rounded-md p-2 transition-colors", task.completed ? "bg-green-200/50 pointer-events-none" : "hover:bg-accent/50")}>
+                        <Link key={task.id} href={task.completed || isPatientDead ? '#' : task.href} className={cn("block rounded-md p-2 transition-colors", task.completed ? "bg-green-200/50 pointer-events-none" : "hover:bg-accent/50", isPatientDead && "pointer-events-none")}>
                            <div className="flex items-center justify-between">
                              <div className="flex items-center gap-2">
                                 <Pill className="h-4 w-4 text-muted-foreground" />
@@ -93,7 +109,6 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks }: {
         </Card>
     );
     
-    // For tasks with subtasks, the main link should go to the first incomplete subtask.
     const finalHref = firstIncompleteSubtaskHref || href;
 
     return (
@@ -109,44 +124,71 @@ export default function CeylonPharmacyPatientPage() {
     const router = useRouter();
     const params = useParams();
     const patientId = params.id as string;
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
     
     const [completedDrugIds, setCompletedDrugIds] = useState<Set<string>>(new Set());
-    const [treatmentStartTime, setTreatmentStartTime] = useState<number | null>(null);
 
-    const { data: allPrescriptions, isLoading: isLoadingPrescriptions } = useQuery<GamePrescription[]>({
-        queryKey: ['ceylonPharmacyPrescriptions'],
-        queryFn: getCeylonPharmacyPrescriptions,
+    // --- Data Fetching ---
+    const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePrescription>({
+        queryKey: ['ceylonPharmacyPatient', patientId],
+        queryFn: async () => {
+            const prescriptions = await getCeylonPharmacyPrescriptions();
+            const found = prescriptions.find(p => p.prescription_id === patientId);
+            if (!found) throw new Error("Patient not found");
+            return found;
+        },
+        enabled: !!patientId,
     });
-
-    const patient = useMemo(() => {
-        return allPrescriptions?.find(p => p.prescription_id === patientId);
-    }, [allPrescriptions, patientId]);
+    
+    const { data: treatmentRecord, isLoading: isLoadingTreatment, refetch: refetchTreatment } = useQuery<TreatmentStartRecord | null>({
+        queryKey: ['treatmentStart', user?.username, patientId],
+        queryFn: () => getTreatmentStartTime(user!.username!, patientId),
+        enabled: !!user?.username && !!patientId,
+    });
 
     const { data: prescriptionDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
         queryKey: ['prescriptionDetails', patientId],
         queryFn: () => getPrescriptionDetails(patientId),
         enabled: !!patient,
     });
-
-
-    useEffect(() => {
-        if (!isLoadingPrescriptions && !patient) {
-             toast({ variant: 'destructive', title: 'Patient not found' });
-            router.push('/dashboard/ceylon-pharmacy');
-        }
-    }, [patientId, router, patient, isLoadingPrescriptions]);
-
-    useEffect(() => {
-        try {
-            const storedStartTime = localStorage.getItem(`treatment_start_${patientId}`);
-            if (storedStartTime) {
-                setTreatmentStartTime(parseInt(storedStartTime, 10));
-            }
-        } catch (error) {
-            console.error("Failed to read from localStorage", error);
-        }
-    }, [patientId]);
     
+    // --- Mutations ---
+    const startTreatmentMutation = useMutation({
+        mutationFn: () => createTreatmentStartRecord(user!.username!, patientId),
+        onSuccess: () => {
+            toast({ title: "Treatment Started!", description: "The timer is now running." });
+            refetchTreatment();
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: "Failed to Start Treatment", description: error.message });
+        }
+    });
+
+    // --- Memos and State Calculations ---
+    const startTime = treatmentRecord ? new Date(treatmentRecord.time).getTime() : null;
+    
+    const patientStatus = useMemo<'active' | 'dead' | 'recovered' | 'pending'>(() => {
+        if (!treatmentRecord) return 'pending';
+        if (treatmentRecord.patient_status === 'Recovered') return 'recovered';
+        
+        const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+        if (elapsed > 3600) return 'dead'; // 1 hour = 3600 seconds
+        
+        return 'active';
+    }, [treatmentRecord, startTime]);
+    
+    useEffect(() => {
+        if (patientStatus === 'dead') {
+             toast({
+                variant: 'destructive',
+                title: 'Patient Lost',
+                description: `Time ran out for ${patient?.Pres_Name}.`,
+                duration: 5000,
+            });
+        }
+    }, [patientStatus, patient?.Pres_Name]);
+
     // In a real app, this completion state would come from a global state or API
     const [taskCompletion, setTaskCompletion] = useState({ dispense: false, counsel: false, pos: false });
     
@@ -156,33 +198,11 @@ export default function CeylonPharmacyPatientPage() {
         }
     }, [completedDrugIds, patient, prescriptionDetails]);
 
-
     const allTasksCompleted = useMemo(() => {
         return taskCompletion.dispense && taskCompletion.counsel && taskCompletion.pos;
     }, [taskCompletion]);
-
-    const handleTimeEnd = useCallback(() => {
-        if (patient && !allTasksCompleted) {
-            toast({
-                variant: 'destructive',
-                title: 'Patient Lost',
-                description: `Time ran out for ${patient.Pres_Name}.`,
-            });
-            router.push('/dashboard/ceylon-pharmacy');
-        }
-    }, [patient, allTasksCompleted, router]);
-
-    const handleStartTreatment = () => {
-        const now = Date.now();
-        setTreatmentStartTime(now);
-        try {
-            localStorage.setItem(`treatment_start_${patientId}`, String(now));
-        } catch (error) {
-            console.error("Failed to write to localStorage", error);
-        }
-    };
     
-    if (isLoadingPrescriptions || !patient) {
+    if (isLoadingPatient || isLoadingDetails || !patient) {
         return (
              <div className="p-4 md:p-8 space-y-6 pb-20 flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -192,7 +212,7 @@ export default function CeylonPharmacyPatientPage() {
     
     const dispensingSubtasks = prescriptionDetails?.map(detail => ({
         id: detail.cover_id,
-        name: detail.content.split(' ')[0] || 'Unknown Drug', // Best effort name
+        name: detail.content.split(' ')[0] || 'Unknown Drug',
         href: `/dashboard/ceylon-pharmacy/${patient.prescription_id}/dispense?drug=${detail.cover_id}`,
         completed: completedDrugIds.has(detail.cover_id)
     })) || [];
@@ -210,12 +230,13 @@ export default function CeylonPharmacyPatientPage() {
                     <CardHeader>
                         <div className="flex justify-between items-start">
                              <CardTitle>Prescription</CardTitle>
-                             {treatmentStartTime && (
+                             {(treatmentRecord || isLoadingTreatment) && (
                                 <CountdownTimer 
                                     initialTime={3600} 
-                                    startTime={treatmentStartTime}
-                                    onTimeEnd={handleTimeEnd} 
-                                    isPaused={allTasksCompleted} 
+                                    startTime={startTime}
+                                    onTimeEnd={() => {}} 
+                                    isPaused={allTasksCompleted}
+                                    patientStatus={patientStatus}
                                 />
                              )}
                         </div>
@@ -241,8 +262,7 @@ export default function CeylonPharmacyPatientPage() {
                             <div className="flex items-start min-h-[200px] pl-10 relative mb-6">
                                 <div className="absolute left-0 top-0 text-6xl font-serif text-gray-700 select-none">℞</div>
                                 <div className="flex-1 space-y-4 font-mono text-lg text-gray-800 pt-2">
-                                     {isLoadingDetails ? <Loader2 className="animate-spin" /> : 
-                                      prescriptionDetails?.map(detail => (
+                                      {prescriptionDetails?.map(detail => (
                                         <div key={detail.cover_id}>
                                             <p>{detail.content}</p>
                                         </div>
@@ -256,10 +276,10 @@ export default function CeylonPharmacyPatientPage() {
                             </div>
                         </div>
                     </CardContent>
-                    {!treatmentStartTime && (
+                    {!treatmentRecord && !isLoadingTreatment && (
                         <CardFooter>
-                            <Button size="lg" className="w-full" onClick={handleStartTreatment}>
-                                <PlayCircle className="mr-2 h-5 w-5" />
+                            <Button size="lg" className="w-full" onClick={() => startTreatmentMutation.mutate()} disabled={startTreatmentMutation.isPending}>
+                               {startTreatmentMutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <PlayCircle className="mr-2 h-5 w-5" />}
                                 Start Treatment
                             </Button>
                         </CardFooter>
@@ -281,7 +301,7 @@ export default function CeylonPharmacyPatientPage() {
                         </CardContent>
                     </Card>
                     
-                    {treatmentStartTime && (
+                    {treatmentRecord && patientStatus !== 'pending' && (
                         <div className="space-y-4 animate-in fade-in-50">
                             <TaskCard 
                                 title="Task 1: Dispense Prescription"
@@ -290,6 +310,7 @@ export default function CeylonPharmacyPatientPage() {
                                 status={taskCompletion.dispense ? 'completed' : 'pending'}
                                 icon={ClipboardList}
                                 subtasks={dispensingSubtasks}
+                                isPatientDead={patientStatus === 'dead'}
                             />
                             <TaskCard 
                                 title="Task 2: Patient Counselling"
@@ -297,6 +318,7 @@ export default function CeylonPharmacyPatientPage() {
                                 href={`/dashboard/ceylon-pharmacy/${patient.prescription_id}/counsel`}
                                 status={taskCompletion.counsel ? 'completed' : 'pending'}
                                 icon={MessageCircle}
+                                isPatientDead={patientStatus === 'dead'}
                             />
                             <TaskCard 
                                 title="Task 3: POS Billing"
@@ -304,6 +326,7 @@ export default function CeylonPharmacyPatientPage() {
                                 href={`/dashboard/ceylon-pharmacy/${patient.prescription_id}/pos`}
                                 status={taskCompletion.pos ? 'completed' : 'pending'}
                                 icon={BookOpen}
+                                isPatientDead={patientStatus === 'dead'}
                             />
                         </div>
                     )}
