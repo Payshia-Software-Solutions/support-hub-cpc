@@ -1,7 +1,8 @@
 
+
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -50,6 +51,22 @@ export const getDispensingAnswers = async (prescriptionId: string, coverId: stri
     throw new Error("Invalid answer data format received from API.");
 };
 
+export const validateDispensingAnswer = async (payload: ValidateAnswerPayload): Promise<ValidateAnswerResponse> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-answer-submits/validate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+     if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to submit answers for validation' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+}
+
+
 export const getFormSelectionData = async (): Promise<FormSelectionData> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-answers/form-selection-data/`);
     if (!response.ok) {
@@ -73,16 +90,15 @@ export const getTreatmentStartTime = async (studentId: string, presCode: string)
 }
 
 export const createTreatmentStartRecord = async (studentId: string, presCode: string): Promise<TreatmentStartRecord> => {
-    // Get current date and time
     const now = new Date();
+    const srilankanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Colombo' }));
 
-    // Format parts for the payload
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const year = srilankanTime.getFullYear();
+    const month = String(srilankanTime.getMonth() + 1).padStart(2, '0');
+    const day = String(srilankanTime.getDate()).padStart(2, '0');
+    const hours = String(srilankanTime.getHours()).padStart(2, '0');
+    const minutes = String(srilankanTime.getMinutes()).padStart(2, '0');
+    const seconds = String(srilankanTime.getSeconds()).padStart(2, '0');
 
     const date = `${year}-${month}-${day}`;
     const time = `${hours}:${minutes}:${seconds}`;
