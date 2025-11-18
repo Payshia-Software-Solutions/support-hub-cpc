@@ -1,6 +1,5 @@
 
-
-"use server";
+"use client";
 
 import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord } from '../types';
 
@@ -74,9 +73,8 @@ export const getTreatmentStartTime = async (studentId: string, presCode: string)
 }
 
 export const createTreatmentStartRecord = async (studentId: string, presCode: string): Promise<TreatmentStartRecord> => {
-    // Get current date and time in Sri Lanka timezone
-    const nowInSL = new Date().toLocaleString("en-US", { timeZone: "Asia/Colombo" });
-    const now = new Date(nowInSL);
+    // Get current date and time
+    const now = new Date();
 
     // Format parts for the payload
     const year = now.getFullYear();
