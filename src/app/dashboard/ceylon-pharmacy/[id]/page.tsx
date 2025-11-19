@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, ClipboardList, BookOpen, MessageCircle, PlayCircle, Loader2, RefreshCw } from 'lucide-react';
-import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getTreatmentStartTime, createTreatmentStartRecord } from '@/lib/actions/games';
+import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getTreatmentStartTime, createTreatmentStartRecord, getDispensingSubmissionStatus } from '@/lib/actions/games';
 import type { GamePatient, PrescriptionDetail, TreatmentStartRecord } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -142,7 +142,6 @@ export default function CeylonPharmacyPatientPage() {
     const queryClient = useQueryClient();
     const courseCode = 'CPCC20';
     
-    const [completedDrugIds, setCompletedDrugIds] = useState<Set<string>>(new Set());
     const [completedCounselingIds, setCompletedCounselingIds] = useState<Set<string>>(new Set());
 
     // --- Data Fetching ---
@@ -200,24 +199,42 @@ export default function CeylonPharmacyPatientPage() {
         }
     }, [patientStatus, patient?.Pres_Name]);
 
-    // In a real app, this completion state would come from a global state or API
+     const { data: dispensingStatuses, isLoading: isLoadingStatuses } = useQuery({
+        queryKey: ['dispensingStatuses', patientId, prescriptionDetails],
+        queryFn: async () => {
+            if (!user?.username || !prescriptionDetails) return {};
+            const statuses: Record<string, boolean> = {};
+            for (const detail of prescriptionDetails) {
+                const status = await getDispensingSubmissionStatus(user.username, patientId, detail.cover_id);
+                statuses[detail.cover_id] = !!status.answer_id;
+            }
+            return statuses;
+        },
+        enabled: !!user?.username && !!prescriptionDetails && prescriptionDetails.length > 0,
+        refetchInterval: 10000,
+    });
+
+
     const taskCompletion = useMemo(() => {
-        const dispenseCompleted = prescriptionDetails ? completedDrugIds.size === prescriptionDetails.length : false;
+        const allDispensingCompleted = prescriptionDetails ? prescriptionDetails.every(d => dispensingStatuses?.[d.cover_id]) : false;
         const counselCompleted = prescriptionDetails ? completedCounselingIds.size === prescriptionDetails.length : false;
         const posCompleted = false; // Placeholder
 
         return {
-            dispense: dispenseCompleted,
+            dispense: allDispensingCompleted,
             counsel: counselCompleted,
             pos: posCompleted,
         };
-    }, [prescriptionDetails, completedDrugIds, completedCounselingIds]);
+    }, [prescriptionDetails, dispensingStatuses, completedCounselingIds]);
+
     
     const allTasksCompleted = useMemo(() => {
         return taskCompletion.dispense && taskCompletion.counsel && taskCompletion.pos;
     }, [taskCompletion]);
     
-    if (isLoadingPatient || isLoadingDetails || !patient) {
+    const isLoading = isLoadingPatient || isLoadingDetails || isLoadingStatuses;
+    
+    if (isLoading || !patient) {
         return (
              <div className="p-4 md:p-8 space-y-6 pb-20 flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -229,7 +246,7 @@ export default function CeylonPharmacyPatientPage() {
         id: detail.cover_id,
         name: detail.content.split(' ')[0] || 'Unknown Drug',
         href: `/dashboard/ceylon-pharmacy/${patient.prescription_id}/dispense?drug=${detail.cover_id}`,
-        completed: completedDrugIds.has(detail.cover_id)
+        completed: dispensingStatuses?.[detail.cover_id] || false,
     })) || [];
     
     const counselingSubtasks = prescriptionDetails?.map(detail => ({
@@ -357,7 +374,7 @@ export default function CeylonPharmacyPatientPage() {
                                 status={taskCompletion.counsel ? 'completed' : 'pending'}
                                 icon={MessageCircle}
                                 subtasks={counselingSubtasks}
-                                isPatientDead={patientStatus === 'dead'}
+                                isPatientDead={patientStatus === 'dead' || !taskCompletion.dispense}
                             />
                             <TaskCard 
                                 title="Task 3: POS Billing"
@@ -365,7 +382,7 @@ export default function CeylonPharmacyPatientPage() {
                                 href={`/dashboard/ceylon-pharmacy/${patient.prescription_id}/pos`}
                                 status={taskCompletion.pos ? 'completed' : 'pending'}
                                 icon={BookOpen}
-                                isPatientDead={patientStatus === 'dead'}
+                                isPatientDead={patientStatus === 'dead' || !taskCompletion.counsel}
                             />
                         </div>
                     )}
