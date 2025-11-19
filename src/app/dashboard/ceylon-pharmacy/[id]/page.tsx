@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -94,25 +95,25 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks, isPa
     const firstIncompleteSubtaskHref = subtasks?.find(t => !t.completed)?.href;
 
     const content = (
-         <Card className={cn("shadow-md transition-all", isParentLinkDisabled ? "" : "group-hover:shadow-lg group-hover:border-primary/50", isCompleted ? "bg-green-100 border-green-300" : "", isPatientDead ? "opacity-60 bg-muted" : "")}>
+         <Card className={cn("shadow-md transition-all", isParentLinkDisabled ? "" : "group-hover:shadow-lg group-hover:border-primary/50", isCompleted ? "bg-green-100 border-green-300 text-green-900 dark:bg-green-900/30 dark:border-green-700/50 dark:text-green-300" : "", isPatientDead ? "opacity-60 bg-muted" : "")}>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div className='flex items-center gap-4'>
-                    <Icon className={cn("w-8 h-8", isCompleted ? "text-green-600" : "text-primary")} />
+                    <Icon className={cn("w-8 h-8", isCompleted ? "text-green-600 dark:text-green-400" : "text-primary")} />
                     <div>
                         <CardTitle className="text-lg">{title}</CardTitle>
-                        <CardDescription>{description}</CardDescription>
+                        <CardDescription className={cn(isCompleted && "text-green-800/80 dark:text-green-400/70")}>{description}</CardDescription>
                     </div>
                 </div>
-                {isCompleted && <CheckCircle className="h-6 w-6 text-green-600" />}
+                {isCompleted && <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />}
             </CardHeader>
              {subtasks && (
                 <CardContent className="space-y-2 pt-0 pl-10 pr-4 pb-4">
                     {subtasks.map(task => (
-                        <Link key={task.id} href={task.completed || isPatientDead ? '#' : task.href} className={cn("block rounded-md p-2 transition-colors", task.completed ? "bg-green-200/50 pointer-events-none" : "hover:bg-accent/50", isPatientDead && "pointer-events-none")}>
+                        <Link key={task.id} href={task.completed || isPatientDead ? '#' : task.href} className={cn("block rounded-md p-2 transition-colors", task.completed ? "bg-green-200/50 dark:bg-green-800/20 pointer-events-none" : "hover:bg-accent/50", isPatientDead && "pointer-events-none")}>
                            <div className="flex items-center justify-between">
                              <div className="flex items-center gap-2">
                                 <Pill className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium text-sm">{task.name}</span>
+                                <span className="font-medium text-sm text-card-foreground">{task.name}</span>
                              </div>
                              {task.completed && <CheckCircle className="h-5 w-5 text-green-500" />}
                            </div>
