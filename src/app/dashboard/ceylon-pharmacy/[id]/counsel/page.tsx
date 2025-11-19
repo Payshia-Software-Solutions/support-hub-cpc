@@ -239,12 +239,12 @@ export default function CounselPage() {
                     <CardDescription>Select the correct instructions to provide to the patient based on their prescription.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {(givenInstructions.length < 1 && !isLoading) && (
+                    {(givenInstructions.length < 1 && !isLoading && !isLoadingCorrect) && (
                         <Alert variant="destructive" className="bg-yellow-100 border-yellow-300 text-yellow-800">
                             <AlertCircle className="h-4 w-4 !text-yellow-800" />
                             <AlertTitle className="font-semibold">Attention</AlertTitle>
                             <AlertDescription>
-                                You must provide at least one instruction.
+                                You must provide {correctInstructions?.length || 'the correct number of'} instruction(s).
                             </AlertDescription>
                         </Alert>
                     )}
