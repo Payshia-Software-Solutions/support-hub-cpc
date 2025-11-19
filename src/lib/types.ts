@@ -870,3 +870,11 @@ export interface ValidateAnswerResponse {
     incorrect_values: string[];
     answer_status: "Correct" | "In-Correct";
 }
+
+export interface Instruction {
+    id: string;
+    pres_code: string;
+    cover_id: string;
+    content: string;
+    created_at: string;
+}

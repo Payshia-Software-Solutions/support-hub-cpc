@@ -2,7 +2,7 @@
 
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -122,6 +122,19 @@ export const createTreatmentStartRecord = async (studentId: string, presCode: st
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to start treatment' }));
         throw new Error(errorData.message || 'API error');
+    }
+    return response.json();
+};
+
+
+export const getShuffledInstructions = async (presCode: string, coverId: string): Promise<Instruction[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-instructions/shuffled/pres-code/${presCode}/cover-id/${coverId}/`);
+    if (response.status === 404) {
+        return [];
+    }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch shuffled instructions' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
 };
