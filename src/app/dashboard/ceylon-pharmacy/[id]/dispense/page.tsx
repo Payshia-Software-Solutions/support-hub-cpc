@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -16,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogTr
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User, Loader2, Search, Clock, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User, Loader2, Search, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getDispensingAnswers, getFormSelectionData, validateDispensingAnswer } from '@/lib/actions/games';
@@ -28,6 +27,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const prescriptionSchema = z.object({
   date: z.string().nonempty("Date is required."),
@@ -55,10 +55,9 @@ interface SelectionDialogProps {
   onSelect: (value: string) => void;
   icon: React.ElementType;
   value: string;
-  resultIcon: React.ReactNode;
 }
 
-const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, value, resultIcon }: SelectionDialogProps) => {
+const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, value }: SelectionDialogProps) => {
     const [searchTerm, setSearchTerm] = useState('');
     
     const filteredOptions = useMemo(() => {
@@ -72,7 +71,6 @@ const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, va
             <Button variant="outline" className="w-full justify-start pl-10 relative h-12 text-base">
                 <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <span className="truncate">{value || triggerText}</span>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">{resultIcon}</div>
             </Button>
             </DialogTrigger>
             <DialogContent>
@@ -108,10 +106,8 @@ const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, va
 
 const DatePickerField = ({
   control,
-  getResultIcon,
 }: {
   control: Control<PrescriptionFormValues>;
-  getResultIcon: (fieldName: keyof PrescriptionFormValues) => React.ReactNode;
 }) => (
   <Controller
     control={control}
@@ -122,7 +118,6 @@ const DatePickerField = ({
           <Button variant="outline" className="w-full justify-start pl-10 relative h-12 text-base">
             <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <span className="truncate">{field.value ? format(new Date(field.value), 'PPP') : 'Select Date'}</span>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">{getResultIcon('date')}</div>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
@@ -146,14 +141,12 @@ const DispensingForm = ({
   selectionData,
   onSubmit,
   onReset,
-  results,
   isSubmitting
 }: {
   correctAnswers: DispensingAnswer;
   selectionData: FormSelectionData;
   onSubmit: (data: PrescriptionFormValues) => void;
   onReset: () => void;
-  results: ResultState | null;
   isSubmitting: boolean;
 }) => {
   const form = useForm<PrescriptionFormValues>({
@@ -169,12 +162,6 @@ const DispensingForm = ({
   const formValues = watch();
 
   const handleReset = () => { form.reset(); onReset(); }
-  const getResultIcon = (fieldName: keyof PrescriptionFormValues) => {
-    if (results === null) return null;
-    if (results[fieldName] === true) return <Check className="h-5 w-5 text-green-500" />;
-    if (results[fieldName] === false) return <X className="h-5 w-5 text-destructive" />;
-    return null;
-  };
   
   const getOptions = (key: keyof FormSelectionData, correctAnswer: string) => {
     const options = selectionData[key] || [];
@@ -198,31 +185,31 @@ const DispensingForm = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label>Date</Label>
-                    <DatePickerField control={control} getResultIcon={getResultIcon} />
+                    <DatePickerField control={control} />
                 </div>
-                 <div className="space-y-2"> <Label>Name</Label> <SelectionDialog triggerText="Select Name" title="Patient Name" options={nameOptions} onSelect={(val) => setValue("patientName", val, { shouldValidate: true })} icon={User} value={formValues.patientName} resultIcon={getResultIcon("patientName")} /> </div>
+                 <div className="space-y-2"> <Label>Name</Label> <SelectionDialog triggerText="Select Name" title="Patient Name" options={nameOptions} onSelect={(val) => setValue("patientName", val, { shouldValidate: true })} icon={User} value={formValues.patientName} /> </div>
               </div>
-              <div className="space-y-2"> <Label>Drug Name</Label> <SelectionDialog triggerText="Select Drug" title="Drug" options={drugOptions} onSelect={(val) => setValue("drugName", val, { shouldValidate: true })} icon={Pill} value={formValues.drugName} resultIcon={getResultIcon("drugName")} /> </div>
+              <div className="space-y-2"> <Label>Drug Name</Label> <SelectionDialog triggerText="Select Drug" title="Drug" options={drugOptions} onSelect={(val) => setValue("drugName", val, { shouldValidate: true })} icon={Pill} value={formValues.drugName} /> </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2"> <Label>Dosage Form</Label> <SelectionDialog triggerText="Select Form" title="Dosage Form" options={dosageFormOptions} onSelect={(val) => setValue("dosageForm", val, { shouldValidate: true })} icon={Pill} value={formValues.dosageForm} resultIcon={getResultIcon("dosageForm")} /> {errors.dosageForm && <p className="text-sm text-destructive">{errors.dosageForm.message}</p>} </div>
-                 <div className="space-y-2"> <Label>Drug Quantity</Label> <SelectionDialog triggerText="Select Quantity" title="Total Quantity" options={quantityOptions} onSelect={(val) => setValue("quantity", parseInt(val), { shouldValidate: true })} icon={Hash} value={String(formValues.quantity || '')} resultIcon={getResultIcon("quantity")} /> {errors.quantity && <p className="text-sm text-destructive">{errors.quantity.message}</p>} </div>
+                <div className="space-y-2"> <Label>Dosage Form</Label> <SelectionDialog triggerText="Select Form" title="Dosage Form" options={dosageFormOptions} onSelect={(val) => setValue("dosageForm", val, { shouldValidate: true })} icon={Pill} value={formValues.dosageForm} /> {errors.dosageForm && <p className="text-sm text-destructive">{errors.dosageForm.message}</p>} </div>
+                 <div className="space-y-2"> <Label>Drug Quantity</Label> <SelectionDialog triggerText="Select Quantity" title="Total Quantity" options={quantityOptions} onSelect={(val) => setValue("quantity", parseInt(val), { shouldValidate: true })} icon={Hash} value={String(formValues.quantity || '')} /> {errors.quantity && <p className="text-sm text-destructive">{errors.quantity.message}</p>} </div>
               </div>
           </div>
           <div className="space-y-4">
             <h3 className="text-lg font-semibold border-b pb-2">Drug Quantities</h3>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-2"> <Label>Morning</Label> <SelectionDialog triggerText="Qty" title="Morning Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("morningQty", val, { shouldValidate: true })} icon={Hash} value={formValues.morningQty} resultIcon={getResultIcon("morningQty")} /> </div>
-                 <div className="space-y-2"> <Label>Afternoon</Label> <SelectionDialog triggerText="Qty" title="Afternoon Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("afternoonQty", val, { shouldValidate: true })} icon={Hash} value={formValues.afternoonQty} resultIcon={getResultIcon("afternoonQty")} /> </div>
-                 <div className="space-y-2"> <Label>Evening</Label> <SelectionDialog triggerText="Qty" title="Evening Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("eveningQty", val, { shouldValidate: true })} icon={Hash} value={formValues.eveningQty} resultIcon={getResultIcon("eveningQty")} /> </div>
-                 <div className="space-y-2"> <Label>Night</Label> <SelectionDialog triggerText="Qty" title="Night Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("nightQty", val, { shouldValidate: true })} icon={Hash} value={formValues.nightQty} resultIcon={getResultIcon("nightQty")} /> </div>
+                <div className="space-y-2"> <Label>Morning</Label> <SelectionDialog triggerText="Qty" title="Morning Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("morningQty", val, { shouldValidate: true })} icon={Hash} value={formValues.morningQty} /> </div>
+                 <div className="space-y-2"> <Label>Afternoon</Label> <SelectionDialog triggerText="Qty" title="Afternoon Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("afternoonQty", val, { shouldValidate: true })} icon={Hash} value={formValues.afternoonQty} /> </div>
+                 <div className="space-y-2"> <Label>Evening</Label> <SelectionDialog triggerText="Qty" title="Evening Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("eveningQty", val, { shouldValidate: true })} icon={Hash} value={formValues.eveningQty} /> </div>
+                 <div className="space-y-2"> <Label>Night</Label> <SelectionDialog triggerText="Qty" title="Night Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("nightQty", val, { shouldValidate: true })} icon={Hash} value={formValues.nightQty} /> </div>
             </div>
           </div>
            <div className="space-y-4">
             <h3 className="text-lg font-semibold border-b pb-2">Other</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2"> <Label>Meal Type</Label> <SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={mealTypeOptions} onSelect={(val) => setValue("mealType", val, { shouldValidate: true })} icon={Pill} value={formValues.mealType} resultIcon={getResultIcon("mealType")} /> </div>
-                 <div className="space-y-2"> <Label>Using Frequency</Label> <SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={usingFrequencyOptions} onSelect={(val) => setValue("usingFrequency", val, { shouldValidate: true })} icon={Repeat} value={formValues.usingFrequency} resultIcon={getResultIcon("usingFrequency")} /> </div>
-                 <div className="md:col-span-2 space-y-2"> <Label>Additional Description</Label> <SelectionDialog triggerText="Select Description" title="Additional Description" options={additionalDescriptionOptions} onSelect={(val) => setValue("additionalInstruction", val, { shouldValidate: true })} icon={Pill} value={formValues.additionalInstruction || ''} resultIcon={getResultIcon("additionalInstruction")} /> </div>
+                <div className="space-y-2"> <Label>Meal Type</Label> <SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={mealTypeOptions} onSelect={(val) => setValue("mealType", val, { shouldValidate: true })} icon={Pill} value={formValues.mealType} /> </div>
+                 <div className="space-y-2"> <Label>Using Frequency</Label> <SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={usingFrequencyOptions} onSelect={(val) => setValue("usingFrequency", val, { shouldValidate: true })} icon={Repeat} value={formValues.usingFrequency} /> </div>
+                 <div className="md:col-span-2 space-y-2"> <Label>Additional Description</Label> <SelectionDialog triggerText="Select Description" title="Additional Description" options={additionalDescriptionOptions} onSelect={(val) => setValue("additionalInstruction", val, { shouldValidate: true })} icon={Pill} value={formValues.additionalInstruction || ''} /> </div>
             </div>
           </div>
         </form>
@@ -292,6 +279,21 @@ const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused, patientSt
     );
 }
 
+const fieldLabels: Record<string, string> = {
+    date: "Date",
+    patientName: "Patient Name",
+    drugName: "Drug Name",
+    quantity: "Drug Quantity",
+    dosageForm: "Dosage Form",
+    morningQty: "Morning Quantity",
+    afternoonQty: "Afternoon Quantity",
+    eveningQty: "Evening Quantity",
+    nightQty: "Night Quantity",
+    mealType: "Meal Type",
+    usingFrequency: "Using Frequency",
+    additionalInstruction: "Additional Description",
+};
+
 export default function DispensePage() {
     const router = useRouter();
     const params = useParams();
@@ -302,8 +304,11 @@ export default function DispensePage() {
 
     const patientId = params.id as string;
     const coverId = searchParams.get('drug');
+    
+    const [isResultsDialogOpen, setIsResultsDialogOpen] = useState(false);
+    const [incorrectFields, setIncorrectFields] = useState<string[]>([]);
+    const [wasCorrect, setWasCorrect] = useState(false);
 
-    const [dispenseFormResults, setDispenseFormResults] = useState<Record<string, ResultState>>({});
 
     const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
         queryKey: ['ceylonPharmacyPatient', patientId, user?.username],
@@ -337,25 +342,8 @@ export default function DispensePage() {
      const validationMutation = useMutation<ValidateAnswerResponse, Error, ValidateAnswerPayload>({
         mutationFn: validateDispensingAnswer,
         onSuccess: (data, variables) => {
-            const allFieldNames: (keyof PrescriptionFormValues)[] = [
-                "date", "patientName", "drugName", "quantity", "dosageForm",
-                "morningQty", "afternoonQty", "eveningQty", "nightQty",
-                "mealType", "usingFrequency", "additionalInstruction"
-            ];
-            
-            const results: ResultState = {};
-
-            allFieldNames.forEach(field => {
-                // A field is correct if it's NOT in the incorrect_values array
-                results[field] = !data.incorrect_values.includes(field);
-            });
-            
-            setDispenseFormResults(prev => ({
-                ...prev,
-                [variables.cover_id]: results
-            }));
-
-            if (data.answer_status !== 'In-Correct') {
+             if (data.answer_status !== 'In-Correct') {
+                setWasCorrect(true);
                 toast({ title: "Drug Verified!", description: `${variables.drug_name} details are correct.` });
                 try {
                     const completed = JSON.parse(localStorage.getItem(`completed_drugs_${patientId}`) || '[]');
@@ -366,7 +354,9 @@ export default function DispensePage() {
                 } catch (e) { console.error(e); }
                 router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
             } else {
-                toast({ variant: "destructive", title: "Check Your Answers", description: "Some details are incorrect for this drug." });
+                setWasCorrect(false);
+                setIncorrectFields(data.incorrect_values);
+                setIsResultsDialogOpen(true);
             }
         },
         onError: (error) => {
@@ -420,12 +410,9 @@ export default function DispensePage() {
         validationMutation.mutate(payload);
     }
 
-    const handleDispenseReset = (drugIdToReset: string) => {
-        setDispenseFormResults(prev => {
-            const newResults = { ...prev };
-            delete newResults[drugIdToReset];
-            return newResults;
-        });
+    const handleDispenseReset = () => {
+        setIsResultsDialogOpen(false);
+        setIncorrectFields([]);
     }
 
     const isLoading = isLoadingPatient || isLoadingDetails || isLoadingAnswers || isLoadingSelectionData;
@@ -440,6 +427,29 @@ export default function DispensePage() {
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
+            <Dialog open={isResultsDialogOpen} onOpenChange={setIsResultsDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                           <AlertCircle className="text-destructive h-6 w-6"/>
+                            Incorrect Answers
+                        </DialogTitle>
+                        <DialogDescription>
+                            Please review the following fields and correct your entries.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 max-h-[60vh] overflow-y-auto">
+                        <ul className="space-y-2">
+                            {incorrectFields.map(field => (
+                                <li key={field} className="p-2 border rounded-md bg-muted text-destructive text-sm font-medium">
+                                    {fieldLabels[field] || field}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             <header>
                 <Button onClick={() => router.back()} variant="ghost" className="-ml-4">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Patient Hub
@@ -511,8 +521,7 @@ export default function DispensePage() {
                                             correctAnswers={correctAnswers}
                                             selectionData={selectionData}
                                             onSubmit={handleDispenseSubmit}
-                                            onReset={() => handleDispenseReset(correctAnswers.cover_id)}
-                                            results={dispenseFormResults[correctAnswers.cover_id] || null}
+                                            onReset={() => handleDispenseReset()}
                                             isSubmitting={validationMutation.isPending}
                                         />
                                     </div>
@@ -533,8 +542,7 @@ export default function DispensePage() {
                                 correctAnswers={correctAnswers}
                                 selectionData={selectionData}
                                 onSubmit={handleDispenseSubmit}
-                                onReset={() => handleDispenseReset(correctAnswers.cover_id)}
-                                results={dispenseFormResults[correctAnswers.cover_id] || null}
+                                onReset={() => handleDispenseReset()}
                                 isSubmitting={validationMutation.isPending}
                             />
                         </CardContent>
@@ -544,5 +552,7 @@ export default function DispensePage() {
         </div>
     );
 }
+
+    
 
     
