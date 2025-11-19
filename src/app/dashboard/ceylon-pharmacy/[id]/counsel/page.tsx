@@ -81,7 +81,7 @@ export default function CounselPage() {
                     <Button
                         key={instruction.id}
                         variant="outline"
-                        className="w-full justify-start text-left h-auto py-2"
+                        className="w-full justify-start text-left h-auto py-2 whitespace-normal break-words"
                         onClick={() => handleSelectInstruction(instruction)}
                     >
                         <Plus className="mr-2 h-4 w-4 text-primary shrink-0" />
