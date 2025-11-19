@@ -17,7 +17,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User, Loader2, Search, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getDispensingAnswers, getFormSelectionData, validateDispensingAnswer } from '@/lib/actions/games';
 import type { GamePrescription, PrescriptionDetail, DispensingAnswer, FormSelectionData, GamePatient, ValidateAnswerPayload, ValidateAnswerResponse } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -33,7 +33,7 @@ const prescriptionSchema = z.object({
   date: z.string().nonempty("Date is required."),
   patientName: z.string().nonempty("Patient name is required."),
   drugName: z.string().nonempty("Drug name is required."),
-  quantity: z.coerce.number().min(1, "Quantity must be greater than 0."),
+  quantity: z.string().nonempty("Quantity must be greater than 0."),
   dosageForm: z.string().nonempty("Dosage form is required."),
   morningQty: z.string().nonempty("Morning quantity is required."),
   afternoonQty: z.string().nonempty("Afternoon quantity is required."),
@@ -158,7 +158,7 @@ const DispensingForm = ({
   const form = useForm<PrescriptionFormValues>({
     resolver: zodResolver(prescriptionSchema),
     defaultValues: {
-      date: "", patientName: "", drugName: "", quantity: undefined,
+      date: "", patientName: "", drugName: "", quantity: "",
       dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "",
       usingFrequency: "", additionalInstruction: "", at_a_time: "", hour_qty: ""
     },
@@ -198,7 +198,7 @@ const DispensingForm = ({
               <FormField name="drugName" control={control} render={({ field }) => ( <FormItem><FormLabel>Drug Name</FormLabel><FormControl><SelectionDialog triggerText="Select Drug" title="Drug" options={drugOptions} onSelect={(val) => field.onChange(val)} icon={Pill} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField name="dosageForm" control={control} render={({ field }) => ( <FormItem><FormLabel>Dosage Form</FormLabel><FormControl><SelectionDialog triggerText="Select Form" title="Dosage Form" options={dosageFormOptions} onSelect={(val) => field.onChange(val)} icon={Pill} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
-                <FormField name="quantity" control={control} render={({ field }) => ( <FormItem><FormLabel>Drug Quantity</FormLabel><FormControl><SelectionDialog triggerText="Select Quantity" title="Total Quantity" options={quantityOptions} onSelect={(val) => field.onChange(parseInt(val))} icon={Hash} value={String(field.value || '')} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField name="quantity" control={control} render={({ field }) => ( <FormItem><FormLabel>Drug Quantity</FormLabel><FormControl><SelectionDialog triggerText="Select Quantity" title="Total Quantity" options={quantityOptions} onSelect={(val) => field.onChange(val)} icon={Hash} value={String(field.value || '')} /></FormControl><FormMessage /></FormItem> )} />
               </div>
           </div>
           <div className="space-y-4">
@@ -574,5 +574,7 @@ export default function DispensePage() {
         </div>
     );
 }
+
+    
 
     
