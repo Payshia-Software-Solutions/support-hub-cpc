@@ -91,12 +91,13 @@ export default function POSPage() {
     }, [patient, patientId, router, isLoadingPatient]);
 
     const subtotal = useMemo(() => {
-      const prescriptionTotal = patient ? (correctAmountData ? parseFloat(correctAmountData.value) : 0) : 0;
-      const generalItemsTotal = cart
-          .filter(item => item.type === 'general')
-          .reduce((acc, item) => acc + (parseFloat(item.SellingPrice) * item.quantity), 0);
-      return prescriptionTotal + generalItemsTotal;
-    }, [cart, patient, correctAmountData]);
+      return cart.reduce((acc, item) => {
+        const itemPrice = item.type === 'prescription' 
+            ? (correctAmountData ? parseFloat(correctAmountData.value) : 0)
+            : parseFloat(item.SellingPrice);
+        return acc + (itemPrice * item.quantity);
+      }, 0);
+    }, [cart, correctAmountData]);
 
     const discountAmount = useMemo(() => {
         const parsedDiscount = parseFloat(discount);
@@ -218,7 +219,7 @@ export default function POSPage() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <ScrollArea className="min-h-[150px] max-h-[300px]">
-                    {cart.length > 0 || (correctAmountData && correctAmountData.value) ? (
+                    {cart.length > 0 ? (
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -230,15 +231,6 @@ export default function POSPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {correctAmountData && (
-                                     <TableRow>
-                                        <TableCell className="font-medium text-sm">Prescribed Drugs</TableCell>
-                                        <TableCell className="text-center">1</TableCell>
-                                        <TableCell className="text-right">{parseFloat(correctAmountData.value).toFixed(2)}</TableCell>
-                                        <TableCell className="text-right font-semibold">{parseFloat(correctAmountData.value).toFixed(2)}</TableCell>
-                                        <TableCell></TableCell>
-                                     </TableRow>
-                                )}
                                 {cart.map(item => {
                                     const isGeneral = item.type === 'general';
                                     if (!isGeneral) return null; // Prescription items are handled above
