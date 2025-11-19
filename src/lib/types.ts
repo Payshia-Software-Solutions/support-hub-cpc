@@ -1,5 +1,4 @@
 
-
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -877,4 +876,5 @@ export interface Instruction {
     cover_id: string;
     content: string;
     created_at: string;
+    instruction: string;
 }

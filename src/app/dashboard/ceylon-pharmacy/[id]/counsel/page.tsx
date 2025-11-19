@@ -41,10 +41,10 @@ export default function CounselPage() {
             return;
         }
 
-        if (instruction.content.toLowerCase() === 'none') {
+        if (instruction.instruction.toLowerCase() === 'none') {
             setGivenInstructions([instruction]);
         } else {
-            setGivenInstructions(prev => [...prev.filter(i => i.content.toLowerCase() !== 'none'), instruction]);
+            setGivenInstructions(prev => [...prev.filter(i => i.instruction.toLowerCase() !== 'none'), instruction]);
         }
     };
 
@@ -85,11 +85,11 @@ export default function CounselPage() {
                         onClick={() => handleSelectInstruction(instruction)}
                     >
                         <Plus className="mr-2 h-4 w-4 text-primary shrink-0" />
-                        {instruction.content}
+                        {instruction.instruction}
                     </Button>
                 ) : (
                     <div key={instruction.id} className="flex items-center justify-between p-2 pl-3 rounded-md bg-background border animate-in fade-in-50">
-                        <p className="text-sm font-medium">{instruction.content}</p>
+                        <p className="text-sm font-medium">{instruction.instruction}</p>
                         <Button 
                             variant="ghost" 
                             size="icon" 
