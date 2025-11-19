@@ -138,3 +138,15 @@ export const getShuffledInstructions = async (presCode: string, coverId: string)
     }
     return response.json();
 };
+
+export const getCorrectInstructions = async (presCode: string, coverId: string): Promise<Instruction[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-instructions/pres-code/${presCode}/cover-id/${coverId}/`);
+    if (response.status === 404) {
+        return [];
+    }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch correct instructions' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+}

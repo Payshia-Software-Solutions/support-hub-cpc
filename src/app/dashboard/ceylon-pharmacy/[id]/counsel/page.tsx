@@ -1,7 +1,8 @@
 
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,8 +13,8 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { useQuery } from '@tanstack/react-query';
-import { getShuffledInstructions } from '@/lib/actions/games';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getShuffledInstructions, getCorrectInstructions } from '@/lib/actions/games';
 import type { Instruction } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -26,13 +27,69 @@ export default function CounselPage() {
     const patientId = params.id as string; // This is the pres_code
     const coverId = searchParams.get('drug');
     const isMobile = useIsMobile();
+    const queryClient = useQueryClient();
 
     const [givenInstructions, setGivenInstructions] = useState<Instruction[]>([]);
+    const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
 
     const { data: allInstructions, isLoading, isError, error } = useQuery<Instruction[]>({
         queryKey: ['shuffledInstructions', patientId, coverId],
         queryFn: () => getShuffledInstructions(patientId, coverId!),
         enabled: !!patientId && !!coverId,
+    });
+    
+    const { data: correctInstructions, isLoading: isLoadingCorrect } = useQuery<Instruction[]>({
+        queryKey: ['correctInstructions', patientId, coverId],
+        queryFn: () => getCorrectInstructions(patientId, coverId!),
+        enabled: !!patientId && !!coverId,
+    });
+
+    const validationMutation = useMutation({
+        mutationFn: async () => {
+            if (!correctInstructions) {
+                throw new Error("Correct answers not loaded yet.");
+            }
+            // Simulate network delay for validation
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const givenIds = new Set(givenInstructions.map(i => i.id));
+            const correctIds = new Set(correctInstructions.map(i => i.id));
+
+            if (givenIds.size !== correctIds.size) {
+                return false;
+            }
+
+            for (const id of givenIds) {
+                if (!correctIds.has(id)) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        onSuccess: (isCorrect) => {
+            setIsAnswerCorrect(isCorrect);
+            if (isCorrect) {
+                toast({
+                    title: 'Instructions Saved!',
+                    description: 'The patient counselling information is correct.',
+                });
+                // In a real app, you would likely send a confirmation to the backend here.
+                router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Incorrect Instructions',
+                    description: 'The selected instructions are not correct. Please try again.',
+                });
+            }
+        },
+        onError: (error: Error) => {
+             toast({
+                variant: 'destructive',
+                title: 'Validation Error',
+                description: error.message,
+            });
+        }
     });
 
     const handleSelectInstruction = (instruction: Instruction) => {
@@ -53,21 +110,15 @@ export default function CounselPage() {
     };
 
     const handleSave = () => {
-        if (givenInstructions.length < REQUIRED_INSTRUCTIONS) {
+        if (givenInstructions.length < 1) {
              toast({
                 variant: 'destructive',
                 title: 'Validation Error',
-                description: `You must provide at least ${REQUIRED_INSTRUCTIONS} instruction(s).`,
+                description: `You must provide at least one instruction. Select 'None' if applicable.`,
             });
             return;
         }
-        
-        console.log("Saving instructions for patient:", patientId, "cover:", coverId, givenInstructions);
-        toast({
-            title: 'Instructions Saved!',
-            description: 'The patient counselling information has been recorded.',
-        });
-        router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
+        validationMutation.mutate();
     };
     
     const availableInstructions = allInstructions?.filter(
@@ -110,9 +161,9 @@ export default function CounselPage() {
             <Card className="p-3 bg-muted/50 min-h-[200px]">
                 {isLoading ? (
                     <div className="space-y-2">
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
                     </div>
                 ) : isError ? (
                      <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error.message}</AlertDescription></Alert>
@@ -155,12 +206,12 @@ export default function CounselPage() {
                     <CardDescription>Select the correct instructions to provide to the patient based on their prescription.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {givenInstructions.length < REQUIRED_INSTRUCTIONS && (
+                    {(givenInstructions.length < 1 && !isLoading) && (
                         <Alert variant="destructive" className="bg-yellow-100 border-yellow-300 text-yellow-800">
                             <AlertCircle className="h-4 w-4 !text-yellow-800" />
                             <AlertTitle className="font-semibold">Attention</AlertTitle>
                             <AlertDescription>
-                                {REQUIRED_INSTRUCTIONS} Instruction(s) must be given!
+                                You must provide at least one instruction.
                             </AlertDescription>
                         </Alert>
                     )}
@@ -186,8 +237,9 @@ export default function CounselPage() {
 
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
-                    <Button onClick={handleSave}>
-                        <Save className="mr-2 h-4 w-4" /> Save Instructions
+                    <Button onClick={handleSave} disabled={validationMutation.isPending || isLoading || isLoadingCorrect}>
+                        {validationMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
+                        Save Instructions
                     </Button>
                 </CardFooter>
             </Card>
