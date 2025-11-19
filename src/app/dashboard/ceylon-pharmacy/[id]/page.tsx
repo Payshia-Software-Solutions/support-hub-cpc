@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -144,6 +143,7 @@ export default function CeylonPharmacyPatientPage() {
     const courseCode = 'CPCC20';
     
     const [completedDrugIds, setCompletedDrugIds] = useState<Set<string>>(new Set());
+    const [completedCounselingIds, setCompletedCounselingIds] = useState<Set<string>>(new Set());
 
     // --- Data Fetching ---
     const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
@@ -201,14 +201,18 @@ export default function CeylonPharmacyPatientPage() {
     }, [patientStatus, patient?.Pres_Name]);
 
     // In a real app, this completion state would come from a global state or API
-    const [taskCompletion, setTaskCompletion] = useState({ dispense: false, counsel: false, pos: false });
-    
-    useEffect(() => {
-        if(patient && prescriptionDetails && completedDrugIds.size === prescriptionDetails.length) {
-            setTaskCompletion(prev => ({...prev, dispense: true}));
-        }
-    }, [completedDrugIds, patient, prescriptionDetails]);
+    const taskCompletion = useMemo(() => {
+        const dispenseCompleted = prescriptionDetails ? completedDrugIds.size === prescriptionDetails.length : false;
+        const counselCompleted = prescriptionDetails ? completedCounselingIds.size === prescriptionDetails.length : false;
+        const posCompleted = false; // Placeholder
 
+        return {
+            dispense: dispenseCompleted,
+            counsel: counselCompleted,
+            pos: posCompleted,
+        };
+    }, [prescriptionDetails, completedDrugIds, completedCounselingIds]);
+    
     const allTasksCompleted = useMemo(() => {
         return taskCompletion.dispense && taskCompletion.counsel && taskCompletion.pos;
     }, [taskCompletion]);
@@ -226,6 +230,13 @@ export default function CeylonPharmacyPatientPage() {
         name: detail.content.split(' ')[0] || 'Unknown Drug',
         href: `/dashboard/ceylon-pharmacy/${patient.prescription_id}/dispense?drug=${detail.cover_id}`,
         completed: completedDrugIds.has(detail.cover_id)
+    })) || [];
+    
+    const counselingSubtasks = prescriptionDetails?.map(detail => ({
+        id: detail.cover_id,
+        name: detail.content.split(' ')[0] || 'Unknown Drug',
+        href: `/dashboard/ceylon-pharmacy/${patient.prescription_id}/counsel?drug=${detail.cover_id}`,
+        completed: completedCounselingIds.has(detail.cover_id)
     })) || [];
 
     return (
@@ -341,10 +352,11 @@ export default function CeylonPharmacyPatientPage() {
                             />
                             <TaskCard 
                                 title="Task 2: Patient Counselling"
-                                description="Provide correct instructions."
+                                description="Provide correct instructions for each item."
                                 href={`/dashboard/ceylon-pharmacy/${patient.prescription_id}/counsel`}
                                 status={taskCompletion.counsel ? 'completed' : 'pending'}
                                 icon={MessageCircle}
+                                subtasks={counselingSubtasks}
                                 isPatientDead={patientStatus === 'dead'}
                             />
                             <TaskCard 
