@@ -5,6 +5,7 @@
 import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
+const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
 
 export const getMasterProducts = async (): Promise<MasterProduct[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/master-products/`);

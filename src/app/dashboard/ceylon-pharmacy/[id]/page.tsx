@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, ClipboardList, BookOpen, MessageCircle, PlayCircle, Loader2, RefreshCw } from 'lucide-react';
-import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getTreatmentStartTime, createTreatmentStartRecord, getDispensingSubmissionStatus, getCounsellingSubmissionStatus } from '@/lib/actions/games';
+import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, createTreatmentStartRecord, getDispensingSubmissionStatus, getCounsellingSubmissionStatus } from '@/lib/actions/games';
 import type { GamePatient, PrescriptionDetail, TreatmentStartRecord } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { format } from 'date-fns';
 
 
 const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused, patientStatus }: { 
@@ -57,27 +58,39 @@ const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused, patientSt
         return () => clearInterval(timer);
     }, [timeLeft, onTimeEnd, isPaused, startTime, calculateTimeLeft, patientStatus]);
     
-    if (patientStatus === 'pending') {
-      return null; // Don't show the timer if it hasn't started
-    }
+    const renderContent = () => {
+        if (patientStatus === 'pending') {
+          return null; // Don't show the timer if it hasn't started
+        }
+        if (patientStatus === 'dead') {
+             return <Badge variant="destructive" className="text-lg"><Clock className="mr-2 h-5 w-5" />Timeout</Badge>;
+        }
+         if (patientStatus === 'recovered') {
+            return <Badge variant="default" className="bg-green-600 text-lg"><CheckCircle className="mr-2 h-5 w-5" />Recovered</Badge>;
+        }
 
-    if (patientStatus === 'dead') {
-         return <Badge variant="destructive" className="text-lg"><Clock className="mr-2 h-5 w-5" />Timeout</Badge>;
-    }
-     if (patientStatus === 'recovered') {
-        return <Badge variant="default" className="bg-green-600 text-lg"><CheckCircle className="mr-2 h-5 w-5" />Recovered</Badge>;
-    }
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        const isCritical = timeLeft < 60 && timeLeft > 0;
 
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    const isCritical = timeLeft < 60 && timeLeft > 0;
-
-     return (
-        <Badge variant={isCritical ? 'destructive' : 'default'} className={cn("text-lg", isCritical && "animate-pulse")}>
-            <Clock className="mr-2 h-5 w-5" />
-            {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
-        </Badge>
-    );
+         return (
+            <Badge variant={isCritical ? 'destructive' : 'default'} className={cn("text-lg", isCritical && "animate-pulse")}>
+                <Clock className="mr-2 h-5 w-5" />
+                {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+            </Badge>
+        );
+    }
+    
+    return (
+        <div className="flex flex-col items-end gap-1">
+            {renderContent()}
+            {startTime && patientStatus !== 'pending' && (
+                <p className="text-xs text-muted-foreground">
+                    Started: {format(new Date(startTime), 'PPp')}
+                </p>
+            )}
+        </div>
+    )
 }
 
 const TaskCard = ({ title, description, href, status, icon: Icon, subtasks, isPatientDead }: { 
@@ -112,10 +125,9 @@ const TaskCard = ({ title, description, href, status, icon: Icon, subtasks, isPa
                         <Link key={task.id} href={task.completed || isPatientDead ? '#' : task.href} className={cn("block rounded-md p-2 transition-colors", task.completed ? "bg-green-200/50 dark:bg-green-800/20 pointer-events-none" : "hover:bg-accent/50", isPatientDead && "pointer-events-none")}>
                            <div className="flex items-center justify-between">
                              <div className="flex items-center gap-2">
-                                <Pill className="h-4 w-4 text-muted-foreground" />
+                                {task.completed ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Pill className="h-4 w-4 text-muted-foreground" />}
                                 <span className="font-medium text-sm text-card-foreground">{task.name}</span>
                              </div>
-                             {task.completed && <CheckCircle className="h-5 w-5 text-green-500" />}
                            </div>
                         </Link>
                     ))}
