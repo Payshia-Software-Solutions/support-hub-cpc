@@ -346,6 +346,7 @@ export default function DispensePage() {
             const results: ResultState = {};
 
             allFieldNames.forEach(field => {
+                // A field is correct if it's NOT in the incorrect_values array
                 results[field] = !data.incorrect_values.includes(field);
             });
             
