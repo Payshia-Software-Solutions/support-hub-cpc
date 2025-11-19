@@ -12,15 +12,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
-import { ArrowLeft, PlusCircle, ShoppingCart, CheckCircle, Trash2, Search, Pill, Library, Loader2 } from 'lucide-react';
-import { getCeylonPharmacyPrescriptions, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer } from '@/lib/actions/games';
+import { ArrowLeft, PlusCircle, ShoppingCart, CheckCircle, Trash2, Search, Pill, Library, Loader2, FileText } from 'lucide-react';
+import { getCeylonPharmacyPrescriptions, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer, getPrescriptionDetails } from '@/lib/actions/games';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAuth } from '@/contexts/AuthContext';
-import type { GamePatient, MasterProduct, POSCorrectAnswer, POSSubmissionPayload } from '@/lib/types';
+import { useAuth } from '@/hooks/useAuth';
+import type { GamePatient, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, PrescriptionDetail } from '@/lib/types';
 import Image from 'next/image';
 import { format } from 'date-fns';
 
@@ -76,6 +76,12 @@ export default function POSPage() {
         staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     });
 
+    const { data: prescriptionDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
+        queryKey: ['prescriptionDetails', patientId],
+        queryFn: () => getPrescriptionDetails(patientId),
+        enabled: !!patient,
+    });
+
     const submitAnswerMutation = useMutation({
         mutationFn: submitPOSAnswer,
         onError: (error: Error) => {
@@ -92,12 +98,10 @@ export default function POSPage() {
 
     const subtotal = useMemo(() => {
       return cart.reduce((acc, item) => {
-        const itemPrice = item.type === 'prescription' 
-            ? (correctAmountData ? parseFloat(correctAmountData.value) : 0)
-            : parseFloat(item.SellingPrice);
+        const itemPrice = parseFloat(item.SellingPrice);
         return acc + (itemPrice * item.quantity);
       }, 0);
-    }, [cart, correctAmountData]);
+    }, [cart]);
 
     const discountAmount = useMemo(() => {
         const parsedDiscount = parseFloat(discount);
@@ -142,11 +146,6 @@ export default function POSPage() {
     };
     
     const handleRemoveFromCart = (itemId: string) => {
-        const itemToRemove = cart.find(item => item.id === itemId);
-        if (itemToRemove?.type === 'prescription') {
-            toast({ variant: "destructive", description: "Prescription items cannot be removed." });
-            return;
-        }
         setCart(prev => prev.filter(item => item.id !== itemId));
     };
     
@@ -214,7 +213,46 @@ export default function POSPage() {
     const BillComponent = (
         <Card className="shadow-xl sticky top-24 lg:col-span-3">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><ShoppingCart /> Bill</CardTitle>
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <ShoppingCart />
+                        <CardTitle>Bill</CardTitle>
+                    </div>
+                     <Dialog>
+                        <DialogTrigger asChild>
+                             <Button variant="outline"><FileText className="mr-2 h-4 w-4"/>View Prescription</Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-lg">
+                           <DialogHeader>
+                               <DialogTitle>Prescription Details</DialogTitle>
+                               <DialogDescription>Patient: {patient.Pres_Name}</DialogDescription>
+                           </DialogHeader>
+                           <div className="flex justify-center p-4">
+                                <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
+                                    <div className="text-center border-b pb-4 mb-4 border-gray-300">
+                                        <h2 className="text-xl font-bold">{patient.doctor_name}</h2>
+                                        <p className="text-sm text-gray-600">MBBS, MD</p>
+                                        <p className="text-sm text-gray-600">Reg. No: {patient.id}</p>
+                                    </div>
+                                    <div className="flex justify-between text-sm mb-6">
+                                        <div><p><span className="font-semibold">Name:</span> {patient.Pres_Name}</p><p><span className="font-semibold">Age:</span> {patient.Pres_Age}</p></div>
+                                        <div><p><span className="font-semibold">Date:</span> {patient.pres_date}</p></div>
+                                    </div>
+                                    <div className="flex items-start min-h-[200px] pl-10 relative mb-6">
+                                        <div className="absolute left-0 top-0 text-6xl font-serif text-gray-700 select-none">℞</div>
+                                        <div className="flex-1 space-y-4 font-mono text-lg text-gray-800 pt-2">
+                                            {isLoadingDetails ? <Loader2 className="animate-spin"/> : prescriptionDetails?.map(detail => (<div key={detail.cover_id}><p>{detail.content}</p></div>))}
+                                        </div>
+                                    </div>
+                                    <div className="text-right mt-8">
+                                        <p className="italic font-serif text-xl text-gray-700">{patient.doctor_name.split(' ').slice(1).join(' ')}</p>
+                                        <p className="text-xs text-muted-foreground non-italic">Signature</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                </div>
                 <CardDescription>Patient: {patient.Pres_Name}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -232,16 +270,11 @@ export default function POSPage() {
                             </TableHeader>
                             <TableBody>
                                 {cart.map(item => {
-                                    const isGeneral = item.type === 'general';
-                                    if (!isGeneral) return null; // Prescription items are handled above
-                                    
-                                    const generalItem = item as MasterProduct;
-                                    const itemPrice = parseFloat(generalItem.SellingPrice);
-
+                                    const itemPrice = parseFloat(item.SellingPrice);
                                     return (
                                         <TableRow key={item.id}>
                                             <TableCell className="font-medium text-sm">
-                                                {generalItem.DisplayName}
+                                                {item.DisplayName}
                                             </TableCell>
                                             <TableCell>
                                                 <Input 
