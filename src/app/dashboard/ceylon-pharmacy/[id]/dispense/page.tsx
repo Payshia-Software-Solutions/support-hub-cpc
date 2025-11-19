@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -21,7 +20,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getDispensingAnswers, getFormSelectionData, validateDispensingAnswer } from '@/lib/actions/games';
 import type { GamePrescription, PrescriptionDetail, DispensingAnswer, FormSelectionData, GamePatient, ValidateAnswerPayload, ValidateAnswerResponse } from '@/lib/types';
-import type { PrescriptionFormValues } from '@/lib/ceylon-pharmacy-data';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from "@/components/ui/input";
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,6 +46,9 @@ const prescriptionSchema = z.object({
   hour_qty: z.string().optional(),
 });
 
+type PrescriptionFormValues = z.infer<typeof prescriptionSchema>;
+
+
 type ResultState = {
   [K in keyof Omit<PrescriptionFormValues, 'bagin' | 'payaWarak' | 'dosage' | 'frequency' | 'duration'>]?: boolean;
 };
@@ -65,8 +66,9 @@ const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, va
     const [searchTerm, setSearchTerm] = useState('');
     
     const filteredOptions = useMemo(() => {
-        if (!searchTerm) return options;
-        return options.filter(option => option.toLowerCase().includes(searchTerm.toLowerCase()));
+        const sortedOptions = [...options].sort((a, b) => a.localeCompare(b));
+        if (!searchTerm) return sortedOptions;
+        return sortedOptions.filter(option => option.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [options, searchTerm]);
 
     return (
@@ -572,3 +574,5 @@ export default function DispensePage() {
         </div>
     );
 }
+
+    
