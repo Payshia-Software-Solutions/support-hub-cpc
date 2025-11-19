@@ -2,7 +2,7 @@
 
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
@@ -246,4 +246,17 @@ export const submitPOSAnswer = async (payload: POSSubmissionPayload): Promise<an
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
+};
+
+export const getPOSSubmissionStatus = async (presCode: string, studentId: string): Promise<POSSubmissionStatus[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-payment-answers/correct/${presCode}/${studentId}`);
+    if (response.status === 404) {
+        return [];
+    }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to check POS submission status' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
 };

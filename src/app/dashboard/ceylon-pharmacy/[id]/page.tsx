@@ -10,8 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, ClipboardList, BookOpen, MessageCircle, PlayCircle, Loader2, RefreshCw } from 'lucide-react';
-import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, createTreatmentStartRecord, getDispensingSubmissionStatus, getCounsellingSubmissionStatus } from '@/lib/actions/games';
-import type { GamePatient, PrescriptionDetail, TreatmentStartRecord } from '@/lib/types';
+import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, createTreatmentStartRecord, getDispensingSubmissionStatus, getCounsellingSubmissionStatus, getPOSSubmissionStatus } from '@/lib/actions/games';
+import type { GamePatient, PrescriptionDetail, TreatmentStartRecord, POSSubmissionStatus } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -240,25 +240,32 @@ export default function CeylonPharmacyPatientPage() {
         refetchInterval: 10000,
     });
 
+    const { data: posStatus, isLoading: isLoadingPOSStatus } = useQuery<POSSubmissionStatus[]>({
+        queryKey: ['posStatus', patientId, user?.username],
+        queryFn: () => getPOSSubmissionStatus(patientId, user!.username!),
+        enabled: !!user?.username && !!patientId,
+        refetchInterval: 10000,
+    });
+
 
     const taskCompletion = useMemo(() => {
         const allDispensingCompleted = prescriptionDetails ? prescriptionDetails.every(d => dispensingStatuses?.[d.cover_id]) : false;
         const allCounselingCompleted = prescriptionDetails ? prescriptionDetails.every(d => counsellingStatuses?.[d.cover_id]) : false;
-        const posCompleted = false; // Placeholder
+        const posCompleted = posStatus ? posStatus.length > 0 : false;
 
         return {
             dispense: allDispensingCompleted,
             counsel: allCounselingCompleted,
             pos: posCompleted,
         };
-    }, [prescriptionDetails, dispensingStatuses, counsellingStatuses]);
+    }, [prescriptionDetails, dispensingStatuses, counsellingStatuses, posStatus]);
 
     
     const allTasksCompleted = useMemo(() => {
         return taskCompletion.dispense && taskCompletion.counsel && taskCompletion.pos;
     }, [taskCompletion]);
     
-    const isLoading = isLoadingPatient || isLoadingDetails || isLoadingDispensingStatuses || isLoadingCounselStatuses;
+    const isLoading = isLoadingPatient || isLoadingDetails || isLoadingDispensingStatuses || isLoadingCounselStatuses || isLoadingPOSStatus;
     
     if (isLoading || !patient) {
         return (

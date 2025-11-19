@@ -904,3 +904,12 @@ export interface POSSubmissionPayload {
   created_at: string;
   ans_status: 'Answer Correct' | 'Answer Incorrect';
 }
+
+export interface POSSubmissionStatus {
+    id: string;
+    student_id: string;
+    PresCode: string;
+    answer: string;
+    created_at: string;
+    ans_status: 'Answer Correct';
+}
