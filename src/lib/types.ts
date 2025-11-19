@@ -779,6 +779,16 @@ export interface BnfWordIndexEntry {
 
 
 // --- Ceylon Pharmacy Game Types ---
+export interface MasterProduct {
+    product_id: string;
+    product_code: string;
+    ProductName: string;
+    DisplayName: string;
+    PrintName: string;
+    SellingPrice: string;
+    [key: string]: any; // Allow other properties
+}
+
 export interface GamePrescription {
     id: string;
     prescription_id: string;

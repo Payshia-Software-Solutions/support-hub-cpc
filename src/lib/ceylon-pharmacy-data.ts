@@ -32,11 +32,14 @@ export interface PrescriptionDrug {
   correctInstructionIds: string[];
 }
 
-export interface GeneralStoreItem {
-    id: string;
-    name: string;
-    price: number;
-    category: 'Vitamins' | 'First-Aid' | 'Personal Care';
+export interface MasterProduct {
+    product_id: string;
+    product_code: string;
+    ProductName: string;
+    DisplayName: string;
+    PrintName: string;
+    SellingPrice: string;
+    [key: string]: any; // Allow other properties
 }
 
 export interface Prescription {
@@ -86,13 +89,3 @@ export const allInstructions = [
 
 // This is now effectively a fallback and will be replaced by API data
 export const ceylonPharmacyPatients: Patient[] = []; 
-
-export const generalStoreItems: GeneralStoreItem[] = [
-    { id: 'gen-1', name: 'Vitamin C 500mg (30 tabs)', price: 450.00, category: 'Vitamins' },
-    { id: 'gen-2', name: 'Multivitamin Syrup', price: 600.00, category: 'Vitamins' },
-    { id: 'gen-3', name: 'Band-Aid (20 strips)', price: 150.00, category: 'First-Aid' },
-    { id: 'gen-4', name: 'Antiseptic Cream', price: 220.00, category: 'First-Aid' },
-    { id: 'gen-5', name: 'Digital Thermometer', price: 800.00, category: 'First-Aid' },
-    { id: 'gen-6', name: 'Herbal Toothpaste', price: 350.00, category: 'Personal Care' },
-    { id: 'gen-7', name: 'Sunscreen SPF 50', price: 1200.00, category: 'Personal Care' },
-];
