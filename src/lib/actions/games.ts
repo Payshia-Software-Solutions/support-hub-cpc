@@ -2,7 +2,7 @@
 
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -65,6 +65,19 @@ export const validateDispensingAnswer = async (payload: ValidateAnswerPayload): 
     }
     return response.json();
 }
+
+export const getDispensingSubmissionStatus = async (studentNumber: string, presCode: string, coverId: string): Promise<DispensingSubmissionStatus> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-answer-submits/check/${studentNumber}/${presCode}/${coverId}/`);
+    if (!response.ok) {
+         if(response.status === 404) {
+            const errorData = await response.json();
+            return { answer_id: null, error: errorData.error };
+        }
+        const errorData = await response.json().catch(() => ({ message: 'Failed to check submission status' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+};
 
 
 export const getFormSelectionData = async (): Promise<FormSelectionData> => {
@@ -165,4 +178,3 @@ export const saveCounsellingAnswer = async (payload: SaveCounselingAnswerPayload
     }
     return response.json();
 };
-

@@ -823,7 +823,7 @@ export interface DispensingAnswer {
     meal_type: string;
     using_type: string;
     at_a_time: string;
-    hour_qty: string;
+    hour_qty: string | null;
     additional_description: string;
     created_at: string;
     created_by: string;
@@ -886,4 +886,9 @@ export interface SaveCounselingAnswerPayload {
   Instruction: string;
   CoverCode: string;
   ans_status: 'Correct' | 'incorrect';
+}
+
+export interface DispensingSubmissionStatus {
+    answer_id: string | null;
+    error?: string;
 }
