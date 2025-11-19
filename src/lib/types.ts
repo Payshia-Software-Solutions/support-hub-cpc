@@ -885,5 +885,5 @@ export interface SaveCounselingAnswerPayload {
   PresCode: string;
   Instruction: string;
   CoverCode: string;
-  ans_status: 'correct' | 'incorrect';
+  ans_status: 'Correct' | 'incorrect';
 }

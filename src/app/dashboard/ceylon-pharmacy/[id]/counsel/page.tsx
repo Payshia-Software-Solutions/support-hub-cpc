@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -92,7 +92,7 @@ export default function CounselPage() {
                         PresCode: patientId,
                         Instruction: instruction.id,
                         CoverCode: coverId,
-                        ans_status: 'correct'
+                        ans_status: 'Correct'
                     };
                     return saveAnswersMutation.mutateAsync(payload);
                 });
