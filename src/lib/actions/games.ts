@@ -2,7 +2,7 @@
 
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -149,4 +149,20 @@ export const getCorrectInstructions = async (presCode: string, coverId: string):
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
-}
+};
+
+export const saveCounsellingAnswer = async (payload: SaveCounselingAnswerPayload): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-ins-answers/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to save counselling answer.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+

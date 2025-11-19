@@ -14,9 +14,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getShuffledInstructions, getCorrectInstructions } from '@/lib/actions/games';
-import type { Instruction } from '@/lib/types';
+import { getShuffledInstructions, getCorrectInstructions, saveCounsellingAnswer } from '@/lib/actions/games';
+import type { Instruction, SaveCounselingAnswerPayload } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
 
 const REQUIRED_INSTRUCTIONS = 1;
 
@@ -24,6 +25,7 @@ export default function CounselPage() {
     const router = useRouter();
     const params = useParams();
     const searchParams = useSearchParams();
+    const { user } = useAuth();
     const patientId = params.id as string; // This is the pres_code
     const coverId = searchParams.get('drug');
     const isMobile = useIsMobile();
@@ -43,13 +45,23 @@ export default function CounselPage() {
         queryFn: () => getCorrectInstructions(patientId, coverId!),
         enabled: !!patientId && !!coverId,
     });
+    
+    const saveAnswersMutation = useMutation({
+        mutationFn: (payload: SaveCounselingAnswerPayload) => saveCounsellingAnswer(payload),
+        onError: (error: Error, variables) => {
+            toast({
+                variant: 'destructive',
+                title: 'Submission Error',
+                description: `Failed to save instruction for ${variables.CoverCode}.`,
+            });
+        }
+    });
 
     const validationMutation = useMutation({
         mutationFn: async () => {
             if (!correctInstructions) {
                 throw new Error("Correct answers not loaded yet.");
             }
-            // Simulate network delay for validation
             await new Promise(resolve => setTimeout(resolve, 500));
 
             const givenIds = new Set(givenInstructions.map(i => i.id));
@@ -69,12 +81,33 @@ export default function CounselPage() {
         onSuccess: (isCorrect) => {
             setIsAnswerCorrect(isCorrect);
             if (isCorrect) {
-                toast({
-                    title: 'Instructions Saved!',
-                    description: 'The patient counselling information is correct.',
+                if (!user || !patientId || !coverId) {
+                    toast({ variant: "destructive", title: "Error", description: "Missing user or context information." });
+                    return;
+                }
+
+                const submissionPromises = givenInstructions.map(instruction => {
+                    const payload: SaveCounselingAnswerPayload = {
+                        LoggedUser: user.username!,
+                        PresCode: patientId,
+                        Instruction: instruction.id,
+                        CoverCode: coverId,
+                        ans_status: 'correct'
+                    };
+                    return saveAnswersMutation.mutateAsync(payload);
                 });
-                // In a real app, you would likely send a confirmation to the backend here.
-                router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
+                
+                Promise.all(submissionPromises).then(() => {
+                    toast({
+                        title: 'Instructions Saved!',
+                        description: 'The patient counselling information is correct and has been saved.',
+                    });
+                    // In a real app, you might navigate away or show a completion screen
+                    router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
+                }).catch(() => {
+                    // Errors are handled in the mutation's onError
+                });
+
             } else {
                 toast({
                     variant: 'destructive',
@@ -85,7 +118,7 @@ export default function CounselPage() {
         },
         onError: (error: Error) => {
              toast({
-                variant: 'destructive',
+                variant: "destructive",
                 title: 'Validation Error',
                 description: error.message,
             });
@@ -237,8 +270,8 @@ export default function CounselPage() {
 
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
-                    <Button onClick={handleSave} disabled={validationMutation.isPending || isLoading || isLoadingCorrect}>
-                        {validationMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
+                    <Button onClick={handleSave} disabled={validationMutation.isPending || isLoading || isLoadingCorrect || saveAnswersMutation.isPending}>
+                        {(validationMutation.isPending || saveAnswersMutation.isPending) ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
                         Save Instructions
                     </Button>
                 </CardFooter>

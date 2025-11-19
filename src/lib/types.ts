@@ -1,4 +1,5 @@
 
+
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -877,4 +878,12 @@ export interface Instruction {
     content: string;
     created_at: string;
     instruction: string;
+}
+
+export interface SaveCounselingAnswerPayload {
+  LoggedUser: string;
+  PresCode: string;
+  Instruction: string;
+  CoverCode: string;
+  ans_status: 'correct' | 'incorrect';
 }
