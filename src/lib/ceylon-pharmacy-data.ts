@@ -62,20 +62,6 @@ export interface Prescription {
   totalBillValue: number;
 }
 
-export interface Patient {
-  id: string;
-  name: string;
-  age: string;
-  status: 'waiting' | 'recovered' | 'dead';
-  initialTime: number; // in seconds
-  description?: string; // patient_description
-  address?: string;
-  createdBy?: string;
-  createdAt?: string;
-  prescription: Prescription;
-  notes?: string;
-}
-
 
 export const allInstructions = [
   { id: '1', text: 'Take with a full glass of water.' },
@@ -88,4 +74,4 @@ export const allInstructions = [
 ];
 
 // This is now effectively a fallback and will be replaced by API data
-export const ceylonPharmacyPatients: Patient[] = []; 
+export const ceylonPharmacyPatients: any[] = []; 
