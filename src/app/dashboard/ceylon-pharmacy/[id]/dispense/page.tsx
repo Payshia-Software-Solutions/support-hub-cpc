@@ -4,7 +4,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -19,8 +19,8 @@ import { format } from "date-fns";
 import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User, Loader2, Search, Clock, CheckCircle } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getDispensingAnswers, getFormSelectionData } from '@/lib/actions/games';
-import type { GamePrescription, PrescriptionDetail, DispensingAnswer, FormSelectionData, GamePatient } from '@/lib/types';
+import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getDispensingAnswers, getFormSelectionData, validateDispensingAnswer } from '@/lib/actions/games';
+import type { GamePrescription, PrescriptionDetail, DispensingAnswer, FormSelectionData, GamePatient, ValidateAnswerPayload, ValidateAnswerResponse } from '@/lib/types';
 import type { PrescriptionFormValues } from '@/lib/ceylon-pharmacy-data';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from "@/components/ui/input";
@@ -146,12 +146,14 @@ const DispensingForm = ({
   onSubmit,
   onReset,
   results,
+  isSubmitting
 }: {
   correctAnswers: DispensingAnswer;
   selectionData: FormSelectionData;
   onSubmit: (data: PrescriptionFormValues) => void;
   onReset: () => void;
   results: ResultState | null;
+  isSubmitting: boolean;
 }) => {
   const form = useForm<PrescriptionFormValues>({
     resolver: zodResolver(prescriptionSchema),
@@ -173,7 +175,6 @@ const DispensingForm = ({
     return null;
   };
   
-  // Combine API options with the correct answer to ensure it's always available
   const getOptions = (key: keyof FormSelectionData, correctAnswer: string) => {
     const options = selectionData[key] || [];
     return [...new Set([correctAnswer, ...options])];
@@ -228,7 +229,10 @@ const DispensingForm = ({
       <div className="mt-auto p-4 bg-background border-t shrink-0">
         <div className="flex items-center gap-2">
             <Button type="button" variant="outline" onClick={handleReset} className="w-auto"> <RotateCw className="mr-2 h-4 w-4" /> Reset </Button>
-            <Button type="submit" form={`dispensing-form-${correctAnswers.cover_id}`} className="flex-grow"> <ClipboardList className="mr-2 h-5 w-5" /> Check Answers </Button>
+            <Button type="submit" form={`dispensing-form-${correctAnswers.cover_id}`} className="flex-grow" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ClipboardList className="mr-2 h-5 w-5" />}
+              Check Answers
+            </Button>
         </div>
       </div>
     </div>
@@ -328,6 +332,34 @@ export default function DispensePage() {
         queryKey: ['formSelectionData'],
         queryFn: getFormSelectionData,
     });
+    
+     const validationMutation = useMutation<ValidateAnswerResponse, Error, ValidateAnswerPayload>({
+        mutationFn: validateDispensingAnswer,
+        onSuccess: (data, variables) => {
+            if (data.results) {
+                setDispenseFormResults(prev => ({
+                    ...prev,
+                    [variables.cover_id]: data.results as ResultState
+                }));
+            }
+            if (data.all_correct) {
+                toast({ title: "Drug Verified!", description: `${variables.drug_name} details are correct.` });
+                try {
+                    const completed = JSON.parse(localStorage.getItem(`completed_drugs_${patientId}`) || '[]');
+                    if (!completed.includes(variables.cover_id)) {
+                        completed.push(variables.cover_id);
+                        localStorage.setItem(`completed_drugs_${patientId}`, JSON.stringify(completed));
+                    }
+                } catch (e) { console.error(e); }
+                router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
+            } else {
+                toast({ variant: "destructive", title: "Check Your Answers", description: "Some details are incorrect for this drug." });
+            }
+        },
+        onError: (error) => {
+            toast({ variant: "destructive", title: "Validation Failed", description: error.message });
+        }
+    });
 
     const drugToDispense = useMemo(() => {
         if (!prescriptionDetails) return null;
@@ -342,64 +374,37 @@ export default function DispensePage() {
         if (patient.start_data.patient_status === 'Recovered') return 'recovered';
         
         const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
-        if (elapsed > 3600) return 'dead'; // 1 hour = 3600 seconds
+        if (elapsed > 3600) return 'dead';
         
         return 'active';
     }, [patient, startTime]);
 
 
     const handleDispenseSubmit = (data: PrescriptionFormValues) => {
-        if (!correctAnswers) return;
-
-        const newResults: ResultState = {};
-        let allCorrect = true;
-
-        const formToApiMap: Record<keyof Omit<PrescriptionFormValues, 'bagin' | 'payaWarak' | 'dosage' | 'frequency' | 'duration'>, keyof DispensingAnswer> = {
-            date: 'date',
-            patientName: 'name',
-            drugName: 'drug_name',
-            quantity: 'drug_qty',
-            dosageForm: 'drug_type',
-            morningQty: 'morning_qty',
-            afternoonQty: 'afternoon_qty',
-            eveningQty: 'evening_qty',
-            nightQty: 'night_qty',
-            mealType: 'meal_type',
-            usingFrequency: 'using_type',
-            additionalInstruction: 'additional_description'
+        if (!correctAnswers || !user) return;
+        
+        const payload: ValidateAnswerPayload = {
+            created_by: user.username!,
+            user_level: "Student",
+            pres_id: correctAnswers.pres_id,
+            cover_id: correctAnswers.cover_id,
+            date: data.date,
+            name: data.patientName,
+            drug_name: data.drugName,
+            drug_type: data.dosageForm,
+            drug_qty: String(data.quantity),
+            morning_qty: data.morningQty,
+            afternoon_qty: data.afternoonQty,
+            evening_qty: data.eveningQty,
+            night_qty: data.nightQty,
+            meal_type: data.mealType,
+            using_type: data.usingFrequency,
+            at_a_time: '1', // Placeholder as per your example
+            hour_qty: null,  // Placeholder
+            additional_description: data.additionalInstruction || ''
         };
-
-        (Object.keys(formToApiMap) as Array<keyof typeof formToApiMap>).forEach(formKey => {
-            const apiKey = formToApiMap[formKey];
-            // @ts-ignore
-            const isCorrect = String(data[formKey] ?? '').toLowerCase().trim() === String(correctAnswers[apiKey] ?? '').toLowerCase().trim();
-            newResults[formKey] = isCorrect;
-            if (!isCorrect) allCorrect = false;
-        });
-
-        setDispenseFormResults(prev => ({ ...prev, [correctAnswers.cover_id]: newResults }));
-
-        if (allCorrect) {
-            toast({
-                title: "Drug Verified!",
-                description: `${correctAnswers.drug_name} details are correct.`,
-            });
-            // Persist completion state
-            try {
-                const completed = JSON.parse(localStorage.getItem(`completed_drugs_${patientId}`) || '[]');
-                if (!completed.includes(coverId)) {
-                    completed.push(coverId);
-                    localStorage.setItem(`completed_drugs_${patientId}`, JSON.stringify(completed));
-                }
-            } catch (e) { console.error(e) }
-            router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
-        } else {
-             toast({
-                variant: "destructive",
-                title: "Check Your Answers",
-                description: "Some details are incorrect for this drug.",
-            });
-        }
+        
+        validationMutation.mutate(payload);
     }
 
     const handleDispenseReset = (drugIdToReset: string) => {
@@ -495,6 +500,7 @@ export default function DispensePage() {
                                             onSubmit={handleDispenseSubmit}
                                             onReset={() => handleDispenseReset(correctAnswers.cover_id)}
                                             results={dispenseFormResults[correctAnswers.cover_id] || null}
+                                            isSubmitting={validationMutation.isPending}
                                         />
                                     </div>
                                     </div>
@@ -516,6 +522,7 @@ export default function DispensePage() {
                                 onSubmit={handleDispenseSubmit}
                                 onReset={() => handleDispenseReset(correctAnswers.cover_id)}
                                 results={dispenseFormResults[correctAnswers.cover_id] || null}
+                                isSubmitting={validationMutation.isPending}
                             />
                         </CardContent>
                     </Card>

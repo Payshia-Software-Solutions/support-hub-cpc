@@ -842,4 +842,31 @@ export interface TreatmentStartRecord {
     patient_status: "Pending" | "Recovered";
 }
 
-```
+export interface ValidateAnswerPayload {
+    user_level: string;
+    created_by: string;
+    pres_id: string;
+    cover_id: string;
+    date: string;
+    name: string;
+    drug_name: string;
+    drug_type: string;
+    drug_qty: string;
+    morning_qty: string;
+    afternoon_qty: string;
+    evening_qty: string;
+    night_qty: string;
+    meal_type: string;
+    using_type: string;
+    at_a_time: string;
+    hour_qty: string | null;
+    additional_description: string;
+}
+
+export interface ValidateAnswerResponse {
+    results: {
+        [key: string]: boolean;
+    };
+    all_correct: boolean;
+    message: string;
+}
