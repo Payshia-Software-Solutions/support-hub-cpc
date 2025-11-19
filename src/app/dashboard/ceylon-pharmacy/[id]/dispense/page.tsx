@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -17,7 +18,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ClipboardList, User, Loader2, Search, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getDispensingAnswers, getFormSelectionData, validateDispensingAnswer } from '@/lib/actions/games';
 import type { GamePrescription, PrescriptionDetail, DispensingAnswer, FormSelectionData, GamePatient, ValidateAnswerPayload, ValidateAnswerResponse } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
