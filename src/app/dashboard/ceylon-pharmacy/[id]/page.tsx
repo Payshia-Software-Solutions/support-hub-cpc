@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, ClipboardList, BookOpen, MessageCircle, PlayCircle, Loader2, RefreshCw } from 'lucide-react';
-import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getTreatmentStartTime, createTreatmentStartRecord, getDispensingSubmissionStatus } from '@/lib/actions/games';
+import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getTreatmentStartTime, createTreatmentStartRecord, getDispensingSubmissionStatus, getCounsellingSubmissionStatus } from '@/lib/actions/games';
 import type { GamePatient, PrescriptionDetail, TreatmentStartRecord } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -142,8 +142,6 @@ export default function CeylonPharmacyPatientPage() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const courseCode = 'CPCC20';
-    
-    const [completedCounselingIds, setCompletedCounselingIds] = useState<Set<string>>(new Set());
 
     // --- Data Fetching ---
     const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
@@ -200,7 +198,7 @@ export default function CeylonPharmacyPatientPage() {
         }
     }, [patientStatus, patient?.Pres_Name]);
 
-     const { data: dispensingStatuses, isLoading: isLoadingStatuses } = useQuery({
+     const { data: dispensingStatuses, isLoading: isLoadingDispensingStatuses } = useQuery({
         queryKey: ['dispensingStatuses', patientId, prescriptionDetails],
         queryFn: async () => {
             if (!user?.username || !prescriptionDetails) return {};
@@ -215,25 +213,40 @@ export default function CeylonPharmacyPatientPage() {
         refetchInterval: 10000,
     });
 
+    const { data: counsellingStatuses, isLoading: isLoadingCounselStatuses } = useQuery({
+        queryKey: ['counsellingStatuses', patientId, prescriptionDetails],
+        queryFn: async () => {
+            if (!user?.username || !prescriptionDetails) return {};
+            const statuses: Record<string, boolean> = {};
+            for (const detail of prescriptionDetails) {
+                const results = await getCounsellingSubmissionStatus(user.username, patientId, detail.cover_id);
+                statuses[detail.cover_id] = results.length > 0;
+            }
+            return statuses;
+        },
+        enabled: !!user?.username && !!prescriptionDetails && prescriptionDetails.length > 0,
+        refetchInterval: 10000,
+    });
+
 
     const taskCompletion = useMemo(() => {
         const allDispensingCompleted = prescriptionDetails ? prescriptionDetails.every(d => dispensingStatuses?.[d.cover_id]) : false;
-        const counselCompleted = prescriptionDetails ? completedCounselingIds.size === prescriptionDetails.length : false;
+        const allCounselingCompleted = prescriptionDetails ? prescriptionDetails.every(d => counsellingStatuses?.[d.cover_id]) : false;
         const posCompleted = false; // Placeholder
 
         return {
             dispense: allDispensingCompleted,
-            counsel: counselCompleted,
+            counsel: allCounselingCompleted,
             pos: posCompleted,
         };
-    }, [prescriptionDetails, dispensingStatuses, completedCounselingIds]);
+    }, [prescriptionDetails, dispensingStatuses, counsellingStatuses]);
 
     
     const allTasksCompleted = useMemo(() => {
         return taskCompletion.dispense && taskCompletion.counsel && taskCompletion.pos;
     }, [taskCompletion]);
     
-    const isLoading = isLoadingPatient || isLoadingDetails || isLoadingStatuses;
+    const isLoading = isLoadingPatient || isLoadingDetails || isLoadingDispensingStatuses || isLoadingCounselStatuses;
     
     if (isLoading || !patient) {
         return (
@@ -254,7 +267,7 @@ export default function CeylonPharmacyPatientPage() {
         id: detail.cover_id,
         name: detail.content.split(' ')[0] || 'Unknown Drug',
         href: `/dashboard/ceylon-pharmacy/${patient.prescription_id}/counsel?drug=${detail.cover_id}`,
-        completed: completedCounselingIds.has(detail.cover_id)
+        completed: counsellingStatuses?.[detail.cover_id] || false,
     })) || [];
 
     return (

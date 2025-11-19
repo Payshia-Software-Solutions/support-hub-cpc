@@ -79,6 +79,23 @@ export const getDispensingSubmissionStatus = async (studentNumber: string, presC
     return response.json();
 };
 
+export const getCounsellingSubmissionStatus = async (studentNumber: string, presCode: string, coverId: string): Promise<any[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-ins-answers/check/${studentNumber}/${presCode}/${coverId}/`);
+    if (response.status === 404) {
+        return [];
+    }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to check counselling submission status' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    const data = await response.json();
+    // The API returns an error object if no submission is found, but a successful response is an array.
+    if(data.error) {
+        return [];
+    }
+    return Array.isArray(data) ? data : [];
+};
+
 
 export const getFormSelectionData = async (): Promise<FormSelectionData> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-answers/form-selection-data/`);
