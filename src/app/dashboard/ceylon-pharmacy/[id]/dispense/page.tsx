@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -43,6 +44,8 @@ const prescriptionSchema = z.object({
   mealType: z.string().nonempty("Meal type is required."),
   usingFrequency: z.string().nonempty("Using frequency is required."),
   additionalInstruction: z.string().nonempty("Additional instruction is required."),
+  at_a_time: z.string().nonempty("This field is required."),
+  hour_qty: z.string().optional(),
 });
 
 type ResultState = {
@@ -155,7 +158,7 @@ const DispensingForm = ({
     defaultValues: {
       date: "", patientName: "", drugName: "", quantity: undefined,
       dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "",
-      usingFrequency: "", additionalInstruction: "",
+      usingFrequency: "", additionalInstruction: "", at_a_time: "", hour_qty: ""
     },
   });
 
@@ -177,6 +180,8 @@ const DispensingForm = ({
   const dailyQtyOptions = ['-', '1', '2', '3', '1/2', '4', '5']; 
   const usingFrequencyOptions = getOptions('using_type', correctAnswers.using_type);
   const additionalDescriptionOptions = getOptions('additional_description', correctAnswers.additional_description);
+  const atATimeOptions = getOptions('at_a_time', correctAnswers.at_a_time);
+  const hourQtyOptions = getOptions('hour_qty', correctAnswers.hour_qty || '-');
 
   return (
     <div className="h-full flex flex-col">
@@ -208,6 +213,8 @@ const DispensingForm = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField name="mealType" control={control} render={({ field }) => ( <FormItem><FormLabel>Meal Type</FormLabel><FormControl><SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={mealTypeOptions} onSelect={(val) => field.onChange(val)} icon={Pill} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
                 <FormField name="usingFrequency" control={control} render={({ field }) => ( <FormItem><FormLabel>Using Frequency</FormLabel><FormControl><SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={usingFrequencyOptions} onSelect={(val) => field.onChange(val)} icon={Repeat} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField name="at_a_time" control={control} render={({ field }) => ( <FormItem><FormLabel>At a Time</FormLabel><FormControl><SelectionDialog triggerText="e.g. 5ml" title="At a Time" options={atATimeOptions} onSelect={(val) => field.onChange(val)} icon={Hash} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField name="hour_qty" control={control} render={({ field }) => ( <FormItem><FormLabel>Hour Quantity</FormLabel><FormControl><SelectionDialog triggerText="e.g. 8" title="Hour Quantity" options={hourQtyOptions} onSelect={(val) => field.onChange(val)} icon={Clock} value={field.value || ''} /></FormControl><FormMessage /></FormItem> )} />
                 <FormField name="additionalInstruction" control={control} render={({ field }) => ( <FormItem className="md:col-span-2"><FormLabel>Additional Description</FormLabel><FormControl><SelectionDialog triggerText="Select Description" title="Additional Description" options={additionalDescriptionOptions} onSelect={(val) => field.onChange(val)} icon={Pill} value={field.value || ''} /></FormControl><FormMessage /></FormItem> )} />
             </div>
           </div>
@@ -415,8 +422,8 @@ export default function DispensePage() {
             night_qty: data.nightQty,
             meal_type: data.mealType,
             using_type: data.usingFrequency,
-            at_a_time: '1', // Placeholder as per your example
-            hour_qty: null,  // Placeholder
+            at_a_time: data.at_a_time,
+            hour_qty: data.hour_qty || null,
             additional_description: data.additionalInstruction || ''
         };
         
