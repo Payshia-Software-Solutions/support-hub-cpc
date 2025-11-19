@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const prescriptionSchema = z.object({
   date: z.string().nonempty("Date is required."),
@@ -158,8 +159,8 @@ const DispensingForm = ({
     },
   });
 
-  const { handleSubmit, formState: { errors }, setValue, watch, control } = form;
-  const formValues = watch();
+  const { handleSubmit, formState: { errors }, control } = form;
+  const formValues = form.watch();
 
   const handleReset = () => { form.reset(); onReset(); }
   
@@ -180,39 +181,38 @@ const DispensingForm = ({
   return (
     <div className="h-full flex flex-col">
        <div className="flex-1 overflow-y-auto pr-2">
+        <Form {...form}>
         <form id={`dispensing-form-${correctAnswers.cover_id}`} onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label>Date</Label>
-                    <DatePickerField control={control} />
-                </div>
-                 <div className="space-y-2"> <Label>Name</Label> <SelectionDialog triggerText="Select Name" title="Patient Name" options={nameOptions} onSelect={(val) => setValue("patientName", val, { shouldValidate: true })} icon={User} value={formValues.patientName} /> </div>
+                <FormField name="date" control={control} render={({ field }) => ( <FormItem><FormLabel>Date</FormLabel><FormControl><DatePickerField control={control} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField name="patientName" control={control} render={({ field }) => ( <FormItem><FormLabel>Name</FormLabel><FormControl><SelectionDialog triggerText="Select Name" title="Patient Name" options={nameOptions} onSelect={(val) => field.onChange(val)} icon={User} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
               </div>
-              <div className="space-y-2"> <Label>Drug Name</Label> <SelectionDialog triggerText="Select Drug" title="Drug" options={drugOptions} onSelect={(val) => setValue("drugName", val, { shouldValidate: true })} icon={Pill} value={formValues.drugName} /> </div>
+              <FormField name="drugName" control={control} render={({ field }) => ( <FormItem><FormLabel>Drug Name</FormLabel><FormControl><SelectionDialog triggerText="Select Drug" title="Drug" options={drugOptions} onSelect={(val) => field.onChange(val)} icon={Pill} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2"> <Label>Dosage Form</Label> <SelectionDialog triggerText="Select Form" title="Dosage Form" options={dosageFormOptions} onSelect={(val) => setValue("dosageForm", val, { shouldValidate: true })} icon={Pill} value={formValues.dosageForm} /> {errors.dosageForm && <p className="text-sm text-destructive">{errors.dosageForm.message}</p>} </div>
-                 <div className="space-y-2"> <Label>Drug Quantity</Label> <SelectionDialog triggerText="Select Quantity" title="Total Quantity" options={quantityOptions} onSelect={(val) => setValue("quantity", parseInt(val), { shouldValidate: true })} icon={Hash} value={String(formValues.quantity || '')} /> {errors.quantity && <p className="text-sm text-destructive">{errors.quantity.message}</p>} </div>
+                <FormField name="dosageForm" control={control} render={({ field }) => ( <FormItem><FormLabel>Dosage Form</FormLabel><FormControl><SelectionDialog triggerText="Select Form" title="Dosage Form" options={dosageFormOptions} onSelect={(val) => field.onChange(val)} icon={Pill} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField name="quantity" control={control} render={({ field }) => ( <FormItem><FormLabel>Drug Quantity</FormLabel><FormControl><SelectionDialog triggerText="Select Quantity" title="Total Quantity" options={quantityOptions} onSelect={(val) => field.onChange(parseInt(val))} icon={Hash} value={String(field.value || '')} /></FormControl><FormMessage /></FormItem> )} />
               </div>
           </div>
           <div className="space-y-4">
             <h3 className="text-lg font-semibold border-b pb-2">Drug Quantities</h3>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-2"> <Label>Morning</Label> <SelectionDialog triggerText="Qty" title="Morning Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("morningQty", val, { shouldValidate: true })} icon={Hash} value={formValues.morningQty} /> </div>
-                 <div className="space-y-2"> <Label>Afternoon</Label> <SelectionDialog triggerText="Qty" title="Afternoon Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("afternoonQty", val, { shouldValidate: true })} icon={Hash} value={formValues.afternoonQty} /> </div>
-                 <div className="space-y-2"> <Label>Evening</Label> <SelectionDialog triggerText="Qty" title="Evening Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("eveningQty", val, { shouldValidate: true })} icon={Hash} value={formValues.eveningQty} /> </div>
-                 <div className="space-y-2"> <Label>Night</Label> <SelectionDialog triggerText="Qty" title="Night Quantity" options={dailyQtyOptions} onSelect={(val) => setValue("nightQty", val, { shouldValidate: true })} icon={Hash} value={formValues.nightQty} /> </div>
+                <FormField name="morningQty" control={control} render={({ field }) => ( <FormItem><FormLabel>Morning</FormLabel><FormControl><SelectionDialog triggerText="Qty" title="Morning Quantity" options={dailyQtyOptions} onSelect={(val) => field.onChange(val)} icon={Hash} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField name="afternoonQty" control={control} render={({ field }) => ( <FormItem><FormLabel>Afternoon</FormLabel><FormControl><SelectionDialog triggerText="Qty" title="Afternoon Quantity" options={dailyQtyOptions} onSelect={(val) => field.onChange(val)} icon={Hash} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField name="eveningQty" control={control} render={({ field }) => ( <FormItem><FormLabel>Evening</FormLabel><FormControl><SelectionDialog triggerText="Qty" title="Evening Quantity" options={dailyQtyOptions} onSelect={(val) => field.onChange(val)} icon={Hash} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField name="nightQty" control={control} render={({ field }) => ( <FormItem><FormLabel>Night</FormLabel><FormControl><SelectionDialog triggerText="Qty" title="Night Quantity" options={dailyQtyOptions} onSelect={(val) => field.onChange(val)} icon={Hash} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
             </div>
           </div>
            <div className="space-y-4">
             <h3 className="text-lg font-semibold border-b pb-2">Other</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2"> <Label>Meal Type</Label> <SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={mealTypeOptions} onSelect={(val) => setValue("mealType", val, { shouldValidate: true })} icon={Pill} value={formValues.mealType} /> </div>
-                 <div className="space-y-2"> <Label>Using Frequency</Label> <SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={usingFrequencyOptions} onSelect={(val) => setValue("usingFrequency", val, { shouldValidate: true })} icon={Repeat} value={formValues.usingFrequency} /> </div>
-                 <div className="md:col-span-2 space-y-2"> <Label>Additional Description</Label> <SelectionDialog triggerText="Select Description" title="Additional Description" options={additionalDescriptionOptions} onSelect={(val) => setValue("additionalInstruction", val, { shouldValidate: true })} icon={Pill} value={formValues.additionalInstruction || ''} /> </div>
+                <FormField name="mealType" control={control} render={({ field }) => ( <FormItem><FormLabel>Meal Type</FormLabel><FormControl><SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={mealTypeOptions} onSelect={(val) => field.onChange(val)} icon={Pill} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField name="usingFrequency" control={control} render={({ field }) => ( <FormItem><FormLabel>Using Frequency</FormLabel><FormControl><SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={usingFrequencyOptions} onSelect={(val) => field.onChange(val)} icon={Repeat} value={field.value} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField name="additionalInstruction" control={control} render={({ field }) => ( <FormItem className="md:col-span-2"><FormLabel>Additional Description</FormLabel><FormControl><SelectionDialog triggerText="Select Description" title="Additional Description" options={additionalDescriptionOptions} onSelect={(val) => field.onChange(val)} icon={Pill} value={field.value || ''} /></FormControl><FormMessage /></FormItem> )} />
             </div>
           </div>
         </form>
+        </Form>
       </div>
       <div className="mt-auto p-4 bg-background border-t shrink-0">
         <div className="flex items-center gap-2">
@@ -282,16 +282,29 @@ const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused, patientSt
 const fieldLabels: Record<string, string> = {
     date: "Date",
     patientName: "Patient Name",
+    name: "Patient Name",
     drugName: "Drug Name",
+    drug_name: "Drug Name",
     quantity: "Drug Quantity",
+    drug_qty: "Drug Quantity",
     dosageForm: "Dosage Form",
+    drug_type: "Dosage Form",
     morningQty: "Morning Quantity",
+    morning_qty: "Morning Quantity",
     afternoonQty: "Afternoon Quantity",
+    afternoon_qty: "Afternoon Quantity",
     eveningQty: "Evening Quantity",
+    evening_qty: "Evening Quantity",
     nightQty: "Night Quantity",
+    night_qty: "Night Quantity",
     mealType: "Meal Type",
+    meal_type: "Meal Type",
     usingFrequency: "Using Frequency",
+    using_type: "Using Frequency",
     additionalInstruction: "Additional Description",
+    additional_description: "Additional Description",
+    at_a_time: "At a Time",
+    hour_qty: "Hour Quantity",
 };
 
 export default function DispensePage() {
