@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 const prescriptionSchema = z.object({
   date: z.string().nonempty("Date is required."),
@@ -336,13 +337,24 @@ export default function DispensePage() {
      const validationMutation = useMutation<ValidateAnswerResponse, Error, ValidateAnswerPayload>({
         mutationFn: validateDispensingAnswer,
         onSuccess: (data, variables) => {
-            if (data.results) {
-                setDispenseFormResults(prev => ({
-                    ...prev,
-                    [variables.cover_id]: data.results as ResultState
-                }));
-            }
-            if (data.all_correct) {
+            const allFieldNames: (keyof PrescriptionFormValues)[] = [
+                "date", "patientName", "drugName", "quantity", "dosageForm",
+                "morningQty", "afternoonQty", "eveningQty", "nightQty",
+                "mealType", "usingFrequency", "additionalInstruction"
+            ];
+            
+            const results: ResultState = {};
+
+            allFieldNames.forEach(field => {
+                results[field] = !data.incorrect_values.includes(field);
+            });
+            
+            setDispenseFormResults(prev => ({
+                ...prev,
+                [variables.cover_id]: results
+            }));
+
+            if (data.answer_status !== 'In-Correct') {
                 toast({ title: "Drug Verified!", description: `${variables.drug_name} details are correct.` });
                 try {
                     const completed = JSON.parse(localStorage.getItem(`completed_drugs_${patientId}`) || '[]');

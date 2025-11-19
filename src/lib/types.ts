@@ -864,9 +864,9 @@ export interface ValidateAnswerPayload {
 }
 
 export interface ValidateAnswerResponse {
-    results: {
-        [key: string]: boolean;
-    };
-    all_correct: boolean;
+    status: "success" | "error";
     message: string;
+    id: string;
+    incorrect_values: string[];
+    answer_status: "Correct" | "In-Correct";
 }
