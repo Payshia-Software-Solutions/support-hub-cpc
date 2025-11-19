@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -11,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { ArrowLeft, PlusCircle, ShoppingCart, CheckCircle, Trash2, Search, Pill, Library, Loader2, FileText } from 'lucide-react';
-import { getCeylonPharmacyPrescriptions, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer, getPrescriptionDetails } from '@/lib/actions/games';
+import { getCeylonPharmacyPrescriptions, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer, getPrescriptionDetails, updatePatientStatus } from '@/lib/actions/games';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -80,8 +81,27 @@ export default function POSPage() {
         enabled: !!patient,
     });
 
+    const updateStatusMutation = useMutation({
+        mutationFn: (startDataId: string) => updatePatientStatus(startDataId),
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Status Update Error', description: `Could not mark patient as recovered: ${error.message}` });
+        }
+    });
+
     const submitAnswerMutation = useMutation({
         mutationFn: submitPOSAnswer,
+        onSuccess: (data, variables) => {
+             if (variables.ans_status === 'Answer Correct') {
+                setIsPaid(true);
+                toast({ title: 'Payment Correct!', description: `The total amount is correct. Change to be given: LKR ${change.toFixed(2)}` });
+
+                if (patient?.start_data?.id) {
+                    updateStatusMutation.mutate(patient.start_data.id);
+                }
+            } else {
+                toast({ variant: 'destructive', title: 'Incorrect Total', description: 'The final bill amount is not correct. Please review the prescription and items.' });
+            }
+        },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Submission Error', description: error.message });
         }
@@ -181,16 +201,7 @@ export default function POSPage() {
             ans_status: status
         };
 
-        submitAnswerMutation.mutate(payload, {
-            onSuccess: () => {
-                if (isCorrect) {
-                    setIsPaid(true);
-                    toast({ title: 'Payment Correct!', description: `The total amount is correct. Change to be given: LKR ${change.toFixed(2)}` });
-                } else {
-                    toast({ variant: 'destructive', title: 'Incorrect Total', description: 'The final bill amount is not correct. Please review the prescription and items.' });
-                }
-            }
-        });
+        submitAnswerMutation.mutate(payload);
     };
     
     const handleCompleteSale = () => {

@@ -165,6 +165,21 @@ export const createTreatmentStartRecord = async (studentId: string, presCode: st
     return response.json();
 };
 
+export const updatePatientStatus = async (startDataId: string): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-starts/${startDataId}/patient-status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ patient_status: "Recovered" }),
+    });
+     if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update patient status' }));
+        throw new Error(errorData.message || 'API error');
+    }
+    return response.json();
+};
+
 
 export const getShuffledInstructions = async (presCode: string, coverId: string): Promise<Instruction[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-instructions/shuffled/pres-code/${presCode}/cover-id/${coverId}/`);
