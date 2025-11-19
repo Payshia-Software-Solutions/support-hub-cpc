@@ -41,7 +41,7 @@ const prescriptionSchema = z.object({
   nightQty: z.string().nonempty("Night quantity is required."),
   mealType: z.string().nonempty("Meal type is required."),
   usingFrequency: z.string().nonempty("Using frequency is required."),
-  additionalInstruction: z.string().optional(),
+  additionalInstruction: z.string().nonempty("Additional instruction is required."),
 });
 
 type ResultState = {
@@ -552,7 +552,3 @@ export default function DispensePage() {
         </div>
     );
 }
-
-    
-
-    
