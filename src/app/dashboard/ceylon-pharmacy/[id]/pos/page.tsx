@@ -1,8 +1,9 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,18 +11,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
-import { ArrowLeft, PlusCircle, ShoppingCart, CheckCircle, Trash2, Search, Pill, Library } from 'lucide-react';
-import { ceylonPharmacyPatients, generalStoreItems, type Patient, type PrescriptionDrug, type GeneralStoreItem } from '@/lib/ceylon-pharmacy-data';
+import { ArrowLeft, PlusCircle, ShoppingCart, CheckCircle, Trash2, Search, Pill, Library, Loader2, FileText } from 'lucide-react';
+import { getCeylonPharmacyPrescriptions, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer, getPrescriptionDetails, updatePatientStatus } from '@/lib/actions/games';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
+import type { GamePatient, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, PrescriptionDetail } from '@/lib/types';
+import Image from 'next/image';
+import { format } from 'date-fns';
 
+const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
 
-type CartItem = (PrescriptionDrug | GeneralStoreItem) & {
+type CartItem = (MasterProduct) & {
+    id: string; // Ensure all cart items have a unique ID, whether it's product_id or a generated one.
     quantity: number;
     type: 'prescription' | 'general';
+    // For prescription items
+    correctAnswers?: any; 
 };
 
 export default function POSPage() {
@@ -29,42 +38,88 @@ export default function POSPage() {
     const params = useParams();
     const patientId = params.id as string;
     const isMobile = useIsMobile();
+    const { user } = useAuth();
+    const courseCode = 'CPCC20';
 
-    const [patient, setPatient] = useState<Patient | null>(null);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [cashReceived, setCashReceived] = useState<string>('');
     const [discount, setDiscount] = useState<string>('');
     const [isPaid, setIsPaid] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [itemToAdd, setItemToAdd] = useState<GeneralStoreItem | null>(null);
+    const [itemToAdd, setItemToAdd] = useState<MasterProduct | null>(null);
     const [addQuantity, setAddQuantity] = useState('1');
 
+    const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
+        queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username],
+        queryFn: async () => {
+            if (!user?.username) throw new Error("User not authenticated");
+            const prescriptions = await getCeylonPharmacyPrescriptions(user.username, courseCode);
+            const found = prescriptions.find(p => p.prescription_id === patientId);
+            if (!found) throw new Error("Patient not found");
+            return found;
+        },
+        enabled: !!patientId && !!user?.username,
+        retry: false,
+        refetchOnWindowFocus: false,
+    });
+    
+    const { data: correctAmountData, isLoading: isLoadingCorrectAmount } = useQuery<POSCorrectAnswer>({
+        queryKey: ['posCorrectAmount', patientId],
+        queryFn: () => getPOSCorrectAmount(patientId),
+        enabled: !!patientId,
+    });
+
+    const { data: masterProducts, isLoading: isLoadingProducts } = useQuery<MasterProduct[]>({
+        queryKey: ['masterProducts'],
+        queryFn: getMasterProducts,
+        staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    });
+
+    const { data: prescriptionDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
+        queryKey: ['prescriptionDetails', patientId],
+        queryFn: () => getPrescriptionDetails(patientId),
+        enabled: !!patient,
+    });
+
+    const updateStatusMutation = useMutation({
+        mutationFn: (startDataId: string) => updatePatientStatus(startDataId),
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Status Update Error', description: `Could not mark patient as recovered: ${error.message}` });
+        }
+    });
+
+    const submitAnswerMutation = useMutation({
+        mutationFn: submitPOSAnswer,
+        onSuccess: (data, variables) => {
+             if (variables.ans_status === 'Answer Correct') {
+                setIsPaid(true);
+                toast({ title: 'Payment Correct!', description: `The total amount is correct. Change to be given: LKR ${change.toFixed(2)}` });
+
+                if (patient?.start_data?.id) {
+                    updateStatusMutation.mutate(patient.start_data.id);
+                }
+            } else {
+                toast({ variant: 'destructive', title: 'Incorrect Total', description: 'The final bill amount is not correct. Please review the prescription and items.' });
+            }
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Submission Error', description: error.message });
+        }
+    });
+
     useEffect(() => {
-        const foundPatient = ceylonPharmacyPatients.find(p => p.id === patientId);
-        if (foundPatient) {
-            setPatient(foundPatient);
-            // Add all prescription drugs to the cart by default
-            const prescriptionItems: CartItem[] = foundPatient.prescription.drugs.map(drug => ({
-                ...drug,
-                quantity: drug.correctAnswers.quantity,
-                type: 'prescription',
-            }));
-            setCart(prescriptionItems);
-        } else {
+        if (!isLoadingPatient && !patient && patientId) {
             toast({ variant: 'destructive', title: 'Patient not found' });
             router.push('/dashboard/ceylon-pharmacy');
         }
-    }, [patientId, router]);
+    }, [patient, patientId, router, isLoadingPatient]);
 
     const subtotal = useMemo(() => {
-      if(!patient) return 0;
-      const prescriptionTotal = patient.prescription.totalBillValue;
-      const generalItemsTotal = cart
-          .filter(item => item.type === 'general')
-          // @ts-ignore
-          .reduce((acc, item) => acc + (item.price * item.quantity), 0);
-      return prescriptionTotal + generalItemsTotal;
-    }, [cart, patient]);
+      return cart.reduce((acc, item) => {
+        const itemPrice = parseFloat(item.SellingPrice);
+        return acc + (itemPrice * item.quantity);
+      }, 0);
+    }, [cart]);
 
     const discountAmount = useMemo(() => {
         const parsedDiscount = parseFloat(discount);
@@ -79,12 +134,13 @@ export default function POSPage() {
     }, [cashReceived, total]);
     
     const filteredStoreItems = useMemo(() => {
-        if (!searchTerm) return generalStoreItems;
+        if (!masterProducts) return [];
+        if (!searchTerm) return masterProducts;
         const lowercasedSearch = searchTerm.toLowerCase();
-        return generalStoreItems.filter(item => 
-            item.name.toLowerCase().includes(lowercasedSearch)
+        return masterProducts.filter(item => 
+            item.DisplayName.toLowerCase().includes(lowercasedSearch)
         );
-    }, [searchTerm]);
+    }, [searchTerm, masterProducts]);
 
 
     const handleAddToCart = () => {
@@ -98,6 +154,7 @@ export default function POSPage() {
 
         const newItem: CartItem = {
             ...itemToAdd,
+            id: itemToAdd.product_id, // Use product_id for uniqueness
             quantity: quantity,
             type: 'general'
         };
@@ -107,23 +164,18 @@ export default function POSPage() {
     };
     
     const handleRemoveFromCart = (itemId: string) => {
-        const itemToRemove = cart.find(item => item.id === itemId);
-        if (itemToRemove?.type === 'prescription') {
-            toast({ variant: "destructive", description: "Prescription items cannot be removed." });
-            return;
-        }
         setCart(prev => prev.filter(item => item.id !== itemId));
     };
     
     const handleQuantityChange = (itemId: string, newQuantityString: string) => {
         if (newQuantityString === '') {
-            setCart(prev => prev.map(item => item.id === itemId ? { ...item, quantity: 0 } : item));
+            setCart(prev => prev.map(item => (item.id === itemId) ? { ...item, quantity: 0 } : item));
             return;
         }
 
         const newQuantity = parseFloat(newQuantityString);
         if (!isNaN(newQuantity) && newQuantity >= 0) {
-            setCart(prev => prev.map(item => item.id === itemId ? { ...item, quantity: newQuantity } : item));
+            setCart(prev => prev.map(item => (item.id === itemId) ? { ...item, quantity: newQuantity } : item));
         }
     };
     
@@ -133,8 +185,23 @@ export default function POSPage() {
              toast({ variant: 'destructive', title: 'Insufficient payment', description: 'Cash received is less than the total amount.' });
              return;
         }
-        setIsPaid(true);
-        toast({ title: 'Payment Successful!', description: `Change to be given: LKR ${change.toFixed(2)}` });
+        if (!correctAmountData || !user) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not verify answer. Correct amount or user data is missing.' });
+            return;
+        }
+
+        const isCorrect = Math.abs(total - parseFloat(correctAmountData.value)) < 0.01;
+        const status = isCorrect ? "Answer Correct" : "Answer Incorrect";
+        
+        const payload: POSSubmissionPayload = {
+            student_id: user.username!,
+            PresCode: patient!.prescription_id,
+            answer: total.toFixed(2),
+            created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+            ans_status: status
+        };
+
+        submitAnswerMutation.mutate(payload);
     };
     
     const handleCompleteSale = () => {
@@ -143,15 +210,59 @@ export default function POSPage() {
         router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
     };
 
+    if (isLoadingPatient || isLoadingProducts || isLoadingCorrectAmount) {
+        return <div className="p-8 text-center flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin"/></div>;
+    }
+
     if (!patient) {
-        return <div className="p-8 text-center">Loading patient data...</div>;
+        // This case is handled by the useEffect redirect, but as a fallback:
+        return <div className="p-8 text-center">Patient data could not be loaded. Please return to the patient list.</div>;
     }
 
     const BillComponent = (
         <Card className="shadow-xl sticky top-24 lg:col-span-3">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><ShoppingCart /> Bill</CardTitle>
-                <CardDescription>Patient: {patient.name}</CardDescription>
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <ShoppingCart />
+                        <CardTitle>Bill</CardTitle>
+                    </div>
+                     <Dialog>
+                        <DialogTrigger asChild>
+                             <Button variant="outline"><FileText className="mr-2 h-4 w-4"/>View Prescription</Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-lg">
+                           <DialogHeader>
+                               <DialogTitle>Prescription Details</DialogTitle>
+                               <DialogDescription>Patient: {patient.Pres_Name}</DialogDescription>
+                           </DialogHeader>
+                           <div className="flex justify-center p-4">
+                                <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
+                                    <div className="text-center border-b pb-4 mb-4 border-gray-300">
+                                        <h2 className="text-xl font-bold">{patient.doctor_name}</h2>
+                                        <p className="text-sm text-gray-600">MBBS, MD</p>
+                                        <p className="text-sm text-gray-600">Reg. No: {patient.id}</p>
+                                    </div>
+                                    <div className="flex justify-between text-sm mb-6">
+                                        <div><p><span className="font-semibold">Name:</span> {patient.Pres_Name}</p><p><span className="font-semibold">Age:</span> {patient.Pres_Age}</p></div>
+                                        <div><p><span className="font-semibold">Date:</span> {patient.pres_date}</p></div>
+                                    </div>
+                                    <div className="flex items-start min-h-[200px] pl-10 relative mb-6">
+                                        <div className="absolute left-0 top-0 text-6xl font-serif text-gray-700 select-none">℞</div>
+                                        <div className="flex-1 space-y-4 font-mono text-lg text-gray-800 pt-2">
+                                            {isLoadingDetails ? <Loader2 className="animate-spin"/> : prescriptionDetails?.map(detail => (<div key={detail.cover_id}><p>{detail.content}</p></div>))}
+                                        </div>
+                                    </div>
+                                    <div className="text-right mt-8">
+                                        <p className="italic font-serif text-xl text-gray-700">{patient.doctor_name.split(' ').slice(1).join(' ')}</p>
+                                        <p className="text-xs text-muted-foreground non-italic">Signature</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+                <CardDescription>Patient: {patient.Pres_Name}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <ScrollArea className="min-h-[150px] max-h-[300px]">
@@ -167,36 +278,38 @@ export default function POSPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {cart.map(item => (
-                                    <TableRow key={item.id}>
-                                        <TableCell className="font-medium text-sm">
-                                            {'correctAnswers' in item ? item.correctAnswers.drugName : item.name}
-                                            {'correctAnswers' in item && <p className="text-xs text-muted-foreground">{item.correctAnswers.genericName}</p>}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input 
-                                                type="number" 
-                                                value={item.quantity === 0 ? '' : String(item.quantity)}
-                                                onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                                                className="h-8 w-20 text-center"
-                                                disabled={isPaid || item.type === 'prescription'}
-                                                step="any"
-                                                min="0"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            {item.type === 'general' ? item.price.toFixed(2) : '-'}
-                                        </TableCell>
-                                        <TableCell className="text-right font-semibold">
-                                            {item.type === 'general' ? (item.price * item.quantity).toFixed(2) : '-'}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveFromCart(item.id)} disabled={isPaid || item.type === 'prescription'}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                {cart.map(item => {
+                                    const itemPrice = parseFloat(item.SellingPrice);
+                                    return (
+                                        <TableRow key={item.id}>
+                                            <TableCell className="font-medium text-sm">
+                                                {item.DisplayName}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Input 
+                                                    type="number" 
+                                                    value={item.quantity === 0 ? '' : String(item.quantity)}
+                                                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                                                    className="h-8 w-20 text-center"
+                                                    disabled={isPaid}
+                                                    step="any"
+                                                    min="0"
+                                                />
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                {itemPrice.toFixed(2)}
+                                            </TableCell>
+                                            <TableCell className="text-right font-semibold">
+                                                {(itemPrice * item.quantity).toFixed(2)}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveFromCart(item.id)} disabled={isPaid}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
                             </TableBody>
                         </Table>
                     ) : (
@@ -229,9 +342,12 @@ export default function POSPage() {
                         <Separator />
                         <div className="space-y-2">
                             <Label htmlFor="cash-received">Cash Received</Label>
-                            <Input id="cash-received" type="number" placeholder="Enter amount..." value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} disabled={cart.length === 0} step="any" />
+                            <Input id="cash-received" type="number" placeholder="Enter amount..." value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} disabled={total <= 0} step="any" />
                         </div>
-                        <Button className="w-full" onClick={handleProcessPayment} disabled={cart.length === 0 || !cashReceived}>Process Payment</Button>
+                        <Button className="w-full" onClick={handleProcessPayment} disabled={total <= 0 || !cashReceived || submitAnswerMutation.isPending}>
+                             {submitAnswerMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                            Process Payment
+                        </Button>
                     </>
                 ) : (
                     <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded-lg space-y-2 text-center">
@@ -271,14 +387,26 @@ export default function POSPage() {
             <CardContent>
                 <ScrollArea className="h-[500px] pr-3">
                 <div className="space-y-3">
-                    {filteredStoreItems.length > 0 ? (
+                    {isLoadingProducts && <p>Loading products...</p>}
+                    {!isLoadingProducts && filteredStoreItems.length > 0 ? (
                         filteredStoreItems.map(item => {
-                            const isAdded = cart.some(c => c.id === item.id);
+                            const isAdded = cart.some(c => c.id === item.product_id);
                             return (
-                                 <div key={item.id} className={cn("flex items-center justify-between p-3 border rounded-md", isAdded ? "bg-muted/30" : "bg-muted/80")}>
-                                    <div>
-                                        <p className="font-medium text-sm">{item.name}</p>
-                                        <p className="text-xs font-semibold text-primary">LKR {item.price.toFixed(2)}</p>
+                                 <div key={item.product_id} className={cn("flex items-center justify-between p-3 border rounded-md", isAdded ? "bg-muted/30" : "bg-muted/80")}>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-white rounded-md flex-shrink-0 relative overflow-hidden">
+                                            {item.ImagePath ? (
+                                                <Image src={`${POS_IMAGE_BASE_URL}${item.ImagePath}`} alt={item.DisplayName} layout="fill" objectFit="contain" className="p-1"/>
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-muted">
+                                                    <Pill className="w-6 h-6 text-muted-foreground" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-sm">{item.DisplayName}</p>
+                                            <p className="text-xs font-semibold text-primary">LKR {parseFloat(item.SellingPrice).toFixed(2)}</p>
+                                        </div>
                                     </div>
                                     <DialogTrigger asChild>
                                         <Button size="sm" onClick={() => setItemToAdd(item)} disabled={isPaid || isAdded}>
@@ -290,7 +418,7 @@ export default function POSPage() {
                             )
                         })
                     ) : (
-                        <div className="text-center py-10 text-muted-foreground">
+                        !isLoadingProducts && <div className="text-center py-10 text-muted-foreground">
                             <p>No products found.</p>
                         </div>
                     )}
@@ -339,7 +467,7 @@ export default function POSPage() {
                 </Card>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Add Item: {itemToAdd?.name}</DialogTitle>
+                        <DialogTitle>Add Item: {itemToAdd?.DisplayName}</DialogTitle>
                         <DialogDescription>Enter the quantity you wish to add to the bill.</DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
@@ -367,5 +495,3 @@ export default function POSPage() {
         </div>
     );
 }
-
-    

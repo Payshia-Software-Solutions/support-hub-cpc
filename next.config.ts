@@ -4,6 +4,7 @@ import type {NextConfig} from 'next';
 const chatServerUrl = process.env.NEXT_PUBLIC_CHAT_SERVER_URL || 'https://chat-server.pharmacollege.lk';
 const lmsServerUrl = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const contentProviderHostname = "content-provider.pharmacollege.lk";
+const posHostname = "pos.payshia.com";
 
 const chatServerHostname = new URL(chatServerUrl).hostname;
 const lmsServerHostname = new URL(lmsServerUrl).hostname;
@@ -60,9 +61,18 @@ const nextConfig: NextConfig = {
         hostname: 'chart.googleapis.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: posHostname,
+        port: '',
+        pathname: '/**',
       }
     ],
   },
+  env: {
+    NEXT_PUBLIC_LMS_SERVER_URL: process.env.NEXT_PUBLIC_LMS_SERVER_URL,
+  }
 };
 
 export default nextConfig;
