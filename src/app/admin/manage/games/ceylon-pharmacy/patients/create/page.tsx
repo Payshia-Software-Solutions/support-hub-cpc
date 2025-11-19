@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,12 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, PlusCircle, Save, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { ceylonPharmacyPatients, allInstructions } from '@/lib/ceylon-pharmacy-data';
-import type { Patient } from '@/lib/ceylon-pharmacy-data';
+import { allInstructions } from '@/lib/ceylon-pharmacy-data';
 import { Checkbox } from '@/components/ui/checkbox';
 
 const drugSchema = z.object({
-    id: z.string(), // Keep track of existing drugs
     drugName: z.string().min(1, 'Required'),
     genericName: z.string().optional(),
     quantity: z.coerce.number().min(1),
@@ -46,49 +44,17 @@ const patientFormSchema = z.object({
 
 type PatientFormValues = z.infer<typeof patientFormSchema>;
 
-export default function EditPatientPage() {
+export default function CreatePatientPage() {
   const router = useRouter();
-  const params = useParams();
-  const patientId = params.patientId as string;
-
-  const [patient, setPatient] = useState<Patient | null>(null);
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientFormSchema),
     defaultValues: {
+      initialTime: 300,
+      totalBillValue: 0,
       drugs: [],
     },
   });
-
-  useEffect(() => {
-    const foundPatient = ceylonPharmacyPatients.find(p => p.id === patientId);
-    if (foundPatient) {
-        setPatient(foundPatient);
-        // Populate the form with the found patient's data
-        form.reset({
-            name: foundPatient.name,
-            age: foundPatient.age,
-            initialTime: foundPatient.initialTime,
-            address: foundPatient.address,
-            patient_description: foundPatient.description,
-            prescription_name: foundPatient.prescription.name,
-            doctor_name: foundPatient.prescription.doctor.name,
-            notes: foundPatient.prescription.notes,
-            totalBillValue: foundPatient.prescription.totalBillValue,
-            drugs: foundPatient.prescription.drugs.map(drug => ({
-                id: drug.id,
-                drugName: drug.correctAnswers.drugName,
-                genericName: drug.correctAnswers.genericName,
-                quantity: drug.correctAnswers.quantity,
-                lines: drug.lines.join('\\n'),
-                correctInstructionIds: drug.correctInstructionIds,
-            })),
-        });
-    } else {
-        toast({ variant: 'destructive', title: 'Patient not found' });
-        router.push('/admin/manage/games/ceylon-pharmacy/patients');
-    }
-  }, [patientId, router, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -96,17 +62,13 @@ export default function EditPatientPage() {
   });
 
   const onSubmit = (data: PatientFormValues) => {
-    console.log("Updating Patient Data:", data);
+    console.log("Submitting New Patient Data:", data);
     toast({
-        title: 'Patient Updated!',
-        description: `${data.name}'s details have been saved.`
+        title: 'Patient Created!',
+        description: `${data.name} has been added to the game.`
     });
     router.push('/admin/manage/games/ceylon-pharmacy/patients');
   };
-  
-  if (!patient) {
-      return <div className="p-8">Loading patient details...</div>
-  }
 
   return (
     <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -114,8 +76,8 @@ export default function EditPatientPage() {
             <Button variant="ghost" onClick={() => router.back()} className="-ml-4">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Patient List
             </Button>
-            <h1 className="text-3xl font-headline font-semibold mt-2">Edit Patient: {patient.name}</h1>
-            <p className="text-muted-foreground">Modify the patient's details and prescription for the game.</p>
+            <h1 className="text-3xl font-headline font-semibold mt-2">Add New Patient</h1>
+            <p className="text-muted-foreground">Create a new patient and their full prescription for the game.</p>
         </header>
 
         <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -166,7 +128,6 @@ export default function EditPatientPage() {
                                                     <div key={inst.id} className="flex items-center space-x-2">
                                                         <Checkbox
                                                             id={`drug-${index}-inst-${inst.id}`}
-                                                            defaultChecked={form.getValues(`drugs.${index}.correctInstructionIds`)?.includes(inst.id)}
                                                             onCheckedChange={(checked) => {
                                                                 const fieldName = `drugs.${index}.correctInstructionIds`;
                                                                 const currentIds = form.getValues(fieldName) || [];
@@ -182,14 +143,14 @@ export default function EditPatientPage() {
                                     </div>
                                 </Card>
                             ))}
-                            <Button type="button" variant="outline" className="w-full" onClick={() => append({ id: `new-${Date.now()}`, drugName: '', quantity: 1, lines: '', correctInstructionIds: [] })}>
+                            <Button type="button" variant="outline" className="w-full" onClick={() => append({ drugName: '', quantity: 1, lines: '', correctInstructionIds: [] })}>
                                 <PlusCircle className="mr-2 h-4 w-4" /> Add Another Drug
                             </Button>
                         </CardContent>
                     </Card>
                      <div className="flex justify-end">
                         <Button type="submit" size="lg">
-                            <Save className="mr-2 h-4 w-4" /> Save Changes
+                            <Save className="mr-2 h-4 w-4" /> Create Patient
                         </Button>
                     </div>
                 </div>
@@ -198,5 +159,3 @@ export default function EditPatientPage() {
     </div>
   );
 }
-
-    

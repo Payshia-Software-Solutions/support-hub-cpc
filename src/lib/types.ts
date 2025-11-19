@@ -1,5 +1,6 @@
 
 
+
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -354,14 +355,17 @@ export interface StudentInfo {
 }
 
 export interface ApiPaymentRecord {
-    id: string;
-    receipt_number: string;
-    course_code: string;
-    paid_amount: string;
-    payment_status: string;
-    payment_type: string;
-    paid_date: string;
-    created_at: string;
+  id: string;
+  receipt_number: string;
+  course_code: string;
+  student_id: string;
+  paid_amount: string;
+  discount_amount: string;
+  payment_status: string;
+  payment_type: string;
+  paid_date: string;
+  created_at: string;
+  created_by: string;
 }
 
 export interface StudentBalance {
@@ -593,20 +597,6 @@ export interface CreatePaymentPayload {
   created_by: string;
 }
 
-interface ApiPaymentRecord {
-  id: string;
-  receipt_number: string;
-  course_code: string;
-  student_id: string;
-  paid_amount: string;
-  discount_amount: string;
-  payment_status: string;
-  payment_type: string;
-  paid_date: string;
-  created_at: string;
-  created_by: string;
-}
-
 export interface StudentBalanceData {
   title: string;
   userName: string;
@@ -775,4 +765,151 @@ export interface BnfChapter {
 export interface BnfWordIndexEntry {
   keyword: string;
   page_number: string;
+}
+
+
+// --- Ceylon Pharmacy Game Types ---
+export interface MasterProduct {
+    product_id: string;
+    product_code: string;
+    ProductName: string;
+    DisplayName: string;
+    PrintName: string;
+    SellingPrice: string;
+    ImagePath?: string | null;
+    [key: string]: any; // Allow other properties
+}
+
+export interface GamePatient {
+    id: string;
+    prescription_id: string;
+    prescription_name: string;
+    prescription_status: string;
+    created_at: string;
+    created_by: string;
+    Pres_Name: string;
+    pres_date: string;
+    Pres_Age: string;
+    Pres_Method: string;
+    doctor_name: string;
+    notes: string;
+    patient_description: string;
+    address: string;
+    start_data?: TreatmentStartRecord | null;
+}
+
+export interface PrescriptionDetail {
+    cover_id: string;
+    content: string;
+}
+
+export interface DispensingAnswer {
+    id: string;
+    answer_id: string;
+    pres_id: string;
+    cover_id: string;
+    date: string;
+    name: string;
+    drug_name: string;
+    drug_type: string;
+    drug_qty: string;
+    morning_qty: string;
+    afternoon_qty: string;
+    evening_qty: string;
+    night_qty: string;
+    meal_type: string;
+    using_type: string;
+    at_a_time: string;
+    hour_qty: string | null;
+    additional_description: string;
+    created_at: string;
+    created_by: string;
+}
+
+export interface FormSelectionData {
+  [key: string]: string[];
+}
+
+export interface TreatmentStartRecord {
+    id: string;
+    student_id: string;
+    PresCode: string;
+    time: string; // ISO 8601 date string e.g. "2022-10-26 16:31:00.000000"
+    created_at: string;
+    patient_status: "Pending" | "Recovered";
+}
+
+export interface ValidateAnswerPayload {
+    user_level: string;
+    created_by: string;
+    pres_id: string;
+    cover_id: string;
+    date: string;
+    name: string;
+    drug_name: string;
+    drug_type: string;
+    drug_qty: string;
+    morning_qty: string;
+    afternoon_qty: string;
+    evening_qty: string;
+    night_qty: string;
+    meal_type: string;
+    using_type: string;
+    at_a_time: string;
+    hour_qty: string | null;
+    additional_description: string;
+}
+
+export interface ValidateAnswerResponse {
+    status: "success" | "error";
+    message: string;
+    id: string;
+    incorrect_values: string[];
+    answer_status: "Correct" | "In-Correct";
+}
+
+export interface Instruction {
+    id: string;
+    pres_code: string;
+    cover_id: string;
+    content: string;
+    created_at: string;
+    instruction: string;
+}
+
+export interface SaveCounselingAnswerPayload {
+  LoggedUser: string;
+  PresCode: string;
+  Instruction: string;
+  CoverCode: string;
+  ans_status: 'Correct' | 'incorrect';
+}
+
+export interface DispensingSubmissionStatus {
+    answer_id: string | null;
+    error?: string;
+}
+
+export interface POSCorrectAnswer {
+  id: string;
+  PresCode: string;
+  value: string;
+  created_at: string;
+}
+
+export interface POSSubmissionPayload {
+  student_id: string;
+  PresCode: string;
+  answer: string;
+  created_at: string;
+  ans_status: 'Answer Correct' | 'Answer Incorrect';
+}
+
+export interface POSSubmissionStatus {
+    id: string;
+    student_id: string;
+    PresCode: string;
+    answer: string;
+    created_at: string;
+    ans_status: 'Answer Correct';
 }

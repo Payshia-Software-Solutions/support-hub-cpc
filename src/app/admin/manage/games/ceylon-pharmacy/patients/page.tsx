@@ -7,35 +7,31 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, User, PlusCircle } from "lucide-react";
 import Link from 'next/link';
-import { ceylonPharmacyPatients } from '@/lib/ceylon-pharmacy-data'; // Using mock data
+import { ceylonPharmacyPatients } from '@/lib/ceylon-pharmacy-data';
 import type { Patient } from '@/lib/ceylon-pharmacy-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { toast } from '@/hooks/use-toast';
 
 export default function ManagePatientsPage() {
     const router = useRouter();
     const [patients, setPatients] = useState<Patient[]>(ceylonPharmacyPatients);
 
-    const handleAddNew = () => {
-        // In a real app, this would likely navigate to a 'new' page or open a creation dialog
-        toast({ title: "Coming Soon!", description: "Functionality to add new patients will be implemented." });
-    };
-
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-                <div>
+                 <div>
                     <Button variant="ghost" onClick={() => router.push('/admin/manage/games/ceylon-pharmacy')} className="-ml-4">
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Game Setup
                     </Button>
                     <h1 className="text-3xl font-headline font-semibold mt-2">Manage Patients & Prescriptions</h1>
-                    <p className="text-muted-foreground">Select a patient to view or edit their profile and prescription details.</p>
+                    <p className="text-muted-foreground">Add new patients or select one to edit their profile and prescription details.</p>
                 </div>
-                <Button onClick={handleAddNew}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Patient
+                 <Button asChild>
+                    <Link href="/admin/manage/games/ceylon-pharmacy/patients/create">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add New Patient
+                    </Link>
                 </Button>
             </header>
-
+            
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle>Patient List</CardTitle>
@@ -64,3 +60,5 @@ export default function ManagePatientsPage() {
         </div>
     );
 }
+
+    
