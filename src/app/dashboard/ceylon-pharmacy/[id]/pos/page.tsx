@@ -21,7 +21,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTr
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import type { GamePatient, MasterProduct } from '@/lib/types';
+import Image from 'next/image';
 
+const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
 
 type CartItem = (MasterProduct) & {
     id: string; // Ensure all cart items have a unique ID, whether it's product_id or a generated one.
@@ -320,9 +322,20 @@ export default function POSPage() {
                             const isAdded = cart.some(c => c.id === item.product_id);
                             return (
                                  <div key={item.product_id} className={cn("flex items-center justify-between p-3 border rounded-md", isAdded ? "bg-muted/30" : "bg-muted/80")}>
-                                    <div>
-                                        <p className="font-medium text-sm">{item.DisplayName}</p>
-                                        <p className="text-xs font-semibold text-primary">LKR {parseFloat(item.SellingPrice).toFixed(2)}</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-white rounded-md flex-shrink-0 relative overflow-hidden">
+                                            {item.ImagePath ? (
+                                                <Image src={`${POS_IMAGE_BASE_URL}${item.ImagePath}`} alt={item.DisplayName} layout="fill" objectFit="contain" className="p-1"/>
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-muted">
+                                                    <Pill className="w-6 h-6 text-muted-foreground" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-sm">{item.DisplayName}</p>
+                                            <p className="text-xs font-semibold text-primary">LKR {parseFloat(item.SellingPrice).toFixed(2)}</p>
+                                        </div>
                                     </div>
                                     <DialogTrigger asChild>
                                         <Button size="sm" onClick={() => setItemToAdd(item)} disabled={isPaid || isAdded}>
