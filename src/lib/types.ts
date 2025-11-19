@@ -354,14 +354,17 @@ export interface StudentInfo {
 }
 
 export interface ApiPaymentRecord {
-    id: string;
-    receipt_number: string;
-    course_code: string;
-    paid_amount: string;
-    payment_status: string;
-    payment_type: string;
-    paid_date: string;
-    created_at: string;
+  id: string;
+  receipt_number: string;
+  course_code: string;
+  student_id: string;
+  paid_amount: string;
+  discount_amount: string;
+  payment_status: string;
+  payment_type: string;
+  paid_date: string;
+  created_at: string;
+  created_by: string;
 }
 
 export interface StudentBalance {
@@ -593,20 +596,6 @@ export interface CreatePaymentPayload {
   created_by: string;
 }
 
-interface ApiPaymentRecord {
-  id: string;
-  receipt_number: string;
-  course_code: string;
-  student_id: string;
-  paid_amount: string;
-  discount_amount: string;
-  payment_status: string;
-  payment_type: string;
-  paid_date: string;
-  created_at: string;
-  created_by: string;
-}
-
 export interface StudentBalanceData {
   title: string;
   userName: string;
@@ -786,10 +775,11 @@ export interface MasterProduct {
     DisplayName: string;
     PrintName: string;
     SellingPrice: string;
+    ImagePath?: string | null;
     [key: string]: any; // Allow other properties
 }
 
-export interface GamePrescription {
+export interface GamePatient {
     id: string;
     prescription_id: string;
     prescription_name: string;
@@ -804,12 +794,8 @@ export interface GamePrescription {
     notes: string;
     patient_description: string;
     address: string;
-}
-
-export interface GamePatient extends GamePrescription {
     start_data?: TreatmentStartRecord | null;
 }
-
 
 export interface PrescriptionDetail {
     cover_id: string;
@@ -901,4 +887,19 @@ export interface SaveCounselingAnswerPayload {
 export interface DispensingSubmissionStatus {
     answer_id: string | null;
     error?: string;
+}
+
+export interface POSCorrectAnswer {
+  id: string;
+  PresCode: string;
+  value: string;
+  created_at: string;
+}
+
+export interface POSSubmissionPayload {
+  student_id: string;
+  PresCode: string;
+  answer: string;
+  created_at: string;
+  ans_status: 'Answer Correct' | 'Answer Incorrect';
 }

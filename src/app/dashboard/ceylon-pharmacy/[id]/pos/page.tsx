@@ -4,7 +4,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,15 +13,16 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { ArrowLeft, PlusCircle, ShoppingCart, CheckCircle, Trash2, Search, Pill, Library, Loader2 } from 'lucide-react';
-import { getCeylonPharmacyPrescriptions, getMasterProducts } from '@/lib/actions/games';
+import { getCeylonPharmacyPrescriptions, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer } from '@/lib/actions/games';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
-import type { GamePatient, MasterProduct } from '@/lib/types';
+import type { GamePatient, MasterProduct, POSCorrectAnswer, POSSubmissionPayload } from '@/lib/types';
 import Image from 'next/image';
+import { format } from 'date-fns';
 
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
 
@@ -62,6 +63,12 @@ export default function POSPage() {
         retry: false,
         refetchOnWindowFocus: false,
     });
+    
+    const { data: correctAmountData, isLoading: isLoadingCorrectAmount } = useQuery<POSCorrectAnswer>({
+        queryKey: ['posCorrectAmount', patientId],
+        queryFn: () => getPOSCorrectAmount(patientId),
+        enabled: !!patientId,
+    });
 
     const { data: masterProducts, isLoading: isLoadingProducts } = useQuery<MasterProduct[]>({
         queryKey: ['masterProducts'],
@@ -69,31 +76,27 @@ export default function POSPage() {
         staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     });
 
+    const submitAnswerMutation = useMutation({
+        mutationFn: submitPOSAnswer,
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Submission Error', description: error.message });
+        }
+    });
 
     useEffect(() => {
-        if (patient) {
-            // Mocking prescription drugs being added to the cart initially.
-            // In a real scenario, you'd fetch prescription drugs associated with the patient.
-            const prescriptionItems: CartItem[] = [
-                // This would be populated from patient.prescription.drugs if it existed on the type
-            ];
-            setCart(prescriptionItems);
-        } else if (!isLoadingPatient && patientId) {
-            // If fetching is done and no patient is found
+        if (!isLoadingPatient && !patient && patientId) {
             toast({ variant: 'destructive', title: 'Patient not found' });
             router.push('/dashboard/ceylon-pharmacy');
         }
     }, [patient, patientId, router, isLoadingPatient]);
 
     const subtotal = useMemo(() => {
-      if(!patient) return 0;
-      // Using a fixed value since totalBillValue is not on the GamePatient type
-      const prescriptionTotal = patient ? 1500.00 : 0; // Example fixed value
+      const prescriptionTotal = patient ? (correctAmountData ? parseFloat(correctAmountData.value) : 0) : 0;
       const generalItemsTotal = cart
           .filter(item => item.type === 'general')
           .reduce((acc, item) => acc + (parseFloat(item.SellingPrice) * item.quantity), 0);
       return prescriptionTotal + generalItemsTotal;
-    }, [cart, patient]);
+    }, [cart, patient, correctAmountData]);
 
     const discountAmount = useMemo(() => {
         const parsedDiscount = parseFloat(discount);
@@ -164,8 +167,32 @@ export default function POSPage() {
              toast({ variant: 'destructive', title: 'Insufficient payment', description: 'Cash received is less than the total amount.' });
              return;
         }
-        setIsPaid(true);
-        toast({ title: 'Payment Successful!', description: `Change to be given: LKR ${change.toFixed(2)}` });
+        if (!correctAmountData || !user) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not verify answer. Correct amount or user data is missing.' });
+            return;
+        }
+
+        const isCorrect = Math.abs(total - parseFloat(correctAmountData.value)) < 0.01;
+        const status = isCorrect ? "Answer Correct" : "Answer Incorrect";
+        
+        const payload: POSSubmissionPayload = {
+            student_id: user.username!,
+            PresCode: patient!.prescription_id,
+            answer: total.toFixed(2),
+            created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+            ans_status: status
+        };
+
+        submitAnswerMutation.mutate(payload, {
+            onSuccess: () => {
+                if (isCorrect) {
+                    setIsPaid(true);
+                    toast({ title: 'Payment Correct!', description: `The total amount is correct. Change to be given: LKR ${change.toFixed(2)}` });
+                } else {
+                    toast({ variant: 'destructive', title: 'Incorrect Total', description: 'The final bill amount is not correct. Please review the prescription and items.' });
+                }
+            }
+        });
     };
     
     const handleCompleteSale = () => {
@@ -174,7 +201,7 @@ export default function POSPage() {
         router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
     };
 
-    if (isLoadingPatient) {
+    if (isLoadingPatient || isLoadingProducts || isLoadingCorrectAmount) {
         return <div className="p-8 text-center flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin"/></div>;
     }
 
@@ -191,7 +218,7 @@ export default function POSPage() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <ScrollArea className="min-h-[150px] max-h-[300px]">
-                    {cart.length > 0 ? (
+                    {cart.length > 0 || (correctAmountData && correctAmountData.value) ? (
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -203,39 +230,46 @@ export default function POSPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
+                                {correctAmountData && (
+                                     <TableRow>
+                                        <TableCell className="font-medium text-sm">Prescribed Drugs</TableCell>
+                                        <TableCell className="text-center">1</TableCell>
+                                        <TableCell className="text-right">{parseFloat(correctAmountData.value).toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-semibold">{parseFloat(correctAmountData.value).toFixed(2)}</TableCell>
+                                        <TableCell></TableCell>
+                                     </TableRow>
+                                )}
                                 {cart.map(item => {
                                     const isGeneral = item.type === 'general';
-                                    const generalItem = isGeneral ? (item as MasterProduct) : null;
-                                    const prescriptItem = !isGeneral ? (item as any) : null; // Prescription drug
-                                    const itemId = item.id;
-                                    const itemName = generalItem ? generalItem.DisplayName : prescriptItem!.correctAnswers.drugName;
-                                    const itemPrice = generalItem ? parseFloat(generalItem.SellingPrice) : null;
+                                    if (!isGeneral) return null; // Prescription items are handled above
+                                    
+                                    const generalItem = item as MasterProduct;
+                                    const itemPrice = parseFloat(generalItem.SellingPrice);
 
                                     return (
-                                        <TableRow key={itemId}>
+                                        <TableRow key={item.id}>
                                             <TableCell className="font-medium text-sm">
-                                                {itemName}
-                                                {prescriptItem && <p className="text-xs text-muted-foreground">{prescriptItem.correctAnswers.genericName}</p>}
+                                                {generalItem.DisplayName}
                                             </TableCell>
                                             <TableCell>
                                                 <Input 
                                                     type="number" 
                                                     value={item.quantity === 0 ? '' : String(item.quantity)}
-                                                    onChange={(e) => handleQuantityChange(itemId, e.target.value)}
+                                                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
                                                     className="h-8 w-20 text-center"
-                                                    disabled={isPaid || item.type === 'prescription'}
+                                                    disabled={isPaid}
                                                     step="any"
                                                     min="0"
                                                 />
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                {itemPrice !== null ? itemPrice.toFixed(2) : '-'}
+                                                {itemPrice.toFixed(2)}
                                             </TableCell>
                                             <TableCell className="text-right font-semibold">
-                                                {itemPrice !== null ? (itemPrice * item.quantity).toFixed(2) : '-'}
+                                                {(itemPrice * item.quantity).toFixed(2)}
                                             </TableCell>
                                             <TableCell>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveFromCart(itemId)} disabled={isPaid || item.type === 'prescription'}>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveFromCart(item.id)} disabled={isPaid}>
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </TableCell>
@@ -274,9 +308,12 @@ export default function POSPage() {
                         <Separator />
                         <div className="space-y-2">
                             <Label htmlFor="cash-received">Cash Received</Label>
-                            <Input id="cash-received" type="number" placeholder="Enter amount..." value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} disabled={cart.length === 0} step="any" />
+                            <Input id="cash-received" type="number" placeholder="Enter amount..." value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} disabled={total <= 0} step="any" />
                         </div>
-                        <Button className="w-full" onClick={handleProcessPayment} disabled={cart.length === 0 || !cashReceived}>Process Payment</Button>
+                        <Button className="w-full" onClick={handleProcessPayment} disabled={total <= 0 || !cashReceived || submitAnswerMutation.isPending}>
+                             {submitAnswerMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                            Process Payment
+                        </Button>
                     </>
                 ) : (
                     <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded-lg space-y-2 text-center">

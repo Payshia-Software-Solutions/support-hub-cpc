@@ -2,7 +2,7 @@
 
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -200,6 +200,33 @@ export const saveCounsellingAnswer = async (payload: SaveCounselingAnswerPayload
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to save counselling answer.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
+export const getPOSCorrectAmount = async (presCode: string): Promise<POSCorrectAnswer> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-payments/last/${presCode}`);
+    if (response.status === 404) {
+        throw new Error(`No POS payment information found for prescription code: ${presCode}`);
+    }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch correct POS amount.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
+export const submitPOSAnswer = async (payload: POSSubmissionPayload): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-payment-answers/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to submit POS answer.' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
