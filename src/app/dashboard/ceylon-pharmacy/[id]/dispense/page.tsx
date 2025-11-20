@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useForm, useController, Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,6 +29,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 const prescriptionSchema = z.object({
   date: z.string().nonempty("Date is required."),
@@ -503,46 +504,34 @@ export default function DispensePage() {
                         </div>
                     </CardHeader>
                     <CardContent className="flex justify-center p-4">
-                        <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
-                             {/* Header with Logo */}
+                       <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
                             <div className="text-center mb-4">
                                 <Image src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png" alt="Ceylon Medi Care" width={40} height={40} className="mx-auto mb-2" />
                                 <h2 className="text-2xl font-bold">Ceylon Medi Care</h2>
                                 <p className="text-xs text-gray-600">A/75/A, Midigahamulla, Pelmadulla, 70070</p>
                                 <p className="text-xs text-gray-600">info@pharmacollege.lk | 0704477555 | www.pharmacollege.lk</p>
                             </div>
-                            
                             <div className="border-t border-b border-gray-300 py-2 mb-4 text-sm">
                                 <p><span className="font-semibold">Name:</span> {patient.Pres_Name}</p>
                                 <p><span className="font-semibold">Age:</span> {patient.Pres_Age}</p>
                                 <p><span className="font-semibold">Date:</span> {patient.pres_date}</p>
                             </div>
-
-                             <div className="min-h-[150px] mb-4">
+                            <div className="min-h-[200px] mb-4 relative">
                                 <div className="flex items-start">
                                     <div className="text-4xl font-serif text-gray-700 select-none mr-4">℞</div>
-                                    <div className="flex-1 grid grid-cols-5 gap-2 font-mono text-base text-gray-800">
-                                        <div className="col-span-3 space-y-2">
-                                            {prescriptionDetails?.map((detail) => (
-                                                <p key={detail.cover_id}>{detail.content}</p>
-                                            ))}
-                                        </div>
-                                        <div className="col-span-1 flex items-center justify-center">
-                                            <div className="h-full w-px bg-gray-400 transform rotate-[25deg] origin-center scale-y-100"></div>
-                                        </div>
-                                        <div className="col-span-1 flex items-center justify-start font-bold">
-                                            <span>{patient.Pres_Method}</span>
-                                        </div>
+                                    <div className="flex-1 space-y-2 font-mono text-base text-gray-800">
+                                        {prescriptionDetails?.map((detail) => (
+                                            <p key={detail.cover_id}>{detail.content}</p>
+                                        ))}
                                     </div>
                                 </div>
+                                <div className="absolute bottom-0 right-0 font-bold font-mono text-lg">{patient.Pres_Method}</div>
                             </div>
-                            
-                             {patient.notes && (
+                            {patient.notes && (
                                 <div className="mt-4 pt-4 border-t border-dashed">
                                     <p className="font-mono text-xs text-gray-700">{patient.notes}</p>
                                 </div>
                             )}
-
                             <div className="flex justify-between items-end mt-12">
                                 <div className="text-center">
                                     <p className="font-bold">{patient.doctor_name}</p>
