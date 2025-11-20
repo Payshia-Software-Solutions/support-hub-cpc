@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, useRef, memo } from 'react';
@@ -42,9 +41,60 @@ type CartItem = (MasterProduct) & {
     correctAnswers?: any; 
 };
 
+// This component is now self-contained and manages its own dialog state for mobile.
+const MobileAddDialog = ({ item, onConfirm, isOpen, onOpenChange }: { item: MasterProduct | null, onConfirm: (qty: number) => void, isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
+    const [quantity, setQuantity] = useState('1');
 
-const ProductListComponent = memo(({ onAddItem, isPaid, cart, isMobile }: { onAddItem: (item: MasterProduct) => void; isPaid: boolean; cart: CartItem[], isMobile: boolean }) => {
+    useEffect(() => {
+        if (isOpen) {
+            setQuantity('1'); // Reset quantity when dialog opens
+        }
+    }, [isOpen]);
+
+    if (!item) return null;
+
+    const handleConfirm = () => {
+        const numQty = parseInt(quantity, 10);
+        if (isNaN(numQty) || numQty <= 0) {
+            toast({ variant: 'destructive', title: 'Invalid quantity' });
+            return;
+        }
+        onConfirm(numQty);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add Item: {item.DisplayName}</DialogTitle>
+                    <DialogDescription>Enter the quantity you wish to add to the bill.</DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label htmlFor="add-quantity">Quantity</Label>
+                    <Input
+                        id="add-quantity"
+                        type="number"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        className="mt-2"
+                        min="1"
+                        step="1"
+                    />
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleConfirm}>Confirm</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+
+const ProductListComponent = memo(({ onAddItem, isPaid, cart }: { onAddItem: (item: MasterProduct, quantity: number) => void; isPaid: boolean; cart: CartItem[] }) => {
     const [searchTerm, setSearchTerm] = useState("");
+    const [isMobileAddOpen, setIsMobileAddOpen] = useState(false);
+    const [itemToAdd, setItemToAdd] = useState<MasterProduct | null>(null);
 
     const { data: masterProducts, isLoading: isLoadingProducts } = useQuery<MasterProduct[]>({
         queryKey: ['masterProducts'],
@@ -60,6 +110,19 @@ const ProductListComponent = memo(({ onAddItem, isPaid, cart, isMobile }: { onAd
             item.DisplayName.toLowerCase().includes(lowercasedSearch)
         );
     }, [searchTerm, masterProducts]);
+
+    const handleMobileAddItem = (item: MasterProduct) => {
+        setItemToAdd(item);
+        setIsMobileAddOpen(true);
+    };
+
+    const handleMobileConfirmAdd = (quantity: number) => {
+        if (itemToAdd) {
+            onAddItem(itemToAdd, quantity);
+        }
+        setIsMobileAddOpen(false);
+        setItemToAdd(null);
+    };
 
     return (
          <Card className="shadow-lg lg:col-span-2">
@@ -83,23 +146,6 @@ const ProductListComponent = memo(({ onAddItem, isPaid, cart, isMobile }: { onAd
                         filteredStoreItems.map(item => {
                             const isAdded = cart.some(c => c.id === item.product_id);
                             
-                            const addButton = (
-                                <Button
-                                    size="sm"
-                                    onClick={(e) => {
-                                        if (isMobile) {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                        }
-                                        onAddItem(item);
-                                    }}
-                                    disabled={isPaid || isAdded}
-                                >
-                                    {isAdded ? <CheckCircle className="h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                                    {isAdded ? "Added" : "Add"}
-                                </Button>
-                            );
-
                             return (
                                 <div key={item.product_id} className={cn("flex items-center justify-between p-3 border rounded-md", isAdded ? "bg-muted/30" : "bg-muted/80")}>
                                     <div className="flex items-center gap-4">
@@ -117,15 +163,14 @@ const ProductListComponent = memo(({ onAddItem, isPaid, cart, isMobile }: { onAd
                                             <p className="text-xs font-semibold text-primary">LKR {parseFloat(item.SellingPrice).toFixed(2)}</p>
                                         </div>
                                     </div>
-                                    {isMobile ? (
-                                        <DialogTrigger asChild>
-                                           {addButton}
-                                        </DialogTrigger>
-                                    ) : (
-                                        <DialogTrigger asChild>
-                                            {addButton}
-                                        </DialogTrigger>
-                                    )}
+                                    <Button
+                                        size="sm"
+                                        onClick={() => handleMobileAddItem(item)}
+                                        disabled={isPaid || isAdded}
+                                    >
+                                        {isAdded ? <CheckCircle className="h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                                        {isAdded ? "Added" : "Add"}
+                                    </Button>
                                 </div>
                             )
                         })
@@ -136,11 +181,18 @@ const ProductListComponent = memo(({ onAddItem, isPaid, cart, isMobile }: { onAd
                     )}
                 </div>
                 </ScrollArea>
+                <MobileAddDialog
+                    item={itemToAdd}
+                    isOpen={isMobileAddOpen}
+                    onOpenChange={setIsMobileAddOpen}
+                    onConfirm={handleMobileConfirmAdd}
+                />
             </CardContent>
         </Card>
     );
 });
 ProductListComponent.displayName = 'ProductListComponent';
+
 
 export default function POSPage() {
     const router = useRouter();
@@ -156,12 +208,7 @@ export default function POSPage() {
     
     const [isDownloading, setIsDownloading] = useState(false);
     const isMobile = useIsMobile();
-
-    // States for mobile add dialog
-    const [isMobileAddOpen, setIsMobileAddOpen] = useState(false);
-    const [itemToAdd, setItemToAdd] = useState<MasterProduct | null>(null);
-    const [addQuantity, setAddQuantity] = useState('1');
-
+    
     const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
         queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username],
         queryFn: async () => {
@@ -315,26 +362,11 @@ export default function POSPage() {
             setIsDownloading(false);
         }
     };
-
-    const handleMobileAddItem = (item: MasterProduct) => {
-        setItemToAdd(item);
-        setIsMobileAddOpen(true);
-    };
-
-    const handleMobileConfirmAdd = () => {
-        if (!itemToAdd) return;
-        const quantity = parseFloat(addQuantity);
-        if (isNaN(quantity) || quantity <= 0) {
-            toast({ variant: 'destructive', title: 'Invalid quantity' });
-            return;
-        }
-        const newItem: CartItem = { ...itemToAdd, id: itemToAdd.product_id, quantity, type: 'general' };
+    
+    const handleAddItemToCart = (item: MasterProduct, quantity: number) => {
+        const newItem: CartItem = { ...item, id: item.product_id, quantity, type: 'general' };
         setCart(prev => [...prev, newItem]);
-        setIsMobileAddOpen(false);
-        setItemToAdd(null);
-        setAddQuantity('1');
     };
-
 
     if (isLoadingPatient || isLoadingCorrectAmount || isLoadingDetails) {
         return <div className="p-8 text-center flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin"/></div>;
@@ -566,7 +598,6 @@ export default function POSPage() {
     );
 
     return (
-    <Dialog open={isMobileAddOpen} onOpenChange={setIsMobileAddOpen}>
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
                 <Button onClick={() => router.back()} variant="ghost" className="-ml-4">
@@ -589,40 +620,16 @@ export default function POSPage() {
                                         <SheetDescription>Select items to add to the bill.</SheetDescription>
                                     </SheetHeader>
                                     <div className="px-6 pb-6 flex-1 overflow-hidden">
-                                        <ProductListComponent onAddItem={handleMobileAddItem} isPaid={isPaid} cart={cart} isMobile={isMobile}/>
+                                        <ProductListComponent onAddItem={handleAddItemToCart} isPaid={isPaid} cart={cart}/>
                                     </div>
                                 </div>
                             </SheetContent>
                         </Sheet>
                     ) : (
-                        <Dialog>
-                            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-                                <ProductListComponent onAddItem={handleMobileAddItem} isPaid={isPaid} cart={cart} isMobile={isMobile}/>
-                                {BillComponent}
-                            </div>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Add Item: {itemToAdd?.DisplayName}</DialogTitle>
-                                    <DialogDescription>Enter the quantity you wish to add to the bill.</DialogDescription>
-                                </DialogHeader>
-                                <div className="py-4">
-                                    <Label htmlFor="add-quantity">Quantity</Label>
-                                    <Input 
-                                        id="add-quantity" 
-                                        type="number" 
-                                        value={addQuantity} 
-                                        onChange={(e) => setAddQuantity(e.target.value)} 
-                                        className="mt-2"
-                                        min="1"
-                                        step="1"
-                                    />
-                                </div>
-                                <DialogFooter>
-                                    <Button variant="outline" onClick={() => setIsMobileAddOpen(false)}>Cancel</Button>
-                                    <Button onClick={handleMobileConfirmAdd}>Confirm</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+                            <ProductListComponent onAddItem={handleAddItemToCart} isPaid={isPaid} cart={cart}/>
+                            {BillComponent}
+                        </div>
                     )}
                 </CardContent>
             </Card>
@@ -673,6 +680,6 @@ export default function POSPage() {
                  <p className="text-center text-xs font-semibold">Thank you, Come Again!</p>
             </div>
         </div>
-      </Dialog>
     );
 }
+
