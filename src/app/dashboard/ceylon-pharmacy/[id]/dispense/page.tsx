@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -519,30 +520,26 @@ export default function DispensePage() {
 
                             <div className="flex items-start min-h-[150px] mb-4">
                                 <div className="text-4xl font-serif text-gray-700 select-none mr-4">℞</div>
-                                <div className="flex-1 grid grid-cols-2">
-                                    <div className="col-span-1 space-y-2 font-mono text-base text-gray-800">
-                                        {prescriptionDetails?.map((detail) => (
-                                            <p key={detail.cover_id}>{detail.content}</p>
-                                        ))}
-                                    </div>
-                                    <div className="col-span-1 flex flex-col items-center justify-center relative">
-                                       <div className="absolute top-0 bottom-0 left-1/2 w-px bg-gray-300 transform -translate-x-1/2 rotate-[15deg] origin-center h-full scale-y-125"></div>
-                                        <p className="font-bold text-lg">{patient.notes}</p>
-                                    </div>
+                                <div className="flex-1 space-y-2 font-mono text-base text-gray-800">
+                                    {prescriptionDetails?.map((detail) => (
+                                        <p key={detail.cover_id}>{detail.content}</p>
+                                    ))}
                                 </div>
                             </div>
                             
-                             <div className="p-3 bg-gray-100 rounded-md text-center text-sm font-semibold text-gray-700 mb-6">
-                                {patient.Pres_Method}
+                            <div className="flex justify-between items-center text-lg font-bold px-2">
+                                <span>{patient.notes}</span>
+                                <span>/</span>
+                                <span>{patient.Pres_Method}</span>
                             </div>
 
-                            <div className="flex justify-between items-end">
+                            <div className="flex justify-between items-end mt-12">
                                 <div className="text-center">
                                     <p className="font-bold">{patient.doctor_name}</p>
                                     <p className="text-xs text-gray-600 border-t border-gray-400 mt-1 pt-1">MBBS</p>
                                 </div>
                                 <div className="text-center">
-                                    <p className="font-bold">{patient.doctor_name.split(' ').slice(1).join(' ')}</p>
+                                    <p className="italic font-serif text-xl text-gray-700">{patient.doctor_name.split(' ').slice(1).join(' ')}</p>
                                     <p className="text-xs text-gray-600 border-t border-gray-400 mt-1 pt-1">Signature</p>
                                 </div>
                             </div>
@@ -598,3 +595,4 @@ export default function DispensePage() {
         </div>
     );
 }
+
