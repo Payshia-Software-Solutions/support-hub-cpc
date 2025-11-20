@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, memo } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useForm, useController, Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,7 +12,7 @@ import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { prescriptions } from "@/lib/d-pad-data";
 import type { PrescriptionFormValues, PrescriptionDrug } from "@/lib/d-pad-data";
-import { Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ArrowLeft, ClipboardList, User, Loader2, Search, Clock, CheckCircle, AlertCircle, ShoppingCart, Library, FileText } from 'lucide-react';
+import { Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ArrowLeft, ClipboardList, User, Loader2, Search, Clock, CheckCircle, AlertCircle, ShoppingCart, Library, FileText, PlusCircle, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getCeylonPharmacyPrescriptions, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer, getPrescriptionDetails, updatePatientStatus } from '@/lib/actions/games';
@@ -41,6 +41,90 @@ type CartItem = (MasterProduct) & {
     // For prescription items
     correctAnswers?: any; 
 };
+
+
+const ProductListComponent = memo(({ onAddItem, isPaid, cart }: { onAddItem: (item: MasterProduct) => void; isPaid: boolean; cart: CartItem[] }) => {
+    const [searchTerm, setSearchTerm] = useState("");
+
+    const { data: masterProducts, isLoading: isLoadingProducts } = useQuery<MasterProduct[]>({
+        queryKey: ['masterProducts'],
+        queryFn: getMasterProducts,
+        staleTime: 1000 * 60 * 5, 
+    });
+
+    const filteredStoreItems = useMemo(() => {
+        if (!masterProducts) return [];
+        if (!searchTerm) return masterProducts;
+        const lowercasedSearch = searchTerm.toLowerCase();
+        return masterProducts.filter(item => 
+            item.DisplayName.toLowerCase().includes(lowercasedSearch)
+        );
+    }, [searchTerm, masterProducts]);
+
+    return (
+         <Card className="shadow-lg lg:col-span-2">
+            <CardHeader>
+                <CardTitle>Product List</CardTitle>
+                 <div className="relative pt-2">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search products..." 
+                        className="pl-10" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </CardHeader>
+            <CardContent>
+                <ScrollArea className="h-[500px] pr-3">
+                <div className="space-y-3">
+                    {isLoadingProducts && <p>Loading products...</p>}
+                    {!isLoadingProducts && filteredStoreItems.length > 0 ? (
+                        filteredStoreItems.map(item => {
+                            const isAdded = cart.some(c => c.id === item.product_id);
+                            return (
+                                <div key={item.product_id} className={cn("flex items-center justify-between p-3 border rounded-md", isAdded ? "bg-muted/30" : "bg-muted/80")}>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-white rounded-md flex-shrink-0 relative overflow-hidden">
+                                            {item.ImagePath ? (
+                                                <Image src={`${POS_IMAGE_BASE_URL}${item.ImagePath}`} alt={item.DisplayName} layout="fill" objectFit="contain" className="p-1"/>
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-muted">
+                                                    <Pill className="w-6 h-6 text-muted-foreground" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-sm">{item.DisplayName}</p>
+                                            <p className="text-xs font-semibold text-primary">LKR {parseFloat(item.SellingPrice).toFixed(2)}</p>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onAddItem(item);
+                                        }}
+                                        disabled={isPaid || isAdded}
+                                    >
+                                        {isAdded ? <CheckCircle className="h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                                        {isAdded ? "Added" : "Add"}
+                                    </Button>
+                                </div>
+                            )
+                        })
+                    ) : (
+                        !isLoadingProducts && <div className="text-center py-10 text-muted-foreground">
+                            <p>No products found.</p>
+                        </div>
+                    )}
+                </div>
+                </ScrollArea>
+            </CardContent>
+        </Card>
+    );
+});
+ProductListComponent.displayName = 'ProductListComponent';
 
 export default function POSPage() {
     const router = useRouter();
@@ -209,6 +293,31 @@ export default function POSPage() {
         } finally {
             setIsDownloading(false);
         }
+    };
+
+    // States for mobile add dialog
+    const [isMobileAddOpen, setIsMobileAddOpen] = useState(false);
+    const [itemToAdd, setItemToAdd] = useState<MasterProduct | null>(null);
+    const [addQuantity, setAddQuantity] = useState('1');
+
+
+    const handleMobileAddItem = (item: MasterProduct) => {
+        setItemToAdd(item);
+        setIsMobileAddOpen(true);
+    };
+
+    const handleMobileConfirmAdd = () => {
+        if (!itemToAdd) return;
+        const quantity = parseFloat(addQuantity);
+        if (isNaN(quantity) || quantity <= 0) {
+            toast({ variant: 'destructive', title: 'Invalid quantity' });
+            return;
+        }
+        const newItem: CartItem = { ...itemToAdd, id: itemToAdd.product_id, quantity, type: 'general' };
+        setCart(prev => [...prev, newItem]);
+        setIsMobileAddOpen(false);
+        setItemToAdd(null);
+        setAddQuantity('1');
     };
 
 
@@ -441,112 +550,6 @@ export default function POSPage() {
         </Card>
     );
 
-    const ProductListComponent = ({ onAddItem }: { onAddItem: (item: MasterProduct) => void; }) => {
-        const [searchTerm, setSearchTerm] = useState("");
-
-        const { data: masterProducts, isLoading: isLoadingProducts } = useQuery<MasterProduct[]>({
-            queryKey: ['masterProducts'],
-            queryFn: getMasterProducts,
-            staleTime: 1000 * 60 * 5, 
-        });
-
-        const filteredStoreItems = useMemo(() => {
-            if (!masterProducts) return [];
-            if (!searchTerm) return masterProducts;
-            const lowercasedSearch = searchTerm.toLowerCase();
-            return masterProducts.filter(item => 
-                item.DisplayName.toLowerCase().includes(lowercasedSearch)
-            );
-        }, [searchTerm, masterProducts]);
-
-        return (
-             <Card className="shadow-lg lg:col-span-2">
-                <CardHeader>
-                    <CardTitle>Product List</CardTitle>
-                     <div className="relative pt-2">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                            placeholder="Search products..." 
-                            className="pl-10" 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <ScrollArea className="h-[500px] pr-3">
-                    <div className="space-y-3">
-                        {isLoadingProducts && <p>Loading products...</p>}
-                        {!isLoadingProducts && filteredStoreItems.length > 0 ? (
-                            filteredStoreItems.map(item => {
-                                const isAdded = cart.some(c => c.id === item.product_id);
-                                return (
-                                    <div key={item.product_id} className={cn("flex items-center justify-between p-3 border rounded-md", isAdded ? "bg-muted/30" : "bg-muted/80")}>
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-white rounded-md flex-shrink-0 relative overflow-hidden">
-                                                {item.ImagePath ? (
-                                                    <Image src={`${POS_IMAGE_BASE_URL}${item.ImagePath}`} alt={item.DisplayName} layout="fill" objectFit="contain" className="p-1"/>
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center bg-muted">
-                                                        <Pill className="w-6 h-6 text-muted-foreground" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-sm">{item.DisplayName}</p>
-                                                <p className="text-xs font-semibold text-primary">LKR {parseFloat(item.SellingPrice).toFixed(2)}</p>
-                                            </div>
-                                        </div>
-                                        <Button
-                                            size="sm"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onAddItem(item);
-                                            }}
-                                            disabled={isPaid || isAdded}
-                                        >
-                                            {isAdded ? <CheckCircle className="h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                                            {isAdded ? "Added" : "Add"}
-                                        </Button>
-                                    </div>
-                                )
-                            })
-                        ) : (
-                            !isLoadingProducts && <div className="text-center py-10 text-muted-foreground">
-                                <p>No products found.</p>
-                            </div>
-                        )}
-                    </div>
-                    </ScrollArea>
-                </CardContent>
-            </Card>
-        );
-    }
-    
-    // States for mobile add dialog
-    const [isMobileAddOpen, setIsMobileAddOpen] = useState(false);
-    const [itemToAdd, setItemToAdd] = useState<MasterProduct | null>(null);
-    const [addQuantity, setAddQuantity] = useState('1');
-
-    const handleMobileAddItem = (item: MasterProduct) => {
-        setItemToAdd(item);
-        setIsMobileAddOpen(true);
-    };
-
-    const handleMobileConfirmAdd = () => {
-        if (!itemToAdd) return;
-        const quantity = parseFloat(addQuantity);
-        if (isNaN(quantity) || quantity <= 0) {
-            toast({ variant: 'destructive', title: 'Invalid quantity' });
-            return;
-        }
-        const newItem: CartItem = { ...itemToAdd, id: itemToAdd.product_id, quantity, type: 'general' };
-        setCart(prev => [...prev, newItem]);
-        setIsMobileAddOpen(false);
-        setItemToAdd(null);
-        setAddQuantity('1');
-    };
-
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
@@ -570,14 +573,14 @@ export default function POSPage() {
                                         <SheetDescription>Select items to add to the bill.</SheetDescription>
                                     </SheetHeader>
                                     <div className="px-6 pb-6 flex-1 overflow-hidden">
-                                        <ProductListComponent onAddItem={handleMobileAddItem} />
+                                        <ProductListComponent onAddItem={handleMobileAddItem} isPaid={isPaid} cart={cart} />
                                     </div>
                                 </div>
                             </SheetContent>
                         </Sheet>
                     ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-                            <ProductListComponent onAddItem={handleMobileAddItem} />
+                            <ProductListComponent onAddItem={handleMobileAddItem} isPaid={isPaid} cart={cart} />
                             {BillComponent}
                         </div>
                     )}
