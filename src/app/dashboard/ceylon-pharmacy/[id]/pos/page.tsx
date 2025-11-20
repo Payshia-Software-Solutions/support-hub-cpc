@@ -259,7 +259,7 @@ export default function POSPage() {
                                                     ))}
                                                 </div>
                                                 <div className="col-span-1 flex items-center justify-center">
-                                                    <div className="h-full w-[2px] bg-gray-400 transform -rotate-[25deg] origin-center scale-y-110"></div>
+                                                    <div className="h-full w-[2px] bg-gray-400 transform rotate-[25deg] origin-center scale-y-110"></div>
                                                 </div>
                                                 <div className="col-span-1 flex items-center justify-start font-bold">
                                                     <span>{patient.Pres_Method}</span>
