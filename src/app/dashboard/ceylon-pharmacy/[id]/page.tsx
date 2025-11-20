@@ -328,19 +328,24 @@ export default function CeylonPharmacyPatientPage() {
                                 <p><span className="font-semibold">Date:</span> {patient.pres_date}</p>
                             </div>
 
-                            <div className="flex items-start min-h-[150px] mb-4">
-                                <div className="text-4xl font-serif text-gray-700 select-none mr-4">℞</div>
-                                <div className="flex-1 space-y-2 font-mono text-base text-gray-800">
-                                    {prescriptionDetails?.map((detail) => (
-                                        <p key={detail.cover_id}>{detail.content}</p>
-                                    ))}
+                             <div className="min-h-[150px] mb-4">
+                                <div className="flex items-start">
+                                    <div className="text-4xl font-serif text-gray-700 select-none mr-4">℞</div>
+                                    <div className="flex-1 grid grid-cols-5 gap-2 font-mono text-base text-gray-800">
+                                        <div className="col-span-3 space-y-2">
+                                            {prescriptionDetails?.map((detail) => (
+                                                <p key={detail.cover_id}>{detail.content}</p>
+                                            ))}
+                                        </div>
+                                        <div className="col-span-1 flex items-center justify-center">
+                                            <div className="h-full w-px bg-gray-400 transform rotate-[25deg] origin-center scale-y-150"></div>
+                                        </div>
+                                        <div className="col-span-1 flex items-center justify-start font-bold">
+                                            <span>{patient.Pres_Method}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <div className="flex justify-between items-center text-lg font-bold px-2">
-                                <span>{patient.notes}</span>
-                                <span>/</span>
-                                <span>{patient.Pres_Method}</span>
+                                 <p className="mt-4 font-mono text-base text-gray-800">{patient.notes}</p>
                             </div>
 
                             <div className="flex justify-between items-end mt-12">
