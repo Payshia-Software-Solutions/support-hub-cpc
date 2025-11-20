@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -534,8 +535,11 @@ export default function DispensePage() {
                                         </div>
                                     </div>
                                 </div>
-                                 <p className="mt-4 font-mono text-base text-gray-800">{patient.notes}</p>
                             </div>
+                            
+                            {patient.notes && (
+                                <p className="mt-4 font-mono text-sm text-gray-800">{patient.notes}</p>
+                            )}
 
                             <div className="flex justify-between items-end mt-12">
                                 <div className="text-center">
@@ -599,4 +603,3 @@ export default function DispensePage() {
         </div>
     );
 }
-
