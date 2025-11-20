@@ -158,26 +158,18 @@ const DispensingForm = ({
   selectionData,
   onSubmit,
   onReset,
-  isSubmitting
+  isSubmitting,
+  form
 }: {
   correctAnswers: DispensingAnswer;
   selectionData: FormSelectionData;
   onSubmit: (data: PrescriptionFormValues) => void;
   onReset: () => void;
   isSubmitting: boolean;
+  form: any;
 }) => {
-  const form = useForm<PrescriptionFormValues>({
-    resolver: zodResolver(prescriptionSchema),
-    defaultValues: {
-      date: "", patientName: "", drugName: "", quantity: "",
-      dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "",
-      usingFrequency: "", additionalInstruction: "", at_a_time: "", hour_qty: ""
-    },
-  });
-
   const { handleSubmit, formState: { errors }, control } = form;
-  const formValues = form.watch();
-
+  
   const handleReset = () => { form.reset(); onReset(); }
   
   const getOptions = (key: keyof FormSelectionData, correctAnswer: string) => {
@@ -342,6 +334,14 @@ export default function DispensePage() {
     const [incorrectFields, setIncorrectFields] = useState<string[]>([]);
     const [wasCorrect, setWasCorrect] = useState(false);
 
+    const form = useForm<PrescriptionFormValues>({
+      resolver: zodResolver(prescriptionSchema),
+      defaultValues: {
+        date: "", patientName: "", drugName: "", quantity: "",
+        dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "",
+        usingFrequency: "", additionalInstruction: "", at_a_time: "", hour_qty: ""
+      },
+    });
 
     const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
         queryKey: ['ceylonPharmacyPatient', patientId, user?.username],
@@ -556,6 +556,7 @@ export default function DispensePage() {
                                             onSubmit={handleDispenseSubmit}
                                             onReset={() => handleDispenseReset()}
                                             isSubmitting={validationMutation.isPending}
+                                            form={form}
                                         />
                                     </div>
                                     </div>
@@ -577,6 +578,7 @@ export default function DispensePage() {
                                 onSubmit={handleDispenseSubmit}
                                 onReset={() => handleDispenseReset()}
                                 isSubmitting={validationMutation.isPending}
+                                form={form}
                             />
                         </CardContent>
                     </Card>
@@ -585,11 +587,3 @@ export default function DispensePage() {
         </div>
     );
 }
-
-    
-
-    
-
-
-
-    
