@@ -20,7 +20,7 @@ import { ArrowLeft, Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, Rota
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getDispensingAnswers, getFormSelectionData, validateDispensingAnswer } from '@/lib/actions/games';
-import type { GamePrescription, PrescriptionDetail, DispensingAnswer, FormSelectionData, GamePatient, ValidateAnswerPayload, ValidateAnswerResponse } from '@/lib/types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, ValidateAnswerPayload, ValidateAnswerResponse } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from "@/components/ui/input";
 import { useAuth } from '@/contexts/AuthContext';
@@ -523,9 +523,10 @@ export default function DispensePage() {
                             <div className="flex items-start min-h-[200px] pl-10 relative mb-6">
                                 <div className="absolute left-0 top-0 text-6xl font-serif text-gray-700 select-none">℞</div>
                                 <div className="flex-1 space-y-4 font-mono text-lg text-gray-800 pt-2">
-                                     {prescriptionDetails.map(detail => (
-                                        <div key={detail.cover_id}>
+                                     {prescriptionDetails.map((detail, index) => (
+                                        <div key={detail.cover_id} className="flex justify-between items-center">
                                             <p>{detail.content}</p>
+                                            {patient.Pres_Method.split(',')[index] && <p className="ml-4 font-sans text-base text-gray-600">#{patient.Pres_Method.split(',')[index].trim()}</p>}
                                         </div>
                                     ))}
                                 </div>
