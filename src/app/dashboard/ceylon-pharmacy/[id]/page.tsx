@@ -337,7 +337,7 @@ export default function CeylonPharmacyPatientPage() {
                                             ))}
                                         </div>
                                         <div className="col-span-1 flex items-center justify-center">
-                                            <div className="h-full w-px bg-gray-400 transform rotate-[25deg] origin-center scale-y-150"></div>
+                                            <div className="h-full w-px bg-gray-400 transform rotate-[25deg] origin-center scale-y-100"></div>
                                         </div>
                                         <div className="col-span-1 flex items-center justify-start font-bold">
                                             <span>{patient.Pres_Method}</span>
@@ -347,7 +347,9 @@ export default function CeylonPharmacyPatientPage() {
                             </div>
                             
                             {patient.notes && (
-                                <p className="mt-4 font-mono text-sm text-gray-800">{patient.notes}</p>
+                                <div className="mt-4 pt-4 border-t border-dashed">
+                                    <p className="font-mono text-xs text-gray-700">{patient.notes}</p>
+                                </div>
                             )}
 
                             <div className="flex justify-between items-end mt-12">

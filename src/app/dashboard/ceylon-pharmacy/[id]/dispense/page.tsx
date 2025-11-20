@@ -517,7 +517,7 @@ export default function DispensePage() {
                                 <p><span className="font-semibold">Age:</span> {patient.Pres_Age}</p>
                                 <p><span className="font-semibold">Date:</span> {patient.pres_date}</p>
                             </div>
-                            
+
                              <div className="min-h-[150px] mb-4">
                                 <div className="flex items-start">
                                     <div className="text-4xl font-serif text-gray-700 select-none mr-4">℞</div>
@@ -528,7 +528,7 @@ export default function DispensePage() {
                                             ))}
                                         </div>
                                         <div className="col-span-1 flex items-center justify-center">
-                                            <div className="h-full w-px bg-gray-400 transform rotate-[25deg] origin-center scale-y-150"></div>
+                                            <div className="h-full w-px bg-gray-400 transform rotate-[25deg] origin-center scale-y-100"></div>
                                         </div>
                                         <div className="col-span-1 flex items-center justify-start font-bold">
                                             <span>{patient.Pres_Method}</span>
@@ -537,8 +537,10 @@ export default function DispensePage() {
                                 </div>
                             </div>
                             
-                            {patient.notes && (
-                                <p className="mt-4 font-mono text-sm text-gray-800">{patient.notes}</p>
+                             {patient.notes && (
+                                <div className="mt-4 pt-4 border-t border-dashed">
+                                    <p className="font-mono text-xs text-gray-700">{patient.notes}</p>
+                                </div>
                             )}
 
                             <div className="flex justify-between items-end mt-12">
@@ -557,7 +559,7 @@ export default function DispensePage() {
                         <CardContent>
                             <Sheet>
                                 <SheetTrigger asChild>
-                                    <Button className="w-full" size="lg"><ClipboardList className="mr-2"/> Dispense</Button>
+                                     <Button className="w-full" size="lg"><ClipboardList className="mr-2"/> Dispense</Button>
                                 </SheetTrigger>
                                 <SheetContent side="bottom" className="h-[90%] p-0">
                                 <div className="h-full flex flex-col relative">
