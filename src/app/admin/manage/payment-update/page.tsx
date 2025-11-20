@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,8 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useController } from 'react-hook-form';
 
 // --- Types for this page ---
 interface StudentInfo {
@@ -64,6 +66,7 @@ export default function PaymentUpdatePage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const isMobile = useIsMobile();
     
     // Form state for new payment
     const [newPaymentAmount, setNewPaymentAmount] = useState('');
@@ -158,6 +161,33 @@ export default function PaymentUpdatePage() {
 
     const paymentRecordsArray = studentData ? Object.values(studentData.studentBalance.paymentRecords).sort((a, b) => new Date(b.paid_date).getTime() - new Date(a.paid_date).getTime()) : [];
     const enrollmentsArray = studentData ? Object.values(studentData.studentEnrollments) : [];
+
+    const DatePickerField = () => {
+        if (isMobile) {
+            return (
+                 <Input
+                    type="date"
+                    className="w-full h-10"
+                    value={newPaymentDate ? format(newPaymentDate, 'yyyy-MM-dd') : ''}
+                    onChange={(e) => setNewPaymentDate(e.target.value ? new Date(e.target.value) : undefined)}
+                />
+            )
+        }
+
+        return (
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !newPaymentDate && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newPaymentDate ? format(newPaymentDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                    <Calendar mode="single" selected={newPaymentDate} onSelect={setNewPaymentDate} initialFocus />
+                </PopoverContent>
+            </Popover>
+        );
+    }
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -290,17 +320,7 @@ export default function PaymentUpdatePage() {
                                         </div>
                                          <div className="space-y-2">
                                             <label htmlFor="payment-date">Payment Date</label>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !newPaymentDate && "text-muted-foreground")}>
-                                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                                        {newPaymentDate ? format(newPaymentDate, "PPP") : <span>Pick a date</span>}
-                                                    </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0">
-                                                    <Calendar mode="single" selected={newPaymentDate} onSelect={setNewPaymentDate} initialFocus />
-                                                </PopoverContent>
-                                            </Popover>
+                                            <DatePickerField />
                                         </div>
                                     </div>
                                     <DialogFooter>

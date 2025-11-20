@@ -115,33 +115,43 @@ const DatePickerField = ({
   control,
 }: {
   control: Control<PrescriptionFormValues>;
-}) => (
-  <Controller
-    control={control}
-    name="date"
-    render={({ field }) => (
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="w-full justify-start pl-10 relative h-12 text-base">
-            <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <span className="truncate">{field.value ? format(new Date(field.value), 'PPP') : 'Select Date'}</span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0">
-          <Calendar
-            mode="single"
-            captionLayout="dropdown-buttons"
-            fromYear={1960}
-            toYear={new Date().getFullYear() + 5}
-            selected={field.value ? new Date(field.value) : undefined}
-            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-            initialFocus
-          />
-        </PopoverContent>
-      </Popover>
-    )}
-  />
-);
+}) => {
+    const isMobile = useIsMobile();
+    const { field } = useController({ name: 'date', control });
+
+    if (isMobile) {
+        return (
+             <Input
+                type="date"
+                className="w-full h-12 text-base"
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+            />
+        )
+    }
+
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+            <Button variant="outline" className="w-full justify-start pl-10 relative h-12 text-base">
+                <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <span className="truncate">{field.value ? format(new Date(field.value), 'PPP') : 'Select Date'}</span>
+            </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+            <Calendar
+                mode="single"
+                captionLayout="dropdown-buttons"
+                fromYear={1960}
+                toYear={new Date().getFullYear() + 5}
+                selected={field.value ? new Date(field.value) : undefined}
+                onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                initialFocus
+            />
+            </PopoverContent>
+        </Popover>
+    )
+};
 
 const DispensingForm = ({
   correctAnswers,
@@ -579,3 +589,4 @@ export default function DispensePage() {
     
 
     
+
