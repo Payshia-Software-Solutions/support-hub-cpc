@@ -24,7 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -43,7 +43,7 @@ type CartItem = (MasterProduct) & {
 };
 
 
-const ProductListComponent = memo(({ onAddItem, isPaid, cart }: { onAddItem: (item: MasterProduct) => void; isPaid: boolean; cart: CartItem[] }) => {
+const ProductListComponent = memo(({ onAddItem, isPaid, cart, isMobile }: { onAddItem: (item: MasterProduct) => void; isPaid: boolean; cart: CartItem[], isMobile: boolean }) => {
     const [searchTerm, setSearchTerm] = useState("");
 
     const { data: masterProducts, isLoading: isLoadingProducts } = useQuery<MasterProduct[]>({
@@ -82,6 +82,24 @@ const ProductListComponent = memo(({ onAddItem, isPaid, cart }: { onAddItem: (it
                     {!isLoadingProducts && filteredStoreItems.length > 0 ? (
                         filteredStoreItems.map(item => {
                             const isAdded = cart.some(c => c.id === item.product_id);
+                            
+                            const addButton = (
+                                <Button
+                                    size="sm"
+                                    onClick={(e) => {
+                                        if (isMobile) {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                        }
+                                        onAddItem(item);
+                                    }}
+                                    disabled={isPaid || isAdded}
+                                >
+                                    {isAdded ? <CheckCircle className="h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                                    {isAdded ? "Added" : "Add"}
+                                </Button>
+                            );
+
                             return (
                                 <div key={item.product_id} className={cn("flex items-center justify-between p-3 border rounded-md", isAdded ? "bg-muted/30" : "bg-muted/80")}>
                                     <div className="flex items-center gap-4">
@@ -99,17 +117,15 @@ const ProductListComponent = memo(({ onAddItem, isPaid, cart }: { onAddItem: (it
                                             <p className="text-xs font-semibold text-primary">LKR {parseFloat(item.SellingPrice).toFixed(2)}</p>
                                         </div>
                                     </div>
-                                    <Button
-                                        size="sm"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onAddItem(item);
-                                        }}
-                                        disabled={isPaid || isAdded}
-                                    >
-                                        {isAdded ? <CheckCircle className="h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                                        {isAdded ? "Added" : "Add"}
-                                    </Button>
+                                    {isMobile ? (
+                                        <DialogTrigger asChild>
+                                           {addButton}
+                                        </DialogTrigger>
+                                    ) : (
+                                        <DialogTrigger asChild>
+                                            {addButton}
+                                        </DialogTrigger>
+                                    )}
                                 </div>
                             )
                         })
@@ -130,7 +146,6 @@ export default function POSPage() {
     const router = useRouter();
     const params = useParams();
     const patientId = params.id as string;
-    const isMobile = useIsMobile();
     const { user } = useAuth();
     const courseCode = 'CPCC20';
 
@@ -140,6 +155,12 @@ export default function POSPage() {
     const [isPaid, setIsPaid] = useState(false);
     
     const [isDownloading, setIsDownloading] = useState(false);
+    const isMobile = useIsMobile();
+
+    // States for mobile add dialog
+    const [isMobileAddOpen, setIsMobileAddOpen] = useState(false);
+    const [itemToAdd, setItemToAdd] = useState<MasterProduct | null>(null);
+    const [addQuantity, setAddQuantity] = useState('1');
 
     const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
         queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username],
@@ -294,12 +315,6 @@ export default function POSPage() {
             setIsDownloading(false);
         }
     };
-
-    // States for mobile add dialog
-    const [isMobileAddOpen, setIsMobileAddOpen] = useState(false);
-    const [itemToAdd, setItemToAdd] = useState<MasterProduct | null>(null);
-    const [addQuantity, setAddQuantity] = useState('1');
-
 
     const handleMobileAddItem = (item: MasterProduct) => {
         setItemToAdd(item);
@@ -551,6 +566,7 @@ export default function POSPage() {
     );
 
     return (
+    <Dialog open={isMobileAddOpen} onOpenChange={setIsMobileAddOpen}>
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
                 <Button onClick={() => router.back()} variant="ghost" className="-ml-4">
@@ -573,45 +589,43 @@ export default function POSPage() {
                                         <SheetDescription>Select items to add to the bill.</SheetDescription>
                                     </SheetHeader>
                                     <div className="px-6 pb-6 flex-1 overflow-hidden">
-                                        <ProductListComponent onAddItem={handleMobileAddItem} isPaid={isPaid} cart={cart} />
+                                        <ProductListComponent onAddItem={handleMobileAddItem} isPaid={isPaid} cart={cart} isMobile={isMobile}/>
                                     </div>
                                 </div>
                             </SheetContent>
                         </Sheet>
                     ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-                            <ProductListComponent onAddItem={handleMobileAddItem} isPaid={isPaid} cart={cart} />
-                            {BillComponent}
-                        </div>
+                        <Dialog>
+                            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+                                <ProductListComponent onAddItem={handleMobileAddItem} isPaid={isPaid} cart={cart} isMobile={isMobile}/>
+                                {BillComponent}
+                            </div>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Add Item: {itemToAdd?.DisplayName}</DialogTitle>
+                                    <DialogDescription>Enter the quantity you wish to add to the bill.</DialogDescription>
+                                </DialogHeader>
+                                <div className="py-4">
+                                    <Label htmlFor="add-quantity">Quantity</Label>
+                                    <Input 
+                                        id="add-quantity" 
+                                        type="number" 
+                                        value={addQuantity} 
+                                        onChange={(e) => setAddQuantity(e.target.value)} 
+                                        className="mt-2"
+                                        min="1"
+                                        step="1"
+                                    />
+                                </div>
+                                <DialogFooter>
+                                    <Button variant="outline" onClick={() => setIsMobileAddOpen(false)}>Cancel</Button>
+                                    <Button onClick={handleMobileConfirmAdd}>Confirm</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     )}
                 </CardContent>
             </Card>
-
-            {/* Separate Dialog for Mobile and Desktop Add Action */}
-            <Dialog open={isMobileAddOpen} onOpenChange={setIsMobileAddOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Add Item: {itemToAdd?.DisplayName}</DialogTitle>
-                        <DialogDescription>Enter the quantity you wish to add to the bill.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Label htmlFor="add-quantity">Quantity</Label>
-                        <Input 
-                            id="add-quantity" 
-                            type="number" 
-                            value={addQuantity} 
-                            onChange={(e) => setAddQuantity(e.target.value)} 
-                            className="mt-2"
-                            min="1"
-                            step="1"
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsMobileAddOpen(false)}>Cancel</Button>
-                        <Button onClick={handleMobileConfirmAdd}>Confirm</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             {/* Hidden div for PDF generation */}
              <div id="receipt-to-print" className="fixed -left-[9999px] top-0 bg-white text-black p-8 font-sans" style={{ width: '302px' }}>
@@ -659,5 +673,6 @@ export default function POSPage() {
                  <p className="text-center text-xs font-semibold">Thank you, Come Again!</p>
             </div>
         </div>
+      </Dialog>
     );
 }
