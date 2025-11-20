@@ -3,25 +3,34 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useForm, useController, Control } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
-import { ArrowLeft, PlusCircle, ShoppingCart, CheckCircle, Trash2, Search, Pill, Library, Loader2, FileText } from 'lucide-react';
-import { getCeylonPharmacyPrescriptions, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer, getPrescriptionDetails, updatePatientStatus } from '@/lib/actions/games';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { prescriptions } from "@/lib/d-pad-data";
+import type { PrescriptionFormValues, PrescriptionDrug } from "@/lib/d-pad-data";
+import { Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ArrowLeft, ClipboardList, User, Loader2, Search, Clock, CheckCircle, AlertCircle, ShoppingCart, Library, FileText } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAuth } from '@/contexts/AuthContext';
+import { getCeylonPharmacyPrescriptions, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer, getPrescriptionDetails, updatePatientStatus } from '@/lib/actions/games';
 import type { GamePatient, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, PrescriptionDetail } from '@/lib/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from "@/components/ui/input";
+import { useAuth } from '@/contexts/AuthContext';
+import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Separator } from '@/components/ui/separator';
 
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
 
@@ -45,9 +54,8 @@ export default function POSPage() {
     const [cashReceived, setCashReceived] = useState<string>('');
     const [discount, setDiscount] = useState<string>('');
     const [isPaid, setIsPaid] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [itemToAdd, setItemToAdd] = useState<MasterProduct | null>(null);
-    const [addQuantity, setAddQuantity] = useState('1');
+    
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
         queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username],
@@ -67,12 +75,6 @@ export default function POSPage() {
         queryKey: ['posCorrectAmount', patientId],
         queryFn: () => getPOSCorrectAmount(patientId),
         enabled: !!patientId,
-    });
-
-    const { data: masterProducts, isLoading: isLoadingProducts } = useQuery<MasterProduct[]>({
-        queryKey: ['masterProducts'],
-        queryFn: getMasterProducts,
-        staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     });
 
     const { data: prescriptionDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
@@ -132,37 +134,7 @@ export default function POSPage() {
         if (isNaN(received) || received < total) return 0;
         return received - total;
     }, [cashReceived, total]);
-    
-    const filteredStoreItems = useMemo(() => {
-        if (!masterProducts) return [];
-        if (!searchTerm) return masterProducts;
-        const lowercasedSearch = searchTerm.toLowerCase();
-        return masterProducts.filter(item => 
-            item.DisplayName.toLowerCase().includes(lowercasedSearch)
-        );
-    }, [searchTerm, masterProducts]);
 
-
-    const handleAddToCart = () => {
-        if (!itemToAdd) return;
-
-        const quantity = parseFloat(addQuantity);
-        if (isNaN(quantity) || quantity <= 0) {
-            toast({ variant: 'destructive', title: 'Invalid quantity', description: 'Please enter a valid number greater than 0.' });
-            return;
-        }
-
-        const newItem: CartItem = {
-            ...itemToAdd,
-            id: itemToAdd.product_id, // Use product_id for uniqueness
-            quantity: quantity,
-            type: 'general'
-        };
-        setCart(prev => [...prev, newItem]);
-        setItemToAdd(null);
-        setAddQuantity('1');
-    };
-    
     const handleRemoveFromCart = (itemId: string) => {
         setCart(prev => prev.filter(item => item.id !== itemId));
     };
@@ -210,12 +182,41 @@ export default function POSPage() {
         router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
     };
 
-    if (isLoadingPatient || isLoadingProducts || isLoadingCorrectAmount) {
+    const handleDownloadReceipt = async () => {
+        const receiptElement = document.getElementById('receipt-to-print');
+        if (!receiptElement) return;
+
+        setIsDownloading(true);
+        try {
+            const { default: html2canvas } = await import('html2canvas');
+            const { jsPDF } = await import('jspdf');
+
+            const canvas = await html2canvas(receiptElement, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'px',
+                format: [canvas.width, canvas.height]
+            });
+
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+            pdf.save(`receipt-${patient?.Pres_Name}-${new Date().toISOString().split('T')[0]}.pdf`);
+
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            toast({ variant: "destructive", title: "PDF Generation Failed" });
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
+
+    if (isLoadingPatient || isLoadingCorrectAmount || isLoadingDetails) {
         return <div className="p-8 text-center flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin"/></div>;
     }
 
     if (!patient) {
-        // This case is handled by the useEffect redirect, but as a fallback:
         return <div className="p-8 text-center">Patient data could not be loaded. Please return to the patient list.</div>;
     }
 
@@ -259,20 +260,19 @@ export default function POSPage() {
                                                     ))}
                                                 </div>
                                                 <div className="col-span-1 flex items-center justify-center">
-                                                    <div className="h-full w-[2px] bg-gray-400 transform rotate-[25deg] origin-center scale-y-110"></div>
+                                                     <div className="h-[110px] w-[2px] bg-gray-400 transform -rotate-[25deg] origin-center"></div>
                                                 </div>
                                                 <div className="col-span-1 flex items-center justify-start font-bold">
                                                     <span>{patient.Pres_Method}</span>
                                                 </div>
                                             </div>
                                         </div>
+                                         {patient.notes && (
+                                            <div className="mt-4 pt-2 border-t border-dashed">
+                                                <p className="font-mono text-xs text-gray-700">{patient.notes}</p>
+                                            </div>
+                                        )}
                                     </div>
-                                    
-                                     {patient.notes && (
-                                        <div className="mt-4 pt-4 border-t border-dashed">
-                                            <p className="font-mono text-xs text-gray-700">{patient.notes}</p>
-                                        </div>
-                                    )}
 
                                     <div className="flex justify-between items-end mt-12">
                                         <div className="text-center">
@@ -419,9 +419,15 @@ export default function POSPage() {
                         <h3 className="font-bold text-lg">Payment Complete!</h3>
                         <p className="text-sm">Change Due</p>
                         <p className="text-3xl font-extrabold">LKR {change.toFixed(2)}</p>
-                        <Button className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white" onClick={handleCompleteSale}>
-                            <CheckCircle className="mr-2 h-4 w-4" /> Finish & Complete Task
-                        </Button>
+                        <div className="flex gap-2 pt-2">
+                            <Button className="flex-1" variant="secondary" onClick={handleDownloadReceipt} disabled={isDownloading}>
+                                {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileText className="mr-2 h-4 w-4"/>}
+                                {isDownloading ? 'Downloading...' : 'Print Receipt'}
+                            </Button>
+                            <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={handleCompleteSale}>
+                                <CheckCircle className="mr-2 h-4 w-4" /> Finish & Complete Task
+                            </Button>
+                        </div>
                     </div>
                 )}
             </CardContent>
@@ -435,108 +441,151 @@ export default function POSPage() {
         </Card>
     );
 
-    const ProductListComponent = (
-        <Card className="shadow-lg lg:col-span-2">
-            <CardHeader>
-                <CardTitle>Product List</CardTitle>
-                 <div className="relative pt-2">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Search products..." 
-                        className="pl-10" 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-            </CardHeader>
-            <CardContent>
-                <ScrollArea className="h-[500px] pr-3">
-                <div className="space-y-3">
-                    {isLoadingProducts && <p>Loading products...</p>}
-                    {!isLoadingProducts && filteredStoreItems.length > 0 ? (
-                        filteredStoreItems.map(item => {
-                            const isAdded = cart.some(c => c.id === item.product_id);
-                            return (
-                                 <div key={item.product_id} className={cn("flex items-center justify-between p-3 border rounded-md", isAdded ? "bg-muted/30" : "bg-muted/80")}>
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-white rounded-md flex-shrink-0 relative overflow-hidden">
-                                            {item.ImagePath ? (
-                                                <Image src={`${POS_IMAGE_BASE_URL}${item.ImagePath}`} alt={item.DisplayName} layout="fill" objectFit="contain" className="p-1"/>
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-muted">
-                                                    <Pill className="w-6 h-6 text-muted-foreground" />
-                                                </div>
-                                            )}
+    const ProductListComponent = ({ onAddItem }: { onAddItem: (item: MasterProduct) => void; }) => {
+        const [searchTerm, setSearchTerm] = useState("");
+
+        const { data: masterProducts, isLoading: isLoadingProducts } = useQuery<MasterProduct[]>({
+            queryKey: ['masterProducts'],
+            queryFn: getMasterProducts,
+            staleTime: 1000 * 60 * 5, 
+        });
+
+        const filteredStoreItems = useMemo(() => {
+            if (!masterProducts) return [];
+            if (!searchTerm) return masterProducts;
+            const lowercasedSearch = searchTerm.toLowerCase();
+            return masterProducts.filter(item => 
+                item.DisplayName.toLowerCase().includes(lowercasedSearch)
+            );
+        }, [searchTerm, masterProducts]);
+
+        return (
+             <Card className="shadow-lg lg:col-span-2">
+                <CardHeader>
+                    <CardTitle>Product List</CardTitle>
+                     <div className="relative pt-2">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Search products..." 
+                            className="pl-10" 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <ScrollArea className="h-[500px] pr-3">
+                    <div className="space-y-3">
+                        {isLoadingProducts && <p>Loading products...</p>}
+                        {!isLoadingProducts && filteredStoreItems.length > 0 ? (
+                            filteredStoreItems.map(item => {
+                                const isAdded = cart.some(c => c.id === item.product_id);
+                                return (
+                                    <div key={item.product_id} className={cn("flex items-center justify-between p-3 border rounded-md", isAdded ? "bg-muted/30" : "bg-muted/80")}>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-white rounded-md flex-shrink-0 relative overflow-hidden">
+                                                {item.ImagePath ? (
+                                                    <Image src={`${POS_IMAGE_BASE_URL}${item.ImagePath}`} alt={item.DisplayName} layout="fill" objectFit="contain" className="p-1"/>
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                                                        <Pill className="w-6 h-6 text-muted-foreground" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-sm">{item.DisplayName}</p>
+                                                <p className="text-xs font-semibold text-primary">LKR {parseFloat(item.SellingPrice).toFixed(2)}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="font-medium text-sm">{item.DisplayName}</p>
-                                            <p className="text-xs font-semibold text-primary">LKR {parseFloat(item.SellingPrice).toFixed(2)}</p>
-                                        </div>
-                                    </div>
-                                    <DialogTrigger asChild>
                                         <Button
                                             size="sm"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setItemToAdd(item);
+                                                onAddItem(item);
                                             }}
                                             disabled={isPaid || isAdded}
                                         >
                                             {isAdded ? <CheckCircle className="h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
                                             {isAdded ? "Added" : "Add"}
                                         </Button>
-                                    </DialogTrigger>
-                                </div>
-                            )
-                        })
-                    ) : (
-                        !isLoadingProducts && <div className="text-center py-10 text-muted-foreground">
-                            <p>No products found.</p>
-                        </div>
-                    )}
-                </div>
-                </ScrollArea>
-            </CardContent>
-        </Card>
-    );
+                                    </div>
+                                )
+                            })
+                        ) : (
+                            !isLoadingProducts && <div className="text-center py-10 text-muted-foreground">
+                                <p>No products found.</p>
+                            </div>
+                        )}
+                    </div>
+                    </ScrollArea>
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    // States for mobile add dialog
+    const [isMobileAddOpen, setIsMobileAddOpen] = useState(false);
+    const [itemToAdd, setItemToAdd] = useState<MasterProduct | null>(null);
+    const [addQuantity, setAddQuantity] = useState('1');
+
+    const handleMobileAddItem = (item: MasterProduct) => {
+        setItemToAdd(item);
+        setIsMobileAddOpen(true);
+    };
+
+    const handleMobileConfirmAdd = () => {
+        if (!itemToAdd) return;
+        const quantity = parseFloat(addQuantity);
+        if (isNaN(quantity) || quantity <= 0) {
+            toast({ variant: 'destructive', title: 'Invalid quantity' });
+            return;
+        }
+        const newItem: CartItem = { ...itemToAdd, id: itemToAdd.product_id, quantity, type: 'general' };
+        setCart(prev => [...prev, newItem]);
+        setIsMobileAddOpen(false);
+        setItemToAdd(null);
+        setAddQuantity('1');
+    };
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
-            <Dialog onOpenChange={(open) => !open && setItemToAdd(null)}>
-                <header>
-                    <Button onClick={() => router.back()} variant="ghost" className="-ml-4">
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Patient Hub
-                    </Button>
-                </header>
-                <Card className="border-0 shadow-none bg-transparent md:border md:shadow-lg md:bg-card">
-                    <CardHeader className="p-0 md:p-6">
-                        <CardTitle>Task 3: POS Billing</CardTitle>
-                        <CardDescription>Generate the bill for the patient's prescription and any additional items.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="mt-6 p-0 md:p-6 md:pt-0">
-                       {isMobile ? (
-                            <Sheet>
-                                {BillComponent}
-                                <SheetContent side="bottom" className="h-[90vh] p-0">
-                                    <div className="flex flex-col h-full">
-                                        <SheetHeader className="p-6 pb-2 shrink-0">
-                                            <SheetTitle>Browse Products</SheetTitle>
-                                            <SheetDescription>Select items to add to the bill.</SheetDescription>
-                                        </SheetHeader>
-                                        <div className="px-6 pb-6 flex-1 overflow-hidden">
-                                           {ProductListComponent}
-                                        </div>
+            <header>
+                <Button onClick={() => router.back()} variant="ghost" className="-ml-4">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Patient Hub
+                </Button>
+            </header>
+            <Card className="border-0 shadow-none bg-transparent md:border md:shadow-lg md:bg-card">
+                <CardHeader className="p-0 md:p-6">
+                    <CardTitle>Task 3: POS Billing</CardTitle>
+                    <CardDescription>Generate the bill for the patient's prescription and any additional items.</CardDescription>
+                </CardHeader>
+                <CardContent className="mt-6 p-0 md:p-6 md:pt-0">
+                    {isMobile ? (
+                        <Sheet>
+                            {BillComponent}
+                            <SheetContent side="bottom" className="h-[90vh] p-0">
+                                <div className="flex flex-col h-full">
+                                    <SheetHeader className="p-6 pb-2 shrink-0">
+                                        <SheetTitle>Browse Products</SheetTitle>
+                                        <SheetDescription>Select items to add to the bill.</SheetDescription>
+                                    </SheetHeader>
+                                    <div className="px-6 pb-6 flex-1 overflow-hidden">
+                                        <ProductListComponent onAddItem={handleMobileAddItem} />
                                     </div>
-                                </SheetContent>
-                            </Sheet>
-                       ) : (
-                            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-                                {ProductListComponent}
-                                {BillComponent}
-                            </div>
-                       )}
-                    </CardContent>
-                </Card>
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+                    ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+                            <ProductListComponent onAddItem={handleMobileAddItem} />
+                            {BillComponent}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Separate Dialog for Mobile and Desktop Add Action */}
+            <Dialog open={isMobileAddOpen} onOpenChange={setIsMobileAddOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Add Item: {itemToAdd?.DisplayName}</DialogTitle>
@@ -555,15 +604,57 @@ export default function POSPage() {
                         />
                     </div>
                     <DialogFooter>
-                        <DialogClose asChild>
-                            <Button variant="outline">Cancel</Button>
-                        </DialogClose>
-                        <DialogClose asChild>
-                            <Button onClick={handleAddToCart}>Confirm</Button>
-                        </DialogClose>
+                        <Button variant="outline" onClick={() => setIsMobileAddOpen(false)}>Cancel</Button>
+                        <Button onClick={handleMobileConfirmAdd}>Confirm</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Hidden div for PDF generation */}
+             <div id="receipt-to-print" className="fixed -left-[9999px] top-0 bg-white text-black p-8 font-sans" style={{ width: '302px' }}>
+                <div className="text-center">
+                    <h2 className="font-bold text-lg">CEYLON MEDI CARE</h2>
+                    <p className="text-xs">A/75/A, Midigahamulla, Pelmadulla, 70070</p>
+                    <p className="text-xs">0704477555</p>
+                </div>
+                <Separator className="my-2 border-dashed border-black"/>
+                <div className="flex justify-between text-xs">
+                    <p>Date: {format(new Date(), 'yyyy-MM-dd')}</p>
+                    <p>Time: {format(new Date(), 'HH:mm')}</p>
+                </div>
+                 <Separator className="my-2 border-dashed border-black"/>
+                 <table className="w-full text-xs">
+                    <thead>
+                        <tr>
+                            <th className="text-left">ITEM</th>
+                            <th className="text-center">QTY</th>
+                            <th className="text-right">PRICE</th>
+                            <th className="text-right">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {cart.map(item => (
+                             <tr key={item.id}>
+                                <td className="text-left py-0.5">{item.DisplayName}</td>
+                                <td className="text-center">{item.quantity}</td>
+                                <td className="text-right">{parseFloat(item.SellingPrice).toFixed(2)}</td>
+                                <td className="text-right">{(parseFloat(item.SellingPrice) * item.quantity).toFixed(2)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                 </table>
+                  <Separator className="my-2 border-dashed border-black"/>
+                   <div className="text-xs space-y-1">
+                        <div className="flex justify-between"><span>SUBTOTAL:</span><span>{subtotal.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>DISCOUNT:</span><span>{discountAmount.toFixed(2)}</span></div>
+                        <div className="flex justify-between font-bold text-sm"><span>TOTAL:</span><span>{total.toFixed(2)}</span></div>
+                         <Separator className="my-1 border-dashed border-black"/>
+                        <div className="flex justify-between"><span>CASH:</span><span>{parseFloat(cashReceived || '0').toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>CHANGE:</span><span>{change.toFixed(2)}</span></div>
+                    </div>
+                 <Separator className="my-2 border-dashed border-black"/>
+                 <p className="text-center text-xs font-semibold">Thank you, Come Again!</p>
+            </div>
         </div>
     );
 }
