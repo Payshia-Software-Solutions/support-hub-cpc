@@ -24,7 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -98,6 +98,8 @@ const ProductListComponent = memo(({ onAddItem, isPaid, cart }: { onAddItem: (it
     const [searchTerm, setSearchTerm] = useState("");
     const [isMobileAddOpen, setIsMobileAddOpen] = useState(false);
     const [itemToAdd, setItemToAdd] = useState<MasterProduct | null>(null);
+    const isMobile = useIsMobile();
+
 
     const { data: masterProducts, isLoading: isLoadingProducts } = useQuery<MasterProduct[]>({
         queryKey: ['masterProducts'],
@@ -114,12 +116,12 @@ const ProductListComponent = memo(({ onAddItem, isPaid, cart }: { onAddItem: (it
         );
     }, [searchTerm, masterProducts]);
 
-    const handleMobileAddItem = (item: MasterProduct) => {
+    const handleAddItemClick = (item: MasterProduct) => {
         setItemToAdd(item);
         setIsMobileAddOpen(true);
     };
 
-    const handleMobileConfirmAdd = (quantity: number) => {
+    const handleConfirmAdd = (quantity: number) => {
         if (itemToAdd) {
             onAddItem(itemToAdd, quantity);
         }
@@ -128,7 +130,14 @@ const ProductListComponent = memo(({ onAddItem, isPaid, cart }: { onAddItem: (it
     };
 
     return (
-         <Card className="shadow-lg lg:col-span-2">
+        <>
+        <MobileAddDialog
+            item={itemToAdd}
+            isOpen={isMobileAddOpen}
+            onOpenChange={setIsMobileAddOpen}
+            onConfirm={handleConfirmAdd}
+        />
+        <Card className="shadow-lg lg:col-span-2">
             <CardHeader>
                 <CardTitle>Product List</CardTitle>
                  <div className="relative pt-2">
@@ -169,8 +178,7 @@ const ProductListComponent = memo(({ onAddItem, isPaid, cart }: { onAddItem: (it
                                     <Button
                                         size="sm"
                                         onClick={(e) => {
-                                            e.stopPropagation(); // Prevents sheet from closing
-                                            handleMobileAddItem(item);
+                                            handleAddItemClick(item)
                                         }}
                                         disabled={isPaid || isAdded}
                                     >
@@ -187,14 +195,9 @@ const ProductListComponent = memo(({ onAddItem, isPaid, cart }: { onAddItem: (it
                     )}
                 </div>
                 </ScrollArea>
-                <MobileAddDialog
-                    item={itemToAdd}
-                    isOpen={isMobileAddOpen}
-                    onOpenChange={setIsMobileAddOpen}
-                    onConfirm={handleMobileConfirmAdd}
-                />
             </CardContent>
         </Card>
+        </>
     );
 });
 ProductListComponent.displayName = 'ProductListComponent';
@@ -214,7 +217,9 @@ export default function POSPage() {
     
     const [isDownloading, setIsDownloading] = useState(false);
     const isMobile = useIsMobile();
-    
+    const [isProductSheetOpen, setIsProductSheetOpen] = useState(false);
+
+
     const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
         queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username],
         queryFn: async () => {
@@ -372,6 +377,9 @@ export default function POSPage() {
     const handleAddItemToCart = (item: MasterProduct, quantity: number) => {
         const newItem: CartItem = { ...item, id: item.product_id, quantity, type: 'general' };
         setCart(prev => [...prev, newItem]);
+        if (isMobile) {
+            setIsProductSheetOpen(false);
+        }
     };
 
     if (isLoadingPatient || isLoadingCorrectAmount || isLoadingDetails) {
@@ -596,7 +604,7 @@ export default function POSPage() {
              {isMobile && (
                 <CardFooter>
                     <SheetTrigger asChild>
-                         <Button variant="outline" className="w-full"><Library className="mr-2 h-4 w-4" /> Browse Products</Button>
+                         <Button variant="outline" className="w-full" onClick={() => setIsProductSheetOpen(true)}><Library className="mr-2 h-4 w-4" /> Browse Products</Button>
                     </SheetTrigger>
                 </CardFooter>
              )}
@@ -617,7 +625,7 @@ export default function POSPage() {
                 </CardHeader>
                 <CardContent className="mt-6 p-0 md:p-6 md:pt-0">
                     {isMobile ? (
-                        <Sheet>
+                        <Sheet open={isProductSheetOpen} onOpenChange={setIsProductSheetOpen}>
                             {BillComponent}
                             <SheetContent side="bottom" className="h-[90vh] p-0">
                                 <div className="flex flex-col h-full">
@@ -688,3 +696,5 @@ export default function POSPage() {
         </div>
     );
 }
+
+    
