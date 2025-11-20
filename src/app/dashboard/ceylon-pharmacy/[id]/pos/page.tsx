@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -247,15 +248,34 @@ export default function POSPage() {
                                         <div><p><span className="font-semibold">Name:</span> {patient.Pres_Name}</p><p><span className="font-semibold">Age:</span> {patient.Pres_Age}</p></div>
                                         <div><p><span className="font-semibold">Date:</span> {patient.pres_date}</p></div>
                                     </div>
-                                    <div className="flex items-start min-h-[200px] pl-10 relative mb-6">
-                                        <div className="absolute left-0 top-0 text-6xl font-serif text-gray-700 select-none">℞</div>
-                                        <div className="flex-1 space-y-4 font-mono text-lg text-gray-800 pt-2">
-                                            {isLoadingDetails ? <Loader2 className="animate-spin"/> : prescriptionDetails?.map(detail => (<div key={detail.cover_id}><p>{detail.content}</p></div>))}
+                                     <div className="flex items-start min-h-[200px] mb-4">
+                                        <div className="text-4xl font-serif text-gray-700 select-none mr-4">℞</div>
+                                        <div className="flex-1 grid grid-cols-5 gap-2 font-mono text-base text-gray-800">
+                                            <div className="col-span-3 space-y-2">
+                                                {isLoadingDetails ? <Loader2 className="animate-spin"/> : prescriptionDetails?.map(detail => (<p key={detail.cover_id}>{detail.content}</p>))}
+                                            </div>
+                                            <div className="col-span-1 flex items-center justify-center">
+                                                <div className="h-full w-[2px] bg-gray-400 transform -rotate-[25deg] origin-center scale-y-110"></div>
+                                            </div>
+                                            <div className="col-span-1 flex items-center justify-start font-bold">
+                                                <span>{patient.Pres_Method}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="text-right mt-8">
-                                        <p className="italic font-serif text-xl text-gray-700">{patient.doctor_name.split(' ').slice(1).join(' ')}</p>
-                                        <p className="text-xs text-muted-foreground non-italic">Signature</p>
+                                    {patient.notes && (
+                                        <div className="mt-4 pt-2 border-t border-dashed">
+                                            <p className="font-mono text-xs text-gray-700">{patient.notes}</p>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-end mt-8">
+                                        <div className="text-center">
+                                            <p className="font-bold">{patient.doctor_name}</p>
+                                            <p className="text-xs text-gray-600 border-t border-gray-400 mt-1 pt-1">MBBS</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="italic font-serif text-xl text-gray-700">{patient.doctor_name.split(' ').slice(1).join(' ')}</p>
+                                            <p className="text-xs text-muted-foreground non-italic">Signature</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -267,51 +287,89 @@ export default function POSPage() {
             <CardContent className="space-y-4">
                 <ScrollArea className="min-h-[150px] max-h-[300px]">
                     {cart.length > 0 ? (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-2/5">Item</TableHead>
-                                    <TableHead className="w-1/5 text-center">Qty</TableHead>
-                                    <TableHead className="w-1/5 text-right">Price</TableHead>
-                                    <TableHead className="w-1/5 text-right">Total</TableHead>
-                                    <TableHead className="w-[40px]"></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                        <>
+                            {/* Desktop Table */}
+                            <Table className="hidden md:table">
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-2/5">Item</TableHead>
+                                        <TableHead className="w-1/5 text-center">Qty</TableHead>
+                                        <TableHead className="w-1/5 text-right">Price</TableHead>
+                                        <TableHead className="w-1/5 text-right">Total</TableHead>
+                                        <TableHead className="w-[40px]"></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {cart.map(item => {
+                                        const itemPrice = parseFloat(item.SellingPrice);
+                                        return (
+                                            <TableRow key={item.id}>
+                                                <TableCell className="font-medium text-sm">
+                                                    {item.DisplayName}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Input 
+                                                        type="number" 
+                                                        value={item.quantity === 0 ? '' : String(item.quantity)}
+                                                        onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                                                        className="h-8 w-20 text-center"
+                                                        disabled={isPaid}
+                                                        step="any"
+                                                        min="0"
+                                                    />
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    {itemPrice.toFixed(2)}
+                                                </TableCell>
+                                                <TableCell className="text-right font-semibold">
+                                                    {(itemPrice * item.quantity).toFixed(2)}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveFromCart(item.id)} disabled={isPaid}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
+                                </TableBody>
+                            </Table>
+                             {/* Mobile List */}
+                            <div className="md:hidden space-y-2">
                                 {cart.map(item => {
                                     const itemPrice = parseFloat(item.SellingPrice);
                                     return (
-                                        <TableRow key={item.id}>
-                                            <TableCell className="font-medium text-sm">
-                                                {item.DisplayName}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Input 
-                                                    type="number" 
-                                                    value={item.quantity === 0 ? '' : String(item.quantity)}
-                                                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                                                    className="h-8 w-20 text-center"
-                                                    disabled={isPaid}
-                                                    step="any"
-                                                    min="0"
-                                                />
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                {itemPrice.toFixed(2)}
-                                            </TableCell>
-                                            <TableCell className="text-right font-semibold">
-                                                {(itemPrice * item.quantity).toFixed(2)}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveFromCart(item.id)} disabled={isPaid}>
+                                        <div key={item.id} className="p-2 border rounded-md">
+                                            <div className="flex justify-between items-start">
+                                                <p className="font-medium text-sm pr-2">{item.DisplayName}</p>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive flex-shrink-0 -mt-1 -mr-1" onClick={() => handleRemoveFromCart(item.id)} disabled={isPaid}>
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
-                                            </TableCell>
-                                        </TableRow>
+                                            </div>
+                                            <div className="flex items-center justify-between mt-1">
+                                                <div className="flex items-center gap-2">
+                                                    <Label htmlFor={`qty-${item.id}`} className="text-xs">Qty:</Label>
+                                                    <Input 
+                                                        type="number" 
+                                                        id={`qty-${item.id}`}
+                                                        value={item.quantity === 0 ? '' : String(item.quantity)}
+                                                        onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                                                        className="h-8 w-20 text-center"
+                                                        disabled={isPaid}
+                                                        step="any"
+                                                        min="0"
+                                                    />
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-xs text-muted-foreground">@{itemPrice.toFixed(2)}</p>
+                                                    <p className="font-semibold text-sm">LKR {(itemPrice * item.quantity).toFixed(2)}</p>
+                                                </div>
+                                            </div>
+                                        </div>
                                     )
                                 })}
-                            </TableBody>
-                        </Table>
+                            </div>
+                        </>
                     ) : (
                         <div className="flex items-center justify-center h-full min-h-[150px] text-muted-foreground text-center">
                             <p>Cart is empty. Add items to begin.</p>
