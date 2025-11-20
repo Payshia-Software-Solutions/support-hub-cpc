@@ -474,7 +474,14 @@ export default function POSPage() {
                                         </div>
                                     </div>
                                     <DialogTrigger asChild>
-                                        <Button size="sm" onClick={() => setItemToAdd(item)} disabled={isPaid || isAdded}>
+                                        <Button
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setItemToAdd(item);
+                                            }}
+                                            disabled={isPaid || isAdded}
+                                        >
                                             {isAdded ? <CheckCircle className="h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
                                             {isAdded ? "Added" : "Add"}
                                         </Button>
