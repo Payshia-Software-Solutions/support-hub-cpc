@@ -8,7 +8,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { useForm, Controller, Control } from "react-hook-form";
+import { useForm, Controller, useController, Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Label } from "@/components/ui/label";
@@ -115,59 +115,61 @@ const DatePickerField = ({
   control,
 }: {
   control: Control<PrescriptionFormValues>;
-}) => (
-  <Controller
-    control={control}
-    name="date"
-    render={({ field }) => (
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="w-full justify-start pl-10 relative h-12 text-base">
-            <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <span className="truncate">{field.value ? format(new Date(field.value), 'PPP') : 'Select Date'}</span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0">
-          <Calendar
-            mode="single"
-            captionLayout="dropdown-buttons"
-            fromYear={1960}
-            toYear={new Date().getFullYear() + 5}
-            selected={field.value ? new Date(field.value) : undefined}
-            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-            initialFocus
-          />
-        </PopoverContent>
-      </Popover>
-    )}
-  />
-);
+}) => {
+    const isMobile = useIsMobile();
+    const { field } = useController({ name: 'date', control });
+
+    if (isMobile) {
+        return (
+             <Input
+                type="date"
+                className="w-full h-12 text-base"
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+            />
+        )
+    }
+
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+            <Button variant="outline" className="w-full justify-start pl-10 relative h-12 text-base">
+                <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <span className="truncate">{field.value ? format(new Date(field.value), 'PPP') : 'Select Date'}</span>
+            </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+            <Calendar
+                mode="single"
+                captionLayout="dropdown-buttons"
+                fromYear={1960}
+                toYear={new Date().getFullYear() + 5}
+                selected={field.value ? new Date(field.value) : undefined}
+                onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                initialFocus
+            />
+            </PopoverContent>
+        </Popover>
+    )
+};
 
 const DispensingForm = ({
   correctAnswers,
   selectionData,
   onSubmit,
   onReset,
-  isSubmitting
+  isSubmitting,
+  form
 }: {
   correctAnswers: DispensingAnswer;
   selectionData: FormSelectionData;
   onSubmit: (data: PrescriptionFormValues) => void;
   onReset: () => void;
   isSubmitting: boolean;
+  form: any;
 }) => {
-  const form = useForm<PrescriptionFormValues>({
-    resolver: zodResolver(prescriptionSchema),
-    defaultValues: {
-      date: "", patientName: "", drugName: "", quantity: "",
-      dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "",
-      usingFrequency: "", additionalInstruction: "", at_a_time: "", hour_qty: ""
-    },
-  });
-
   const { handleSubmit, formState: { errors }, control } = form;
-  const formValues = form.watch();
-
+  
   const handleReset = () => { form.reset(); onReset(); }
   
   const getOptions = (key: keyof FormSelectionData, correctAnswer: string) => {
@@ -332,6 +334,14 @@ export default function DispensePage() {
     const [incorrectFields, setIncorrectFields] = useState<string[]>([]);
     const [wasCorrect, setWasCorrect] = useState(false);
 
+    const form = useForm<PrescriptionFormValues>({
+      resolver: zodResolver(prescriptionSchema),
+      defaultValues: {
+        date: "", patientName: "", drugName: "", quantity: "",
+        dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "",
+        usingFrequency: "", additionalInstruction: "", at_a_time: "", hour_qty: ""
+      },
+    });
 
     const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
         queryKey: ['ceylonPharmacyPatient', patientId, user?.username],
@@ -546,6 +556,7 @@ export default function DispensePage() {
                                             onSubmit={handleDispenseSubmit}
                                             onReset={() => handleDispenseReset()}
                                             isSubmitting={validationMutation.isPending}
+                                            form={form}
                                         />
                                     </div>
                                     </div>
@@ -567,6 +578,7 @@ export default function DispensePage() {
                                 onSubmit={handleDispenseSubmit}
                                 onReset={() => handleDispenseReset()}
                                 isSubmitting={validationMutation.isPending}
+                                form={form}
                             />
                         </CardContent>
                     </Card>
@@ -575,7 +587,3 @@ export default function DispensePage() {
         </div>
     );
 }
-
-    
-
-    
