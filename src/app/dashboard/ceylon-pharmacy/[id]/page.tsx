@@ -313,20 +313,17 @@ export default function CeylonPharmacyPatientPage() {
                     </CardHeader>
                     <CardContent className="flex justify-center p-4">
                         <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
-                             {/* Header with Logo */}
                             <div className="text-center mb-4">
                                 <Image src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png" alt="Ceylon Medi Care" width={40} height={40} className="mx-auto mb-2" />
                                 <h2 className="text-2xl font-bold">Ceylon Medi Care</h2>
                                 <p className="text-xs text-gray-600">A/75/A, Midigahamulla, Pelmadulla, 70070</p>
                                 <p className="text-xs text-gray-600">info@pharmacollege.lk | 0704477555 | www.pharmacollege.lk</p>
                             </div>
-                            
                             <div className="border-t border-b border-gray-300 py-2 mb-4 text-sm">
                                 <p><span className="font-semibold">Name:</span> {patient.Pres_Name}</p>
                                 <p><span className="font-semibold">Age:</span> {patient.Pres_Age}</p>
                                 <p><span className="font-semibold">Date:</span> {patient.pres_date}</p>
                             </div>
-
                              <div className="min-h-[150px] mb-4">
                                 <div className="flex items-start">
                                     <div className="text-4xl font-serif text-gray-700 select-none mr-4">℞</div>
@@ -337,7 +334,7 @@ export default function CeylonPharmacyPatientPage() {
                                             ))}
                                         </div>
                                         <div className="col-span-1 flex items-center justify-center">
-                                            <div className="h-full w-px bg-gray-400 transform rotate-[25deg] origin-center scale-y-100"></div>
+                                            <div className="h-full w-[2px] bg-gray-400 transform rotate-[25deg] origin-center scale-y-[1.2]"></div>
                                         </div>
                                         <div className="col-span-1 flex items-center justify-start font-bold">
                                             <span>{patient.Pres_Method}</span>
@@ -402,7 +399,9 @@ export default function CeylonPharmacyPatientPage() {
                             <div>
                                 <CardTitle className="text-2xl font-headline">{patient.Pres_Name}</CardTitle>
                                 <CardDescription className="text-base">{patient.Pres_Age}</CardDescription>
-                                <p className="text-sm text-muted-foreground mt-1">Under care of {patient.doctor_name}</p>
+                                <p className="text-sm text-muted-foreground mt-2">{patient.patient_description}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{patient.address}</p>
+                                <p className="text-xs text-muted-foreground mt-2">Under care of {patient.doctor_name}</p>
                             </div>
                         </CardContent>
                     </Card>
