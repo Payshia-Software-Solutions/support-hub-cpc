@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useForm, useController, Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,11 +24,12 @@ import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 const prescriptionSchema = z.object({
   date: z.string().nonempty("Date is required."),
@@ -503,22 +504,19 @@ export default function DispensePage() {
                         </div>
                     </CardHeader>
                     <CardContent className="flex justify-center p-4">
-                        <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
-                             {/* Header with Logo */}
+                       <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
                             <div className="text-center mb-4">
                                 <Image src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png" alt="Ceylon Medi Care" width={40} height={40} className="mx-auto mb-2" />
                                 <h2 className="text-2xl font-bold">Ceylon Medi Care</h2>
                                 <p className="text-xs text-gray-600">A/75/A, Midigahamulla, Pelmadulla, 70070</p>
                                 <p className="text-xs text-gray-600">info@pharmacollege.lk | 0704477555 | www.pharmacollege.lk</p>
                             </div>
-                            
                             <div className="border-t border-b border-gray-300 py-2 mb-4 text-sm">
                                 <p><span className="font-semibold">Name:</span> {patient.Pres_Name}</p>
                                 <p><span className="font-semibold">Age:</span> {patient.Pres_Age}</p>
                                 <p><span className="font-semibold">Date:</span> {patient.pres_date}</p>
                             </div>
-
-                             <div className="min-h-[150px] mb-4">
+                            <div className="min-h-[150px] mb-4">
                                 <div className="flex items-start">
                                     <div className="text-4xl font-serif text-gray-700 select-none mr-4">℞</div>
                                     <div className="flex-1 grid grid-cols-5 gap-2 font-mono text-base text-gray-800">
@@ -528,7 +526,7 @@ export default function DispensePage() {
                                             ))}
                                         </div>
                                         <div className="col-span-1 flex items-center justify-center">
-                                            <div className="h-full w-px bg-gray-400 transform rotate-[25deg] origin-center scale-y-100"></div>
+                                            <div className="h-full w-[2px] bg-gray-400 transform -rotate-[25deg] origin-center scale-y-[1.2]"></div>
                                         </div>
                                         <div className="col-span-1 flex items-center justify-start font-bold">
                                             <span>{patient.Pres_Method}</span>
