@@ -24,7 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -516,22 +516,31 @@ export default function DispensePage() {
                                 <p><span className="font-semibold">Age:</span> {patient.Pres_Age}</p>
                                 <p><span className="font-semibold">Date:</span> {patient.pres_date}</p>
                             </div>
-                            <div className="min-h-[200px] mb-4 relative">
+                            <div className="min-h-[150px] mb-4">
                                 <div className="flex items-start">
                                     <div className="text-4xl font-serif text-gray-700 select-none mr-4">℞</div>
-                                    <div className="flex-1 space-y-2 font-mono text-base text-gray-800">
-                                        {prescriptionDetails?.map((detail) => (
-                                            <p key={detail.cover_id}>{detail.content}</p>
-                                        ))}
+                                    <div className="flex-1 grid grid-cols-5 gap-2 font-mono text-base text-gray-800">
+                                        <div className="col-span-3 space-y-2">
+                                            {prescriptionDetails?.map((detail) => (
+                                                <p key={detail.cover_id}>{detail.content}</p>
+                                            ))}
+                                        </div>
+                                        <div className="col-span-1 flex items-center justify-center">
+                                            <div className="h-full w-[2px] bg-gray-400 transform -rotate-[25deg] origin-center scale-y-[1.2]"></div>
+                                        </div>
+                                        <div className="col-span-1 flex items-center justify-start font-bold">
+                                            <span>{patient.Pres_Method}</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="absolute bottom-0 right-0 font-bold font-mono text-lg">{patient.Pres_Method}</div>
                             </div>
-                            {patient.notes && (
+                            
+                             {patient.notes && (
                                 <div className="mt-4 pt-4 border-t border-dashed">
                                     <p className="font-mono text-xs text-gray-700">{patient.notes}</p>
                                 </div>
                             )}
+
                             <div className="flex justify-between items-end mt-12">
                                 <div className="text-center">
                                     <p className="font-bold">{patient.doctor_name}</p>
