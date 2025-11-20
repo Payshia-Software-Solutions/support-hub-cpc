@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useRef, memo } from 'react';
@@ -30,6 +31,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Separator } from '@/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
 
@@ -165,7 +168,10 @@ const ProductListComponent = memo(({ onAddItem, isPaid, cart }: { onAddItem: (it
                                     </div>
                                     <Button
                                         size="sm"
-                                        onClick={() => handleMobileAddItem(item)}
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Prevents sheet from closing
+                                            handleMobileAddItem(item);
+                                        }}
                                         disabled={isPaid || isAdded}
                                     >
                                         {isAdded ? <CheckCircle className="h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
@@ -682,4 +688,3 @@ export default function POSPage() {
         </div>
     );
 }
-
