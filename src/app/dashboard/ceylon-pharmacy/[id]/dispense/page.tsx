@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -504,37 +503,48 @@ export default function DispensePage() {
                     </CardHeader>
                     <CardContent className="flex justify-center p-4">
                         <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-400 w-full max-w-md shadow-sm font-sans text-gray-800">
-                            <div className="text-center border-b pb-4 mb-4 border-gray-300">
-                                <h2 className="text-xl font-bold">{patient.doctor_name}</h2>
-                                <p className="text-sm text-gray-600">MBBS, MD</p>
-                                <p className="text-sm text-gray-600">Reg. No: {patient.id}</p>
+                             {/* Header with Logo */}
+                            <div className="text-center mb-4">
+                                <Image src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png" alt="Ceylon Medi Care" width={40} height={40} className="mx-auto mb-2" />
+                                <h2 className="text-2xl font-bold">Ceylon Medi Care</h2>
+                                <p className="text-xs text-gray-600">A/75/A, Midigahamulla, Pelmadulla, 70070</p>
+                                <p className="text-xs text-gray-600">info@pharmacollege.lk | 0704477555 | www.pharmacollege.lk</p>
                             </div>
                             
-                            <div className="flex justify-between text-sm mb-6">
-                                <div>
+                            <div className="border-t border-b border-gray-300 py-2 mb-4 text-sm">
                                 <p><span className="font-semibold">Name:</span> {patient.Pres_Name}</p>
                                 <p><span className="font-semibold">Age:</span> {patient.Pres_Age}</p>
-                                </div>
-                                <div>
                                 <p><span className="font-semibold">Date:</span> {patient.pres_date}</p>
-                                </div>
                             </div>
 
-                            <div className="flex items-start min-h-[200px] pl-10 relative mb-6">
-                                <div className="absolute left-0 top-0 text-6xl font-serif text-gray-700 select-none">℞</div>
-                                <div className="flex-1 space-y-4 font-mono text-lg text-gray-800 pt-2">
-                                     {prescriptionDetails.map((detail, index) => (
-                                        <div key={detail.cover_id} className="flex justify-between items-center">
-                                            <p>{detail.content}</p>
-                                            {patient.Pres_Method.split(',')[index] && <p className="ml-4 font-sans text-base text-gray-600">#{patient.Pres_Method.split(',')[index].trim()}</p>}
-                                        </div>
-                                    ))}
+                            <div className="flex items-start min-h-[150px] mb-4">
+                                <div className="text-4xl font-serif text-gray-700 select-none mr-4">℞</div>
+                                <div className="flex-1 grid grid-cols-2">
+                                    <div className="col-span-1 space-y-2 font-mono text-base text-gray-800">
+                                        {prescriptionDetails?.map((detail) => (
+                                            <p key={detail.cover_id}>{detail.content}</p>
+                                        ))}
+                                    </div>
+                                    <div className="col-span-1 flex flex-col items-center justify-center relative">
+                                       <div className="absolute top-0 bottom-0 left-1/2 w-px bg-gray-300 transform -translate-x-1/2 rotate-[15deg] origin-center h-full scale-y-125"></div>
+                                        <p className="font-bold text-lg">{patient.notes}</p>
+                                    </div>
                                 </div>
                             </div>
+                            
+                             <div className="p-3 bg-gray-100 rounded-md text-center text-sm font-semibold text-gray-700 mb-6">
+                                {patient.Pres_Method}
+                            </div>
 
-                            <div className="text-right mt-8">
-                                <p className="italic font-serif text-xl text-gray-700">{patient.doctor_name.split(' ').slice(1).join(' ')}</p>
-                                <p className="text-xs text-muted-foreground non-italic">Signature</p>
+                            <div className="flex justify-between items-end">
+                                <div className="text-center">
+                                    <p className="font-bold">{patient.doctor_name}</p>
+                                    <p className="text-xs text-gray-600 border-t border-gray-400 mt-1 pt-1">MBBS</p>
+                                </div>
+                                <div className="text-center">
+                                    <p className="font-bold">{patient.doctor_name.split(' ').slice(1).join(' ')}</p>
+                                    <p className="text-xs text-gray-600 border-t border-gray-400 mt-1 pt-1">Signature</p>
+                                </div>
                             </div>
                         </div>
                     </CardContent>
