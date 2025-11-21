@@ -94,12 +94,10 @@ const MobileAddDialog = ({ item, onConfirm, isOpen, onOpenChange }: { item: Mast
 };
 
 
-const ProductListComponent = memo(({ onAddItem, isPaid, cart }: { onAddItem: (item: MasterProduct, quantity: number) => void; isPaid: boolean; cart: CartItem[] }) => {
+const ProductListComponent = memo(({ onAddItem, isPaid, cart, onSheetOpenChange }: { onAddItem: (item: MasterProduct, quantity: number) => void; isPaid: boolean; cart: CartItem[], onSheetOpenChange?: (open: boolean) => void; }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [isMobileAddOpen, setIsMobileAddOpen] = useState(false);
     const [itemToAdd, setItemToAdd] = useState<MasterProduct | null>(null);
-    const isMobile = useIsMobile();
-
 
     const { data: masterProducts, isLoading: isLoadingProducts } = useQuery<MasterProduct[]>({
         queryKey: ['masterProducts'],
@@ -325,7 +323,7 @@ export default function POSPage() {
             return;
         }
 
-        const isCorrect = Math.abs(total - parseFloat(correctAmountData.value)) < 0.01;
+        const isCorrect = Math.abs(total - parseFloat(correctAmountData.value)) <= 1;
         const status = isCorrect ? "Answer Correct" : "Answer Incorrect";
         
         const payload: POSSubmissionPayload = {
@@ -696,5 +694,3 @@ export default function POSPage() {
         </div>
     );
 }
-
-    
