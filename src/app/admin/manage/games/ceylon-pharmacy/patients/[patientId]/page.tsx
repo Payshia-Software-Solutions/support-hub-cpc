@@ -11,16 +11,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, AlertTriangle, Search } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, AlertTriangle, Search, Calculator } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useQuery } from '@tanstack/react-query';
-import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getAllCareInstructions } from '@/lib/actions/games';
-import type { GamePatient, PrescriptionDetail, Instruction } from '@/lib/types';
+import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getAllCareInstructions, getMasterProducts } from '@/lib/actions/games';
+import type { GamePatient, PrescriptionDetail, Instruction, MasterProduct } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 
 const drugSchema = z.object({
@@ -143,6 +144,84 @@ const InstructionSelectionDialog = ({
 };
 
 
+// --- New POS Calculator Component ---
+const AdminPOSCalculator = ({ drugs, onUseTotal }: { drugs: { drugName: string; quantity: number }[]; onUseTotal: (total: number) => void; }) => {
+    const { data: masterProducts, isLoading } = useQuery<MasterProduct[]>({
+        queryKey: ['masterProducts'],
+        queryFn: getMasterProducts,
+    });
+    const [discount, setDiscount] = useState('0');
+
+    const billItems = useMemo(() => {
+        if (!masterProducts || !drugs) return [];
+        return drugs.map(drug => {
+            const product = masterProducts.find(p => p.DisplayName.toLowerCase() === drug.drugName.toLowerCase());
+            const price = product ? parseFloat(product.SellingPrice) : 0;
+            return {
+                name: drug.drugName,
+                quantity: drug.quantity,
+                price: price,
+                total: price * drug.quantity
+            };
+        });
+    }, [drugs, masterProducts]);
+
+    const subtotal = useMemo(() => billItems.reduce((acc, item) => acc + item.total, 0), [billItems]);
+    const total = subtotal - parseFloat(discount || '0');
+
+    return (
+        <Card className="shadow-lg">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Calculator className="h-5 w-5"/>POS Bill Calculator</CardTitle>
+                <CardDescription>Calculate the correct bill total for this prescription.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                    <div className="space-y-2"><p>Loading product prices...</p><Skeleton className="h-20 w-full" /></div>
+                ) : (
+                    <div className="space-y-3">
+                        <div className="border rounded-lg max-h-48 overflow-y-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b">
+                                        <th className="p-2 text-left font-medium">Item</th>
+                                        <th className="p-2 text-center font-medium">Qty</th>
+                                        <th className="p-2 text-right font-medium">Price</th>
+                                        <th className="p-2 text-right font-medium">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {billItems.map((item, index) => (
+                                        <tr key={index} className="border-b last:border-none">
+                                            <td className="p-2">{item.name}</td>
+                                            <td className="p-2 text-center">{item.quantity}</td>
+                                            <td className="p-2 text-right">{item.price.toFixed(2)}</td>
+                                            <td className="p-2 text-right font-semibold">{item.total.toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <Separator />
+                        <div className="space-y-2">
+                             <div className="flex justify-between items-center"><span className="text-muted-foreground">Subtotal</span><span>LKR {subtotal.toFixed(2)}</span></div>
+                             <div className="flex justify-between items-center">
+                                <Label htmlFor="calc-discount" className="text-muted-foreground">Discount</Label>
+                                <Input id="calc-discount" type="number" placeholder="0.00" value={discount} onChange={e => setDiscount(e.target.value)} className="h-8 w-24 text-right" />
+                            </div>
+                             <div className="flex justify-between items-center font-bold text-lg text-primary"><span >Total</span><span>LKR {total.toFixed(2)}</span></div>
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+            <CardFooter>
+                <Button className="w-full" onClick={() => onUseTotal(total)} disabled={isLoading}>Use This Total</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
+
 export default function EditPatientPage() {
   const router = useRouter();
   const params = useParams();
@@ -213,6 +292,8 @@ export default function EditPatientPage() {
     control: form.control,
     name: "drugs",
   });
+  
+  const watchedDrugs = form.watch('drugs');
 
   const onSubmit = (data: PatientFormValues) => {
     console.log("Updating Patient Data:", data);
@@ -270,6 +351,11 @@ export default function EditPatientPage() {
                             <div className="space-y-2"><Label>Notes</Label><Textarea {...form.register('notes')} rows={2}/></div>
                         </CardContent>
                     </Card>
+
+                    <AdminPOSCalculator 
+                        drugs={watchedDrugs.map(d => ({ drugName: d.drugName, quantity: d.quantity }))}
+                        onUseTotal={(total) => form.setValue('totalBillValue', total)}
+                    />
                 </div>
 
                 {/* --- Drugs Column --- */}
@@ -336,5 +422,7 @@ export default function EditPatientPage() {
     </div>
   );
 }
+
+    
 
     
