@@ -11,11 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, PlusCircle, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { ceylonPharmacyPatients, allInstructions } from '@/lib/ceylon-pharmacy-data';
-import type { Patient } from '@/lib/ceylon-pharmacy-data';
+import { allInstructions } from '@/lib/ceylon-pharmacy-data';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useQuery } from '@tanstack/react-query';
+import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getShuffledInstructions } from '@/lib/actions/games';
+import type { GamePatient, PrescriptionDetail, Instruction } from '@/lib/types';
+
 
 const drugSchema = z.object({
     id: z.string(), // Keep track of existing drugs
@@ -49,9 +52,30 @@ type PatientFormValues = z.infer<typeof patientFormSchema>;
 export default function EditPatientPage() {
   const router = useRouter();
   const params = useParams();
-  const patientId = params.patientId as string;
+  const patientId = params.patientId as string; // This is prescription_id
 
-  const [patient, setPatient] = useState<Patient | null>(null);
+  const { data: patient, isLoading: isLoadingPatient, isError, error } = useQuery<GamePatient>({
+      queryKey: ['ceylonPharmacyPatient', patientId],
+      queryFn: async () => {
+          const allPatients = await getCeylonPharmacyPrescriptions('admin-user', 'CPCC20');
+          const foundPatient = allPatients.find(p => p.prescription_id === patientId);
+          if (!foundPatient) throw new Error('Patient not found');
+          return foundPatient;
+      },
+      enabled: !!patientId,
+  });
+
+  const { data: prescriptionDetails } = useQuery<PrescriptionDetail[]>({
+      queryKey: ['prescriptionDetails', patientId],
+      queryFn: () => getPrescriptionDetails(patientId),
+      enabled: !!patient,
+  });
+  
+  const { data: instructions } = useQuery<Instruction[]>({
+      queryKey: ['shuffledInstructionsForEdit'],
+      queryFn: () => getShuffledInstructions('any', 'any'),
+      staleTime: Infinity,
+  });
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientFormSchema),
@@ -61,34 +85,28 @@ export default function EditPatientPage() {
   });
 
   useEffect(() => {
-    const foundPatient = ceylonPharmacyPatients.find(p => p.id === patientId);
-    if (foundPatient) {
-        setPatient(foundPatient);
-        // Populate the form with the found patient's data
+    if (patient && prescriptionDetails) {
         form.reset({
-            name: foundPatient.name,
-            age: foundPatient.age,
-            initialTime: foundPatient.initialTime,
-            address: foundPatient.address,
-            patient_description: foundPatient.description,
-            prescription_name: foundPatient.prescription.name,
-            doctor_name: foundPatient.prescription.doctor.name,
-            notes: foundPatient.prescription.notes,
-            totalBillValue: foundPatient.prescription.totalBillValue,
-            drugs: foundPatient.prescription.drugs.map(drug => ({
-                id: drug.id,
-                drugName: drug.correctAnswers.drugName,
-                genericName: drug.correctAnswers.genericName,
-                quantity: drug.correctAnswers.quantity,
-                lines: drug.lines.join('\\n'),
-                correctInstructionIds: drug.correctInstructionIds,
+            name: patient.Pres_Name,
+            age: patient.Pres_Age,
+            initialTime: patient.start_data ? new Date(patient.start_data.time).getTime() : 3600, // Placeholder
+            address: patient.address,
+            patient_description: patient.patient_description,
+            prescription_name: patient.prescription_name,
+            doctor_name: patient.doctor_name,
+            notes: patient.notes,
+            totalBillValue: 0, // Not available in GamePatient, default to 0
+            drugs: prescriptionDetails.map(drug => ({
+                id: drug.cover_id,
+                drugName: drug.content, 
+                genericName: '', // Not in PrescriptionDetail
+                quantity: 1, // Not in PrescriptionDetail
+                lines: drug.content, // Not ideal, but it's what we have
+                correctInstructionIds: [], // Need API for this
             })),
         });
-    } else {
-        toast({ variant: 'destructive', title: 'Patient not found' });
-        router.push('/admin/manage/games/ceylon-pharmacy/patients');
     }
-  }, [patientId, router, form]);
+  }, [patient, prescriptionDetails, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -104,8 +122,18 @@ export default function EditPatientPage() {
     router.push('/admin/manage/games/ceylon-pharmacy/patients');
   };
   
-  if (!patient) {
-      return <div className="p-8">Loading patient details...</div>
+  if (isLoadingPatient) {
+      return <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto"/></div>
+  }
+  
+  if (isError) {
+      return (
+          <div className="p-8 text-center">
+              <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-2" />
+              <p className="font-semibold">Failed to load patient data.</p>
+              <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
+          </div>
+      )
   }
 
   return (
@@ -114,7 +142,7 @@ export default function EditPatientPage() {
             <Button variant="ghost" onClick={() => router.back()} className="-ml-4">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Patient List
             </Button>
-            <h1 className="text-3xl font-headline font-semibold mt-2">Edit Patient: {patient.name}</h1>
+            <h1 className="text-3xl font-headline font-semibold mt-2">Edit Patient: {patient?.Pres_Name}</h1>
             <p className="text-muted-foreground">Modify the patient's details and prescription for the game.</p>
         </header>
 
@@ -162,7 +190,7 @@ export default function EditPatientPage() {
                                         <div className="md:col-span-2 space-y-2">
                                             <Label>Correct Counselling Instructions</Label>
                                             <div className="p-3 border rounded-md max-h-32 overflow-y-auto space-y-2 bg-background">
-                                                {allInstructions.map(inst => (
+                                                {(instructions || []).map(inst => (
                                                     <div key={inst.id} className="flex items-center space-x-2">
                                                         <Checkbox
                                                             id={`drug-${index}-inst-${inst.id}`}
@@ -174,7 +202,7 @@ export default function EditPatientPage() {
                                                                 form.setValue(fieldName, newIds);
                                                             }}
                                                         />
-                                                        <Label htmlFor={`drug-${index}-inst-${inst.id}`} className="text-sm font-normal">{inst.text}</Label>
+                                                        <Label htmlFor={`drug-${index}-inst-${inst.id}`} className="text-sm font-normal">{inst.instruction}</Label>
                                                     </div>
                                                 ))}
                                             </div>
