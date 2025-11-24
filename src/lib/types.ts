@@ -1,6 +1,7 @@
 
 
 
+
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -778,6 +779,13 @@ export interface MasterProduct {
     SellingPrice: string;
     ImagePath?: string | null;
     [key: string]: any; // Allow other properties
+}
+
+export interface GeneralStoreItem {
+    id: string;
+    name: string;
+    price: number;
+    category: 'Vitamins' | 'First-Aid' | 'Personal Care';
 }
 
 export interface GamePatient {
