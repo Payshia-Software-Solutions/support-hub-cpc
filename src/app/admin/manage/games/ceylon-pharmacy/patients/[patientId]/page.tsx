@@ -186,7 +186,7 @@ const ProductSelector = ({ products, selected, onSelect, placeholder }: { produc
 
 
 // --- New POS Calculator Component ---
-const AdminPOSCalculator = ({ drugs, onUseTotal }: { drugs: { drugName: string; quantity: number }[]; onUseTotal: (total: number) => void; }) => {
+const AdminPOSCalculator = ({ drugs, onUseTotal, closeDialog }: { drugs: { drugName: string; quantity: number }[]; onUseTotal: (total: number) => void; closeDialog: () => void; }) => {
     const { data: masterProducts, isLoading } = useQuery<MasterProduct[]>({
         queryKey: ['masterProducts'],
         queryFn: getMasterProducts,
@@ -224,22 +224,28 @@ const AdminPOSCalculator = ({ drugs, onUseTotal }: { drugs: { drugName: string; 
     
     const getFilteredProducts = (drugName: string) => {
         if (!masterProducts) return [];
+        if (!drugName) return masterProducts;
         const searchName = drugName.split(' ')[0].toLowerCase();
         return masterProducts.filter(p => p.DisplayName.toLowerCase().includes(searchName));
     };
 
+    const handleUseTotal = () => {
+        onUseTotal(total);
+        closeDialog();
+    }
+
 
     return (
-        <Card className="shadow-lg">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Calculator className="h-5 w-5"/>POS Bill Calculator</CardTitle>
-                <CardDescription>Calculate the correct bill total for this prescription.</CardDescription>
-            </CardHeader>
-            <CardContent>
+        <>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><Calculator className="h-5 w-5"/>POS Bill Calculator</DialogTitle>
+                    <DialogDescription>Calculate the correct bill total for this prescription.</DialogDescription>
+                </DialogHeader>
                 {isLoading ? (
                     <div className="space-y-2"><p>Loading product prices...</p><Skeleton className="h-20 w-full" /></div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-3 py-4">
                         <div className="border rounded-lg max-h-60 overflow-y-auto">
                             <table className="w-full text-sm">
                                 <thead>
@@ -253,7 +259,7 @@ const AdminPOSCalculator = ({ drugs, onUseTotal }: { drugs: { drugName: string; 
                                     {billItems.map((item) => (
                                         <tr key={item.index} className="border-b last:border-none">
                                             <td className="p-2 space-y-1">
-                                                <p className="font-medium">{item.name}</p>
+                                                <p className="font-medium">{item.name || 'Untitled Drug'}</p>
                                                 <ProductSelector
                                                     products={getFilteredProducts(item.name)}
                                                     selected={item.productId}
@@ -279,11 +285,12 @@ const AdminPOSCalculator = ({ drugs, onUseTotal }: { drugs: { drugName: string; 
                         </div>
                     </div>
                 )}
-            </CardContent>
-            <CardFooter>
-                <Button className="w-full" onClick={() => onUseTotal(total)} disabled={isLoading}>Use This Total</Button>
-            </CardFooter>
-        </Card>
+                 <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                    <Button onClick={handleUseTotal} disabled={isLoading}>Use This Total</Button>
+                </DialogFooter>
+            </DialogContent>
+        </>
     );
 };
 
@@ -292,6 +299,7 @@ export default function EditPatientPage() {
   const router = useRouter();
   const params = useParams();
   const patientId = params.patientId as string; // This is prescription_id
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
 
   const { data: patient, isLoading: isLoadingPatient, isError, error } = useQuery<GamePatient>({
       queryKey: ['ceylonPharmacyPatient', patientId],
@@ -413,15 +421,26 @@ export default function EditPatientPage() {
                         <CardContent className="space-y-4">
                             <div className="space-y-2"><Label>Prescription Name*</Label><Input {...form.register('prescription_name')} />{form.formState.errors.prescription_name && <p className="text-xs text-destructive">{form.formState.errors.prescription_name.message}</p>}</div>
                             <div className="space-y-2"><Label>Doctor's Name*</Label><Input {...form.register('doctor_name')} />{form.formState.errors.doctor_name && <p className="text-xs text-destructive">{form.formState.errors.doctor_name.message}</p>}</div>
-                            <div className="space-y-2"><Label>Total Bill Value (LKR)*</Label><Input type="number" step="0.01" {...form.register('totalBillValue')} />{form.formState.errors.totalBillValue && <p className="text-xs text-destructive">{form.formState.errors.totalBillValue.message}</p>}</div>
+                             <div className="space-y-2">
+                                <Label>Total Bill Value (LKR)*</Label>
+                                <div className="flex gap-2">
+                                    <Input type="number" step="0.01" {...form.register('totalBillValue')} className="flex-grow" />
+                                    <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button type="button" variant="outline" size="icon"><Calculator className="h-4 w-4"/></Button>
+                                        </DialogTrigger>
+                                        <AdminPOSCalculator 
+                                            drugs={watchedDrugs.map(d => ({ drugName: d.drugName, quantity: d.quantity }))}
+                                            onUseTotal={(total) => form.setValue('totalBillValue', total)}
+                                            closeDialog={() => setIsCalculatorOpen(false)}
+                                        />
+                                    </Dialog>
+                                </div>
+                                {form.formState.errors.totalBillValue && <p className="text-xs text-destructive">{form.formState.errors.totalBillValue.message}</p>}
+                            </div>
                             <div className="space-y-2"><Label>Notes</Label><Textarea {...form.register('notes')} rows={2}/></div>
                         </CardContent>
                     </Card>
-
-                    <AdminPOSCalculator 
-                        drugs={watchedDrugs.map(d => ({ drugName: d.drugName, quantity: d.quantity }))}
-                        onUseTotal={(total) => form.setValue('totalBillValue', total)}
-                    />
                 </div>
 
                 {/* --- Drugs Column --- */}
@@ -488,5 +507,3 @@ export default function EditPatientPage() {
     </div>
   );
 }
-
-    
