@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,12 +11,12 @@ import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { getShuffledInstructions } from '@/lib/actions/games';
+import { getAllCareInstructions } from '@/lib/actions/games';
 import type { Instruction } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Mock mutations as API endpoints don't exist
-const useInstructionMutations = () => {
+// Mock mutations as API endpoints don't exist for CUD operations
+const useInstructionMutations = (initialData: Instruction[]) => {
     const queryClient = useQueryClient();
 
     const addInstruction = useMutation({
@@ -26,7 +26,7 @@ const useInstructionMutations = () => {
             return newInstruction;
         },
         onSuccess: (newInstruction) => {
-            queryClient.setQueryData<Instruction[]>(['allInstructions'], (oldData) => [...(oldData || []), newInstruction]);
+            queryClient.setQueryData<Instruction[]>(['allCareInstructions'], (oldData = []) => [...oldData, newInstruction]);
             toast({ title: 'Instruction Added' });
         }
     });
@@ -37,8 +37,8 @@ const useInstructionMutations = () => {
             return instruction;
         },
         onSuccess: (updated) => {
-            queryClient.setQueryData<Instruction[]>(['allInstructions'], (oldData) => 
-                oldData?.map(i => i.id === updated.id ? { ...i, instruction: updated.text } : i)
+            queryClient.setQueryData<Instruction[]>(['allCareInstructions'], (oldData = []) => 
+                oldData.map(i => i.id === updated.id ? { ...i, instruction: updated.text } : i)
             );
             toast({ title: 'Instruction Updated' });
         }
@@ -50,8 +50,8 @@ const useInstructionMutations = () => {
             return id;
         },
         onSuccess: (id) => {
-            queryClient.setQueryData<Instruction[]>(['allInstructions'], (oldData) => 
-                oldData?.filter(i => i.id !== id)
+            queryClient.setQueryData<Instruction[]>(['allCareInstructions'], (oldData = []) => 
+                oldData.filter(i => i.id !== id)
             );
             toast({ title: 'Instruction Deleted' });
         }
@@ -95,12 +95,26 @@ export default function ManageInstructionsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentInstruction, setCurrentInstruction] = useState<Instruction | null>(null);
 
-    const { data: instructions = [], isLoading, isError, error } = useQuery<Instruction[]>({
-        queryKey: ['allInstructions'],
-        queryFn: () => getShuffledInstructions('any', 'any'), // Using dummy params to fetch all
+    const { data: allInstructions = [], isLoading, isError, error } = useQuery<Instruction[]>({
+        queryKey: ['allCareInstructions'],
+        queryFn: getAllCareInstructions,
     });
     
-    const { addInstruction, updateInstruction, deleteInstruction } = useInstructionMutations();
+    // Process the data to get unique instructions
+    const uniqueInstructions = useMemo(() => {
+        const seen = new Set<string>();
+        return allInstructions.filter(instruction => {
+            const lowercased = instruction.instruction.toLowerCase();
+            if (seen.has(lowercased)) {
+                return false;
+            } else {
+                seen.add(lowercased);
+                return true;
+            }
+        }).sort((a,b) => a.instruction.localeCompare(b.instruction));
+    }, [allInstructions]);
+
+    const { addInstruction, updateInstruction, deleteInstruction } = useInstructionMutations(uniqueInstructions);
 
     const openDialog = (instruction: Instruction | null = null) => {
         setCurrentInstruction(instruction);
@@ -160,7 +174,7 @@ export default function ManageInstructionsPage() {
                         </div>
                     ))}
                     {isError && <div className="text-destructive"><AlertTriangle className="inline-block mr-2" />Error: {(error as Error).message}</div>}
-                    {!isLoading && !isError && instructions.map(instruction => (
+                    {!isLoading && !isError && uniqueInstructions.map(instruction => (
                         <div key={instruction.id} className="flex items-center justify-between p-3 border rounded-lg">
                             <p className="text-sm font-medium">{instruction.instruction}</p>
                             <div className="flex gap-1">
@@ -169,7 +183,7 @@ export default function ManageInstructionsPage() {
                             </div>
                         </div>
                     ))}
-                     {!isLoading && instructions.length === 0 && <p className="text-center text-muted-foreground py-8">No instructions found.</p>}
+                     {!isLoading && uniqueInstructions.length === 0 && <p className="text-center text-muted-foreground py-8">No instructions found.</p>}
                 </CardContent>
             </Card>
         </div>

@@ -206,6 +206,15 @@ export const getCorrectInstructions = async (presCode: string, coverId: string):
     return response.json();
 };
 
+export const getAllCareInstructions = async (): Promise<Instruction[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/updated-care-instructions/`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch all instructions' }));
+        throw new Error(errorData.message || 'Failed to fetch all instructions');
+    }
+    return response.json();
+};
+
 export const saveCounsellingAnswer = async (payload: SaveCounselingAnswerPayload): Promise<any> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-ins-answers/`, {
         method: 'POST',
