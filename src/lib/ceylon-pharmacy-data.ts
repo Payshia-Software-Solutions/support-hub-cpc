@@ -34,16 +34,6 @@ export interface PrescriptionDrug {
   correctInstructionIds: string[];
 }
 
-export interface MasterProduct {
-    product_id: string;
-    product_code: string;
-    ProductName: string;
-    DisplayName: string;
-    PrintName: string;
-    SellingPrice: string;
-    [key: string]: any; // Allow other properties
-}
-
 export interface Prescription {
   id: string;
   name: string; // prescription_name
@@ -82,6 +72,7 @@ export const generalStoreItems: GeneralStoreItem[] = [
   { id: 'item4', name: 'Sunscreen SPF 50', price: 450.00, category: 'Personal Care' },
   { id: 'item5', name: 'Multivitamin Tablets', price: 300.00, category: 'Vitamins' },
 ];
+
 
 // This is now effectively a fallback and will be replaced by API data
 export const ceylonPharmacyPatients: any[] = []; 

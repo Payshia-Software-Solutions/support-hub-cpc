@@ -2,6 +2,7 @@
 
 
 
+
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -778,6 +779,7 @@ export interface MasterProduct {
     PrintName: string;
     SellingPrice: string;
     ImagePath?: string | null;
+    Pos_Category: 'Vitamins' | 'First-Aid' | 'Personal Care' | 'Other';
     [key: string]: any; // Allow other properties
 }
 
@@ -785,7 +787,7 @@ export interface GeneralStoreItem {
     id: string;
     name: string;
     price: number;
-    category: 'Vitamins' | 'First-Aid' | 'Personal Care';
+    category: 'Vitamins' | 'First-Aid' | 'Personal Care' | 'Other';
 }
 
 export interface GamePatient {
