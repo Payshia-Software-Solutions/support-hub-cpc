@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,13 +11,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, AlertTriangle, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { allInstructions } from '@/lib/ceylon-pharmacy-data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useQuery } from '@tanstack/react-query';
-import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getShuffledInstructions } from '@/lib/actions/games';
+import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getAllCareInstructions } from '@/lib/actions/games';
 import type { GamePatient, PrescriptionDetail, Instruction } from '@/lib/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 
 const drugSchema = z.object({
@@ -49,6 +52,97 @@ const patientFormSchema = z.object({
 
 type PatientFormValues = z.infer<typeof patientFormSchema>;
 
+const InstructionSelectionDialog = ({
+    selectedIds,
+    onSelectionChange,
+    trigger
+}: {
+    selectedIds: string[],
+    onSelectionChange: (newIds: string[]) => void,
+    trigger: React.ReactNode,
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentSelectedIds, setCurrentSelectedIds] = useState(selectedIds);
+
+    const { data: allInstructions = [], isLoading } = useQuery<Instruction[]>({
+        queryKey: ['allCareInstructions'],
+        queryFn: getAllCareInstructions,
+    });
+    
+    useEffect(() => {
+        if(isOpen) {
+            setCurrentSelectedIds(selectedIds);
+        }
+    }, [isOpen, selectedIds]);
+
+    const uniqueInstructions = useMemo(() => {
+        const seen = new Set<string>();
+        return allInstructions.filter(instruction => {
+            const lowercased = instruction.instruction.toLowerCase();
+            if (seen.has(lowercased) || !instruction.instruction) {
+                return false;
+            }
+            seen.add(lowercased);
+            return true;
+        }).sort((a,b) => a.instruction.localeCompare(b.instruction));
+    }, [allInstructions]);
+
+    const filteredInstructions = useMemo(() => {
+        if (!searchTerm) return uniqueInstructions;
+        return uniqueInstructions.filter(inst => inst.instruction.toLowerCase().includes(searchTerm.toLowerCase()));
+    }, [uniqueInstructions, searchTerm]);
+
+    const handleToggle = (instructionId: string) => {
+        setCurrentSelectedIds(prev =>
+            prev.includes(instructionId) ? prev.filter(id => id !== instructionId) : [...prev, instructionId]
+        );
+    };
+
+    const handleConfirm = () => {
+        onSelectionChange(currentSelectedIds);
+        setIsOpen(false);
+    };
+
+    return (
+         <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>{trigger}</DialogTrigger>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Select Counselling Instructions</DialogTitle>
+                     <div className="relative pt-2">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
+                        <Input placeholder="Search instructions..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    </div>
+                </DialogHeader>
+                <ScrollArea className="max-h-[50vh] pr-4 -mr-4">
+                    <div className="space-y-2">
+                        {isLoading ? (
+                            <p>Loading instructions...</p>
+                        ) : (
+                            filteredInstructions.map(inst => (
+                                <div key={inst.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted/50">
+                                    <Checkbox
+                                        id={`dialog-inst-${inst.id}`}
+                                        checked={currentSelectedIds.includes(inst.id)}
+                                        onCheckedChange={() => handleToggle(inst.id)}
+                                    />
+                                    <Label htmlFor={`dialog-inst-${inst.id}`} className="text-sm font-normal w-full cursor-pointer">{inst.instruction}</Label>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </ScrollArea>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+                    <Button onClick={handleConfirm}>Confirm Selection</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+
 export default function EditPatientPage() {
   const router = useRouter();
   const params = useParams();
@@ -71,11 +165,18 @@ export default function EditPatientPage() {
       enabled: !!patient,
   });
   
-  const { data: instructions } = useQuery<Instruction[]>({
-      queryKey: ['shuffledInstructionsForEdit'],
-      queryFn: () => getShuffledInstructions('any', 'any'),
-      staleTime: Infinity,
+  const { data: allInstructions = [] } = useQuery<Instruction[]>({
+      queryKey: ['allCareInstructions'],
+      queryFn: getAllCareInstructions,
   });
+
+  const instructionMap = useMemo(() => {
+    return allInstructions.reduce((acc, inst) => {
+        acc[inst.id] = inst.instruction;
+        return acc;
+    }, {} as Record<string, string>);
+  }, [allInstructions]);
+
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientFormSchema),
@@ -89,20 +190,20 @@ export default function EditPatientPage() {
         form.reset({
             name: patient.Pres_Name,
             age: patient.Pres_Age,
-            initialTime: patient.start_data ? new Date(patient.start_data.time).getTime() : 3600, // Placeholder
+            initialTime: 3600, // This is not in the API response, so we use a default
             address: patient.address,
             patient_description: patient.patient_description,
             prescription_name: patient.prescription_name,
             doctor_name: patient.doctor_name,
             notes: patient.notes,
-            totalBillValue: 0, // Not available in GamePatient, default to 0
+            totalBillValue: 0, // Placeholder
             drugs: prescriptionDetails.map(drug => ({
                 id: drug.cover_id,
                 drugName: drug.content, 
-                genericName: '', // Not in PrescriptionDetail
-                quantity: 1, // Not in PrescriptionDetail
-                lines: drug.content, // Not ideal, but it's what we have
-                correctInstructionIds: [], // Need API for this
+                genericName: '', // Not in API
+                quantity: 1, // Not in API
+                lines: drug.content, // Not ideal, but what we have
+                correctInstructionIds: [], // To be fetched separately
             })),
         });
     }
@@ -187,26 +288,35 @@ export default function EditPatientPage() {
                                         <div className="space-y-2"><Label>Generic Name</Label><Input {...form.register(`drugs.${index}.genericName`)} /></div>
                                         <div className="space-y-2"><Label>Quantity*</Label><Input type="number" {...form.register(`drugs.${index}.quantity`)} />{form.formState.errors.drugs?.[index]?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
                                         <div className="md:col-span-2 space-y-2"><Label>Prescription Lines (one per line)*</Label><Textarea {...form.register(`drugs.${index}.lines`)} rows={2}/>{form.formState.errors.drugs?.[index]?.lines && <p className="text-xs text-destructive">Required</p>}</div>
+                                        
                                         <div className="md:col-span-2 space-y-2">
-                                            <Label>Correct Counselling Instructions</Label>
-                                            <div className="p-3 border rounded-md max-h-32 overflow-y-auto space-y-2 bg-background">
-                                                {(instructions || []).map(inst => (
-                                                    <div key={inst.id} className="flex items-center space-x-2">
-                                                        <Checkbox
-                                                            id={`drug-${index}-inst-${inst.id}`}
-                                                            defaultChecked={form.getValues(`drugs.${index}.correctInstructionIds`)?.includes(inst.id)}
-                                                            onCheckedChange={(checked) => {
-                                                                const fieldName = `drugs.${index}.correctInstructionIds`;
-                                                                const currentIds = form.getValues(fieldName) || [];
-                                                                const newIds = checked ? [...currentIds, inst.id] : currentIds.filter(id => id !== inst.id);
-                                                                form.setValue(fieldName, newIds);
-                                                            }}
-                                                        />
-                                                        <Label htmlFor={`drug-${index}-inst-${inst.id}`} className="text-sm font-normal">{inst.instruction}</Label>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                            <Controller
+                                                control={form.control}
+                                                name={`drugs.${index}.correctInstructionIds`}
+                                                render={({ field: { onChange, value } }) => (
+                                                    <InstructionSelectionDialog
+                                                        selectedIds={value || []}
+                                                        onSelectionChange={onChange}
+                                                        trigger={
+                                                            <div className="space-y-2">
+                                                                <Label>Correct Counselling Instructions</Label>
+                                                                <Button type="button" variant="outline" className="w-full justify-start text-left font-normal">
+                                                                    {value && value.length > 0 ? `${value.length} instruction(s) selected` : "Select instructions..."}
+                                                                </Button>
+                                                                 {value && value.length > 0 && (
+                                                                    <div className="flex flex-wrap gap-1">
+                                                                        {value.map(id => (
+                                                                            <Badge key={id} variant="secondary" className="font-normal">{instructionMap[id] || 'Unknown'}</Badge>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        }
+                                                    />
+                                                )}
+                                            />
                                         </div>
+
                                     </div>
                                 </Card>
                             ))}
@@ -226,3 +336,4 @@ export default function EditPatientPage() {
     </div>
   );
 }
+
