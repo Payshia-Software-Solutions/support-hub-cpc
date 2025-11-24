@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, AlertTriangle, Search, Calculator } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, AlertTriangle, Search, Calculator, Check, ChevronsUpDown } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useQuery } from '@tanstack/react-query';
@@ -25,7 +25,6 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
-import { Check, ChevronsUpDown } from 'lucide-react';
 
 
 const drugSchema = z.object({
@@ -190,7 +189,7 @@ const ProductSelector = ({ products, selected, onSelect, placeholder }: { produc
 const AdminPOSCalculator = ({ drugs, onUseTotal }: { drugs: { drugName: string; quantity: number }[]; onUseTotal: (total: number) => void; }) => {
     const { data: masterProducts, isLoading } = useQuery<MasterProduct[]>({
         queryKey: ['masterProducts'],
-        fn: getMasterProducts,
+        queryFn: getMasterProducts,
     });
 
     const [selectedProducts, setSelectedProducts] = useState<Record<number, string>>({});
@@ -489,3 +488,5 @@ export default function EditPatientPage() {
     </div>
   );
 }
+
+    
