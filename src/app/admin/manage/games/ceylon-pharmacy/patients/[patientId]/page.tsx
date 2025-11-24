@@ -23,6 +23,9 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Check, ChevronsUpDown } from 'lucide-react';
 
 
 const drugSchema = z.object({
@@ -144,31 +147,88 @@ const InstructionSelectionDialog = ({
     );
 };
 
+const ProductSelector = ({ products, selected, onSelect, placeholder }: { products: MasterProduct[], selected?: string, onSelect: (value: string) => void, placeholder: string }) => {
+    const [open, setOpen] = useState(false);
+    
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between h-8 text-xs">
+                    <span className="truncate">
+                        {selected ? products.find(p => p.product_id === selected)?.DisplayName : placeholder}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <Command>
+                    <CommandInput placeholder="Search product..." />
+                    <CommandEmpty>No product found.</CommandEmpty>
+                    <CommandGroup className="max-h-60 overflow-y-auto">
+                        {products.map((product) => (
+                            <CommandItem
+                                key={product.product_id}
+                                value={product.DisplayName}
+                                onSelect={() => {
+                                    onSelect(product.product_id);
+                                    setOpen(false);
+                                }}
+                            >
+                                <Check className={cn("mr-2 h-4 w-4", selected === product.product_id ? "opacity-100" : "opacity-0")} />
+                                <span className="truncate">{product.DisplayName}</span>
+                            </CommandItem>
+                        ))}
+                    </CommandGroup>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+};
+
 
 // --- New POS Calculator Component ---
 const AdminPOSCalculator = ({ drugs, onUseTotal }: { drugs: { drugName: string; quantity: number }[]; onUseTotal: (total: number) => void; }) => {
     const { data: masterProducts, isLoading } = useQuery<MasterProduct[]>({
         queryKey: ['masterProducts'],
-        queryFn: getMasterProducts,
+        fn: getMasterProducts,
     });
+
+    const [selectedProducts, setSelectedProducts] = useState<Record<number, string>>({});
     const [discount, setDiscount] = useState('0');
 
     const billItems = useMemo(() => {
         if (!masterProducts || !drugs) return [];
-        return drugs.map(drug => {
-            const product = masterProducts.find(p => p.DisplayName.toLowerCase() === drug.drugName.toLowerCase());
+        return drugs.map((drug, index) => {
+            const selectedProductId = selectedProducts[index];
+            const product = masterProducts.find(p => p.product_id === selectedProductId);
             const price = product ? parseFloat(product.SellingPrice) : 0;
             return {
+                index: index,
                 name: drug.drugName,
                 quantity: drug.quantity,
                 price: price,
-                total: price * drug.quantity
+                total: price * drug.quantity,
+                productId: selectedProductId,
             };
         });
-    }, [drugs, masterProducts]);
+    }, [drugs, masterProducts, selectedProducts]);
 
     const subtotal = useMemo(() => billItems.reduce((acc, item) => acc + item.total, 0), [billItems]);
     const total = subtotal - parseFloat(discount || '0');
+
+    const handleProductSelect = (drugIndex: number, productId: string) => {
+        setSelectedProducts(prev => ({
+            ...prev,
+            [drugIndex]: productId,
+        }));
+    };
+    
+    const getFilteredProducts = (drugName: string) => {
+        if (!masterProducts) return [];
+        const searchName = drugName.split(' ')[0].toLowerCase();
+        return masterProducts.filter(p => p.DisplayName.toLowerCase().includes(searchName));
+    };
+
 
     return (
         <Card className="shadow-lg">
@@ -181,22 +241,28 @@ const AdminPOSCalculator = ({ drugs, onUseTotal }: { drugs: { drugName: string; 
                     <div className="space-y-2"><p>Loading product prices...</p><Skeleton className="h-20 w-full" /></div>
                 ) : (
                     <div className="space-y-3">
-                        <div className="border rounded-lg max-h-48 overflow-y-auto">
+                        <div className="border rounded-lg max-h-60 overflow-y-auto">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b">
                                         <th className="p-2 text-left font-medium">Item</th>
                                         <th className="p-2 text-center font-medium">Qty</th>
-                                        <th className="p-2 text-right font-medium">Price</th>
                                         <th className="p-2 text-right font-medium">Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {billItems.map((item, index) => (
-                                        <tr key={index} className="border-b last:border-none">
-                                            <td className="p-2">{item.name}</td>
+                                    {billItems.map((item) => (
+                                        <tr key={item.index} className="border-b last:border-none">
+                                            <td className="p-2 space-y-1">
+                                                <p className="font-medium">{item.name}</p>
+                                                <ProductSelector
+                                                    products={getFilteredProducts(item.name)}
+                                                    selected={item.productId}
+                                                    onSelect={(productId) => handleProductSelect(item.index, productId)}
+                                                    placeholder="Select Product..."
+                                                />
+                                            </td>
                                             <td className="p-2 text-center">{item.quantity}</td>
-                                            <td className="p-2 text-right">{item.price.toFixed(2)}</td>
                                             <td className="p-2 text-right font-semibold">{item.total.toFixed(2)}</td>
                                         </tr>
                                     ))}
@@ -423,5 +489,3 @@ export default function EditPatientPage() {
     </div>
   );
 }
-
-    
