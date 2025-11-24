@@ -210,7 +210,7 @@ const AdminPOSCalculator = ({ drugs, onUseTotal }: { drugs: { drugName: string; 
                                 <Label htmlFor="calc-discount" className="text-muted-foreground">Discount</Label>
                                 <Input id="calc-discount" type="number" placeholder="0.00" value={discount} onChange={e => setDiscount(e.target.value)} className="h-8 w-24 text-right" />
                             </div>
-                             <div className="flex justify-between items-center font-bold text-lg text-primary"><span >Total</span><span>LKR {total.toFixed(2)}</span></div>
+                             <div className="flex justify-between font-bold text-lg text-primary"><span >Total</span><span>LKR {total.toFixed(2)}</span></div>
                         </div>
                     </div>
                 )}
