@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, UserHeart, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, HeartPulse, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCeylonPharmacyPrescriptions, createTreatmentStartRecord } from '@/lib/actions/games';
 import type { GamePatient } from '@/lib/types';
@@ -89,7 +89,7 @@ export default function RecoverPatientPage() {
             <Card className="shadow-lg w-full max-w-md">
                  <CardHeader className="text-center items-center">
                     <div className="p-4 bg-destructive/10 rounded-full w-fit">
-                        <UserHeart className="w-10 h-10 text-destructive" />
+                        <HeartPulse className="w-10 h-10 text-destructive" />
                     </div>
                     <CardTitle className="mt-4 text-2xl font-headline">Recover Patient</CardTitle>
                     <CardDescription>The timer for <strong className="text-foreground">{patient.Pres_Name}</strong> has run out. You can recover the patient by paying a fine.</CardDescription>

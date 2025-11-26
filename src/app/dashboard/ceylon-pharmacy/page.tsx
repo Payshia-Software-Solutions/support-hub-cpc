@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, HeartPulse, Users, Clock, ArrowRight, UserHeart } from 'lucide-react';
+import { AlertTriangle, CheckCircle, HeartPulse, Users, Clock, ArrowRight } from 'lucide-react';
 import { getCeylonPharmacyPrescriptions } from '@/lib/actions/games';
 import type { GamePatient } from '@/lib/types';
 import Link from 'next/link';
@@ -54,7 +54,7 @@ const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
                  {isDead ? (
                       <Button asChild className="w-full" variant="destructive">
                         <Link href={`/dashboard/ceylon-pharmacy/${patient.prescription_id}/recover`}>
-                            <UserHeart className="mr-2 h-4 w-4" />
+                            <HeartPulse className="mr-2 h-4 w-4" />
                             Recover Patient
                         </Link>
                       </Button>
