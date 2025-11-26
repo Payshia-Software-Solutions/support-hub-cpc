@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -7,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, HeartPulse, Users, Clock, ArrowRight } from 'lucide-react';
+import { AlertTriangle, CheckCircle, HeartPulse, Users, Clock, ArrowRight, UserHeart } from 'lucide-react';
 import { getCeylonPharmacyPrescriptions } from '@/lib/actions/games';
 import type { GamePatient } from '@/lib/types';
 import Link from 'next/link';
@@ -52,12 +51,21 @@ const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
                 <CardDescription>Age: {patient.Pres_Age}</CardDescription>
             </CardHeader>
             <CardFooter>
-                 <Button asChild className="w-full" disabled={isDead}>
-                    <Link href={`/dashboard/ceylon-pharmacy/${patient.prescription_id}`}>
-                        {isDead ? 'Patient Lost' : (isRecovered ? 'View Case' : 'Treat Patient')}
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
+                 {isDead ? (
+                      <Button asChild className="w-full" variant="destructive">
+                        <Link href={`/dashboard/ceylon-pharmacy/${patient.prescription_id}/recover`}>
+                            <UserHeart className="mr-2 h-4 w-4" />
+                            Recover Patient
+                        </Link>
+                      </Button>
+                 ) : (
+                    <Button asChild className="w-full">
+                        <Link href={`/dashboard/ceylon-pharmacy/${patient.prescription_id}`}>
+                            {isRecovered ? 'View Case' : 'Treat Patient'}
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                 )}
             </CardFooter>
         </Card>
     )
