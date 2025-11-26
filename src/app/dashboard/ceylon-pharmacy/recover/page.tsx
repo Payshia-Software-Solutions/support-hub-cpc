@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -26,11 +26,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+const MAX_RECOVERIES = 3;
+
 export default function RecoverPatientPage() {
     const router = useRouter();
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const courseCode = 'CPCC20';
+    const [recoveryLives, setRecoveryLives] = useState(MAX_RECOVERIES);
+
 
     const { data: allPatients, isLoading: isLoadingPatients, isError } = useQuery<GamePatient[]>({
         queryKey: ['ceylonPharmacyPrescriptionsForRecovery', user?.username, courseCode],
@@ -58,6 +62,8 @@ export default function RecoverPatientPage() {
             }
         });
 
+        // The number of lives should be the max minus how many times they have recovered a patient
+        setRecoveryLives(MAX_RECOVERIES - recovered);
         return { lostPatients: lost, recoveredCount: recovered };
     }, [allPatients]);
     
@@ -66,6 +72,9 @@ export default function RecoverPatientPage() {
             if (!user?.username || !patientIdToRecover) {
                 throw new Error("Missing user or patient data.");
             }
+            if (recoveryLives <= 0) {
+                 throw new Error("No recovery attempts remaining.");
+            }
             return createTreatmentStartRecord(user.username, patientIdToRecover);
         },
         onSuccess: (data, patientIdToRecover) => {
@@ -73,8 +82,9 @@ export default function RecoverPatientPage() {
                 title: "Patient Recovered!",
                 description: "The timer has been reset. You can now continue treatment.",
             });
+            setRecoveryLives(prev => prev - 1);
             queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientIdToRecover, user?.username] });
-            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPrescriptions', user?.username, courseCode] });
+            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPrescriptionsForRecovery', user?.username, courseCode] });
             router.push(`/dashboard/ceylon-pharmacy/${patientIdToRecover}`);
         },
         onError: (error: Error) => {
@@ -123,7 +133,7 @@ export default function RecoverPatientPage() {
                     </div>
                     <div>
                         <h1 className="text-3xl font-headline font-semibold">Recover a Patient</h1>
-                        <p className="text-muted-foreground">Pay a fine to reset the timer for a lost patient.</p>
+                        <p className="text-muted-foreground">Use one of your limited recovery attempts to reset the timer.</p>
                     </div>
                 </div>
             </header>
@@ -131,13 +141,13 @@ export default function RecoverPatientPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Lost Patients</CardTitle></CardHeader><CardContent><div className="text-3xl font-bold flex items-center gap-2"><Skull className="h-6 w-6"/> {lostPatients.length}</div></CardContent></Card>
                 <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Recovered Patients</CardTitle></CardHeader><CardContent><div className="text-3xl font-bold flex items-center gap-2"><CheckCircle className="h-6 w-6"/> {recoveredCount}</div></CardContent></Card>
-                <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Patients</CardTitle></CardHeader><CardContent><div className="text-3xl font-bold flex items-center gap-2"><Users className="h-6 w-6"/> {allPatients?.length || 0}</div></CardContent></Card>
+                <Card className="border-primary"><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Recoveries Left</CardTitle></CardHeader><CardContent><div className="text-3xl font-bold text-primary">{recoveryLives} / {MAX_RECOVERIES}</div></CardContent></Card>
             </div>
 
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle>Lost Patients</CardTitle>
-                    <CardDescription>Select a patient below to recover them by paying the fine.</CardDescription>
+                    <CardDescription>Select a patient below to use one of your recovery attempts.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     {lostPatients.length > 0 ? (
@@ -155,7 +165,7 @@ export default function RecoverPatientPage() {
                                 </div>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="destructive" disabled={recoverMutation.isPending}>
+                                        <Button variant="destructive" disabled={recoverMutation.isPending || recoveryLives <= 0}>
                                             <HeartPulse className="mr-2 h-4 w-4"/> Recover
                                         </Button>
                                     </AlertDialogTrigger>
@@ -163,13 +173,13 @@ export default function RecoverPatientPage() {
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Recover {patient.Pres_Name}?</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                This action will simulate a payment of LKR 500.00 to reset the timer for this patient. Are you sure you want to proceed?
+                                                This will use one of your {recoveryLives} remaining recovery attempts to reset the timer for this patient. Are you sure you want to proceed?
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                                             <AlertDialogAction onClick={() => recoverMutation.mutate(patient.prescription_id)}>
-                                                Pay & Recover
+                                                Use Recovery
                                             </AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
@@ -178,7 +188,7 @@ export default function RecoverPatientPage() {
                         ))
                     ) : (
                          <div className="text-center py-10 text-muted-foreground">
-                            <p>You have no lost patients to recover.</p>
+                            <p>You have no lost patients to recover. Great job!</p>
                         </div>
                     )}
                 </CardContent>
