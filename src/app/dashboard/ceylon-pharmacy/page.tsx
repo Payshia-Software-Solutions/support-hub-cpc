@@ -26,7 +26,7 @@ const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
     
     const timeLeft = calculateTimeLeft();
     
-    const isDead = patient.start_data && patient.start_data.patient_status !== 'Recovered' && timeLeft <= 0;
+    const isLost = patient.start_data && patient.start_data.patient_status !== 'Recovered' && timeLeft <= 0;
     const isRecovered = patient.start_data && patient.start_data.patient_status === 'Recovered';
 
     const minutes = Math.floor(timeLeft / 60);
@@ -39,8 +39,8 @@ const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
                     <CardTitle className="text-lg">{patient.Pres_Name}</CardTitle>
                     {isRecovered ? (
                          <Badge variant="default" className="bg-green-600">Recovered</Badge>
-                    ) : isDead ? (
-                        <Badge variant="destructive">Timeout</Badge>
+                    ) : isLost ? (
+                        <Badge variant="destructive">Lost</Badge>
                     ) : (
                          <Badge variant="secondary">
                             <Clock className="mr-1.5 h-3.5 w-3.5" />
@@ -51,21 +51,12 @@ const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
                 <CardDescription>Age: {patient.Pres_Age}</CardDescription>
             </CardHeader>
             <CardFooter>
-                 {isDead ? (
-                      <Button asChild className="w-full" variant="destructive">
-                        <Link href={`/dashboard/ceylon-pharmacy/${patient.prescription_id}/recover`}>
-                            <HeartPulse className="mr-2 h-4 w-4" />
-                            Recover Patient
-                        </Link>
-                      </Button>
-                 ) : (
-                    <Button asChild className="w-full">
-                        <Link href={`/dashboard/ceylon-pharmacy/${patient.prescription_id}`}>
-                            {isRecovered ? 'View Case' : 'Treat Patient'}
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                        </Link>
-                    </Button>
-                 )}
+                 <Button asChild className="w-full" disabled={isLost}>
+                    <Link href={`/dashboard/ceylon-pharmacy/${patient.prescription_id}`}>
+                        {isRecovered ? 'View Case' : 'Treat Patient'}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
             </CardFooter>
         </Card>
     )
@@ -116,7 +107,7 @@ export default function CeylonPharmacyPage() {
         <p className="text-muted-foreground">Treat patients by completing dispensing tasks before time runs out.</p>
       </header>
       
-       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+       <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Waiting</CardTitle>
@@ -137,6 +128,19 @@ export default function CeylonPharmacyPage() {
                     <AlertTriangle className="h-4 w-4 text-destructive" />
                 </CardHeader>
                 <CardContent><div className="text-2xl font-bold">{stats.lost}</div></CardContent>
+            </Card>
+             <Card className="bg-destructive/10 border-destructive/30">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-destructive">Recovery</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <Button asChild variant="destructive" className="w-full" disabled={stats.lost === 0}>
+                        <Link href="/dashboard/ceylon-pharmacy/recover">
+                            <HeartPulse className="mr-2 h-4 w-4" />
+                            Recover a Patient
+                        </Link>
+                    </Button>
+                </CardContent>
             </Card>
        </section>
 

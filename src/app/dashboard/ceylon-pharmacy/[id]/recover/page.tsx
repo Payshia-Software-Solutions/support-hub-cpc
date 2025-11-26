@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -13,45 +13,52 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getCeylonPharmacyPrescriptions, createTreatmentStartRecord } from '@/lib/actions/games';
 import type { GamePatient } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 export default function RecoverPatientPage() {
     const router = useRouter();
-    const params = useParams();
-    const patientId = params.id as string;
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const courseCode = 'CPCC20';
+    const [selectedPatientId, setSelectedPatientId] = useState('');
 
-    const { data: patient, isLoading: isLoadingPatient, isError } = useQuery<GamePatient>({
-        queryKey: ['ceylonPharmacyPatientForRecovery', patientId, user?.username],
+    const { data: allPatients, isLoading: isLoadingPatients, isError } = useQuery<GamePatient[]>({
+        queryKey: ['ceylonPharmacyPrescriptionsForRecovery', user?.username, courseCode],
         queryFn: async () => {
             if (!user?.username) throw new Error("User not authenticated");
-            const prescriptions = await getCeylonPharmacyPrescriptions(user.username, courseCode);
-            const found = prescriptions.find(p => p.prescription_id === patientId);
-            if (!found) throw new Error("Patient not found for this user/course");
-            return found;
+            return getCeylonPharmacyPrescriptions(user.username, courseCode);
         },
-        enabled: !!patientId && !!user?.username,
+        enabled: !!user?.username,
     });
     
+    const lostPatients = useMemo(() => {
+        if (!allPatients) return [];
+        return allPatients.filter(p => {
+             if (p.start_data && p.start_data.patient_status !== 'Recovered') {
+                 const startTime = new Date(p.start_data.time).getTime();
+                 const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                 return elapsed > 3600;
+             }
+             return false;
+        });
+    }, [allPatients]);
+    
     const recoverMutation = useMutation({
-        mutationFn: () => {
-            if (!user?.username || !patient) {
+        mutationFn: (patientIdToRecover: string) => {
+            if (!user?.username || !patientIdToRecover) {
                 throw new Error("Missing user or patient data.");
             }
-            // This is a simulation. In a real app, this might be a more complex API call
-            // that resets the timer or status on the backend. Here we just create a new start record.
-            return createTreatmentStartRecord(user.username, patient.prescription_id);
+            return createTreatmentStartRecord(user.username, patientIdToRecover);
         },
-        onSuccess: () => {
+        onSuccess: (data, patientIdToRecover) => {
             toast({
                 title: "Patient Recovered!",
                 description: "The timer has been reset. You can now continue treatment.",
             });
-            // Invalidate queries to refetch patient data on relevant pages
-            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username] });
+            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientIdToRecover, user?.username] });
             queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPrescriptions', user?.username, courseCode] });
-            router.push(`/dashboard/ceylon-pharmacy/${patientId}`);
+            router.push(`/dashboard/ceylon-pharmacy/${patientIdToRecover}`);
         },
         onError: (error: Error) => {
              toast({
@@ -62,7 +69,7 @@ export default function RecoverPatientPage() {
         }
     });
 
-    if (isLoadingPatient) {
+    if (isLoadingPatients) {
         return (
              <div className="p-4 md:p-8 space-y-6 flex justify-center">
                 <div className="w-full max-w-md">
@@ -72,13 +79,16 @@ export default function RecoverPatientPage() {
         )
     }
 
-    if (isError || !patient) {
+    if (isError || lostPatients.length === 0) {
         return (
              <div className="p-4 md:p-8 space-y-6 flex justify-center">
-                <Alert variant="destructive" className="max-w-md">
+                <Alert variant="default" className="max-w-md">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>Could not load patient data. They may not be eligible for recovery.</AlertDescription>
+                    <AlertTitle>No Patients to Recover</AlertTitle>
+                    <AlertDescription>You have no patients who have timed out.</AlertDescription>
+                     <Button variant="outline" onClick={() => router.back()} className="w-full mt-4">
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Waiting Room
+                    </Button>
                 </Alert>
             </div>
         )
@@ -92,17 +102,34 @@ export default function RecoverPatientPage() {
                         <HeartPulse className="w-10 h-10 text-destructive" />
                     </div>
                     <CardTitle className="mt-4 text-2xl font-headline">Recover Patient</CardTitle>
-                    <CardDescription>The timer for <strong className="text-foreground">{patient.Pres_Name}</strong> has run out. You can recover the patient by paying a fine.</CardDescription>
+                    <CardDescription>Pay a fine to reset the timer for a lost patient and continue the challenge.</CardDescription>
                 </CardHeader>
-                <CardContent className="text-center">
-                    <p className="text-lg font-semibold">Fine Amount</p>
-                    <p className="text-4xl font-bold text-destructive">LKR 500.00</p>
-                    <p className="text-xs text-muted-foreground mt-2">(This is a simulated payment for game purposes)</p>
+                <CardContent className="space-y-4">
+                    <div className="text-center">
+                        <p className="text-lg font-semibold">Fine Amount</p>
+                        <p className="text-4xl font-bold text-destructive">LKR 500.00</p>
+                        <p className="text-xs text-muted-foreground mt-2">(This is a simulated payment for game purposes)</p>
+                    </div>
+                    <div className="space-y-2 pt-4 border-t">
+                        <Label htmlFor="patient-select">Select Patient to Recover</Label>
+                        <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
+                            <SelectTrigger id="patient-select">
+                                <SelectValue placeholder="Choose a patient..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {lostPatients.map(p => (
+                                    <SelectItem key={p.id} value={p.prescription_id}>
+                                        {p.Pres_Name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-3">
-                    <Button onClick={() => recoverMutation.mutate()} className="w-full" disabled={recoverMutation.isPending}>
+                    <Button onClick={() => recoverMutation.mutate(selectedPatientId)} className="w-full" disabled={recoverMutation.isPending || !selectedPatientId}>
                         {recoverMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                        Pay Fine & Recover Patient
+                        Pay Fine & Recover
                     </Button>
                      <Button variant="ghost" onClick={() => router.back()} className="w-full">
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Waiting Room
