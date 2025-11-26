@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const MAX_RECOVERIES = 3;
+const MAX_RECOVERIES = 50;
 
 export default function RecoverPatientPage() {
     const router = useRouter();
