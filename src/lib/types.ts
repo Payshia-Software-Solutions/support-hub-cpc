@@ -3,6 +3,7 @@
 
 
 
+
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -922,4 +923,11 @@ export interface POSSubmissionStatus {
     answer: string;
     created_at: string;
     ans_status: 'Answer Correct';
+}
+
+export interface RecoveryRecord {
+    id: string;
+    student_number: string;
+    patient_id: string;
+    created_at: string;
 }

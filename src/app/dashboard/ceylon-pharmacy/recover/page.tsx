@@ -10,8 +10,8 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, HeartPulse, Loader2, AlertCircle, Users, CheckCircle, Skull } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getCeylonPharmacyPrescriptions, recoverPatient } from '@/lib/actions/games';
-import type { GamePatient } from '@/lib/types';
+import { getCeylonPharmacyPrescriptions, recoverPatient, getRecoveredCount } from '@/lib/actions/games';
+import type { GamePatient, RecoveryRecord } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -33,10 +33,8 @@ export default function RecoverPatientPage() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const courseCode = 'CPCC20';
-    const [recoveryLives, setRecoveryLives] = useState(MAX_RECOVERIES);
 
-
-    const { data: allPatients, isLoading: isLoadingPatients, isError } = useQuery<GamePatient[]>({
+    const { data: allPatients, isLoading: isLoadingPatients, isError: isPatientsError } = useQuery<GamePatient[]>({
         queryKey: ['ceylonPharmacyPrescriptionsForRecovery', user?.username, courseCode],
         queryFn: async () => {
             if (!user?.username) throw new Error("User not authenticated");
@@ -44,28 +42,33 @@ export default function RecoverPatientPage() {
         },
         enabled: !!user?.username,
     });
+    
+    const { data: recoveryRecords, isLoading: isLoadingRecoveries, isError: isRecoveriesError } = useQuery<RecoveryRecord[]>({
+        queryKey: ['recoveryRecords', user?.username],
+        queryFn: async () => {
+            if (!user?.username) throw new Error("User not authenticated");
+            return getRecoveredCount(user.username);
+        },
+        enabled: !!user?.username,
+    });
 
-    const { lostPatients, recoveredCount } = useMemo(() => {
-        if (!allPatients) return { lostPatients: [], recoveredCount: 0 };
-        const lost: GamePatient[] = [];
-        let recovered = 0;
-        
-        allPatients.forEach(p => {
-            if (p.start_data?.patient_status === 'Recovered') {
-                recovered++;
-            } else if (p.start_data) {
+    const { lostPatients, recoveredCount, recoveryLives } = useMemo(() => {
+        if (!allPatients) return { lostPatients: [], recoveredCount: 0, recoveryLives: MAX_RECOVERIES };
+
+        const lost: GamePatient[] = allPatients.filter(p => {
+             if (p.start_data && p.start_data.patient_status !== 'Recovered') {
                  const startTime = new Date(p.start_data.time).getTime();
                  const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                 if (elapsed > 3600) {
-                    lost.push(p);
-                 }
-            }
+                 return elapsed > 3600;
+             }
+             return false;
         });
 
-        // The number of lives should be the max minus how many times they have recovered a patient
-        setRecoveryLives(MAX_RECOVERIES - recovered);
-        return { lostPatients: lost, recoveredCount: recovered };
-    }, [allPatients]);
+        const recovered = recoveryRecords?.length || 0;
+        const lives = MAX_RECOVERIES - recovered;
+
+        return { lostPatients: lost, recoveredCount: recovered, recoveryLives: lives };
+    }, [allPatients, recoveryRecords]);
     
     const recoverMutation = useMutation({
         mutationFn: (patientIdToRecover: string) => {
@@ -82,9 +85,9 @@ export default function RecoverPatientPage() {
                 title: "Patient Recovered!",
                 description: "The timer has been reset. You can now continue treatment.",
             });
-            setRecoveryLives(prev => prev - 1);
             queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientIdToRecover, user?.username] });
             queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPrescriptionsForRecovery', user?.username, courseCode] });
+            queryClient.invalidateQueries({ queryKey: ['recoveryRecords', user?.username] });
             router.push(`/dashboard/ceylon-pharmacy/${patientIdToRecover}`);
         },
         onError: (error: Error) => {
@@ -96,7 +99,7 @@ export default function RecoverPatientPage() {
         }
     });
 
-    if (isLoadingPatients) {
+    if (isLoadingPatients || isLoadingRecoveries) {
         return (
              <div className="p-4 md:p-8 space-y-6">
                 <Skeleton className="h-12 w-1/4" />
@@ -109,13 +112,28 @@ export default function RecoverPatientPage() {
         )
     }
 
-    if (isError) {
+    if (isPatientsError || isRecoveriesError) {
         return (
              <div className="p-4 md:p-8 space-y-6 flex justify-center">
                 <Alert variant="destructive" className="max-w-md">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error Loading Patients</AlertTitle>
-                    <AlertDescription>Could not fetch your patient data. Please try again later.</AlertDescription>
+                    <AlertTitle>Error Loading Data</AlertTitle>
+                    <AlertDescription>Could not fetch your patient or recovery data. Please try again later.</AlertDescription>
+                </Alert>
+            </div>
+        )
+    }
+    
+     if (!isLoadingPatients && lostPatients.length === 0) {
+        return (
+             <div className="p-4 md:p-8 space-y-6 flex justify-center">
+                <Alert variant="default" className="max-w-md">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>No Patients to Recover</AlertTitle>
+                    <AlertDescription>You have no patients who have timed out.</AlertDescription>
+                     <Button variant="outline" onClick={() => router.back()} className="w-full mt-4">
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Waiting Room
+                    </Button>
                 </Alert>
             </div>
         )

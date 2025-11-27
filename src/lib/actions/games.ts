@@ -2,7 +2,7 @@
 
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
@@ -184,6 +184,17 @@ export const recoverPatient = async (studentNumber: string, patientId: string): 
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
 
+    return response.json();
+};
+
+export const getRecoveredCount = async (studentNumber: string): Promise<RecoveryRecord[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-center-recoveries/student/${studentNumber}/`);
+    if (response.status === 404) {
+        return [];
+    }
+    if (!response.ok) {
+        throw new Error('Failed to fetch recovery data');
+    }
     return response.json();
 };
 
