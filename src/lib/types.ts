@@ -1,6 +1,9 @@
 
 
 
+
+
+
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -777,7 +780,15 @@ export interface MasterProduct {
     PrintName: string;
     SellingPrice: string;
     ImagePath?: string | null;
+    Pos_Category: 'Vitamins' | 'First-Aid' | 'Personal Care' | 'Other';
     [key: string]: any; // Allow other properties
+}
+
+export interface GeneralStoreItem {
+    id: string;
+    name: string;
+    price: number;
+    category: 'Vitamins' | 'First-Aid' | 'Personal Care' | 'Other';
 }
 
 export interface GamePatient {
@@ -912,4 +923,11 @@ export interface POSSubmissionStatus {
     answer: string;
     created_at: string;
     ans_status: 'Answer Correct';
+}
+
+export interface RecoveryRecord {
+    id: string;
+    student_number: string;
+    patient_id: string;
+    created_at: string;
 }

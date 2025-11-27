@@ -2,7 +2,7 @@
 
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
@@ -166,6 +166,39 @@ export const createTreatmentStartRecord = async (studentId: string, presCode: st
     return response.json();
 };
 
+export const recoverPatient = async (studentNumber: string, patientId: string): Promise<any> => {
+    const payload = {
+        student_number: studentNumber,
+        patient_id: patientId,
+    };
+    const response = await fetch(`${QA_API_BASE_URL}/care-center-recoveries/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to recover patient.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+
+    return response.json();
+};
+
+export const getRecoveredCount = async (studentNumber: string): Promise<RecoveryRecord[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-center-recoveries/student/${studentNumber}/`);
+    if (response.status === 404) {
+        return [];
+    }
+    if (!response.ok) {
+        throw new Error('Failed to fetch recovery data');
+    }
+    return response.json();
+};
+
+
 export const updatePatientStatus = async (startDataId: string): Promise<any> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-starts/${startDataId}/patient-status`, {
         method: 'POST',
@@ -202,6 +235,15 @@ export const getCorrectInstructions = async (presCode: string, coverId: string):
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch correct instructions' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
+export const getAllCareInstructions = async (): Promise<Instruction[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/updated-care-instructions/`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch all instructions' }));
+        throw new Error(errorData.message || 'Failed to fetch all instructions');
     }
     return response.json();
 };
@@ -260,3 +302,4 @@ export const getPOSSubmissionStatus = async (presCode: string, studentId: string
     const data = await response.json();
     return Array.isArray(data) ? data : [];
 };
+    

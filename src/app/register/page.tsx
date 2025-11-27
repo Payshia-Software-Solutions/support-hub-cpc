@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -21,6 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { parseNIC } from '@/lib/nic-parser';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const STEPS = [
@@ -39,6 +41,7 @@ export default function RegisterPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [cities, setCities] = useState<City[]>([]);
   const [isCityPopoverOpen, setIsCityPopoverOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Step 1 State
   const [firstName, setFirstName] = useState('');
@@ -131,6 +134,46 @@ export default function RegisterPage() {
     }, 2000);
   };
   
+  const DatePickerField = () => {
+    if (isMobile) {
+        return (
+             <Input
+                type="date"
+                className="w-full h-10"
+                value={dob ? format(dob, 'yyyy-MM-dd') : ''}
+                onChange={(e) => setDob(e.target.value ? new Date(e.target.value) : undefined)}
+            />
+        )
+    }
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button
+                variant={"outline"}
+                className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !dob && "text-muted-foreground"
+                )}
+                >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dob ? format(dob, "PPP") : <span>Pick a date</span>}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+                <Calendar
+                    mode="single"
+                    captionLayout="dropdown-buttons"
+                    fromYear={1960}
+                    toYear={new Date().getFullYear()}
+                    selected={dob}
+                    onSelect={setDob}
+                    initialFocus
+                />
+            </PopoverContent>
+        </Popover>
+    )
+  }
+
   return (
     <div className={cn("flex min-h-screen items-center justify-center p-4", "auth-background")}>
       <Card className="w-full max-w-lg shadow-2xl">
@@ -199,31 +242,7 @@ export default function RegisterPage() {
                         </div>
                         <div className="space-y-2">
                             <Label>Date of Birth</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !dob && "text-muted-foreground"
-                                    )}
-                                    >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {dob ? format(dob, "PPP") : <span>Pick a date</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        captionLayout="dropdown-buttons"
-                                        fromYear={1960}
-                                        toYear={new Date().getFullYear()}
-                                        selected={dob}
-                                        onSelect={setDob}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <DatePickerField />
                         </div>
                     </div>
                 </div>

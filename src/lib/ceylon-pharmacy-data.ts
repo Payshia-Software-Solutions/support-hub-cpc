@@ -3,6 +3,8 @@
 // This file contains static mock data for the Ceylon Pharmacy game.
 // Much of this is now being replaced by live API calls.
 
+import type { GeneralStoreItem } from './types';
+
 export interface PrescriptionFormValues {
   date: string;
   patientName: string;
@@ -30,16 +32,6 @@ export interface PrescriptionDrug {
   correctAnswers: PrescriptionFormValues; // This might become deprecated
   acceptedFrequencyAnswers: string[];
   correctInstructionIds: string[];
-}
-
-export interface MasterProduct {
-    product_id: string;
-    product_code: string;
-    ProductName: string;
-    DisplayName: string;
-    PrintName: string;
-    SellingPrice: string;
-    [key: string]: any; // Allow other properties
 }
 
 export interface Prescription {
@@ -72,6 +64,15 @@ export const allInstructions = [
   { id: '6', text: 'Finish all medication even if you feel better.' },
   { id: '7', text: 'None' },
 ];
+
+export const generalStoreItems: GeneralStoreItem[] = [
+  { id: 'item1', name: 'Vitamin C 500mg', price: 150.00, category: 'Vitamins' },
+  { id: 'item2', name: 'Band-Aids (Box of 20)', price: 80.00, category: 'First-Aid' },
+  { id: 'item3', name: 'Antiseptic Wipes', price: 120.00, category: 'First-Aid' },
+  { id: 'item4', name: 'Sunscreen SPF 50', price: 450.00, category: 'Personal Care' },
+  { id: 'item5', name: 'Multivitamin Tablets', price: 300.00, category: 'Vitamins' },
+];
+
 
 // This is now effectively a fallback and will be replaced by API data
 export const ceylonPharmacyPatients: any[] = []; 
