@@ -166,6 +166,28 @@ export const createTreatmentStartRecord = async (studentId: string, presCode: st
     return response.json();
 };
 
+export const recoverPatient = async (studentNumber: string, patientId: string): Promise<any> => {
+    const payload = {
+        student_number: studentNumber,
+        patient_id: patientId,
+    };
+    const response = await fetch(`${QA_API_BASE_URL}/care-center-recoveries/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to recover patient.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+
+    return response.json();
+};
+
+
 export const updatePatientStatus = async (startDataId: string): Promise<any> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-starts/${startDataId}/patient-status`, {
         method: 'POST',

@@ -10,7 +10,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, HeartPulse, Loader2, AlertCircle, Users, CheckCircle, Skull } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getCeylonPharmacyPrescriptions, createTreatmentStartRecord } from '@/lib/actions/games';
+import { getCeylonPharmacyPrescriptions, recoverPatient } from '@/lib/actions/games';
 import type { GamePatient } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -75,7 +75,7 @@ export default function RecoverPatientPage() {
             if (recoveryLives <= 0) {
                  throw new Error("No recovery attempts remaining.");
             }
-            return createTreatmentStartRecord(user.username, patientIdToRecover);
+            return recoverPatient(user.username, patientIdToRecover);
         },
         onSuccess: (data, patientIdToRecover) => {
             toast({
