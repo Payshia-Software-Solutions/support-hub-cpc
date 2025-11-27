@@ -131,7 +131,7 @@ export default function CeylonPharmacyPage() {
             </Card>
              <Card className="bg-destructive/10 border-destructive/30">
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-destructive">Recovery</CardTitle>
+                    <CardTitle className="text-sm font-medium text-destructive">Patient Recovery</CardTitle>
                 </CardHeader>
                 <CardContent>
                      <Button asChild variant="destructive" className="w-full" disabled={stats.lost === 0}>
