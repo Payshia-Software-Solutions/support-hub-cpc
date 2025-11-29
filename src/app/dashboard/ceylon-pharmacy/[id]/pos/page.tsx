@@ -313,8 +313,8 @@ export default function POSPage() {
     };
     
 
-    const handleProcessPayment = () => {
-        if (parseFloat(cashReceived) < total) {
+    const handleProcessPayment = (billTotal = total) => {
+        if (parseFloat(cashReceived) < billTotal && billTotal > 0) {
              toast({ variant: 'destructive', title: 'Insufficient payment', description: 'Cash received is less than the total amount.' });
              return;
         }
@@ -323,18 +323,26 @@ export default function POSPage() {
             return;
         }
 
-        const isCorrect = Math.abs(total - parseFloat(correctAmountData.value)) <= 1;
+        const isCorrect = Math.abs(billTotal - parseFloat(correctAmountData.value)) <= 1;
         const status = isCorrect ? "Answer Correct" : "Answer Incorrect";
         
         const payload: POSSubmissionPayload = {
             student_id: user.username!,
             PresCode: patient!.prescription_id,
-            answer: total.toFixed(2),
+            answer: billTotal.toFixed(2),
             created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
             ans_status: status
         };
 
         submitAnswerMutation.mutate(payload);
+    };
+
+    const handleZeroBilling = () => {
+        setCart([]);
+        setDiscount('0');
+        setCashReceived('0');
+        // We call process payment with an explicit total of 0
+        handleProcessPayment(0);
     };
     
     const handleCompleteSale = () => {
@@ -575,9 +583,12 @@ export default function POSPage() {
                         <Separator />
                         <div className="space-y-2">
                             <Label htmlFor="cash-received">Cash Received</Label>
-                            <Input id="cash-received" type="number" placeholder="Enter amount..." value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} disabled={total <= 0} step="any" />
+                            <div className="flex gap-2">
+                                <Input id="cash-received" type="number" placeholder="Enter amount..." value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} disabled={total <= 0} step="any" />
+                                <Button variant="secondary" onClick={handleZeroBilling}>Zero Bill</Button>
+                            </div>
                         </div>
-                        <Button className="w-full" onClick={handleProcessPayment} disabled={total <= 0 || !cashReceived || submitAnswerMutation.isPending}>
+                        <Button className="w-full" onClick={() => handleProcessPayment()} disabled={total < 0 || !cashReceived || submitAnswerMutation.isPending}>
                              {submitAnswerMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
                             Process Payment
                         </Button>
