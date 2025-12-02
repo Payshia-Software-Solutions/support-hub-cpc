@@ -186,12 +186,27 @@ export default function CeylonPharmacyPatientPage() {
         }
     });
 
+    const updateStatusMutation = useMutation({
+        mutationFn: (startDataId: string) => updatePatientStatus(startDataId),
+        onSuccess: () => {
+            toast({ title: "Patient Recovered!", description: "The patient's status has been marked as recovered." });
+            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username] });
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Status Update Error', description: `Could not mark patient as recovered: ${error.message}` });
+        }
+    });
+
     // --- Memos and State Calculations ---
     const startTime = patient?.start_data ? new Date(patient.start_data.time).getTime() : null;
     
     const patientStatus = useMemo<'active' | 'dead' | 'recovered' | 'pending'>(() => {
-        if (!patient?.start_data) return 'pending';
-        if (patient.start_data.patient_status === 'Recovered') return 'recovered';
+        if (!patient?.start_data || patient.start_data.patient_status === 'Pending') {
+            return 'pending';
+        }
+        if (patient.start_data.patient_status === 'Recovered') {
+            return 'recovered';
+        }
         
         const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
         if (elapsed > 3600) return 'dead'; // 1 hour = 3600 seconds
@@ -289,6 +304,8 @@ export default function CeylonPharmacyPatientPage() {
         completed: counsellingStatuses?.[detail.cover_id] || false,
     })) || [];
 
+    const showCompleteButton = allTasksCompleted && patientStatus !== 'recovered';
+
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
@@ -356,7 +373,7 @@ export default function CeylonPharmacyPatientPage() {
                                 </div>
                                 <div className="text-center">
                                     <p className="italic font-serif text-xl text-gray-700">{patient.doctor_name.split(' ').slice(1).join(' ')}</p>
-                                    <p className="text-xs text-gray-600 border-t border-gray-400 mt-1 pt-1">Signature</p>
+                                    <p className="text-xs text-muted-foreground non-italic">Signature</p>
                                 </div>
                             </div>
                         </div>
@@ -435,6 +452,18 @@ export default function CeylonPharmacyPatientPage() {
                                 isPatientDead={patientStatus === 'dead' || !taskCompletion.counsel}
                             />
                         </div>
+                    )}
+
+                    {showCompleteButton && (
+                        <Button 
+                            className="w-full mt-4 bg-green-600 hover:bg-green-700" 
+                            size="lg"
+                            onClick={() => updateStatusMutation.mutate(patient.start_data!.id)}
+                            disabled={updateStatusMutation.isPending}
+                        >
+                            {updateStatusMutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle className="mr-2 h-5 w-5" />}
+                            Complete Treatment
+                        </Button>
                     )}
                 </div>
             </div>
