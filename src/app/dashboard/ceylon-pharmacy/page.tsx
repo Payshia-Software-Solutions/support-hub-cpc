@@ -6,12 +6,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, HeartPulse, Users, Clock, ArrowRight } from 'lucide-react';
+import { AlertTriangle, CheckCircle, HeartPulse, Users, Clock, ArrowRight, Search } from 'lucide-react';
 import { getCeylonPharmacyPrescriptions } from '@/lib/actions/games';
 import type { GamePatient } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { Input } from '@/components/ui/input';
 
 
 const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
@@ -65,6 +66,7 @@ const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
 // --- MAIN PAGE ---
 export default function CeylonPharmacyPage() {
     const { user } = useAuth();
+    const [searchTerm, setSearchTerm] = useState('');
     // Hardcoding course for now as per user instruction context
     const courseCode = 'CPCC20';
 
@@ -73,6 +75,13 @@ export default function CeylonPharmacyPage() {
         queryFn: () => getCeylonPharmacyPrescriptions(user!.username!, courseCode),
         enabled: !!user?.username,
     });
+    
+    const filteredPatients = useMemo(() => {
+        if (!patients) return [];
+        return patients.filter(patient =>
+            patient.Pres_Name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [patients, searchTerm]);
 
     const stats = useMemo(() => {
         if (!patients) return { waiting: 0, recovered: 0, lost: 0 };
@@ -145,7 +154,18 @@ export default function CeylonPharmacyPage() {
        </section>
 
       <section>
-        <h2 className="text-xl font-semibold mb-4">Waiting Room</h2>
+        <div className="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-4">
+          <h2 className="text-xl font-semibold">Waiting Room</h2>
+          <div className="relative w-full md:max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Find patient by name..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+          </div>
+        </div>
         {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(3)].map((_, i) => (
@@ -162,11 +182,11 @@ export default function CeylonPharmacyPage() {
             </div>
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {patients && patients.map(patient => (
+                {filteredPatients.map(patient => (
                     <PatientStatusCard key={patient.id} patient={patient} />
                 ))}
-                {(!patients || patients.length === 0) && (
-                    <p className="md:col-span-3 text-center text-muted-foreground py-10">No patients are currently waiting.</p>
+                {filteredPatients.length === 0 && (
+                    <p className="md:col-span-3 text-center text-muted-foreground py-10">No patients found matching your search.</p>
                 )}
             </div>
         )}
