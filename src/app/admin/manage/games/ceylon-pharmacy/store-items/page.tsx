@@ -183,7 +183,7 @@ export default function ManageStoreItemsPage() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                     {isLoading && [...Array(5)].map((_, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div key={i} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
                             <div className="space-y-2"><Skeleton className="h-4 w-32"/><Skeleton className="h-3 w-24"/></div>
                             <div className="flex gap-1"><Skeleton className="h-8 w-8"/><Skeleton className="h-8 w-8"/></div>
                         </div>
