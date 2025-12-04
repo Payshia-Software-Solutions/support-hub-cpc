@@ -20,16 +20,16 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const ItemForm = ({ item, onSave, onClose, isSaving }: { item: MasterProduct | null; onSave: (data: Partial<MasterProduct>) => void; onClose: () => void; isSaving: boolean }) => {
     const [name, setName] = useState(item?.DisplayName || '');
     const [price, setPrice] = useState(item?.SellingPrice || '');
-    const [category, setCategory] = useState(item?.Pos_Category || '');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const numericPrice = parseFloat(price);
-        if (!name.trim() || !category || isNaN(numericPrice)) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please fill out all fields correctly.' });
+        if (!name.trim() || isNaN(numericPrice)) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please provide a valid item name and price.' });
             return;
         }
-        onSave({ DisplayName: name, SellingPrice: String(numericPrice), Pos_Category: category });
+        // Set a default category since the field is removed
+        onSave({ DisplayName: name, SellingPrice: String(numericPrice), Pos_Category: 'Other' });
     };
 
     return (
@@ -38,23 +38,9 @@ const ItemForm = ({ item, onSave, onClose, isSaving }: { item: MasterProduct | n
                 <Label htmlFor="item-name">Item Name</Label>
                 <Input id="item-name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
-             <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <Label htmlFor="item-price">Price (LKR)</Label>
-                    <Input id="item-price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="item-category">Category</Label>
-                     <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger id="item-category"><SelectValue placeholder="Select category..."/></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="Vitamins">Vitamins</SelectItem>
-                            <SelectItem value="First-Aid">First-Aid</SelectItem>
-                            <SelectItem value="Personal Care">Personal Care</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+            <div className="space-y-2">
+                <Label htmlFor="item-price">Price (LKR)</Label>
+                <Input id="item-price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
             </div>
             <DialogFooter>
                 <DialogClose asChild><Button type="button" variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
@@ -192,7 +178,7 @@ export default function ManageStoreItemsPage() {
                         <div key={item.product_id} className="flex items-center justify-between p-3 border rounded-lg">
                             <div>
                                 <p className="font-semibold">{item.DisplayName}</p>
-                                <p className="text-sm text-muted-foreground">LKR {parseFloat(item.SellingPrice).toFixed(2)} - <span className="italic">{item.Pos_Category}</span></p>
+                                <p className="text-sm text-muted-foreground">LKR {parseFloat(item.SellingPrice).toFixed(2)}</p>
                             </div>
                             <div className="flex gap-1">
                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDialog(item)}><Edit className="h-4 w-4" /></Button>
