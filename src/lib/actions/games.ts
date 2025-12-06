@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord } from '../types';
@@ -16,7 +15,7 @@ export const getMasterProducts = async (): Promise<MasterProduct[]> => {
     return response.json();
 };
 
-export const updateMasterProduct = async ({ productId, name, price }: { productId: string, name: string, price: string }): Promise<MasterProduct> => {
+export const updateMasterProduct = async ({ productId, name, price }: { productId: string, name: string, price: string }): Promise<{ message: string }> => {
     const response = await fetch(`${QA_API_BASE_URL}/master-products/${productId}/update-name-and-price/`, {
         method: 'POST',
         headers: {

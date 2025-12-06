@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState } from 'react';
@@ -66,12 +65,16 @@ export default function ManageStoreItemsPage() {
 
     const updateMutation = useMutation({
         mutationFn: updateMasterProduct,
-        onSuccess: (updatedItem) => {
+        onSuccess: (data, variables) => {
             queryClient.setQueryData<MasterProduct[]>(['masterProducts'], (oldData) => {
-                if (!oldData) return [updatedItem];
-                return oldData.map(item => item.product_id === updatedItem.product_id ? updatedItem : item);
+                if (!oldData) return [];
+                return oldData.map(item => 
+                    item.product_id === variables.productId 
+                        ? { ...item, DisplayName: variables.name, SellingPrice: variables.price } 
+                        : item
+                );
             });
-            toast({ title: 'Item Updated', description: `${updatedItem.DisplayName} has been updated.` });
+            toast({ title: 'Item Updated', description: `${variables.name} has been updated.` });
             setIsDialogOpen(false);
         },
         onError: (err: Error) => {
