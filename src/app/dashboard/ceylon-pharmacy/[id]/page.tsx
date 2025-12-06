@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -186,6 +187,17 @@ export default function CeylonPharmacyPatientPage() {
         }
     });
 
+    const updateStatusMutation = useMutation({
+        mutationFn: (startDataId: string) => updatePatientStatus(startDataId),
+        onSuccess: () => {
+            toast({ title: "Patient Recovered!", description: "The treatment is now complete." });
+            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username] });
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Status Update Error', description: `Could not mark patient as recovered: ${error.message}` });
+        }
+    });
+
     // --- Memos and State Calculations ---
     const startTime = patient?.start_data ? new Date(patient.start_data.time).getTime() : null;
     
@@ -289,6 +301,8 @@ export default function CeylonPharmacyPatientPage() {
         completed: counsellingStatuses?.[detail.cover_id] || false,
     })) || [];
 
+    const showCompleteButton = allTasksCompleted && patient.start_data?.patient_status === 'Pending';
+
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
@@ -356,12 +370,12 @@ export default function CeylonPharmacyPatientPage() {
                                 </div>
                                 <div className="text-center">
                                     <p className="italic font-serif text-xl text-gray-700">{patient.doctor_name.split(' ').slice(1).join(' ')}</p>
-                                    <p className="text-xs text-gray-600 border-t border-gray-400 mt-1 pt-1">Signature</p>
+                                    <p className="text-xs text-muted-foreground non-italic">Signature</p>
                                 </div>
                             </div>
                         </div>
                     </CardContent>
-                    {patientStatus === 'pending' && (
+                    {!patient.start_data && (
                          <CardFooter>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -406,7 +420,7 @@ export default function CeylonPharmacyPatientPage() {
                         </CardContent>
                     </Card>
                     
-                    {patientStatus !== 'pending' && (
+                    {patient.start_data && (
                         <div className="space-y-4 animate-in fade-in-50">
                             <TaskCard 
                                 title="Task 1: Dispense Prescription"
@@ -435,6 +449,18 @@ export default function CeylonPharmacyPatientPage() {
                                 isPatientDead={patientStatus === 'dead' || !taskCompletion.counsel}
                             />
                         </div>
+                    )}
+                     {showCompleteButton && (
+                        <Card className="mt-4 bg-blue-100 border-blue-300">
+                           <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                                <CardTitle className="text-blue-800 text-lg">All Tasks Completed!</CardTitle>
+                                <CardDescription className="text-blue-700">The patient's status is still pending. Click below to finalize and mark them as recovered.</CardDescription>
+                                <Button className="mt-2 w-full sm:w-auto" onClick={() => updateStatusMutation.mutate(patient.start_data!.id)} disabled={updateStatusMutation.isPending}>
+                                    {updateStatusMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                    Complete Treatment
+                                </Button>
+                           </CardContent>
+                        </Card>
                     )}
                 </div>
             </div>

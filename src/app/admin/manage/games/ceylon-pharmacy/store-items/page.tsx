@@ -10,26 +10,24 @@ import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getMasterProducts } from '@/lib/actions/games';
+import { getMasterProducts, updateMasterProduct } from '@/lib/actions/games';
 import type { MasterProduct } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
-const ItemForm = ({ item, onSave, onClose, isSaving }: { item: MasterProduct | null; onSave: (data: Partial<MasterProduct>) => void; onClose: () => void; isSaving: boolean }) => {
+const ItemForm = ({ item, onSave, onClose, isSaving }: { item: MasterProduct | null; onSave: (data: { name: string, price: string }) => void; onClose: () => void; isSaving: boolean }) => {
     const [name, setName] = useState(item?.DisplayName || '');
     const [price, setPrice] = useState(item?.SellingPrice || '');
-    const [category, setCategory] = useState(item?.Pos_Category || '');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const numericPrice = parseFloat(price);
-        if (!name.trim() || !category || isNaN(numericPrice)) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please fill out all fields correctly.' });
+        if (!name.trim() || isNaN(numericPrice)) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please provide a valid item name and price.' });
             return;
         }
-        onSave({ DisplayName: name, SellingPrice: String(numericPrice), Pos_Category: category });
+        onSave({ name, price: String(numericPrice) });
     };
 
     return (
@@ -38,23 +36,9 @@ const ItemForm = ({ item, onSave, onClose, isSaving }: { item: MasterProduct | n
                 <Label htmlFor="item-name">Item Name</Label>
                 <Input id="item-name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
-             <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <Label htmlFor="item-price">Price (LKR)</Label>
-                    <Input id="item-price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="item-category">Category</Label>
-                     <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger id="item-category"><SelectValue placeholder="Select category..."/></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="Vitamins">Vitamins</SelectItem>
-                            <SelectItem value="First-Aid">First-Aid</SelectItem>
-                            <SelectItem value="Personal Care">Personal Care</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+            <div className="space-y-2">
+                <Label htmlFor="item-price">Price (LKR)</Label>
+                <Input id="item-price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
             </div>
             <DialogFooter>
                 <DialogClose asChild><Button type="button" variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
@@ -79,32 +63,22 @@ export default function ManageStoreItemsPage() {
         queryFn: getMasterProducts,
     });
 
-    // Mock mutations for now, as API endpoints don't exist
-    const mockMutation = useMutation({
-        mutationFn: async (data: Partial<MasterProduct>) => {
-            await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-            if (currentItem) {
-                // Update
-                return { ...currentItem, ...data };
-            } else {
-                // Create
-                const newItem = { ...data, product_id: `new-${Date.now()}` } as MasterProduct;
-                return newItem;
-            }
-        },
-        onSuccess: (data) => {
+    const updateMutation = useMutation({
+        mutationFn: updateMasterProduct,
+        onSuccess: (data, variables) => {
             queryClient.setQueryData<MasterProduct[]>(['masterProducts'], (oldData) => {
-                if (!oldData) return [data];
-                if (currentItem) {
-                    return oldData.map(item => item.product_id === data.product_id ? data : item);
-                }
-                return [...oldData, data];
+                if (!oldData) return [];
+                return oldData.map(item => 
+                    item.product_id === variables.productId 
+                        ? { ...item, DisplayName: variables.name, SellingPrice: variables.price } 
+                        : item
+                );
             });
-            toast({ title: currentItem ? 'Item Updated' : 'Item Added' });
+            toast({ title: 'Item Updated', description: `${variables.name} has been updated.` });
             setIsDialogOpen(false);
         },
         onError: (err: Error) => {
-            toast({ variant: 'destructive', title: 'Error', description: err.message });
+            toast({ variant: 'destructive', title: 'Update Error', description: err.message });
         }
     });
 
@@ -129,6 +103,15 @@ export default function ManageStoreItemsPage() {
         setIsDialogOpen(true);
     };
 
+    const handleSave = (data: { name: string, price: string }) => {
+        if (currentItem) {
+            updateMutation.mutate({ productId: currentItem.product_id, ...data });
+        } else {
+            // Create logic would go here if an endpoint existed.
+            toast({ title: 'Create not implemented' });
+        }
+    };
+
     if (isError) {
         return <div className="p-8 text-destructive">Error: {(error as Error).message}</div>
     }
@@ -143,9 +126,9 @@ export default function ManageStoreItemsPage() {
                     </DialogHeader>
                     <ItemForm 
                         item={currentItem} 
-                        onSave={(data) => mockMutation.mutate(data)} 
+                        onSave={handleSave} 
                         onClose={() => setIsDialogOpen(false)}
-                        isSaving={mockMutation.isPending}
+                        isSaving={updateMutation.isPending}
                     />
                 </DialogContent>
             </Dialog>
@@ -172,7 +155,7 @@ export default function ManageStoreItemsPage() {
                     <h1 className="text-3xl font-headline font-semibold mt-2">Manage Store Items</h1>
                     <p className="text-muted-foreground">Configure items available in the POS system.</p>
                 </div>
-                <Button onClick={() => openDialog()}>
+                <Button onClick={() => openDialog()} disabled>
                     <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
                 </Button>
             </header>
@@ -183,7 +166,7 @@ export default function ManageStoreItemsPage() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                     {isLoading && [...Array(5)].map((_, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div key={i} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
                             <div className="space-y-2"><Skeleton className="h-4 w-32"/><Skeleton className="h-3 w-24"/></div>
                             <div className="flex gap-1"><Skeleton className="h-8 w-8"/><Skeleton className="h-8 w-8"/></div>
                         </div>
@@ -192,7 +175,7 @@ export default function ManageStoreItemsPage() {
                         <div key={item.product_id} className="flex items-center justify-between p-3 border rounded-lg">
                             <div>
                                 <p className="font-semibold">{item.DisplayName}</p>
-                                <p className="text-sm text-muted-foreground">LKR {parseFloat(item.SellingPrice).toFixed(2)} - <span className="italic">{item.Pos_Category}</span></p>
+                                <p className="text-sm text-muted-foreground">LKR {parseFloat(item.SellingPrice).toFixed(2)}</p>
                             </div>
                             <div className="flex gap-1">
                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDialog(item)}><Edit className="h-4 w-4" /></Button>
