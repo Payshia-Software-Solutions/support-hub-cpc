@@ -9,7 +9,7 @@ import { ArrowLeft, Plus, Trash2, Save, AlertCircle, Sparkles, Loader2 } from 'l
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -154,15 +154,17 @@ export default function CounselPage() {
     };
 
     const uniqueShuffledInstructions = useMemo(() => {
-        if (!allInstructions || !correctInstructions) return [];
+        if (!allInstructions) return [];
         
-        const correctInstructionIds = new Set(correctInstructions.map(i => i.id));
+        const correctInstructionIds = new Set(correctInstructions?.map(i => i.id));
         const seenInstructions = new Map<string, Instruction>();
 
-        // Prioritize correct instructions to ensure their IDs are used for duplicates
-        for (const instruction of allInstructions) {
+        // Combine and process instructions
+        const instructionsToProcess = allInstructions;
+
+        for (const instruction of instructionsToProcess) {
             const text = instruction.instruction.toLowerCase();
-            // If we haven't seen this text before, add it.
+            // If we haven't seen this text, add it.
             // OR if we have seen it, but this one is the correct one, replace the old one.
             if (!seenInstructions.has(text) || correctInstructionIds.has(instruction.id)) {
                 seenInstructions.set(text, instruction);
