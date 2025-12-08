@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
@@ -19,6 +18,7 @@ import { CeylonPharmacyIcon, DPadIcon, HunterProIcon, LuckyWheelIcon, MediMindIc
 import { getCourses } from "@/lib/actions/courses";
 import Image from "next/image";
 import { Alert, AlertTitle } from "@/components/ui/alert";
+import { useRouter } from "next/navigation";
 
 
 // --- Sub Components ---
@@ -93,12 +93,20 @@ const QuickActionCard = ({ title, description, href, icon, colorClass }: { title
 // --- Main Page Component ---
 export default function StudentDashboardPage() {
     const { user } = useAuth();
+    const router = useRouter();
     const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
     
     useEffect(() => {
         const storedCourseCode = localStorage.getItem('selected_course');
-        setSelectedCourseCode(storedCourseCode);
-    }, []);
+        if (storedCourseCode) {
+            setSelectedCourseCode(storedCourseCode);
+        } else {
+            // If no course is selected in localStorage, redirect to the selection page.
+            // This is a safeguard in case the user lands here directly without logging in
+            // or if they have multiple courses and haven't chosen one.
+            router.replace('/dashboard/select-course');
+        }
+    }, [router]);
 
     const { data: tickets, isLoading: isLoadingTickets } = useQuery<Ticket[]>({
         queryKey: ['tickets', user?.username],
@@ -123,6 +131,15 @@ export default function StudentDashboardPage() {
         .sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5);
     }, [tickets]);
+
+    // If we're still waiting for the course code from local storage, show a loader.
+    if (!selectedCourseCode && !isLoadingCourses) {
+        return (
+             <div className="flex h-screen items-center justify-center">
+                <p>Loading your preferences...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 p-4 md:p-8 bg-background pb-20">
