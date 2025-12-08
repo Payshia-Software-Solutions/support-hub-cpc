@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import type { GamePatient } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 
 const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
@@ -65,13 +66,22 @@ const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
 // --- MAIN PAGE ---
 export default function CeylonPharmacyPage() {
     const { user } = useAuth();
-    // Hardcoding course for now as per user instruction context
-    const courseCode = 'CPCC20';
+    const router = useRouter();
+    const [courseCode, setCourseCode] = useState<string | null>(null);
+
+    useEffect(() => {
+        const storedCourseCode = localStorage.getItem('selected_course');
+        if (storedCourseCode) {
+            setCourseCode(storedCourseCode);
+        } else {
+            router.replace('/dashboard/select-course');
+        }
+    }, [router]);
 
     const { data: patients, isLoading, isError, error } = useQuery<GamePatient[]>({
         queryKey: ['ceylonPharmacyPrescriptions', user?.username, courseCode],
-        queryFn: () => getCeylonPharmacyPrescriptions(user!.username!, courseCode),
-        enabled: !!user?.username,
+        queryFn: () => getCeylonPharmacyPrescriptions(user!.username!, courseCode!),
+        enabled: !!user?.username && !!courseCode,
     });
 
     const stats = useMemo(() => {
@@ -166,7 +176,7 @@ export default function CeylonPharmacyPage() {
                     <PatientStatusCard key={patient.id} patient={patient} />
                 ))}
                 {(!patients || patients.length === 0) && (
-                    <p className="md:col-span-3 text-center text-muted-foreground py-10">No patients are currently waiting.</p>
+                    <p className="md:col-span-3 text-center text-muted-foreground py-10">No patients are currently waiting for this course.</p>
                 )}
             </div>
         )}

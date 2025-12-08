@@ -1,20 +1,25 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { getTickets } from "@/lib/actions/tickets";
-import type { Ticket } from "@/lib/types";
+import type { Ticket, Course } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, Award, Library, BookOpen, FileText, Gamepad2 } from "lucide-react";
+import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, Award, Library, BookOpen, FileText, Gamepad2, AlertCircle } from "lucide-react";
 import { UnreadBadge } from "@/components/dashboard/UnreadBadge";
 import { CeylonPharmacyIcon, DPadIcon, HunterProIcon, LuckyWheelIcon, MediMindIcon, PharmaHunterIcon, PharmaReaderIcon, WinPharmaIcon, WordPalletIcon } from "@/components/icons/module-icons";
+import { getCourses } from "@/lib/actions/courses";
+import Image from "next/image";
+import { Alert, AlertTitle } from "@/components/ui/alert";
+import { useRouter } from "next/navigation";
+
 
 // --- Sub Components ---
 const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boolean }) => {
@@ -88,12 +93,37 @@ const QuickActionCard = ({ title, description, href, icon, colorClass }: { title
 // --- Main Page Component ---
 export default function StudentDashboardPage() {
     const { user } = useAuth();
+    const router = useRouter();
+    const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
     
-    const { data: tickets, isLoading } = useQuery<Ticket[]>({
+    useEffect(() => {
+        const storedCourseCode = localStorage.getItem('selected_course');
+        if (storedCourseCode) {
+            setSelectedCourseCode(storedCourseCode);
+        } else {
+            // If no course is selected in localStorage, redirect to the selection page.
+            // This is a safeguard in case the user lands here directly without logging in
+            // or if they have multiple courses and haven't chosen one.
+            router.replace('/dashboard/select-course');
+        }
+    }, [router]);
+
+    const { data: tickets, isLoading: isLoadingTickets } = useQuery<Ticket[]>({
         queryKey: ['tickets', user?.username],
         queryFn: () => getTickets(user!.username!),
         enabled: !!user?.username,
     });
+
+    const { data: allCourses, isLoading: isLoadingCourses } = useQuery<Course[]>({
+        queryKey: ['allCourses'],
+        queryFn: getCourses,
+        staleTime: Infinity,
+    });
+    
+    const selectedCourse = useMemo(() => {
+        if (!selectedCourseCode || !allCourses) return null;
+        return allCourses.find(c => c.courseCode === selectedCourseCode);
+    }, [selectedCourseCode, allCourses]);
     
     const recentTickets = useMemo(() => {
        if (!tickets) return [];
@@ -101,6 +131,15 @@ export default function StudentDashboardPage() {
         .sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5);
     }, [tickets]);
+
+    // If we're still waiting for the course code from local storage, show a loader.
+    if (!selectedCourseCode && !isLoadingCourses) {
+        return (
+             <div className="flex h-screen items-center justify-center">
+                <p>Loading your preferences...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 p-4 md:p-8 bg-background pb-20">
@@ -118,6 +157,38 @@ export default function StudentDashboardPage() {
                     </div>
                 </div>
             </Card>
+
+             <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-100">
+                <h2 className="text-2xl font-semibold font-headline mb-4">My Course</h2>
+                {isLoadingCourses ? (
+                    <Skeleton className="h-32 w-full" />
+                ) : selectedCourse ? (
+                    <Card className="shadow-lg bg-gradient-to-r from-primary/10 to-background">
+                         <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4">
+                            <div className="relative w-full sm:w-48 h-28 rounded-lg overflow-hidden shrink-0 bg-muted">
+                                <Image src="https://placehold.co/600x400.png" alt={selectedCourse.name} layout="fill" objectFit="cover" data-ai-hint="online course" />
+                            </div>
+                            <div className="flex-grow text-center sm:text-left">
+                                <p className="text-xs font-semibold text-primary">YOUR CURRENT COURSE</p>
+                                <h3 className="text-xl font-bold text-card-foreground">{selectedCourse.name}</h3>
+                                <p className="text-sm text-muted-foreground">{selectedCourse.courseCode}</p>
+                            </div>
+                            <div className="shrink-0 flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                <Button asChild className="w-full sm:w-auto"><Link href="#">View Course</Link></Button>
+                                <Button asChild variant="outline" className="w-full sm:w-auto"><Link href="/dashboard/select-course">Change Course</Link></Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>No Course Selected</AlertTitle>
+                        <CardDescription>You are not enrolled in any courses or have not selected one.
+                            <Link href="/dashboard/select-course" className="text-primary font-semibold hover:underline ml-1">Select a course</Link>
+                        </CardDescription>
+                    </Alert>
+                )}
+            </section>
             
              <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-400">
                  <h2 className="text-2xl font-semibold font-headline mb-4">Games & Challenges</h2>
@@ -141,7 +212,7 @@ export default function StudentDashboardPage() {
             <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-300">
                 <h2 className="text-2xl font-semibold font-headline mb-4">Ticket Summary</h2>
                 <div className="w-full">
-                    <TicketStats tickets={tickets || []} isLoading={isLoading} />
+                    <TicketStats tickets={tickets || []} isLoading={isLoadingTickets} />
                 </div>
             </section>
 
@@ -150,7 +221,7 @@ export default function StudentDashboardPage() {
                  <Card className="shadow-lg">
                     <CardContent className="p-4 md:p-6">
                        <div className="space-y-4">
-                        {isLoading && [...Array(3)].map((_, i) => (
+                        {isLoadingTickets && [...Array(3)].map((_, i) => (
                             <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
                                 <Skeleton className="h-10 w-10 rounded-full" />
                                 <div className="flex-1 space-y-2">
@@ -160,7 +231,7 @@ export default function StudentDashboardPage() {
                                 <Skeleton className="h-8 w-8 rounded-full" />
                             </div>
                         ))}
-                        {!isLoading && recentTickets.length > 0 ? recentTickets.map((ticket) => (
+                        {!isLoadingTickets && recentTickets.length > 0 ? recentTickets.map((ticket) => (
                             <Link key={ticket.id} href={`/dashboard/tickets/${ticket.id}`} className="block group">
                                 <div className="flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                                     <div className="flex-shrink-0">
@@ -186,7 +257,7 @@ export default function StudentDashboardPage() {
                                 </div>
                             </Link>
                         )) : (
-                            !isLoading && (
+                            !isLoadingTickets && (
                                 <div className="text-center py-10 text-muted-foreground">
                                     You haven't created any tickets yet.
                                 </div>
