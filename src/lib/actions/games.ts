@@ -35,6 +35,9 @@ export const updateMasterProduct = async ({ productId, name, price }: { productI
 
 export const getCeylonPharmacyPrescriptions = async (studentId: string, courseCode: string): Promise<GamePatient[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-center-courses/student/${studentId}/course/${courseCode}`);
+    if (response.status === 404) {
+        return []; // No patients found for this course, return empty array
+    }
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch game prescriptions' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
@@ -42,10 +45,15 @@ export const getCeylonPharmacyPrescriptions = async (studentId: string, courseCo
     const data = await response.json();
     
     // The API returns an object with prescription IDs as keys. We need to convert it to an array.
-    return Object.values(data).map((item: any) => ({
-        ...item.patient, // Spread the patient details
-        start_data: item.start_data // Add the start_data object
-    }));
+    if (typeof data === 'object' && data !== null && !data.error) {
+        return Object.values(data).map((item: any) => ({
+            ...item.patient, // Spread the patient details
+            start_data: item.start_data // Add the start_data object
+        }));
+    }
+    
+    // If the API returns an error structure or is not what we expect, return empty
+    return [];
 };
 
 export const getPrescriptionDetails = async (prescriptionId: string): Promise<PrescriptionDetail[]> => {

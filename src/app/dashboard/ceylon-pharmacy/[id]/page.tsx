@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -9,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, ClipboardList, BookOpen, MessageCircle, PlayCircle, Loader2, RefreshCw } from 'lucide-react';
+import { AlertTriangle, CheckCircle, HeartPulse, Users, Clock, ArrowRight, ArrowLeft } from 'lucide-react';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, createTreatmentStartRecord, getDispensingSubmissionStatus, getCounsellingSubmissionStatus, getPOSSubmissionStatus, updatePatientStatus } from '@/lib/actions/games';
 import type { GamePatient, PrescriptionDetail, TreatmentStartRecord, POSSubmissionStatus } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -29,6 +28,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { format } from 'date-fns';
 import Image from 'next/image';
+import { Loader2, PlayCircle, MessageCircle, ClipboardList, BookOpen, Pill } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused, patientStatus }: { 
@@ -154,19 +155,29 @@ export default function CeylonPharmacyPatientPage() {
     const patientId = params.id as string; // This is the prescription_id
     const { user } = useAuth();
     const queryClient = useQueryClient();
-    const courseCode = 'CPCC20';
+    const [courseCode, setCourseCode] = useState<string | null>(null);
+
+    useEffect(() => {
+        const storedCourseCode = localStorage.getItem('selected_course');
+        if (storedCourseCode) {
+            setCourseCode(storedCourseCode);
+        } else {
+            // Redirect if no course code is found, as it's essential for this page
+            router.replace('/dashboard/select-course');
+        }
+    }, [router]);
 
     // --- Data Fetching ---
     const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
-        queryKey: ['ceylonPharmacyPatient', patientId, user?.username],
+        queryKey: ['ceylonPharmacyPatient', patientId, user?.username, courseCode],
         queryFn: async () => {
-            if (!user?.username) throw new Error("User not authenticated");
+            if (!user?.username || !courseCode) throw new Error("User or course not identified");
             const prescriptions = await getCeylonPharmacyPrescriptions(user.username, courseCode);
             const found = prescriptions.find(p => p.prescription_id === patientId);
             if (!found) throw new Error("Patient not found for this user/course");
             return found;
         },
-        enabled: !!patientId && !!user?.username,
+        enabled: !!patientId && !!user?.username && !!courseCode,
     });
     
     const { data: prescriptionDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
@@ -180,7 +191,7 @@ export default function CeylonPharmacyPatientPage() {
         mutationFn: () => createTreatmentStartRecord(user!.username!, patientId),
         onSuccess: () => {
             toast({ title: "Treatment Started!", description: "The timer is now running." });
-            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username] });
+            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username, courseCode] });
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: "Failed to Start Treatment", description: error.message });
@@ -191,7 +202,7 @@ export default function CeylonPharmacyPatientPage() {
         mutationFn: (startDataId: string) => updatePatientStatus(startDataId),
         onSuccess: () => {
             toast({ title: "Patient Recovered!", description: "The treatment is now complete." });
-            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username] });
+            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username, courseCode] });
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Status Update Error', description: `Could not mark patient as recovered: ${error.message}` });
@@ -222,62 +233,52 @@ export default function CeylonPharmacyPatientPage() {
         }
     }, [patientStatus, patient?.Pres_Name]);
 
-     const { data: dispensingStatuses, isLoading: isLoadingDispensingStatuses } = useQuery({
-        queryKey: ['dispensingStatuses', patientId, prescriptionDetails],
+     const { data: taskStatuses, isLoading: isLoadingStatuses } = useQuery({
+        queryKey: ['taskStatuses', patientId, prescriptionDetails],
         queryFn: async () => {
-            if (!user?.username || !prescriptionDetails) return {};
-            const statuses: Record<string, boolean> = {};
-            for (const detail of prescriptionDetails) {
-                const status = await getDispensingSubmissionStatus(user.username, patientId, detail.cover_id);
-                statuses[detail.cover_id] = !!status.answer_id;
-            }
-            return statuses;
+            if (!user?.username || !prescriptionDetails) return { dispensing: {}, counselling: {}, pos: false };
+            
+            const dispensingPromises = prescriptionDetails.map(detail =>
+                getDispensingSubmissionStatus(user.username!, patientId, detail.cover_id).then(status => ({ [detail.cover_id]: !!status.answer_id }))
+            );
+             const counsellingPromises = prescriptionDetails.map(detail =>
+                getCounsellingSubmissionStatus(user.username!, patientId, detail.cover_id).then(results => ({ [detail.cover_id]: results.length > 0 }))
+            );
+            const posPromise = getPOSSubmissionStatus(patientId, user.username!).then(res => res.length > 0);
+
+            const [dispensingResults, counsellingResults, posResult] = await Promise.all([
+                Promise.all(dispensingPromises),
+                Promise.all(counsellingPromises),
+                posPromise,
+            ]);
+
+            return {
+                dispensing: dispensingResults.reduce((acc, current) => ({ ...acc, ...current }), {}),
+                counselling: counsellingResults.reduce((acc, current) => ({ ...acc, ...current }), {}),
+                pos: posResult,
+            };
         },
         enabled: !!user?.username && !!prescriptionDetails && prescriptionDetails.length > 0,
-        refetchInterval: 10000,
-    });
-
-    const { data: counsellingStatuses, isLoading: isLoadingCounselStatuses } = useQuery({
-        queryKey: ['counsellingStatuses', patientId, prescriptionDetails],
-        queryFn: async () => {
-            if (!user?.username || !prescriptionDetails) return {};
-            const statuses: Record<string, boolean> = {};
-            for (const detail of prescriptionDetails) {
-                const results = await getCounsellingSubmissionStatus(user.username, patientId, detail.cover_id);
-                statuses[detail.cover_id] = results.length > 0;
-            }
-            return statuses;
-        },
-        enabled: !!user?.username && !!prescriptionDetails && prescriptionDetails.length > 0,
-        refetchInterval: 10000,
-    });
-
-    const { data: posStatus, isLoading: isLoadingPOSStatus } = useQuery<POSSubmissionStatus[]>({
-        queryKey: ['posStatus', patientId, user?.username],
-        queryFn: () => getPOSSubmissionStatus(patientId, user!.username!),
-        enabled: !!user?.username && !!patientId,
         refetchInterval: 10000,
     });
 
 
     const taskCompletion = useMemo(() => {
-        const allDispensingCompleted = prescriptionDetails ? prescriptionDetails.every(d => dispensingStatuses?.[d.cover_id]) : false;
-        const allCounselingCompleted = prescriptionDetails ? prescriptionDetails.every(d => counsellingStatuses?.[d.cover_id]) : false;
-        const posCompleted = posStatus ? posStatus.length > 0 : false;
-
+        const allDispensingCompleted = prescriptionDetails ? prescriptionDetails.every(d => taskStatuses?.dispensing[d.cover_id]) : false;
+        const allCounselingCompleted = prescriptionDetails ? prescriptionDetails.every(d => taskStatuses?.counselling[d.cover_id]) : false;
+        
         return {
             dispense: allDispensingCompleted,
             counsel: allCounselingCompleted,
-            pos: posCompleted,
+            pos: taskStatuses?.pos || false,
         };
-    }, [prescriptionDetails, dispensingStatuses, counsellingStatuses, posStatus]);
-
+    }, [prescriptionDetails, taskStatuses]);
     
     const allTasksCompleted = useMemo(() => {
         return taskCompletion.dispense && taskCompletion.counsel && taskCompletion.pos;
     }, [taskCompletion]);
     
-    const isLoading = isLoadingPatient || isLoadingDetails || isLoadingDispensingStatuses || isLoadingCounselStatuses || isLoadingPOSStatus;
+    const isLoading = isLoadingPatient || isLoadingDetails || isLoadingStatuses;
     
     if (isLoading || !patient) {
         return (
@@ -291,14 +292,14 @@ export default function CeylonPharmacyPatientPage() {
         id: detail.cover_id,
         name: detail.content.split(' ')[0] || 'Unknown Drug',
         href: `/dashboard/ceylon-pharmacy/${patient.prescription_id}/dispense?drug=${detail.cover_id}`,
-        completed: dispensingStatuses?.[detail.cover_id] || false,
+        completed: taskStatuses?.dispensing[detail.cover_id] || false,
     })) || [];
     
     const counselingSubtasks = prescriptionDetails?.map(detail => ({
         id: detail.cover_id,
         name: detail.content.split(' ')[0] || 'Unknown Drug',
         href: `/dashboard/ceylon-pharmacy/${patient.prescription_id}/counsel?drug=${detail.cover_id}`,
-        completed: counsellingStatuses?.[detail.cover_id] || false,
+        completed: taskStatuses?.counselling[detail.cover_id] || false,
     })) || [];
 
     const showCompleteButton = allTasksCompleted && patient.start_data?.patient_status === 'Pending';
@@ -320,7 +321,7 @@ export default function CeylonPharmacyPatientPage() {
                                 initialTime={3600} 
                                 startTime={startTime}
                                 onTimeEnd={() => {}} 
-                                isPaused={allTasksCompleted}
+                                isPaused={false}
                                 patientStatus={patientStatus}
                             />
                         </div>
@@ -348,20 +349,19 @@ export default function CeylonPharmacyPatientPage() {
                                             ))}
                                         </div>
                                         <div className="col-span-1 flex items-center justify-center">
-                                            <div className="h-full w-[2px] bg-gray-400 transform rotate-[25deg] origin-center scale-y-[1.2]"></div>
+                                             <div className="h-[110px] w-[2px] bg-gray-400 transform -rotate-[25deg] origin-center"></div>
                                         </div>
                                         <div className="col-span-1 flex items-center justify-start font-bold">
                                             <span>{patient.Pres_Method}</span>
                                         </div>
                                     </div>
                                 </div>
+                                 {patient.notes && (
+                                    <div className="mt-4 pt-2 border-t border-dashed">
+                                        <p className="font-mono text-xs text-gray-700">{patient.notes}</p>
+                                    </div>
+                                )}
                             </div>
-                            
-                            {patient.notes && (
-                                <div className="mt-4 pt-4 border-t border-dashed">
-                                    <p className="font-mono text-xs text-gray-700">{patient.notes}</p>
-                                </div>
-                            )}
 
                             <div className="flex justify-between items-end mt-12">
                                 <div className="text-center">
