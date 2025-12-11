@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Clock, ArrowLeft, Pill, User, ClipboardList, BookOpen, MessageCircle, PlayCircle, Loader2, RefreshCw } from 'lucide-react';
+import { AlertTriangle, CheckCircle, HeartPulse, Users, Clock, ArrowRight } from 'lucide-react';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, createTreatmentStartRecord, getDispensingSubmissionStatus, getCounsellingSubmissionStatus, getPOSSubmissionStatus, updatePatientStatus } from '@/lib/actions/games';
 import type { GamePatient, PrescriptionDetail, TreatmentStartRecord, POSSubmissionStatus } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { format } from 'date-fns';
 import Image from 'next/image';
+import { Loader2, PlayCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused, patientStatus }: { 
@@ -226,12 +228,14 @@ export default function CeylonPharmacyPatientPage() {
         queryKey: ['dispensingStatuses', patientId, prescriptionDetails],
         queryFn: async () => {
             if (!user?.username || !prescriptionDetails) return {};
-            const statuses: Record<string, boolean> = {};
-            for (const detail of prescriptionDetails) {
-                const status = await getDispensingSubmissionStatus(user.username, patientId, detail.cover_id);
-                statuses[detail.cover_id] = !!status.answer_id;
-            }
-            return statuses;
+            
+            const promises = prescriptionDetails.map(detail =>
+                getDispensingSubmissionStatus(user.username!, patientId, detail.cover_id)
+                    .then(status => ({ [detail.cover_id]: !!status.answer_id }))
+            );
+
+            const results = await Promise.all(promises);
+            return results.reduce((acc, current) => ({ ...acc, ...current }), {});
         },
         enabled: !!user?.username && !!prescriptionDetails && prescriptionDetails.length > 0,
         refetchInterval: 10000,
@@ -241,12 +245,14 @@ export default function CeylonPharmacyPatientPage() {
         queryKey: ['counsellingStatuses', patientId, prescriptionDetails],
         queryFn: async () => {
             if (!user?.username || !prescriptionDetails) return {};
-            const statuses: Record<string, boolean> = {};
-            for (const detail of prescriptionDetails) {
-                const results = await getCounsellingSubmissionStatus(user.username, patientId, detail.cover_id);
-                statuses[detail.cover_id] = results.length > 0;
-            }
-            return statuses;
+            
+            const promises = prescriptionDetails.map(detail =>
+                getCounsellingSubmissionStatus(user.username!, patientId, detail.cover_id)
+                    .then(results => ({ [detail.cover_id]: results.length > 0 }))
+            );
+
+            const results = await Promise.all(promises);
+            return results.reduce((acc, current) => ({ ...acc, ...current }), {});
         },
         enabled: !!user?.username && !!prescriptionDetails && prescriptionDetails.length > 0,
         refetchInterval: 10000,
