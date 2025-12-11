@@ -32,15 +32,25 @@ export default function RecoverPatientPage() {
     const router = useRouter();
     const { user } = useAuth();
     const queryClient = useQueryClient();
-    const courseCode = 'CPCC20';
+    const [courseCode, setCourseCode] = useState<string | null>(null);
+
+    useEffect(() => {
+        const storedCourseCode = localStorage.getItem('selected_course');
+        if (storedCourseCode) {
+            setCourseCode(storedCourseCode);
+        } else {
+            // Redirect if no course code is found
+            router.replace('/dashboard/select-course');
+        }
+    }, [router]);
 
     const { data: allPatients, isLoading: isLoadingPatients, isError: isPatientsError } = useQuery<GamePatient[]>({
         queryKey: ['ceylonPharmacyPrescriptionsForRecovery', user?.username, courseCode],
         queryFn: async () => {
-            if (!user?.username) throw new Error("User not authenticated");
+            if (!user?.username || !courseCode) throw new Error("User or course not identified");
             return getCeylonPharmacyPrescriptions(user.username, courseCode);
         },
-        enabled: !!user?.username,
+        enabled: !!user?.username && !!courseCode,
     });
     
     const { data: recoveryRecords, isLoading: isLoadingRecoveries, isError: isRecoveriesError } = useQuery<RecoveryRecord[]>({

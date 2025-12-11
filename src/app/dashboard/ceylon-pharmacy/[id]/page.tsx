@@ -155,19 +155,29 @@ export default function CeylonPharmacyPatientPage() {
     const patientId = params.id as string; // This is the prescription_id
     const { user } = useAuth();
     const queryClient = useQueryClient();
-    const courseCode = 'CPCC20';
+    const [courseCode, setCourseCode] = useState<string | null>(null);
+
+    useEffect(() => {
+        const storedCourseCode = localStorage.getItem('selected_course');
+        if (storedCourseCode) {
+            setCourseCode(storedCourseCode);
+        } else {
+            // Redirect if no course code is found, as it's essential for this page
+            router.replace('/dashboard/select-course');
+        }
+    }, [router]);
 
     // --- Data Fetching ---
     const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
-        queryKey: ['ceylonPharmacyPatient', patientId, user?.username],
+        queryKey: ['ceylonPharmacyPatient', patientId, user?.username, courseCode],
         queryFn: async () => {
-            if (!user?.username) throw new Error("User not authenticated");
+            if (!user?.username || !courseCode) throw new Error("User or course not identified");
             const prescriptions = await getCeylonPharmacyPrescriptions(user.username, courseCode);
             const found = prescriptions.find(p => p.prescription_id === patientId);
             if (!found) throw new Error("Patient not found for this user/course");
             return found;
         },
-        enabled: !!patientId && !!user?.username,
+        enabled: !!patientId && !!user?.username && !!courseCode,
     });
     
     const { data: prescriptionDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
@@ -181,7 +191,7 @@ export default function CeylonPharmacyPatientPage() {
         mutationFn: () => createTreatmentStartRecord(user!.username!, patientId),
         onSuccess: () => {
             toast({ title: "Treatment Started!", description: "The timer is now running." });
-            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username] });
+            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username, courseCode] });
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: "Failed to Start Treatment", description: error.message });
@@ -192,7 +202,7 @@ export default function CeylonPharmacyPatientPage() {
         mutationFn: (startDataId: string) => updatePatientStatus(startDataId),
         onSuccess: () => {
             toast({ title: "Patient Recovered!", description: "The treatment is now complete." });
-            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username] });
+            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username, courseCode] });
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Status Update Error', description: `Could not mark patient as recovered: ${error.message}` });
@@ -311,7 +321,7 @@ export default function CeylonPharmacyPatientPage() {
                                 initialTime={3600} 
                                 startTime={startTime}
                                 onTimeEnd={() => {}} 
-                                isPaused={allTasksCompleted}
+                                isPaused={false}
                                 patientStatus={patientStatus}
                             />
                         </div>
@@ -339,20 +349,19 @@ export default function CeylonPharmacyPatientPage() {
                                             ))}
                                         </div>
                                         <div className="col-span-1 flex items-center justify-center">
-                                            <div className="h-full w-[2px] bg-gray-400 transform rotate-[25deg] origin-center scale-y-[1.2]"></div>
+                                             <div className="h-[110px] w-[2px] bg-gray-400 transform -rotate-[25deg] origin-center"></div>
                                         </div>
                                         <div className="col-span-1 flex items-center justify-start font-bold">
                                             <span>{patient.Pres_Method}</span>
                                         </div>
                                     </div>
                                 </div>
+                                 {patient.notes && (
+                                    <div className="mt-4 pt-2 border-t border-dashed">
+                                        <p className="font-mono text-xs text-gray-700">{patient.notes}</p>
+                                    </div>
+                                )}
                             </div>
-                            
-                            {patient.notes && (
-                                <div className="mt-4 pt-4 border-t border-dashed">
-                                    <p className="font-mono text-xs text-gray-700">{patient.notes}</p>
-                                </div>
-                            )}
 
                             <div className="flex justify-between items-end mt-12">
                                 <div className="text-center">
@@ -458,5 +467,3 @@ export default function CeylonPharmacyPatientPage() {
         </div>
     )
 }
-
-    
