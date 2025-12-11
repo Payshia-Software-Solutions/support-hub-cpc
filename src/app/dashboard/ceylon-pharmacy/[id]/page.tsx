@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -9,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, HeartPulse, Users, Clock, ArrowRight } from 'lucide-react';
+import { AlertTriangle, CheckCircle, HeartPulse, Users, Clock, ArrowRight, ArrowLeft } from 'lucide-react';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, createTreatmentStartRecord, getDispensingSubmissionStatus, getCounsellingSubmissionStatus, getPOSSubmissionStatus, updatePatientStatus } from '@/lib/actions/games';
 import type { GamePatient, PrescriptionDetail, TreatmentStartRecord, POSSubmissionStatus } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -29,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { format } from 'date-fns';
 import Image from 'next/image';
-import { Loader2, PlayCircle } from 'lucide-react';
+import { Loader2, PlayCircle, MessageCircle, ClipboardList, BookOpen, Pill } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -224,66 +223,52 @@ export default function CeylonPharmacyPatientPage() {
         }
     }, [patientStatus, patient?.Pres_Name]);
 
-     const { data: dispensingStatuses, isLoading: isLoadingDispensingStatuses } = useQuery({
-        queryKey: ['dispensingStatuses', patientId, prescriptionDetails],
+     const { data: taskStatuses, isLoading: isLoadingStatuses } = useQuery({
+        queryKey: ['taskStatuses', patientId, prescriptionDetails],
         queryFn: async () => {
-            if (!user?.username || !prescriptionDetails) return {};
+            if (!user?.username || !prescriptionDetails) return { dispensing: {}, counselling: {}, pos: false };
             
-            const promises = prescriptionDetails.map(detail =>
-                getDispensingSubmissionStatus(user.username!, patientId, detail.cover_id)
-                    .then(status => ({ [detail.cover_id]: !!status.answer_id }))
+            const dispensingPromises = prescriptionDetails.map(detail =>
+                getDispensingSubmissionStatus(user.username!, patientId, detail.cover_id).then(status => ({ [detail.cover_id]: !!status.answer_id }))
             );
+             const counsellingPromises = prescriptionDetails.map(detail =>
+                getCounsellingSubmissionStatus(user.username!, patientId, detail.cover_id).then(results => ({ [detail.cover_id]: results.length > 0 }))
+            );
+            const posPromise = getPOSSubmissionStatus(patientId, user.username!).then(res => res.length > 0);
 
-            const results = await Promise.all(promises);
-            return results.reduce((acc, current) => ({ ...acc, ...current }), {});
+            const [dispensingResults, counsellingResults, posResult] = await Promise.all([
+                Promise.all(dispensingPromises),
+                Promise.all(counsellingPromises),
+                posPromise,
+            ]);
+
+            return {
+                dispensing: dispensingResults.reduce((acc, current) => ({ ...acc, ...current }), {}),
+                counselling: counsellingResults.reduce((acc, current) => ({ ...acc, ...current }), {}),
+                pos: posResult,
+            };
         },
         enabled: !!user?.username && !!prescriptionDetails && prescriptionDetails.length > 0,
-        refetchInterval: 10000,
-    });
-
-    const { data: counsellingStatuses, isLoading: isLoadingCounselStatuses } = useQuery({
-        queryKey: ['counsellingStatuses', patientId, prescriptionDetails],
-        queryFn: async () => {
-            if (!user?.username || !prescriptionDetails) return {};
-            
-            const promises = prescriptionDetails.map(detail =>
-                getCounsellingSubmissionStatus(user.username!, patientId, detail.cover_id)
-                    .then(results => ({ [detail.cover_id]: results.length > 0 }))
-            );
-
-            const results = await Promise.all(promises);
-            return results.reduce((acc, current) => ({ ...acc, ...current }), {});
-        },
-        enabled: !!user?.username && !!prescriptionDetails && prescriptionDetails.length > 0,
-        refetchInterval: 10000,
-    });
-
-    const { data: posStatus, isLoading: isLoadingPOSStatus } = useQuery<POSSubmissionStatus[]>({
-        queryKey: ['posStatus', patientId, user?.username],
-        queryFn: () => getPOSSubmissionStatus(patientId, user!.username!),
-        enabled: !!user?.username && !!patientId,
         refetchInterval: 10000,
     });
 
 
     const taskCompletion = useMemo(() => {
-        const allDispensingCompleted = prescriptionDetails ? prescriptionDetails.every(d => dispensingStatuses?.[d.cover_id]) : false;
-        const allCounselingCompleted = prescriptionDetails ? prescriptionDetails.every(d => counsellingStatuses?.[d.cover_id]) : false;
-        const posCompleted = posStatus ? posStatus.length > 0 : false;
-
+        const allDispensingCompleted = prescriptionDetails ? prescriptionDetails.every(d => taskStatuses?.dispensing[d.cover_id]) : false;
+        const allCounselingCompleted = prescriptionDetails ? prescriptionDetails.every(d => taskStatuses?.counselling[d.cover_id]) : false;
+        
         return {
             dispense: allDispensingCompleted,
             counsel: allCounselingCompleted,
-            pos: posCompleted,
+            pos: taskStatuses?.pos || false,
         };
-    }, [prescriptionDetails, dispensingStatuses, counsellingStatuses, posStatus]);
-
+    }, [prescriptionDetails, taskStatuses]);
     
     const allTasksCompleted = useMemo(() => {
         return taskCompletion.dispense && taskCompletion.counsel && taskCompletion.pos;
     }, [taskCompletion]);
     
-    const isLoading = isLoadingPatient || isLoadingDetails || isLoadingDispensingStatuses || isLoadingCounselStatuses || isLoadingPOSStatus;
+    const isLoading = isLoadingPatient || isLoadingDetails || isLoadingStatuses;
     
     if (isLoading || !patient) {
         return (
@@ -297,14 +282,14 @@ export default function CeylonPharmacyPatientPage() {
         id: detail.cover_id,
         name: detail.content.split(' ')[0] || 'Unknown Drug',
         href: `/dashboard/ceylon-pharmacy/${patient.prescription_id}/dispense?drug=${detail.cover_id}`,
-        completed: dispensingStatuses?.[detail.cover_id] || false,
+        completed: taskStatuses?.dispensing[detail.cover_id] || false,
     })) || [];
     
     const counselingSubtasks = prescriptionDetails?.map(detail => ({
         id: detail.cover_id,
         name: detail.content.split(' ')[0] || 'Unknown Drug',
         href: `/dashboard/ceylon-pharmacy/${patient.prescription_id}/counsel?drug=${detail.cover_id}`,
-        completed: counsellingStatuses?.[detail.cover_id] || false,
+        completed: taskStatuses?.counselling[detail.cover_id] || false,
     })) || [];
 
     const showCompleteButton = allTasksCompleted && patient.start_data?.patient_status === 'Pending';
@@ -473,3 +458,5 @@ export default function CeylonPharmacyPatientPage() {
         </div>
     )
 }
+
+    
