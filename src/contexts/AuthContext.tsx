@@ -8,6 +8,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { useRouter } from 'next/navigation';
 import { Preloader } from '@/components/ui/preloader';
 import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
+import { getStudentEnrollments } from '@/lib/actions/users';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const USER_STORAGE_KEY = 'auth_user';
 const ADMIN_SESSION_STORAGE_KEY = 'admin_original_session';
+const SELECTED_COURSE_STORAGE_KEY = 'selected_course';
 const LMS_API_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
 
@@ -92,7 +94,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (userProfile.role === 'staff') {
           router.push('/admin/dashboard');
         } else {
-          router.push('/dashboard');
+            // Student login flow
+            const enrollments = await getStudentEnrollments(userProfile.username!);
+            if (enrollments && enrollments.length > 1) {
+                // If more than one course, go to selection page
+                router.push('/dashboard/select-course');
+            } else {
+                 if (enrollments && enrollments.length === 1) {
+                    // If only one, save it and go to dashboard
+                    localStorage.setItem(SELECTED_COURSE_STORAGE_KEY, enrollments[0].course_code);
+                } else {
+                    // If none, clear any old selection
+                    localStorage.removeItem(SELECTED_COURSE_STORAGE_KEY);
+                }
+                router.push('/dashboard');
+            }
         }
         return;
       } else {
@@ -110,6 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(SELECTED_COURSE_STORAGE_KEY);
     sessionStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
     setIsImpersonating(false);
     router.push('/login');

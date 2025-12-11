@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -304,7 +305,7 @@ export default function CeylonPharmacyPatientPage() {
         completed: counsellingStatuses?.[detail.cover_id] || false,
     })) || [];
 
-    const showCompleteButton = allTasksCompleted && patientStatus !== 'recovered';
+    const showCompleteButton = allTasksCompleted && patient.start_data?.patient_status === 'Pending';
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -378,7 +379,7 @@ export default function CeylonPharmacyPatientPage() {
                             </div>
                         </div>
                     </CardContent>
-                    {patientStatus === 'pending' && (
+                    {!patient.start_data && (
                          <CardFooter>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -423,7 +424,7 @@ export default function CeylonPharmacyPatientPage() {
                         </CardContent>
                     </Card>
                     
-                    {patientStatus !== 'pending' && (
+                    {patient.start_data && (
                         <div className="space-y-4 animate-in fade-in-50">
                             <TaskCard 
                                 title="Task 1: Dispense Prescription"

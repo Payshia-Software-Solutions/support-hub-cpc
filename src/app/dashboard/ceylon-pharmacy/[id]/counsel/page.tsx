@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -153,10 +152,32 @@ export default function CounselPage() {
         }
         validationMutation.mutate();
     };
+
+    const uniqueShuffledInstructions = useMemo(() => {
+        if (!allInstructions) return [];
+        
+        const correctInstructionIds = new Set(correctInstructions?.map(i => i.id));
+        const seenInstructions = new Map<string, Instruction>();
+
+        // Combine and process instructions
+        const instructionsToProcess = allInstructions;
+
+        for (const instruction of instructionsToProcess) {
+            const text = instruction.instruction.toLowerCase();
+            // If we haven't seen this text, add it.
+            // OR if we have seen it, but this one is the correct one, replace the old one.
+            if (!seenInstructions.has(text) || correctInstructionIds.has(instruction.id)) {
+                seenInstructions.set(text, instruction);
+            }
+        }
+        
+        return Array.from(seenInstructions.values());
+    }, [allInstructions, correctInstructions]);
     
-    const availableInstructions = allInstructions?.filter(
-      (inst) => !givenInstructions.some((given) => given.id === inst.id)
-    ) || [];
+    const availableInstructions = useMemo(() => {
+        const givenIds = new Set(givenInstructions.map(g => g.id));
+        return uniqueShuffledInstructions.filter(inst => !givenIds.has(inst.id));
+    }, [uniqueShuffledInstructions, givenInstructions]);
     
     const renderInstructionList = (instructions: Instruction[], isAvailableList: boolean) => (
         <div className="space-y-2">

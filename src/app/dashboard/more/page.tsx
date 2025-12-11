@@ -19,7 +19,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
-import { MediMindIcon } from "@/components/icons/module-icons";
 
 export default function MorePage() {
   const { user, logout } = useAuth();
@@ -31,7 +30,6 @@ export default function MorePage() {
     { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
     { href: "/dashboard/certificate-order", label: "Certificate Order", icon: Award },
     { href: "/dashboard/bnf", label: "BNF", icon: BookOpen },
-    { href: "/dashboard/medimind", label: "MediMind", icon: MediMindIcon },
   ];
 
   const adminNavItem = { href: "/admin/dashboard", label: "Admin Panel", icon: Shield };
