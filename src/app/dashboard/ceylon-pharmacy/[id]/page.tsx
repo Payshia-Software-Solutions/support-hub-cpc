@@ -190,7 +190,7 @@ export default function CeylonPharmacyPatientPage() {
     const updateStatusMutation = useMutation({
         mutationFn: (startDataId: string) => updatePatientStatus(startDataId),
         onSuccess: () => {
-            toast({ title: "Patient Recovered!", description: "The treatment is now complete." });
+            toast({ title: "Patient Recovered!", description: "The patient's status has been marked as recovered." });
             queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username] });
         },
         onError: (error: Error) => {
@@ -202,8 +202,12 @@ export default function CeylonPharmacyPatientPage() {
     const startTime = patient?.start_data ? new Date(patient.start_data.time).getTime() : null;
     
     const patientStatus = useMemo<'active' | 'dead' | 'recovered' | 'pending'>(() => {
-        if (!patient?.start_data) return 'pending';
-        if (patient.start_data.patient_status === 'Recovered') return 'recovered';
+        if (!patient?.start_data || patient.start_data.patient_status === 'Pending') {
+            return 'pending';
+        }
+        if (patient.start_data.patient_status === 'Recovered') {
+            return 'recovered';
+        }
         
         const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
         if (elapsed > 3600) return 'dead'; // 1 hour = 3600 seconds
@@ -450,17 +454,17 @@ export default function CeylonPharmacyPatientPage() {
                             />
                         </div>
                     )}
-                     {showCompleteButton && (
-                        <Card className="mt-4 bg-blue-100 border-blue-300">
-                           <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                                <CardTitle className="text-blue-800 text-lg">All Tasks Completed!</CardTitle>
-                                <CardDescription className="text-blue-700">The patient's status is still pending. Click below to finalize and mark them as recovered.</CardDescription>
-                                <Button className="mt-2 w-full sm:w-auto" onClick={() => updateStatusMutation.mutate(patient.start_data!.id)} disabled={updateStatusMutation.isPending}>
-                                    {updateStatusMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                    Complete Treatment
-                                </Button>
-                           </CardContent>
-                        </Card>
+
+                    {showCompleteButton && (
+                        <Button 
+                            className="w-full mt-4 bg-green-600 hover:bg-green-700" 
+                            size="lg"
+                            onClick={() => updateStatusMutation.mutate(patient.start_data!.id)}
+                            disabled={updateStatusMutation.isPending}
+                        >
+                            {updateStatusMutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle className="mr-2 h-5 w-5" />}
+                            Complete Treatment
+                        </Button>
                     )}
                 </div>
             </div>
