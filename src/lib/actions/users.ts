@@ -21,7 +21,19 @@ export const getPatient = async (studentId: string, courseCode: string): Promise
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     const data = await response.json();
-    return data[0];
+    
+    // The API returns an object where keys are prescription IDs. We need the first one.
+    const presId = Object.keys(data)[0];
+    if (!presId || !data[presId] || !data[presId].patient) {
+      throw new Error("Patient not found in the response for the specified course.");
+    }
+    
+    const patientData = {
+        ...data[presId].patient,
+        start_data: data[presId].start_data,
+    };
+    
+    return patientData;
 };
 
 export const getAllUserFullDetails = async (): Promise<UserFullDetails[]> => {
@@ -144,4 +156,3 @@ export const getStudentBalance = async (studentNumber: string): Promise<StudentB
     }
     return response.json();
 }
-
