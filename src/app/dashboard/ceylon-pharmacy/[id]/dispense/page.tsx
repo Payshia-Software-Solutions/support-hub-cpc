@@ -183,7 +183,7 @@ const DispensingForm = ({
   const quantityOptions = getOptions('drug_qty', correctAnswers.drug_qty);
   const dosageFormOptions = getOptions('drug_type', correctAnswers.drug_type);
   const mealTypeOptions = getOptions('meal_type', correctAnswers.meal_type);
-  const dailyQtyOptions = ['-', '1', '2', '3', '1/2', '4', '5', '1 1/2', '1 Drop', '10ml', '15ml', '1/4', '10U', '2 1/2', '2.5ml', '15U', '1puff', '20ml', '2puff', '30U']; 
+  const dailyQtyOptions = ['-', '1', '2', '3', '1/2', '4', '5', '1 1/2', '1 Drop', '10ml', '15ml', '1/4', '10U', '2 1/2', '2.5ml', '15U', '1puff', '2puff', '20ml', '30U']; 
   const usingFrequencyOptions = getOptions('using_type', correctAnswers.using_type);
   const additionalDescriptionOptions = getOptions('additional_description', correctAnswers.additional_description);
   const atATimeOptions = getOptions('at_a_time', correctAnswers.at_a_time);
@@ -326,7 +326,7 @@ export default function DispensePage() {
     const searchParams = useSearchParams();
     const isMobile = useIsMobile();
     const { user } = useAuth();
-    const courseCode = 'CPCC20';
+    const [courseCode, setCourseCode] = useState<string | null>(null);
 
     const patientId = params.id as string;
     const coverId = searchParams.get('drug');
@@ -334,6 +334,15 @@ export default function DispensePage() {
     const [isResultsDialogOpen, setIsResultsDialogOpen] = useState(false);
     const [incorrectFields, setIncorrectFields] = useState<string[]>([]);
     const [wasCorrect, setWasCorrect] = useState(false);
+
+    useEffect(() => {
+        const storedCourseCode = localStorage.getItem('selected_course');
+        if (storedCourseCode) {
+            setCourseCode(storedCourseCode);
+        } else {
+            router.replace('/dashboard/select-course');
+        }
+    }, [router]);
 
     const form = useForm<PrescriptionFormValues>({
       resolver: zodResolver(prescriptionSchema),
@@ -345,15 +354,15 @@ export default function DispensePage() {
     });
 
     const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
-        queryKey: ['ceylonPharmacyPatient', patientId, user?.username],
+        queryKey: ['ceylonPharmacyPatient', patientId, user?.username, courseCode],
         queryFn: async () => {
-            if (!user?.username) throw new Error("User not authenticated");
+            if (!user?.username || !courseCode) throw new Error("User or course not authenticated");
             const prescriptions = await getCeylonPharmacyPrescriptions(user.username, courseCode);
             const found = prescriptions.find(p => p.prescription_id === patientId);
             if (!found) throw new Error("Patient not found");
             return found;
         },
-        enabled: !!patientId && !!user?.username,
+        enabled: !!patientId && !!user?.username && !!courseCode,
     });
     
     const { data: prescriptionDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
@@ -548,7 +557,7 @@ export default function DispensePage() {
                                 </div>
                                 <div className="text-center">
                                     <p className="italic font-serif text-xl text-gray-700">{patient.doctor_name.split(' ').slice(1).join(' ')}</p>
-                                    <p className="text-xs text-gray-600 border-t border-gray-400 mt-1 pt-1">Signature</p>
+                                    <p className="text-xs text-muted-foreground non-italic">Signature</p>
                                 </div>
                             </div>
                         </div>
@@ -603,3 +612,5 @@ export default function DispensePage() {
         </div>
     );
 }
+
+    
