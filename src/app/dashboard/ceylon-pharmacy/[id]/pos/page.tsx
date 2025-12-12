@@ -206,7 +206,7 @@ export default function POSPage() {
     const params = useParams();
     const patientId = params.id as string;
     const { user } = useAuth();
-    const courseCode = 'CPCC20';
+    const [courseCode, setCourseCode] = useState<string | null>(null);
 
     const [cart, setCart] = useState<CartItem[]>([]);
     const [cashReceived, setCashReceived] = useState<string>('');
@@ -217,17 +217,26 @@ export default function POSPage() {
     const isMobile = useIsMobile();
     const [isProductSheetOpen, setIsProductSheetOpen] = useState(false);
 
+    useEffect(() => {
+        const storedCourseCode = localStorage.getItem('selected_course');
+        if (storedCourseCode) {
+            setCourseCode(storedCourseCode);
+        } else {
+            router.replace('/dashboard/select-course');
+        }
+    }, [router]);
+
 
     const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
-        queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username],
+        queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username, courseCode],
         queryFn: async () => {
-            if (!user?.username) throw new Error("User not authenticated");
+            if (!user?.username || !courseCode) throw new Error("User or course not authenticated");
             const prescriptions = await getCeylonPharmacyPrescriptions(user.username, courseCode);
             const found = prescriptions.find(p => p.prescription_id === patientId);
             if (!found) throw new Error("Patient not found");
             return found;
         },
-        enabled: !!patientId && !!user?.username,
+        enabled: !!patientId && !!user?.username && !!courseCode,
         retry: false,
         refetchOnWindowFocus: false,
     });
