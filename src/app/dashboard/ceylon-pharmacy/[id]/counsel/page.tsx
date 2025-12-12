@@ -29,9 +29,19 @@ export default function CounselPage() {
     const coverId = searchParams.get('drug');
     const isMobile = useIsMobile();
     const queryClient = useQueryClient();
+    const [courseCode, setCourseCode] = useState<string | null>(null);
 
     const [givenInstructions, setGivenInstructions] = useState<Instruction[]>([]);
     const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
+
+     useEffect(() => {
+        const storedCourseCode = localStorage.getItem('selected_course');
+        if (storedCourseCode) {
+            setCourseCode(storedCourseCode);
+        } else {
+            router.replace('/dashboard/select-course');
+        }
+    }, [router]);
 
     const { data: allInstructions, isLoading, isError, error } = useQuery<Instruction[]>({
         queryKey: ['shuffledInstructions', patientId, coverId],
