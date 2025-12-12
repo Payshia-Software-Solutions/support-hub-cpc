@@ -199,7 +199,7 @@ export default function CeylonPharmacyPatientPage() {
     });
 
     const updateStatusMutation = useMutation({
-        mutationFn: (startDataId: string) => updatePatientStatus(startDataId),
+        mutationFn: ({ studentNumber, presCode }: { studentNumber: string, presCode: string }) => updatePatientStatus(studentNumber, presCode),
         onSuccess: () => {
             toast({ title: "Patient Recovered!", description: "The treatment is now complete." });
             queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId, user?.username, courseCode] });
@@ -455,7 +455,7 @@ export default function CeylonPharmacyPatientPage() {
                            <CardContent className="p-4 flex flex-col items-center text-center gap-2">
                                 <CardTitle className="text-blue-800 text-lg">All Tasks Completed!</CardTitle>
                                 <CardDescription className="text-blue-700">The patient's status is still pending. Click below to finalize and mark them as recovered.</CardDescription>
-                                <Button className="mt-2 w-full sm:w-auto" onClick={() => updateStatusMutation.mutate(patient.start_data!.id)} disabled={updateStatusMutation.isPending}>
+                                <Button className="mt-2 w-full sm:w-auto" onClick={() => updateStatusMutation.mutate({ studentNumber: user!.username!, presCode: patient.prescription_id })} disabled={updateStatusMutation.isPending}>
                                     {updateStatusMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4" />}
                                     Complete Treatment
                                 </Button>
@@ -467,3 +467,5 @@ export default function CeylonPharmacyPatientPage() {
         </div>
     )
 }
+
+    
