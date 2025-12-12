@@ -56,6 +56,26 @@ export const getCeylonPharmacyPrescriptions = async (studentId: string, courseCo
     return [];
 };
 
+export const getPatient = async (studentId: string, courseCode: string): Promise<GamePatient> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-center-courses/student/${studentId}/course/${courseCode}`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch game prescriptions' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    const data = await response.json();
+    // Assuming the API returns a structure where we might need to find the specific patient
+    // If it returns a single patient object directly, this logic might need adjustment.
+    const patientData = Object.values(data).map((item: any) => ({
+        ...item.patient,
+        start_data: item.start_data
+    }))[0]; // Assuming the first result is the correct one for this simplified direct fetch
+    if (!patientData) {
+        throw new Error("Patient not found in the response for the specified course.");
+    }
+    return patientData;
+};
+
+
 export const getPrescriptionDetails = async (prescriptionId: string): Promise<PrescriptionDetail[]> => {
     if (!prescriptionId) return [];
     const response = await fetch(`${QA_API_BASE_URL}/care-content/pres-code/${prescriptionId}/`);

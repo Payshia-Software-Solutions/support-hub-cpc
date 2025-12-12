@@ -15,7 +15,7 @@ import type { PrescriptionFormValues, PrescriptionDrug } from "@/lib/d-pad-data"
 import { Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ArrowLeft, ClipboardList, User, Loader2, Search, Clock, CheckCircle, AlertCircle, ShoppingCart, Library, FileText, PlusCircle, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { getCeylonPharmacyPrescriptions, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer, getPrescriptionDetails, updatePatientStatus } from '@/lib/actions/games';
+import { getPatient, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer, getPrescriptionDetails, updatePatientStatus } from '@/lib/actions/games';
 import type { GamePatient, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, PrescriptionDetail } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from "@/components/ui/input";
@@ -225,19 +225,21 @@ export default function POSPage() {
             router.replace('/dashboard/select-course');
         }
     }, [router]);
-
-    const { data: patient, isLoading: isLoadingPatient, isError: isPatientError } = useQuery<GamePatient | undefined>({
+    
+    const { data: patient, isLoading: isLoadingPatient, isError: isPatientError } = useQuery<GamePatient>({
         queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username, courseCode],
-        queryFn: async () => {
-            if (!user?.username || !courseCode) throw new Error("User or course not authenticated");
-            const prescriptions = await getCeylonPharmacyPrescriptions(user.username, courseCode);
-            return prescriptions.find(p => p.prescription_id === patientId);
-        },
+        queryFn: () => getPatient(user!.username!, courseCode!),
         enabled: !!patientId && !!user?.username && !!courseCode,
-        retry: false,
-        refetchOnWindowFocus: false,
+        retry: 1,
     });
     
+    useEffect(() => {
+        if (!isLoadingPatient && isPatientError) {
+            toast({ variant: 'destructive', title: 'Patient not found', description: 'Could not load patient data for this course.' });
+            router.push('/dashboard/ceylon-pharmacy');
+        }
+    }, [patient, patientId, router, isLoadingPatient, isPatientError]);
+
     const { data: correctAmountData, isLoading: isLoadingCorrectAmount } = useQuery<POSCorrectAnswer>({
         queryKey: ['posCorrectAmount', patientId],
         queryFn: () => getPOSCorrectAmount(patientId),
@@ -275,13 +277,6 @@ export default function POSPage() {
             toast({ variant: 'destructive', title: 'Submission Error', description: error.message });
         }
     });
-
-    useEffect(() => {
-        if (!isLoadingPatient && !patient && patientId) {
-            toast({ variant: 'destructive', title: 'Patient not found' });
-            router.push('/dashboard/ceylon-pharmacy');
-        }
-    }, [patient, patientId, router, isLoadingPatient]);
 
     const subtotal = useMemo(() => {
       return cart.reduce((acc, item) => {
@@ -398,17 +393,9 @@ export default function POSPage() {
         return <div className="p-8 text-center flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin"/></div>;
     }
 
-    if (isPatientError || !patient) {
-        return (
-            <div className="p-8 text-center flex flex-col items-center justify-center h-full">
-                <AlertCircle className="w-12 h-12 text-destructive mb-4" />
-                <h1 className="text-xl font-bold">Patient Not Found</h1>
-                <p className="text-muted-foreground">Could not load patient data. This may be because the course selection is out of sync or an API error occurred.</p>
-                <Button onClick={() => router.push('/dashboard/ceylon-pharmacy')} className="mt-6">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Waiting Room
-                </Button>
-            </div>
-        );
+    if (!patient) {
+        // This case is handled by the useEffect redirect, but as a fallback:
+        return <div className="p-8 text-center">Loading patient data or patient not found...</div>;
     }
     
     // Dependent data loading
