@@ -15,7 +15,7 @@ import type { PrescriptionFormValues, PrescriptionDrug } from "@/lib/d-pad-data"
 import { Check, X, Pill, Repeat, Calendar as CalendarIcon, Hash, RotateCw, ArrowLeft, ClipboardList, User, Loader2, Search, Clock, CheckCircle, AlertCircle, ShoppingCart, Library, FileText, PlusCircle, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { getCeylonPharmacyPrescriptions, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer, getPrescriptionDetails, updatePatientStatus } from '@/lib/actions/games';
+import { getPatient, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer, getPrescriptionDetails, updatePatientStatus } from '@/lib/actions/games';
 import type { GamePatient, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, PrescriptionDetail } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from "@/components/ui/input";
@@ -206,7 +206,8 @@ export default function POSPage() {
     const params = useParams();
     const patientId = params.id as string;
     const { user } = useAuth();
-    const courseCode = 'CPCC20';
+    const queryClient = useQueryClient();
+    const [courseCode, setCourseCode] = useState<string | null>(null);
 
     const [cart, setCart] = useState<CartItem[]>([]);
     const [cashReceived, setCashReceived] = useState<string>('');
@@ -217,25 +218,33 @@ export default function POSPage() {
     const isMobile = useIsMobile();
     const [isProductSheetOpen, setIsProductSheetOpen] = useState(false);
 
-
-    const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
-        queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username],
-        queryFn: async () => {
-            if (!user?.username) throw new Error("User not authenticated");
-            const prescriptions = await getCeylonPharmacyPrescriptions(user.username, courseCode);
-            const found = prescriptions.find(p => p.prescription_id === patientId);
-            if (!found) throw new Error("Patient not found");
-            return found;
-        },
-        enabled: !!patientId && !!user?.username,
-        retry: false,
-        refetchOnWindowFocus: false,
+    useEffect(() => {
+        const storedCourseCode = localStorage.getItem('selected_course');
+        if (storedCourseCode) {
+            setCourseCode(storedCourseCode);
+        } else {
+            router.replace('/dashboard/select-course');
+        }
+    }, [router]);
+    
+    const { data: patient, isLoading: isLoadingPatient, isError, error } = useQuery<GamePatient>({
+        queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username, courseCode],
+        queryFn: () => getPatient(user!.username!, courseCode!, patientId),
+        enabled: !!patientId && !!user?.username && !!courseCode,
+        retry: 1,
     });
     
+    useEffect(() => {
+        if (!isLoadingPatient && isError) {
+            toast({ variant: 'destructive', title: 'Patient not found', description: 'Could not load patient data for this course. Redirecting...' });
+            router.push('/dashboard/ceylon-pharmacy');
+        }
+    }, [patient, patientId, router, isLoadingPatient, isError]);
+
     const { data: correctAmountData, isLoading: isLoadingCorrectAmount } = useQuery<POSCorrectAnswer>({
         queryKey: ['posCorrectAmount', patientId],
         queryFn: () => getPOSCorrectAmount(patientId),
-        enabled: !!patientId,
+        enabled: !!patient,
     });
 
     const { data: prescriptionDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
@@ -245,7 +254,11 @@ export default function POSPage() {
     });
 
     const updateStatusMutation = useMutation({
-        mutationFn: (startDataId: string) => updatePatientStatus(startDataId),
+        mutationFn: ({studentNumber, presCode}: {studentNumber: string, presCode: string}) => updatePatientStatus(studentNumber, presCode),
+        onSuccess: () => {
+            toast({ title: "Patient Recovered!", description: "The treatment is now complete." });
+            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username, courseCode] });
+        },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Status Update Error', description: `Could not mark patient as recovered: ${error.message}` });
         }
@@ -258,8 +271,8 @@ export default function POSPage() {
                 setIsPaid(true);
                 toast({ title: 'Payment Correct!', description: `The total amount is correct. Change to be given: LKR ${change.toFixed(2)}` });
 
-                if (patient?.start_data?.id) {
-                    updateStatusMutation.mutate(patient.start_data.id);
+                if (user?.username && patient?.prescription_id) {
+                    updateStatusMutation.mutate({ studentNumber: user.username, presCode: patient.prescription_id });
                 }
             } else {
                 toast({ variant: 'destructive', title: 'Incorrect Total', description: 'The final bill amount is not correct. Please review the prescription and items.' });
@@ -269,13 +282,6 @@ export default function POSPage() {
             toast({ variant: 'destructive', title: 'Submission Error', description: error.message });
         }
     });
-
-    useEffect(() => {
-        if (!isLoadingPatient && !patient && patientId) {
-            toast({ variant: 'destructive', title: 'Patient not found' });
-            router.push('/dashboard/ceylon-pharmacy');
-        }
-    }, [patient, patientId, router, isLoadingPatient]);
 
     const subtotal = useMemo(() => {
       return cart.reduce((acc, item) => {
@@ -318,7 +324,7 @@ export default function POSPage() {
              toast({ variant: 'destructive', title: 'Insufficient payment', description: 'Cash received is less than the total amount.' });
              return;
         }
-        if (!correctAmountData || !user) {
+        if (!correctAmountData || !user || !patient) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not verify answer. Correct amount or user data is missing.' });
             return;
         }
@@ -328,7 +334,7 @@ export default function POSPage() {
         
         const payload: POSSubmissionPayload = {
             student_id: user.username!,
-            PresCode: patient!.prescription_id,
+            PresCode: patient.prescription_id,
             answer: billTotal.toFixed(2),
             created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
             ans_status: status
@@ -388,13 +394,18 @@ export default function POSPage() {
         }
     };
 
-    if (isLoadingPatient || isLoadingCorrectAmount || isLoadingDetails) {
+    if (isLoadingPatient) {
         return <div className="p-8 text-center flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin"/></div>;
     }
 
     if (!patient) {
-        return <div className="p-8 text-center">Patient data could not be loaded. Please return to the patient list.</div>;
+        return <div className="p-8 text-center">Loading patient data...</div>;
     }
+    
+    if (isLoadingCorrectAmount || isLoadingDetails) {
+         return <div className="p-8 text-center flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin"/></div>;
+    }
+
 
     const BillComponent = (
         <Card className="shadow-xl sticky top-24 lg:col-span-3">

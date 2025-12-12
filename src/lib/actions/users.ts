@@ -1,5 +1,6 @@
 
-import type { StudentSearchResult, UserFullDetails, ApiStaffMember, StaffMember, StudentEnrollmentInfo, TempUser, StudentBalanceData } from '../types';
+
+import type { StudentSearchResult, UserFullDetails, ApiStaffMember, StaffMember, StudentEnrollmentInfo, TempUser, StudentBalanceData, GamePatient, Course } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -11,6 +12,28 @@ export const searchStudents = async (query: string): Promise<StudentSearchResult
         throw new Error('Failed to search students');
     }
     return response.json();
+};
+
+export const getPatient = async (studentId: string, courseCode: string): Promise<GamePatient> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-center-courses/student/${studentId}/course/${courseCode}`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch game prescriptions' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    const data = await response.json();
+    
+    // The API returns an object where keys are prescription IDs. We need the first one.
+    const presId = Object.keys(data)[0];
+    if (!presId || !data[presId] || !data[presId].patient) {
+      throw new Error("Patient not found in the response for the specified course.");
+    }
+    
+    const patientData = {
+        ...data[presId].patient,
+        start_data: data[presId].start_data,
+    };
+    
+    return patientData;
 };
 
 export const getAllUserFullDetails = async (): Promise<UserFullDetails[]> => {
