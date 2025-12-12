@@ -1,5 +1,6 @@
 
-import type { StudentSearchResult, UserFullDetails, ApiStaffMember, StaffMember, StudentEnrollmentInfo, TempUser, StudentBalanceData } from '../types';
+
+import type { StudentSearchResult, UserFullDetails, ApiStaffMember, StaffMember, StudentEnrollmentInfo, TempUser, StudentBalanceData, GamePatient, Course } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -11,6 +12,16 @@ export const searchStudents = async (query: string): Promise<StudentSearchResult
         throw new Error('Failed to search students');
     }
     return response.json();
+};
+
+export const getPatient = async (studentId: string, courseCode: string): Promise<GamePatient> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-center-courses/student/${studentId}/course/${courseCode}`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch game prescriptions' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    const data = await response.json();
+    return data[0];
 };
 
 export const getAllUserFullDetails = async (): Promise<UserFullDetails[]> => {
@@ -133,3 +144,4 @@ export const getStudentBalance = async (studentNumber: string): Promise<StudentB
     }
     return response.json();
 }
+
