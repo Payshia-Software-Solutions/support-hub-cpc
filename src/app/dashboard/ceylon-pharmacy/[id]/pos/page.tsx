@@ -19,7 +19,7 @@ import { getPatient, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer, ge
 import type { GamePatient, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, PrescriptionDetail } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from "@/components/ui/input";
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -206,6 +206,7 @@ export default function POSPage() {
     const params = useParams();
     const patientId = params.id as string;
     const { user } = useAuth();
+    const queryClient = useQueryClient();
     const [courseCode, setCourseCode] = useState<string | null>(null);
 
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -254,6 +255,10 @@ export default function POSPage() {
 
     const updateStatusMutation = useMutation({
         mutationFn: (startDataId: string) => updatePatientStatus(startDataId),
+        onSuccess: () => {
+            toast({ title: "Patient Recovered!", description: "The treatment is now complete." });
+            queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username, courseCode] });
+        },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Status Update Error', description: `Could not mark patient as recovered: ${error.message}` });
         }
@@ -394,11 +399,9 @@ export default function POSPage() {
     }
 
     if (!patient) {
-        // This case is handled by the useEffect redirect, but as a fallback:
         return <div className="p-8 text-center">Loading patient data or patient not found...</div>;
     }
     
-    // Dependent data loading
     if (isLoadingCorrectAmount || isLoadingDetails) {
          return <div className="p-8 text-center flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin"/></div>;
     }
@@ -713,3 +716,5 @@ export default function POSPage() {
         </div>
     );
 }
+
+    
