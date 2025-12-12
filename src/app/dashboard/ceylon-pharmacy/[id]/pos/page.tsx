@@ -19,7 +19,7 @@ import { getPatient, getMasterProducts, getPOSCorrectAmount, submitPOSAnswer, ge
 import type { GamePatient, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, PrescriptionDetail } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from "@/components/ui/input";
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -716,5 +716,3 @@ export default function POSPage() {
         </div>
     );
 }
-
-    
