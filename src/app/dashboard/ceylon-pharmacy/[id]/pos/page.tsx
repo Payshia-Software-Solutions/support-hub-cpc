@@ -227,19 +227,19 @@ export default function POSPage() {
         }
     }, [router]);
     
-    const { data: patient, isLoading: isLoadingPatient, isError: isPatientError } = useQuery<GamePatient>({
+    const { data: patient, isLoading: isLoadingPatient, isError, error } = useQuery<GamePatient>({
         queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username, courseCode],
-        queryFn: () => getPatient(user!.username!, courseCode!),
+        queryFn: () => getPatient(user!.username!, courseCode!, patientId),
         enabled: !!patientId && !!user?.username && !!courseCode,
         retry: 1,
     });
     
     useEffect(() => {
-        if (!isLoadingPatient && isPatientError) {
-            toast({ variant: 'destructive', title: 'Patient not found', description: 'Could not load patient data for this course.' });
+        if (!isLoadingPatient && isError) {
+            toast({ variant: 'destructive', title: 'Patient not found', description: 'Could not load patient data for this course. Redirecting...' });
             router.push('/dashboard/ceylon-pharmacy');
         }
-    }, [patient, patientId, router, isLoadingPatient, isPatientError]);
+    }, [patient, patientId, router, isLoadingPatient, isError]);
 
     const { data: correctAmountData, isLoading: isLoadingCorrectAmount } = useQuery<POSCorrectAnswer>({
         queryKey: ['posCorrectAmount', patientId],
@@ -254,7 +254,7 @@ export default function POSPage() {
     });
 
     const updateStatusMutation = useMutation({
-        mutationFn: (startDataId: string) => updatePatientStatus(startDataId),
+        mutationFn: ({studentNumber, presCode}: {studentNumber: string, presCode: string}) => updatePatientStatus(studentNumber, presCode),
         onSuccess: () => {
             toast({ title: "Patient Recovered!", description: "The treatment is now complete." });
             queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username, courseCode] });
@@ -271,8 +271,8 @@ export default function POSPage() {
                 setIsPaid(true);
                 toast({ title: 'Payment Correct!', description: `The total amount is correct. Change to be given: LKR ${change.toFixed(2)}` });
 
-                if (patient?.start_data?.id) {
-                    updateStatusMutation.mutate(patient.start_data.id);
+                if (user?.username && patient?.prescription_id) {
+                    updateStatusMutation.mutate({ studentNumber: user.username, presCode: patient.prescription_id });
                 }
             } else {
                 toast({ variant: 'destructive', title: 'Incorrect Total', description: 'The final bill amount is not correct. Please review the prescription and items.' });
@@ -399,7 +399,7 @@ export default function POSPage() {
     }
 
     if (!patient) {
-        return <div className="p-8 text-center">Loading patient data or patient not found...</div>;
+        return <div className="p-8 text-center">Loading patient data...</div>;
     }
     
     if (isLoadingCorrectAmount || isLoadingDetails) {

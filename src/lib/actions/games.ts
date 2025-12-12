@@ -56,22 +56,25 @@ export const getCeylonPharmacyPrescriptions = async (studentId: string, courseCo
     return [];
 };
 
-export const getPatient = async (studentId: string, courseCode: string): Promise<GamePatient> => {
+export const getPatient = async (studentId: string, courseCode: string, patientId: string): Promise<GamePatient> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-center-courses/student/${studentId}/course/${courseCode}`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch game prescriptions' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     const data = await response.json();
-    // Assuming the API returns a structure where we might need to find the specific patient
-    // If it returns a single patient object directly, this logic might need adjustment.
-    const patientData = Object.values(data).map((item: any) => ({
-        ...item.patient,
-        start_data: item.start_data
-    }))[0]; // Assuming the first result is the correct one for this simplified direct fetch
-    if (!patientData) {
-        throw new Error("Patient not found in the response for the specified course.");
+    
+    const patientDataEntry = Object.values(data).find((item: any) => item.patient?.prescription_id === patientId);
+
+    if (!patientDataEntry || !(patientDataEntry as any).patient) {
+        throw new Error("Patient not found in the response for the specified course and ID.");
     }
+    
+    const patientData = {
+        ...(patientDataEntry as any).patient,
+        start_data: (patientDataEntry as any).start_data,
+    };
+    
     return patientData;
 };
 
@@ -244,8 +247,8 @@ export const getRecoveredCount = async (studentNumber: string): Promise<Recovery
 };
 
 
-export const updatePatientStatus = async (startDataId: string): Promise<any> => {
-    const response = await fetch(`${QA_API_BASE_URL}/care-starts/${startDataId}/patient-status`, {
+export const updatePatientStatus = async (studentNumber: string, presCode: string): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-starts/student/${studentNumber}/patient/${presCode}/patient-status/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
