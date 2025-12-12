@@ -226,15 +226,12 @@ export default function POSPage() {
         }
     }, [router]);
 
-
-    const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
+    const { data: patient, isLoading: isLoadingPatient, isError: isPatientError } = useQuery<GamePatient | undefined>({
         queryKey: ['ceylonPharmacyPatientForPOS', patientId, user?.username, courseCode],
         queryFn: async () => {
             if (!user?.username || !courseCode) throw new Error("User or course not authenticated");
             const prescriptions = await getCeylonPharmacyPrescriptions(user.username, courseCode);
-            const found = prescriptions.find(p => p.prescription_id === patientId);
-            if (!found) throw new Error("Patient not found");
-            return found;
+            return prescriptions.find(p => p.prescription_id === patientId);
         },
         enabled: !!patientId && !!user?.username && !!courseCode,
         retry: false,
@@ -244,7 +241,7 @@ export default function POSPage() {
     const { data: correctAmountData, isLoading: isLoadingCorrectAmount } = useQuery<POSCorrectAnswer>({
         queryKey: ['posCorrectAmount', patientId],
         queryFn: () => getPOSCorrectAmount(patientId),
-        enabled: !!patientId,
+        enabled: !!patient,
     });
 
     const { data: prescriptionDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
@@ -327,7 +324,7 @@ export default function POSPage() {
              toast({ variant: 'destructive', title: 'Insufficient payment', description: 'Cash received is less than the total amount.' });
              return;
         }
-        if (!correctAmountData || !user) {
+        if (!correctAmountData || !user || !patient) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not verify answer. Correct amount or user data is missing.' });
             return;
         }
@@ -337,7 +334,7 @@ export default function POSPage() {
         
         const payload: POSSubmissionPayload = {
             student_id: user.username!,
-            PresCode: patient!.prescription_id,
+            PresCode: patient.prescription_id,
             answer: billTotal.toFixed(2),
             created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
             ans_status: status
@@ -397,13 +394,28 @@ export default function POSPage() {
         }
     };
 
-    if (isLoadingPatient || isLoadingCorrectAmount || isLoadingDetails) {
+    if (isLoadingPatient) {
         return <div className="p-8 text-center flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin"/></div>;
     }
 
-    if (!patient) {
-        return <div className="p-8 text-center">Patient data could not be loaded. Please return to the patient list.</div>;
+    if (isPatientError || !patient) {
+        return (
+            <div className="p-8 text-center flex flex-col items-center justify-center h-full">
+                <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+                <h1 className="text-xl font-bold">Patient Not Found</h1>
+                <p className="text-muted-foreground">Could not load patient data. This may be because the course selection is out of sync or an API error occurred.</p>
+                <Button onClick={() => router.push('/dashboard/ceylon-pharmacy')} className="mt-6">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Waiting Room
+                </Button>
+            </div>
+        );
     }
+    
+    // Dependent data loading
+    if (isLoadingCorrectAmount || isLoadingDetails) {
+         return <div className="p-8 text-center flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin"/></div>;
+    }
+
 
     const BillComponent = (
         <Card className="shadow-xl sticky top-24 lg:col-span-3">
