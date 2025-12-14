@@ -1,19 +1,99 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Loader2, AlertTriangle, PlusCircle, Edit, Trash2, Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { getPrescriptionDetails, updatePrescriptionContent } from '@/lib/actions/games';
+import { getPrescriptionDetails, updatePrescriptionContent, savePrescriptionContent } from '@/lib/actions/games';
 import type { PrescriptionDetail } from '@/lib/types';
 import Link from 'next/link';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/contexts/AuthContext';
+
+
+const addDrugSchema = z.object({
+  coverId: z.string().min(1, 'Cover ID is required'),
+  content: z.string().min(1, 'Prescription content is required'),
+});
+
+type AddDrugFormValues = z.infer<typeof addDrugSchema>;
+
+const AddDrugDialog = ({ patientId, nextCoverId, onClose }: { patientId: string, nextCoverId: string, onClose: () => void }) => {
+    const queryClient = useQueryClient();
+    
+    const form = useForm<AddDrugFormValues>({
+        resolver: zodResolver(addDrugSchema),
+        defaultValues: { coverId: nextCoverId, content: '' },
+    });
+    
+    // Sync default value if the dialog re-opens for the same patient but with new data
+    React.useEffect(() => {
+        form.reset({ coverId: nextCoverId, content: '' });
+    }, [nextCoverId, form]);
+    
+     const addDrugMutation = useMutation({
+        mutationFn: async (data: AddDrugFormValues) => {
+            return savePrescriptionContent({
+                pres_code: patientId,
+                cover_id: data.coverId,
+                content: data.content,
+            });
+        },
+        onSuccess: () => {
+            toast({ title: 'Drug Added!', description: 'The new drug has been added to the prescription.' });
+            queryClient.invalidateQueries({ queryKey: ['prescriptionDetails', patientId] });
+            onClose();
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
+        }
+    });
+
+    const onSubmit = (data: AddDrugFormValues) => {
+        addDrugMutation.mutate(data);
+    };
+
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Add New Drug</DialogTitle>
+                <DialogDescription>Add a medication to this prescription.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+                 <div className="py-4 space-y-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="coverId">Cover ID*</Label>
+                        <Input id="coverId" {...form.register(`coverId`)} readOnly className="bg-muted"/>
+                        {form.formState.errors?.coverId && <p className="text-xs text-destructive">{form.formState.errors.coverId.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="content">Prescription Content*</Label>
+                        <Input id="content" {...form.register(`content`)} placeholder="e.g. Tab Metformin 500mg..." />
+                        {form.formState.errors?.content && <p className="text-xs text-destructive">{form.formState.errors.content.message}</p>}
+                    </div>
+                </div>
+                 <DialogFooter>
+                     <DialogClose asChild><Button type="button" variant="outline" disabled={addDrugMutation.isPending}>Cancel</Button></DialogClose>
+                     <Button type="submit" disabled={addDrugMutation.isPending}>
+                        {addDrugMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        <Save className="mr-2 h-4 w-4" /> Save Drug
+                    </Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    )
+}
 
 const DrugItem = ({ drug, patientId, onDelete }: { drug: PrescriptionDetail, patientId: string, onDelete: (drug: PrescriptionDetail) => void }) => {
     const queryClient = useQueryClient();
@@ -71,6 +151,7 @@ export default function ManageDrugsPage() {
   const params = useParams();
   const patientId = params.patientId as string;
   const [drugToDelete, setDrugToDelete] = useState<PrescriptionDetail | null>(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: prescriptionDetails, isLoading, isError, error } = useQuery<PrescriptionDetail[]>({
@@ -78,6 +159,19 @@ export default function ManageDrugsPage() {
     queryFn: () => getPrescriptionDetails(patientId),
     enabled: !!patientId,
   });
+
+  const nextCoverId = useMemo(() => {
+    if (!prescriptionDetails) return "Cover1";
+    const maxCoverNum = prescriptionDetails.reduce((max, detail) => {
+        const match = detail.cover_id.match(/Cover(\d+)/);
+        if (match) {
+            const num = parseInt(match[1], 10);
+            return Math.max(max, num);
+        }
+        return max;
+    }, 0);
+    return `Cover${maxCoverNum + 1}`;
+  }, [prescriptionDetails]);
 
   const deleteMutation = useMutation({
     mutationFn: async (coverId: string) => {
@@ -121,6 +215,10 @@ export default function ManageDrugsPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+           <AddDrugDialog patientId={patientId} nextCoverId={nextCoverId} onClose={() => setIsAddOpen(false)} />
+       </Dialog>
 
       <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
@@ -130,10 +228,8 @@ export default function ManageDrugsPage() {
           <h1 className="text-3xl font-headline font-semibold mt-2">Manage Prescription Drugs</h1>
           <p className="text-muted-foreground">Add, edit, or remove medications for this prescription.</p>
         </div>
-        <Button asChild>
-            <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/drugs/add`}>
-                <PlusCircle className="mr-2 h-4 w-4"/> Add Drug
-            </Link>
+        <Button onClick={() => setIsAddOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4"/> Add Drug
         </Button>
       </header>
       
@@ -164,5 +260,3 @@ export default function ManageDrugsPage() {
     </div>
   );
 }
-
-    
