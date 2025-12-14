@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,44 +11,189 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, PlusCircle, Save, Trash2, Calculator } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Save, Trash2, Calculator, Pill, Hash, Repeat, Clock, Calendar as CalendarIcon, User, Search, Check, ChevronsUpDown } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { allInstructions } from '@/lib/ceylon-pharmacy-data';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useQuery } from '@tanstack/react-query';
-import type { MasterProduct } from '@/lib/types';
-import { getMasterProducts } from '@/lib/actions/games';
+import type { MasterProduct, FormSelectionData, Instruction } from '@/lib/types';
+import { getMasterProducts, getFormSelectionData, getAllCareInstructions } from '@/lib/actions/games';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
-import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const drugSchema = z.object({
-  drugName: z.string().min(1, 'Required'),
-  quantity: z.coerce.number().min(1),
+  coverId: z.string().min(1, 'Cover ID is required'),
+  correctDrugName: z.string().min(1, 'Correct Drug Name is required'),
+  quantity: z.coerce.number().min(1, 'Quantity is required'),
+  correctInstructionIds: z.array(z.string()).optional(),
+  dosageForm: z.string().nonempty("Dosage form is required."),
+  morningQty: z.string().nonempty("Morning quantity is required."),
+  afternoonQty: z.string().nonempty("Afternoon quantity is required."),
+  eveningQty: z.string().nonempty("Evening quantity is required."),
+  nightQty: z.string().nonempty("Night quantity is required."),
+  mealType: z.string().nonempty("Meal type is required."),
+  usingFrequency: z.string().nonempty("Using frequency is required."),
+  at_a_time: z.string().nonempty("This field is required."),
+  hour_qty: z.string().optional(),
+  additionalInstruction: z.string().optional(),
 });
 
 const patientFormSchema = z.object({
-  // Patient Details
   name: z.string().min(1, 'Patient name is required'),
   age: z.string().min(1, 'Age is required'),
   initialTime: z.coerce.number().min(30, 'Time must be at least 30 seconds'),
   address: z.string().optional(),
   patient_description: z.string().optional(),
-
-  // Prescription Details
   prescription_name: z.string().min(1, 'Prescription name is required'),
+  pres_date: z.string().min(1, 'Prescription date is required'),
   doctor_name: z.string().min(1, 'Doctor name is required'),
   notes: z.string().optional(),
   totalBillValue: z.coerce.number().min(0, 'Bill value must be a positive number'),
-  
-  // Drugs
   drugs: z.array(drugSchema).min(1, 'At least one drug is required'),
 });
 
 type PatientFormValues = z.infer<typeof patientFormSchema>;
+
+const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, value }: { triggerText: string, title: string, options: string[], onSelect: (value: string) => void, icon: React.ElementType, value: string; }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    
+    const filteredOptions = useMemo(() => {
+        const sortedOptions = [...options].sort((a, b) => a.localeCompare(b));
+        if (!searchTerm) return sortedOptions;
+        return sortedOptions.filter(option => option.toLowerCase().includes(searchTerm.toLowerCase()));
+    }, [options, searchTerm]);
+
+    return (
+        <Dialog onOpenChange={(open) => !open && setSearchTerm('')}>
+            <DialogTrigger asChild>
+            <Button variant="outline" className="w-full justify-start pl-10 relative h-10 text-sm">
+                <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <span className="truncate">{value || triggerText}</span>
+            </Button>
+            </DialogTrigger>
+            <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Select {title}</DialogTitle>
+                 <div className="relative pt-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search options..." 
+                        className="pl-10" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </DialogHeader>
+            <ScrollArea className="max-h-[50vh]">
+                <div className="py-2 grid grid-cols-2 gap-2 pr-4">
+                    {filteredOptions.map((option, index) => (
+                    <DialogClose asChild key={`${option}-${index}`}>
+                        <Button variant="outline" onClick={() => onSelect(option)} className="h-auto min-h-12 whitespace-normal break-words text-left justify-start p-2">
+                            {option}
+                        </Button>
+                    </DialogClose>
+                    ))}
+                    {filteredOptions.length === 0 && <p className="col-span-2 text-center text-sm text-muted-foreground py-4">No results found.</p>}
+                </div>
+            </ScrollArea>
+            </DialogContent>
+        </Dialog>
+    )
+};
+
+const InstructionSelectionDialog = ({
+    selectedIds,
+    onSelectionChange,
+    trigger
+}: {
+    selectedIds: string[],
+    onSelectionChange: (newIds: string[]) => void,
+    trigger: React.ReactNode,
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentSelectedIds, setCurrentSelectedIds] = useState(selectedIds);
+
+    const { data: allInstructions = [], isLoading } = useQuery<Instruction[]>({
+        queryKey: ['allCareInstructions'],
+        queryFn: getAllCareInstructions,
+    });
+    
+    useEffect(() => {
+        if(isOpen) {
+            setCurrentSelectedIds(selectedIds);
+        }
+    }, [isOpen, selectedIds]);
+
+    const uniqueInstructions = useMemo(() => {
+        const seen = new Set<string>();
+        return allInstructions.filter(instruction => {
+            const lowercased = instruction.instruction.toLowerCase();
+            if (seen.has(lowercased) || !instruction.instruction) {
+                return false;
+            }
+            seen.add(lowercased);
+            return true;
+        }).sort((a,b) => a.instruction.localeCompare(b.instruction));
+    }, [allInstructions]);
+
+    const filteredInstructions = useMemo(() => {
+        if (!searchTerm) return uniqueInstructions;
+        return uniqueInstructions.filter(inst => inst.instruction.toLowerCase().includes(searchTerm.toLowerCase()));
+    }, [uniqueInstructions, searchTerm]);
+
+    const handleToggle = (instructionId: string) => {
+        setCurrentSelectedIds(prev =>
+            prev.includes(instructionId) ? prev.filter(id => id !== instructionId) : [...prev, instructionId]
+        );
+    };
+
+    const handleConfirm = () => {
+        onSelectionChange(currentSelectedIds);
+        setIsOpen(false);
+    };
+
+    return (
+         <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>{trigger}</DialogTrigger>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Select Counselling Instructions</DialogTitle>
+                     <div className="relative pt-2">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
+                        <Input placeholder="Search instructions..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    </div>
+                </DialogHeader>
+                <ScrollArea className="max-h-[50vh] pr-4 -mr-4">
+                    <div className="space-y-2">
+                        {isLoading ? (
+                            <p>Loading instructions...</p>
+                        ) : (
+                            filteredInstructions.map(inst => (
+                                <div key={inst.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted/50">
+                                    <Checkbox
+                                        id={`dialog-inst-${inst.id}`}
+                                        checked={currentSelectedIds.includes(inst.id)}
+                                        onCheckedChange={() => handleToggle(inst.id)}
+                                    />
+                                    <Label htmlFor={`dialog-inst-${inst.id}`} className="text-sm font-normal w-full cursor-pointer">{inst.instruction}</Label>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </ScrollArea>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+                    <Button onClick={handleConfirm}>Confirm Selection</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 const ProductSelector = ({ products, selected, onSelect, placeholder }: { products: MasterProduct[], selected?: string, onSelect: (value: string) => void, placeholder: string }) => {
     const [open, setOpen] = useState(false);
@@ -198,6 +343,23 @@ export default function CreatePatientPage() {
   const router = useRouter();
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
 
+  const { data: selectionData, isLoading: isLoadingSelectionData } = useQuery<FormSelectionData>({
+    queryKey: ['formSelectionData'],
+    queryFn: getFormSelectionData,
+  });
+
+  const { data: allInstructions = [] } = useQuery<Instruction[]>({
+      queryKey: ['allCareInstructions'],
+      queryFn: getAllCareInstructions,
+  });
+
+  const instructionMap = useMemo(() => {
+    return allInstructions.reduce((acc, inst) => {
+        acc[inst.id] = inst.instruction;
+        return acc;
+    }, {} as Record<string, string>);
+  }, [allInstructions]);
+
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientFormSchema),
     defaultValues: {
@@ -222,6 +384,8 @@ export default function CreatePatientPage() {
     });
     router.push('/admin/manage/games/ceylon-pharmacy/patients');
   };
+  
+  const dailyQtyOptions = ['-', '1', '2', '3', '1/2', '4', '5', '1 1/2', '1 Drop', '10ml', '15ml', '1/4', '10U', '2 1/2', '2.5ml', '15U', '1puff', '2puff', '20ml', '30U']; 
 
   return (
     <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -234,13 +398,21 @@ export default function CreatePatientPage() {
         </header>
 
         <form onSubmit={form.handleSubmit(onSubmit)}>
-             {/* --- Main Details Row --- */}
             <Card className="shadow-lg mb-6">
                 <CardHeader>
                     <CardTitle>Prescription Details</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                    <div className="space-y-2"><Label>Patient Name*</Label><Input {...form.register('name')} />{form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}</div>
+                    <div className="space-y-2">
+                        <Label>Patient Name*</Label>
+                        <Input {...form.register('name')} />
+                        {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Prescription Date*</Label>
+                        <Input type="date" {...form.register('pres_date')} />
+                        {form.formState.errors.pres_date && <p className="text-xs text-destructive">{form.formState.errors.pres_date.message}</p>}
+                    </div>
                     <div className="space-y-2"><Label>Patient Age*</Label><Input {...form.register('age')} placeholder="e.g. 45 Years" />{form.formState.errors.age && <p className="text-xs text-destructive">{form.formState.errors.age.message}</p>}</div>
                     <div className="space-y-2"><Label>Initial Time (seconds)*</Label><Input type="number" {...form.register('initialTime')} />{form.formState.errors.initialTime && <p className="text-xs text-destructive">{form.formState.errors.initialTime.message}</p>}</div>
                     <div className="space-y-2"><Label>Address</Label><Input {...form.register('address')} /></div>
@@ -254,7 +426,7 @@ export default function CreatePatientPage() {
                                     <Button type="button" variant="outline" size="icon"><Calculator className="h-4 w-4"/></Button>
                                 </DialogTrigger>
                                 <AdminPOSCalculator 
-                                    drugs={watchedDrugs.map(d => ({ coverId: d.drugName, quantity: d.quantity }))}
+                                    drugs={watchedDrugs.map(d => ({ coverId: d.coverId, quantity: d.quantity }))}
                                     onUseTotal={(total) => form.setValue('totalBillValue', total)}
                                     closeDialog={() => setIsCalculatorOpen(false)}
                                 />
@@ -267,7 +439,6 @@ export default function CreatePatientPage() {
                 </CardContent>
             </Card>
 
-            {/* --- Drugs Content Section --- */}
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle>Prescribed Drugs (Content)</CardTitle>
@@ -278,12 +449,64 @@ export default function CreatePatientPage() {
                         <Card key={field.id} className="p-4 bg-muted/50 relative">
                              <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => remove(index)}><Trash2 className="h-4 w-4"/></Button>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2"><Label>Cover ID*</Label><Input {...form.register(`drugs.${index}.drugName`)} />{form.formState.errors.drugs?.[index]?.drugName && <p className="text-xs text-destructive">Required</p>}</div>
+                                <div className="space-y-2"><Label>Cover ID*</Label><Input {...form.register(`drugs.${index}.coverId`)} />{form.formState.errors.drugs?.[index]?.coverId && <p className="text-xs text-destructive">Required</p>}</div>
                                 <div className="space-y-2"><Label>Quantity*</Label><Input type="number" {...form.register(`drugs.${index}.quantity`)} />{form.formState.errors.drugs?.[index]?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
+                                <div className="md:col-span-2 space-y-2">
+                                  <Label>Correct Drug Name*</Label>
+                                  <SelectionDialog triggerText="Select Drug" title="Correct Drug" options={selectionData?.drug_name || []} onSelect={(val) => form.setValue(`drugs.${index}.correctDrugName`, val)} icon={Pill} value={form.watch(`drugs.${index}.correctDrugName`)} />
+                                  {form.formState.errors.drugs?.[index]?.correctDrugName && <p className="text-xs text-destructive">Required</p>}
+                                </div>
+                            </div>
+
+                            <Separator className="my-4" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="space-y-2"><Label>Morning Qty*</Label><SelectionDialog triggerText="Qty" title="Morning Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.morningQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.morningQty`)} /></div>
+                                <div className="space-y-2"><Label>Afternoon Qty*</Label><SelectionDialog triggerText="Qty" title="Afternoon Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.afternoonQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.afternoonQty`)} /></div>
+                                <div className="space-y-2"><Label>Evening Qty*</Label><SelectionDialog triggerText="Qty" title="Evening Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.eveningQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.eveningQty`)} /></div>
+                                <div className="space-y-2"><Label>Night Qty*</Label><SelectionDialog triggerText="Qty" title="Night Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.nightQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.nightQty`)} /></div>
+                            </div>
+                            
+                            <Separator className="my-4" />
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2"><Label>Dosage Form*</Label><SelectionDialog triggerText="Select Form" title="Dosage Form" options={selectionData?.drug_type || []} onSelect={(val) => form.setValue(`drugs.${index}.dosageForm`, val)} icon={Pill} value={form.watch(`drugs.${index}.dosageForm`)} /></div>
+                                <div className="space-y-2"><Label>Meal Type*</Label><SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={selectionData?.meal_type || []} onSelect={(val) => form.setValue(`drugs.${index}.mealType`, val)} icon={Pill} value={form.watch(`drugs.${index}.mealType`)} /></div>
+                                <div className="space-y-2"><Label>Using Frequency*</Label><SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={selectionData?.using_type || []} onSelect={(val) => form.setValue(`drugs.${index}.usingFrequency`, val)} icon={Repeat} value={form.watch(`drugs.${index}.usingFrequency`)} /></div>
+                                <div className="space-y-2"><Label>At a Time*</Label><SelectionDialog triggerText="e.g. 5ml" title="At a Time" options={selectionData?.at_a_time || []} onSelect={(val) => form.setValue(`drugs.${index}.at_a_time`, val)} icon={Hash} value={form.watch(`drugs.${index}.at_a_time`)} /></div>
+                                <div className="space-y-2"><Label>Hour Quantity</Label><SelectionDialog triggerText="e.g. 8" title="Hour Quantity" options={selectionData?.hour_qty || []} onSelect={(val) => form.setValue(`drugs.${index}.hour_qty`, val)} icon={Clock} value={form.watch(`drugs.${index}.hour_qty`) || ''} /></div>
+                                <div className="space-y-2"><Label>Additional Description</Label><SelectionDialog triggerText="Select Description" title="Additional Description" options={selectionData?.additional_description || []} onSelect={(val) => form.setValue(`drugs.${index}.additionalInstruction`, val)} icon={Pill} value={form.watch(`drugs.${index}.additionalInstruction`) || ''} /></div>
+                            </div>
+                            
+                            <Separator className="my-4" />
+                            <div className="md:col-span-2 space-y-2">
+                                <Controller
+                                    control={form.control}
+                                    name={`drugs.${index}.correctInstructionIds`}
+                                    render={({ field: { onChange, value } }) => (
+                                        <InstructionSelectionDialog
+                                            selectedIds={value || []}
+                                            onSelectionChange={onChange}
+                                            trigger={
+                                                <div className="space-y-2">
+                                                    <Label>Correct Counselling Instructions</Label>
+                                                    <Button type="button" variant="outline" className="w-full justify-start text-left font-normal">
+                                                        {value && value.length > 0 ? `${value.length} instruction(s) selected` : "Select instructions..."}
+                                                    </Button>
+                                                      {value && value.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {value.map(id => (
+                                                                <Badge key={id} variant="secondary" className="font-normal">{instructionMap[id] || 'Unknown'}</Badge>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            }
+                                        />
+                                    )}
+                                />
                             </div>
                         </Card>
                     ))}
-                    <Button type="button" variant="outline" className="w-full" onClick={() => append({ drugName: '', quantity: 1, })}>
+                    <Button type="button" variant="outline" className="w-full" onClick={() => append({ coverId: '', correctDrugName: '', quantity: 1, correctInstructionIds: [], dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "", usingFrequency: "", at_a_time: "" })}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Another Drug
                     </Button>
                 </CardContent>
