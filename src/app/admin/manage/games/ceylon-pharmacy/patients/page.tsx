@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -26,6 +26,11 @@ export default function ManagePatientsPage() {
         queryFn: () => getCeylonPharmacyPrescriptions('admin-user', 'CPCC20'), // Using a generic user for fetching all
         enabled: !!user,
     });
+    
+    const sortedPatients = useMemo(() => {
+        if (!patients) return [];
+        return [...patients].sort((a, b) => parseInt(b.prescription_id, 10) - parseInt(a.prescription_id, 10));
+    }, [patients]);
 
 
     return (
@@ -49,7 +54,7 @@ export default function ManagePatientsPage() {
                 <CardHeader>
                     <CardTitle>Patient List</CardTitle>
                     <CardDescription>
-                        {isLoading ? 'Loading patients...' : `${patients?.length || 0} patients configured for the game.`}
+                        {isLoading ? 'Loading patients...' : `${sortedPatients?.length || 0} patients configured for the game.`}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -71,7 +76,7 @@ export default function ManagePatientsPage() {
                             <p className="text-sm">{error.message}</p>
                         </div>
                     )}
-                    {!isLoading && !isError && patients?.map(patient => {
+                    {!isLoading && !isError && sortedPatients?.map(patient => {
                         const patientName = patient.Pres_Name || 'Unknown Patient';
                         const fallbackInitial = patientName.charAt(0) || 'P';
                         return (
