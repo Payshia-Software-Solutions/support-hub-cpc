@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
@@ -359,4 +359,20 @@ export const getPOSSubmissionStatus = async (presCode: string, studentId: string
     const data = await response.json();
     return Array.isArray(data) ? data : [];
 };
+
+export const savePrescription = async (payload: PrescriptionSubmissionPayload): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-patients`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to save prescription.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+}
+
     

@@ -14,9 +14,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, AlertTriangle, Search, Calculator, Check, ChevronsUpDown, Pill, Hash, Repeat, Clock, Calendar as CalendarIcon, User } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useQuery } from '@tanstack/react-query';
-import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getAllCareInstructions, getMasterProducts, getFormSelectionData } from '@/lib/actions/games';
-import type { GamePatient, PrescriptionDetail, Instruction, MasterProduct, FormSelectionData } from '@/lib/types';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getAllCareInstructions, getMasterProducts, getFormSelectionData, savePrescription } from '@/lib/actions/games';
+import type { GamePatient, PrescriptionDetail, Instruction, MasterProduct, FormSelectionData, PrescriptionSubmissionPayload } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 const drugSchema = z.object({
@@ -366,6 +367,7 @@ export default function EditPatientPage() {
   const params = useParams();
   const patientId = params.patientId as string; // This is prescription_id
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const { user } = useAuth();
 
   const { data: patient, isLoading: isLoadingPatient, isError, error } = useQuery<GamePatient>({
       queryKey: ['ceylonPharmacyPatient', patientId],
@@ -408,6 +410,25 @@ export default function EditPatientPage() {
       drugs: [],
     },
   });
+  
+  const saveMutation = useMutation({
+    mutationFn: (payload: PrescriptionSubmissionPayload) => savePrescription(payload),
+    onSuccess: () => {
+        toast({
+            title: 'Patient Updated!',
+            description: `The prescription details have been saved.`
+        });
+        // Optionally refetch data or navigate
+    },
+    onError: (error: Error) => {
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: error.message,
+        });
+    }
+  });
+
 
   useEffect(() => {
     if (patient && prescriptionDetails) {
@@ -422,9 +443,9 @@ export default function EditPatientPage() {
             doctor_name: patient.doctor_name,
             notes: patient.notes,
             totalBillValue: 0, // Placeholder
-            drugs: prescriptionDetails.map(drug => ({
+            drugs: prescriptionDetails.map((drug, index) => ({
                 id: drug.cover_id,
-                coverId: drug.cover_id,
+                coverId: `Cover${index + 1}`,
                 content: drug.content, 
                 correctDrugName: "",
                 quantity: 1,
@@ -444,12 +465,27 @@ export default function EditPatientPage() {
   const watchedDrugs = form.watch('drugs');
 
   const onSubmit = (data: PatientFormValues) => {
-    console.log("Updating Patient Data:", data);
-    toast({
-        title: 'Patient Updated!',
-        description: `${data.name}'s details have been saved.`
-    });
-    router.push('/admin/manage/games/ceylon-pharmacy/patients');
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to save.'});
+        return;
+    }
+    
+    const payload: PrescriptionSubmissionPayload = {
+      prescription_name: data.prescription_name,
+      prescription_status: patient?.prescription_status || "Active",
+      created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+      created_by: user.username || 'admin',
+      Pres_Name: data.name,
+      pres_date: data.pres_date,
+      Pres_Age: parseInt(data.age, 10), // Convert age string to integer
+      Pres_Method: patient?.Pres_Method || 'N/A',
+      doctor_name: data.doctor_name,
+      notes: data.notes || '',
+      patient_description: data.patient_description || '',
+      address: data.address || '',
+    };
+    
+    saveMutation.mutate(payload);
   };
   
   const isLoading = isLoadingPatient || isLoadingSelectionData;
@@ -487,6 +523,11 @@ export default function EditPatientPage() {
                     <CardTitle>Prescription Details</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                     <div className="space-y-2">
+                        <Label>Prescription Name*</Label>
+                        <Input {...form.register('prescription_name')} placeholder="e.g. Regular Checkup"/>
+                        {form.formState.errors.prescription_name && <p className="text-xs text-destructive">{form.formState.errors.prescription_name.message}</p>}
+                    </div>
                     <div className="space-y-2">
                         <Label>Patient Name*</Label>
                         <SelectionDialog triggerText="Select Name" title="Patient Name" options={selectionData?.name || []} onSelect={(val) => form.setValue("name", val, { shouldValidate: true })} icon={User} value={form.watch('name')} />
@@ -555,6 +596,10 @@ export default function EditPatientPage() {
                         <Card key={field.id} className="p-4 bg-muted/50 relative">
                              <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => remove(index)}><Trash2 className="h-4 w-4"/></Button>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label>Cover ID*</Label>
+                                  <Input {...form.register(`drugs.${index}.coverId`)} readOnly className="font-mono bg-gray-200" />
+                                </div>
                                 <div className="space-y-2">
                                   <Label>Prescription Content*</Label>
                                   <Input {...form.register(`drugs.${index}.content`)} placeholder="e.g. Tab Metformin 500mg..." />
@@ -665,8 +710,9 @@ export default function EditPatientPage() {
             </Card>
 
             <div className="flex justify-end mt-6">
-                <Button type="submit" size="lg">
-                    <Save className="mr-2 h-4 w-4" /> Save All Changes
+                <Button type="submit" size="lg" disabled={saveMutation.isPending}>
+                    {saveMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
+                    Save All Changes
                 </Button>
             </div>
         </form>
@@ -674,3 +720,4 @@ export default function EditPatientPage() {
   );
 }
 
+    
