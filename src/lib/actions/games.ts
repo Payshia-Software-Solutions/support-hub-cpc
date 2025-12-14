@@ -391,25 +391,19 @@ export const savePrescriptionContent = async (payload: { pres_code: string; cove
 };
 
 export const saveOrUpdateDispensingAnswer = async (payload: Omit<DispensingAnswer, 'id' | 'created_at'> & { answer_id?: string }): Promise<any> => {
-    const { answer_id, ...body } = payload;
-    let endpoint = `${QA_API_BASE_URL}/care-answers`;
-    let method = 'POST';
-
-    if (answer_id) {
-        endpoint = `${endpoint}/${answer_id}`;
-        method = 'PUT';
-    }
+    const endpoint = `${QA_API_BASE_URL}/care-answers`;
+    const method = 'POST';
 
     const response = await fetch(endpoint, {
         method: method,
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: `Failed to ${method === 'POST' ? 'save' : 'update'} dispensing answer.` }));
+        const errorData = await response.json().catch(() => ({ message: `Failed to save or update dispensing answer.` }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
 
