@@ -30,16 +30,21 @@ const addDrugSchema = z.object({
 
 type AddDrugFormValues = z.infer<typeof addDrugSchema>;
 
-const AddDrugDialog = ({ patientId, nextCoverId, onClose }: { patientId: string, nextCoverId: string, onClose: () => void }) => {
+const AddDrugDialog = ({ patientId, nextCoverId, onClose, isOpen, onOpenChange }: { patientId: string, nextCoverId: string, onClose: () => void, isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
     const queryClient = useQueryClient();
     
     const form = useForm<AddDrugFormValues>({
         resolver: zodResolver(addDrugSchema),
-        defaultValues: {
-            coverId: nextCoverId,
-            content: ''
-        },
     });
+
+    useEffect(() => {
+        if (isOpen) {
+            form.reset({
+                coverId: nextCoverId,
+                content: ''
+            });
+        }
+    }, [isOpen, nextCoverId, form]);
     
      const addDrugMutation = useMutation({
         mutationFn: async (data: AddDrugFormValues) => {
@@ -64,33 +69,35 @@ const AddDrugDialog = ({ patientId, nextCoverId, onClose }: { patientId: string,
     };
 
     return (
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Add New Drug</DialogTitle>
-                <DialogDescription>Add a medication to this prescription.</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-                 <div className="py-4 space-y-4">
-                     <div className="space-y-2">
-                        <Label htmlFor="coverId">Cover ID*</Label>
-                        <Input id="coverId" {...form.register(`coverId`)} readOnly className="bg-muted"/>
-                        {form.formState.errors?.coverId && <p className="text-xs text-destructive">{form.formState.errors.coverId.message}</p>}
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add New Drug</DialogTitle>
+                    <DialogDescription>Add a medication to this prescription.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <div className="py-4 space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="coverId">Cover ID*</Label>
+                            <Input id="coverId" {...form.register(`coverId`)} readOnly className="bg-muted cursor-not-allowed"/>
+                            {form.formState.errors?.coverId && <p className="text-xs text-destructive">{form.formState.errors.coverId.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="content">Prescription Content*</Label>
+                            <Input id="content" {...form.register(`content`)} placeholder="e.g. Tab Metformin 500mg..." />
+                            {form.formState.errors?.content && <p className="text-xs text-destructive">{form.formState.errors.content.message}</p>}
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="content">Prescription Content*</Label>
-                        <Input id="content" {...form.register(`content`)} placeholder="e.g. Tab Metformin 500mg..." />
-                        {form.formState.errors?.content && <p className="text-xs text-destructive">{form.formState.errors.content.message}</p>}
-                    </div>
-                </div>
-                 <DialogFooter>
-                     <DialogClose asChild><Button type="button" variant="outline" disabled={addDrugMutation.isPending}>Cancel</Button></DialogClose>
-                     <Button type="submit" disabled={addDrugMutation.isPending}>
-                        {addDrugMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                        <Save className="mr-2 h-4 w-4" /> Save Drug
-                    </Button>
-                </DialogFooter>
-            </form>
-        </DialogContent>
+                    <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="outline" disabled={addDrugMutation.isPending}>Cancel</Button></DialogClose>
+                        <Button type="submit" disabled={addDrugMutation.isPending}>
+                            {addDrugMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                            <Save className="mr-2 h-4 w-4" /> Save Drug
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     )
 }
 
@@ -216,9 +223,13 @@ export default function ManageDrugsPage() {
         </AlertDialogContent>
       </AlertDialog>
       
-       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-           <AddDrugDialog key={nextCoverId} patientId={patientId} nextCoverId={nextCoverId} onClose={() => setIsAddOpen(false)} />
-       </Dialog>
+      <AddDrugDialog
+        patientId={patientId}
+        nextCoverId={nextCoverId}
+        onClose={() => setIsAddOpen(false)}
+        isOpen={isAddOpen}
+        onOpenChange={setIsAddOpen}
+      />
 
       <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
