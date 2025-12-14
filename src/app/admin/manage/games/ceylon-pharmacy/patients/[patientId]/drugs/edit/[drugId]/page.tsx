@@ -251,7 +251,7 @@ export default function EditDrugPage() {
                                             <PopoverTrigger asChild>
                                                 <Button variant="outline" className="w-full justify-start text-left font-normal h-10 text-sm">
                                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                                    {field.value ? format(new Date(field.value), "PPP") : <span>Pick a date</span>}
+                                                    {field.value && new Date(field.value).toString() !== 'Invalid Date' ? format(new Date(field.value), "PPP") : <span>Pick a date</span>}
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-auto p-0">
