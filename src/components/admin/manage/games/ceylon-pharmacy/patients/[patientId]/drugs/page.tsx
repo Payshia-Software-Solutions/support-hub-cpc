@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Loader2, AlertTriangle, PlusCircle, Edit, Trash2, Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { getPrescriptionDetails, updatePrescriptionContent, savePrescriptionContent } from '@/lib/actions/games';
+import { getPrescriptionDetails, updatePrescriptionContent } from '@/lib/actions/games';
 import type { PrescriptionDetail } from '@/lib/types';
 import Link from 'next/link';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -146,7 +146,7 @@ export default function ManageDrugsPage() {
       </AlertDialog>
       
       <AddDrugDialog
-        key={nextCoverId}
+        key={nextCoverId} 
         patientId={patientId}
         nextCoverId={nextCoverId}
         onClose={() => setIsAddOpen(false)}
