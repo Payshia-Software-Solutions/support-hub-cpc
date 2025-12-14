@@ -205,10 +205,17 @@ export default function EditDrugPage() {
         enabled: !!patientId,
     });
     
-    const { data: drugAnswers, isLoading: isLoadingAnswers, isError: isAnswersError } = useQuery<DispensingAnswer>({
+    const { data: drugAnswers, isLoading: isLoadingAnswers, isError: isAnswersError, error: answersError } = useQuery<DispensingAnswer | null>({
         queryKey: ['dispensingAnswers', patientId, drugId],
         queryFn: () => getDispensingAnswers(patientId, drugId),
-        enabled: !!drugId,
+        enabled: !!drugId && !!patientId,
+        retry: (failureCount, error: any) => {
+            // Don't retry on 404, it just means no answer is saved yet
+            if (error?.message?.includes('404')) {
+                return false;
+            }
+            return failureCount < 2;
+        },
     });
     
     const { data: selectionData, isLoading: isLoadingSelectionData } = useQuery<FormSelectionData>({
@@ -227,25 +234,35 @@ export default function EditDrugPage() {
     const drugToEdit = useMemo(() => drugDetails?.find(d => d.cover_id === drugId), [drugDetails, drugId]);
 
     useEffect(() => {
-        if (drugToEdit && drugAnswers) {
-            form.reset({
+        if (drugToEdit) {
+            // Set defaults from the drug content first
+            const defaultValues: Partial<EditDrugFormValues> = {
                 id: drugToEdit.cover_id,
                 coverId: drugToEdit.cover_id,
                 content: drugToEdit.content,
-                correctDrugName: drugAnswers.drug_name || "",
-                quantity: parseInt(drugAnswers.drug_qty, 10) || 1,
-                dosageForm: drugAnswers.drug_type || "",
-                morningQty: drugAnswers.morning_qty || "",
-                afternoonQty: drugAnswers.afternoon_qty || "",
-                eveningQty: drugAnswers.evening_qty || "",
-                nightQty: drugAnswers.night_qty || "",
-                mealType: drugAnswers.meal_type || "",
-                usingFrequency: drugAnswers.using_type || "",
-                at_a_time: drugAnswers.at_a_time || "",
-                hour_qty: drugAnswers.hour_qty || "",
-                additionalInstruction: drugAnswers.additional_description || "",
-                correctInstructionIds: [], // Will be fetched separately
-            });
+                quantity: 1, // Default quantity
+            };
+            
+            // If answers exist, overwrite with them
+            if (drugAnswers) {
+                Object.assign(defaultValues, {
+                    correctDrugName: drugAnswers.drug_name || "",
+                    quantity: parseInt(drugAnswers.drug_qty, 10) || 1,
+                    dosageForm: drugAnswers.drug_type || "",
+                    morningQty: drugAnswers.morning_qty || "",
+                    afternoonQty: drugAnswers.afternoon_qty || "",
+                    eveningQty: drugAnswers.evening_qty || "",
+                    nightQty: drugAnswers.night_qty || "",
+                    mealType: drugAnswers.meal_type || "",
+                    usingFrequency: drugAnswers.using_type || "",
+                    at_a_time: drugAnswers.at_a_time || "",
+                    hour_qty: drugAnswers.hour_qty || "",
+                    additionalInstruction: drugAnswers.additional_description || "",
+                    correctInstructionIds: [], // Will be fetched separately
+                });
+            }
+            
+            form.reset(defaultValues as EditDrugFormValues);
         }
     }, [drugToEdit, drugAnswers, form]);
     
@@ -255,16 +272,16 @@ export default function EditDrugPage() {
         console.log(data);
     };
 
-    if (isLoadingDetails || isLoadingAnswers || isLoadingSelectionData) {
+    if (isLoadingDetails || isLoadingSelectionData) {
         return <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto"/></div>
     }
 
-    if (isDetailsError || isAnswersError || !drugToEdit || !drugAnswers || !selectionData) {
+    if (isDetailsError || !drugToEdit) {
         return (
             <div className="p-8 text-center">
                 <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-2" />
                 <p className="font-semibold">Failed to load drug data.</p>
-                <p className="text-sm text-muted-foreground">The requested drug could not be found.</p>
+                <p className="text-sm text-muted-foreground">The requested drug could not be found in the prescription.</p>
             </div>
         )
     }
@@ -293,7 +310,7 @@ export default function EditDrugPage() {
                         </div>
                         <div className="space-y-2">
                           <Label>Correct Drug Name*</Label>
-                          <SelectionDialog triggerText="Select Drug" title="Correct Drug" options={selectionData.drug_name} onSelect={(val) => form.setValue(`correctDrugName`, val)} icon={Pill} value={form.watch(`correctDrugName`)} />
+                          <SelectionDialog triggerText="Select Drug" title="Correct Drug" options={selectionData!.drug_name} onSelect={(val) => form.setValue(`correctDrugName`, val)} icon={Pill} value={form.watch(`correctDrugName`)} />
                           {form.formState.errors?.correctDrugName && <p className="text-xs text-destructive">Required</p>}
                         </div>
                         <div className="space-y-2"><Label>Quantity*</Label><Input type="number" {...form.register(`quantity`)} />{form.formState.errors?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
@@ -309,12 +326,12 @@ export default function EditDrugPage() {
                     
                     <Separator className="my-4" />
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label>Dosage Form*</Label><SelectionDialog triggerText="Select Form" title="Dosage Form" options={selectionData.drug_type || []} onSelect={(val) => form.setValue(`dosageForm`, val)} icon={Pill} value={form.watch(`dosageForm`)} /></div>
-                        <div className="space-y-2"><Label>Meal Type*</Label><SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={selectionData.meal_type || []} onSelect={(val) => form.setValue(`mealType`, val)} icon={Pill} value={form.watch(`mealType`)} /></div>
-                        <div className="space-y-2"><Label>Using Frequency*</Label><SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={selectionData.using_type || []} onSelect={(val) => form.setValue(`usingFrequency`, val)} icon={Repeat} value={form.watch(`usingFrequency`)} /></div>
-                        <div className="space-y-2"><Label>At a Time*</Label><SelectionDialog triggerText="e.g. 5ml" title="At a Time" options={selectionData.at_a_time || []} onSelect={(val) => form.setValue(`at_a_time`, val)} icon={Hash} value={form.watch(`at_a_time`)} /></div>
-                        <div className="space-y-2"><Label>Hour Quantity</Label><SelectionDialog triggerText="e.g. 8" title="Hour Quantity" options={selectionData.hour_qty || []} onSelect={(val) => form.setValue(`hour_qty`, val)} icon={Clock} value={form.watch(`hour_qty`) || ''} /></div>
-                        <div className="space-y-2"><Label>Additional Description</Label><SelectionDialog triggerText="Select Description" title="Additional Description" options={selectionData.additional_description || []} onSelect={(val) => form.setValue(`additionalInstruction`, val)} icon={Pill} value={form.watch(`additionalInstruction`) || ''} /></div>
+                        <div className="space-y-2"><Label>Dosage Form*</Label><SelectionDialog triggerText="Select Form" title="Dosage Form" options={selectionData!.drug_type || []} onSelect={(val) => form.setValue(`dosageForm`, val)} icon={Pill} value={form.watch(`dosageForm`)} /></div>
+                        <div className="space-y-2"><Label>Meal Type*</Label><SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={selectionData!.meal_type || []} onSelect={(val) => form.setValue(`mealType`, val)} icon={Pill} value={form.watch(`mealType`)} /></div>
+                        <div className="space-y-2"><Label>Using Frequency*</Label><SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={selectionData!.using_type || []} onSelect={(val) => form.setValue(`usingFrequency`, val)} icon={Repeat} value={form.watch(`usingFrequency`)} /></div>
+                        <div className="space-y-2"><Label>At a Time*</Label><SelectionDialog triggerText="e.g. 5ml" title="At a Time" options={selectionData!.at_a_time || []} onSelect={(val) => form.setValue(`at_a_time`, val)} icon={Hash} value={form.watch(`at_a_time`)} /></div>
+                        <div className="space-y-2"><Label>Hour Quantity</Label><SelectionDialog triggerText="e.g. 8" title="Hour Quantity" options={selectionData!.hour_qty || []} onSelect={(val) => form.setValue(`hour_qty`, val)} icon={Clock} value={form.watch(`hour_qty`) || ''} /></div>
+                        <div className="space-y-2"><Label>Additional Description</Label><SelectionDialog triggerText="Select Description" title="Additional Description" options={selectionData!.additional_description || []} onSelect={(val) => form.setValue(`additionalInstruction`, val)} icon={Pill} value={form.watch(`additionalInstruction`) || ''} /></div>
                     </div>
                     
                     <Separator className="my-4" />
@@ -355,5 +372,3 @@ export default function EditDrugPage() {
         </div>
     );
 }
-
-    
