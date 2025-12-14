@@ -11,11 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, PlusCircle, Save, Trash2, Calculator, Pill, Hash, Repeat, Clock, Calendar as CalendarIcon, User, Search, Check, ChevronsUpDown } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Save, Trash2, Calculator, Pill, Hash, Repeat, Clock, Calendar as CalendarIcon, User, Search, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useQuery } from '@tanstack/react-query';
-import type { MasterProduct, FormSelectionData, Instruction } from '@/lib/types';
-import { getMasterProducts, getFormSelectionData, getAllCareInstructions } from '@/lib/actions/games';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { MasterProduct, FormSelectionData, Instruction, PrescriptionSubmissionPayload } from '@/lib/types';
+import { getMasterProducts, getFormSelectionData, getAllCareInstructions, savePrescription } from '@/lib/actions/games';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,9 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useAuth } from '@/contexts/AuthContext';
+import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
 
 const drugSchema = z.object({
   coverId: z.string(),
@@ -342,6 +345,7 @@ const AdminPOSCalculator = ({ drugs, onUseTotal, closeDialog }: { drugs: { cover
 
 export default function CreatePatientPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
 
   const { data: selectionData, isLoading: isLoadingSelectionData } = useQuery<FormSelectionData>({
@@ -377,13 +381,46 @@ export default function CreatePatientPage() {
   
   const watchedDrugs = form.watch('drugs');
 
+  const saveMutation = useMutation({
+    mutationFn: (payload: PrescriptionSubmissionPayload) => savePrescription(payload),
+    onSuccess: () => {
+        toast({
+            title: 'Patient Created!',
+            description: `The new patient has been saved.`
+        });
+        router.push('/admin/manage/games/ceylon-pharmacy/patients');
+    },
+    onError: (error: Error) => {
+        toast({
+            variant: "destructive",
+            title: "Creation Failed",
+            description: error.message,
+        });
+    }
+  });
+
   const onSubmit = (data: PatientFormValues) => {
-    console.log("Submitting New Patient Data:", data);
-    toast({
-        title: 'Patient Created!',
-        description: `${data.name} has been added to the game.`
-    });
-    router.push('/admin/manage/games/ceylon-pharmacy/patients');
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to save.'});
+        return;
+    }
+    
+    const payload: PrescriptionSubmissionPayload = {
+      prescription_name: data.prescription_name,
+      prescription_status: "Active",
+      created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+      created_by: user.username || 'admin',
+      Pres_Name: data.name,
+      pres_date: data.pres_date,
+      Pres_Age: parseInt(data.age, 10),
+      Pres_Method: 'N/A', // This field is not in the form, using default
+      doctor_name: data.doctor_name,
+      notes: data.notes || '',
+      patient_description: data.patient_description || '',
+      address: data.address || '',
+    };
+    
+    saveMutation.mutate(payload);
   };
   
   const dailyQtyOptions = ['-', '1', '2', '3', '1/2', '4', '5', '1 1/2', '1 Drop', '10ml', '15ml', '1/4', '10U', '2 1/2', '2.5ml', '15U', '1puff', '2puff', '20ml', '30U']; 
@@ -411,7 +448,28 @@ export default function CreatePatientPage() {
                     </div>
                     <div className="space-y-2">
                         <Label>Prescription Date*</Label>
-                        <Input type="date" {...form.register('pres_date')} />
+                         <Controller
+                            control={form.control}
+                            name="pres_date"
+                            render={({ field }) => (
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline" className="w-full justify-start text-left font-normal h-10 text-sm">
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {field.value ? format(new Date(field.value), "PPP") : <span>Pick a date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={field.value ? new Date(field.value) : undefined}
+                                            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            )}
+                        />
                         {form.formState.errors.pres_date && <p className="text-xs text-destructive">{form.formState.errors.pres_date.message}</p>}
                     </div>
                     <div className="space-y-2"><Label>Patient Age*</Label><Input {...form.register('age')} placeholder="e.g. 45 Years" />{form.formState.errors.age && <p className="text-xs text-destructive">{form.formState.errors.age.message}</p>}</div>
@@ -450,6 +508,10 @@ export default function CreatePatientPage() {
                         <Card key={field.id} className="p-4 bg-muted/50 relative">
                              <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => remove(index)}><Trash2 className="h-4 w-4"/></Button>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label>Cover ID*</Label>
+                                  <Input {...form.register(`drugs.${index}.coverId`)} readOnly className="font-mono bg-gray-200" />
+                                </div>
                                 <div className="space-y-2">
                                   <Label>Prescription Content*</Label>
                                   <Input {...form.register(`drugs.${index}.content`)} placeholder="e.g. Tab Metformin 500mg..." />
@@ -529,8 +591,9 @@ export default function CreatePatientPage() {
             </Card>
 
             <div className="flex justify-end mt-6">
-                <Button type="submit" size="lg">
-                    <Save className="mr-2 h-4 w-4" /> Create Patient
+                <Button type="submit" size="lg" disabled={saveMutation.isPending}>
+                    {saveMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
+                    Create Patient
                 </Button>
             </div>
         </form>
