@@ -13,30 +13,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, Loader2, AlertTriangle, Search, Check, ChevronsUpDown, Pill, Hash, Repeat, Clock, Calendar as CalendarIcon, User, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getPrescriptionDetails, getAllCareInstructions, getFormSelectionData, saveOrUpdateDispensingAnswer, getDispensingAnswers } from '@/lib/actions/games';
-import type { PrescriptionDetail, Instruction, FormSelectionData, PrescriptionSubmissionPayload, DispensingAnswer, GamePatient } from '@/lib/types';
+import { getPrescriptionDetails, getFormSelectionData, saveOrUpdateDispensingAnswer, getDispensingAnswers } from '@/lib/actions/games';
+import type { PrescriptionDetail, FormSelectionData, DispensingAnswer } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 
 
 const drugSchema = z.object({
-  id: z.string(),
   correctDrugName: z.string().min(1, 'Correct Drug Name is required'),
   quantity: z.string().min(1, 'Quantity is required'),
-  correctInstructionIds: z.array(z.string()).optional(),
-  
-  // Fields from student side
   dosageForm: z.string().nonempty("Dosage form is required."),
   morningQty: z.string().nonempty("Morning quantity is required."),
   afternoonQty: z.string().nonempty("Afternoon quantity is required."),
@@ -99,97 +88,6 @@ const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, va
 };
 
 
-const InstructionSelectionDialog = ({
-    selectedIds,
-    onSelectionChange,
-    trigger
-}: {
-    selectedIds: string[],
-    onSelectionChange: (newIds: string[]) => void,
-    trigger: React.ReactNode,
-}) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [currentSelectedIds, setCurrentSelectedIds] = useState(selectedIds);
-
-    const { data: allInstructions = [], isLoading } = useQuery<Instruction[]>({
-        queryKey: ['allCareInstructions'],
-        queryFn: getAllCareInstructions,
-    });
-    
-    useEffect(() => {
-        if(isOpen) {
-            setCurrentSelectedIds(selectedIds);
-        }
-    }, [isOpen, selectedIds]);
-
-    const uniqueInstructions = useMemo(() => {
-        const seen = new Set<string>();
-        return allInstructions.filter(instruction => {
-            const lowercased = instruction.instruction.toLowerCase();
-            if (seen.has(lowercased) || !instruction.instruction) {
-                return false;
-            }
-            seen.add(lowercased);
-            return true;
-        }).sort((a,b) => a.instruction.localeCompare(b.instruction));
-    }, [allInstructions]);
-
-    const filteredInstructions = useMemo(() => {
-        if (!searchTerm) return uniqueInstructions;
-        return uniqueInstructions.filter(inst => inst.instruction.toLowerCase().includes(searchTerm.toLowerCase()));
-    }, [uniqueInstructions, searchTerm]);
-
-    const handleToggle = (instructionId: string) => {
-        setCurrentSelectedIds(prev =>
-            prev.includes(instructionId) ? prev.filter(id => id !== instructionId) : [...prev, instructionId]
-        );
-    };
-
-    const handleConfirm = () => {
-        onSelectionChange(currentSelectedIds);
-        setIsOpen(false);
-    };
-
-    return (
-         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>{trigger}</DialogTrigger>
-            <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>Select Counselling Instructions</DialogTitle>
-                     <div className="relative pt-2">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
-                        <Input placeholder="Search instructions..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                    </div>
-                </DialogHeader>
-                <ScrollArea className="max-h-[50vh] pr-4 -mr-4">
-                    <div className="space-y-2">
-                        {isLoading ? (
-                            <p>Loading instructions...</p>
-                        ) : (
-                            filteredInstructions.map(inst => (
-                                <div key={inst.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted/50">
-                                    <Checkbox
-                                        id={`dialog-inst-${inst.id}`}
-                                        checked={currentSelectedIds.includes(inst.id)}
-                                        onCheckedChange={() => handleToggle(inst.id)}
-                                    />
-                                    <Label htmlFor={`dialog-inst-${inst.id}`} className="text-sm font-normal w-full cursor-pointer">{inst.instruction}</Label>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </ScrollArea>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-                    <Button onClick={handleConfirm}>Confirm Selection</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-};
-
-
 export default function EditDrugPage() {
     const router = useRouter();
     const params = useParams();
@@ -220,18 +118,6 @@ export default function EditDrugPage() {
         queryFn: getFormSelectionData,
     });
     
-     const { data: allInstructions = [] } = useQuery<Instruction[]>({
-        queryKey: ['allCareInstructions'],
-        queryFn: getAllCareInstructions,
-    });
-    
-    const instructionMap = useMemo(() => {
-        return allInstructions.reduce((map, inst) => {
-            map.set(inst.id, inst.instruction);
-            return map;
-        }, new Map<string, string>());
-    }, [allInstructions]);
-
 
     const form = useForm<EditDrugFormValues>({
         resolver: zodResolver(drugSchema),
@@ -251,11 +137,9 @@ export default function EditDrugPage() {
         }
     });
 
-
     useEffect(() => {
         if (drugToEdit) {
             const defaultValues: Partial<EditDrugFormValues> = {
-                id: drugToEdit.cover_id,
                 quantity: "1", 
                 correctDrugName: "",
                 dosageForm: "",
@@ -268,7 +152,6 @@ export default function EditDrugPage() {
                 at_a_time: "",
                 hour_qty: "",
                 additionalInstruction: "",
-                correctInstructionIds: [],
             };
             
             if (drugAnswers) {
@@ -287,14 +170,13 @@ export default function EditDrugPage() {
                     additionalInstruction: drugAnswers.additional_description || "",
                 });
             }
-            
             form.reset(defaultValues as EditDrugFormValues);
         }
     }, [drugToEdit, drugAnswers, form]);
     
     const onSubmit = (data: EditDrugFormValues) => {
-        if (!user) {
-            toast({ variant: 'destructive', title: 'Not Authenticated' });
+        if (!user || !drugToEdit) {
+            toast({ variant: 'destructive', title: 'Error', description: 'User or drug data missing.' });
             return;
         }
 
@@ -343,10 +225,11 @@ export default function EditDrugPage() {
                  <Button variant="ghost" onClick={() => router.back()} className="-ml-4">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Drug List
                 </Button>
-                <h1 className="text-3xl font-headline font-semibold mt-2">Edit Answers for: {drugToEdit.content}</h1>
+                <h1 className="text-3xl font-headline font-semibold mt-2">Edit Dispensing Answers</h1>
+                 <p className="text-muted-foreground">Correct answers for: {drugToEdit.content}</p>
             </header>
             <form onSubmit={form.handleSubmit(onSubmit)}>
-                 <Card className="p-4 bg-muted/50 relative">
+                 <Card className="p-4 bg-muted/50 relative shadow-lg">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Correct Drug Name*</Label>
@@ -374,38 +257,10 @@ export default function EditDrugPage() {
                         <div className="space-y-2"><Label>Additional Description</Label><SelectionDialog triggerText="Select Description" title="Additional Description" options={selectionData!.additional_description || []} onSelect={(val) => form.setValue(`additionalInstruction`, val)} icon={Pill} value={form.watch(`additionalInstruction`) || ''} /></div>
                     </div>
                     
-                    <Separator className="my-4" />
-                    <div className="md:col-span-2 space-y-2">
-                        <Controller
-                            control={form.control}
-                            name={`correctInstructionIds`}
-                            render={({ field: { onChange, value } }) => (
-                                <InstructionSelectionDialog
-                                    selectedIds={value || []}
-                                    onSelectionChange={onChange}
-                                    trigger={
-                                        <div className="space-y-2">
-                                            <Label>Correct Counselling Instructions</Label>
-                                            <Button type="button" variant="outline" className="w-full justify-start text-left font-normal">
-                                                {value && value.length > 0 ? `${value.length} instruction(s) selected` : "Select instructions..."}
-                                            </Button>
-                                              {value && value.length > 0 && (
-                                                <div className="flex flex-wrap gap-1">
-                                                    {value.map(id => (
-                                                        <Badge key={id} variant="secondary" className="font-normal">{instructionMap.get(id) || 'Unknown'}</Badge>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    }
-                                />
-                            )}
-                        />
-                    </div>
                      <CardFooter className="p-0 pt-6">
                         <Button type="submit" disabled={saveMutation.isPending}>
                             {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                            <Save className="mr-2 h-4 w-4" /> Save Drug Changes
+                            <Save className="mr-2 h-4 w-4" /> Save Dispensing Answers
                         </Button>
                     </CardFooter>
                 </Card>

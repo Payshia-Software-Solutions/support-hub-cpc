@@ -6,7 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, User, Pill, FileText, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { ArrowLeft, User, Pill, FileText, Loader2, AlertTriangle, ArrowRight, MessageSquare } from 'lucide-react';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails } from '@/lib/actions/games';
 import type { GamePatient, PrescriptionDetail } from '@/lib/types';
 import Link from 'next/link';
@@ -60,7 +60,7 @@ export default function PatientHubPage() {
             <p className="text-muted-foreground">Manage details for {patient?.Pres_Name || 'patient'}.</p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="shadow-lg flex flex-col">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><User className="h-5 w-5"/> Basic Info</CardTitle>
@@ -81,7 +81,7 @@ export default function PatientHubPage() {
              <Card className="shadow-lg flex flex-col">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Pill className="h-5 w-5"/> Prescription Drugs</CardTitle>
-                    <CardDescription>Manage the list of prescribed medications.</CardDescription>
+                    <CardDescription>Manage medications and dispensing answers.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow">
                      <p className="text-sm">
@@ -95,6 +95,21 @@ export default function PatientHubPage() {
                 </CardFooter>
             </Card>
             
+            <Card className="shadow-lg flex flex-col">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5"/> Patient Counselling</CardTitle>
+                    <CardDescription>Set the correct counselling instructions for each drug.</CardDescription>
+                </CardHeader>
+                 <CardContent className="flex-grow">
+                   <p className="text-sm">Configure the instructions that should be given to the patient for each medication.</p>
+                </CardContent>
+                <CardFooter>
+                    <Button variant="outline" asChild className="w-full">
+                        <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/counsel`}>Manage Counselling <ArrowRight className="ml-2 h-4 w-4"/></Link>
+                    </Button>
+                </CardFooter>
+            </Card>
+
              <Card className="shadow-lg flex flex-col">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5"/> Billing</CardTitle>
