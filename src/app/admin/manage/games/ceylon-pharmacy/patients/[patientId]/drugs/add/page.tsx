@@ -1,23 +1,25 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, Loader2, Search, Pill, Hash, Repeat, Clock } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, PlusCircle, Edit, Trash2, Save, Search, Pill, Hash, Repeat, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getFormSelectionData, savePrescriptionContent, getCeylonPharmacyPrescriptions } from '@/lib/actions/games';
-import type { FormSelectionData, GamePatient } from '@/lib/types';
+import { getPrescriptionDetails, updatePrescriptionContent, savePrescriptionContent, getFormSelectionData, getDispensingAnswers } from '@/lib/actions/games';
+import type { PrescriptionDetail, FormSelectionData } from '@/lib/types';
+import Link from 'next/link';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 
 
@@ -90,37 +92,21 @@ const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, va
 };
 
 
-export default function AddDrugPage() {
-    const router = useRouter();
-    const params = useParams();
-    const patientId = params.patientId as string;
-    const { user } = useAuth();
+const AddDrugDialog = ({ patientId, onClose }: { patientId: string, onClose: () => void }) => {
     const queryClient = useQueryClient();
-
+    const { user } = useAuth();
+    
     const form = useForm<AddDrugFormValues>({
         resolver: zodResolver(addDrugSchema),
-        defaultValues: {
-            quantity: 1,
-        },
+        defaultValues: { quantity: 1, coverId: `Cover${Math.floor(Date.now() / 1000)}` },
     });
-
+    
     const { data: selectionData, isLoading: isLoadingSelectionData } = useQuery<FormSelectionData>({
         queryKey: ['formSelectionData'],
         queryFn: getFormSelectionData,
     });
     
-    const { data: patient, isLoading: isLoadingPatient } = useQuery<GamePatient>({
-      queryKey: ['ceylonPharmacyPatient', patientId],
-      queryFn: async () => {
-          const allPatients = await getCeylonPharmacyPrescriptions('admin-user', 'CPCC20');
-          const foundPatient = allPatients.find(p => p.prescription_id === patientId);
-          if (!foundPatient) throw new Error('Patient not found');
-          return foundPatient;
-      },
-      enabled: !!patientId,
-    });
-
-    const addDrugMutation = useMutation({
+     const addDrugMutation = useMutation({
         mutationFn: async (data: AddDrugFormValues) => {
             const contentPromise = savePrescriptionContent({
                 pres_code: patientId,
@@ -136,39 +122,32 @@ export default function AddDrugPage() {
         onSuccess: () => {
             toast({ title: 'Drug Added!', description: 'The new drug has been added to the prescription.' });
             queryClient.invalidateQueries({ queryKey: ['prescriptionDetails', patientId] });
-            router.push(`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/drugs`);
+            onClose();
         },
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
         }
     });
 
-    if (isLoadingPatient || isLoadingSelectionData) {
+    if (isLoadingSelectionData) {
         return <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin"/></div>
     }
-    
-    if (!patient) {
-        return <div className="p-8 text-center">Patient not found.</div>
-    }
-    
+
     const onSubmit = (data: AddDrugFormValues) => {
         addDrugMutation.mutate(data);
     };
 
     const dailyQtyOptions = ['-', '1', '2', '3', '1/2', '4', '5', '1 1/2', '1 Drop', '10ml', '15ml', '1/4', '10U', '2 1/2', '2.5ml', '15U', '1puff', '2puff', '20ml', '30U'];
 
-
     return (
-        <div className="p-4 md:p-8 space-y-6 pb-20">
-            <header>
-                <Button variant="ghost" onClick={() => router.back()} className="-ml-4">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Drug List
-                </Button>
-                <h1 className="text-3xl font-headline font-semibold mt-2">Add Drug to Prescription</h1>
-                <p className="text-muted-foreground">For patient: {patient.Pres_Name}</p>
-            </header>
+        <DialogContent className="max-w-3xl">
+            <DialogHeader>
+                <DialogTitle>Add New Drug</DialogTitle>
+                <DialogDescription>Add a medication and its dispensing answers to this prescription.</DialogDescription>
+            </DialogHeader>
             <form onSubmit={form.handleSubmit(onSubmit)}>
-                <Card className="p-4 bg-muted/50 relative">
+                <ScrollArea className="max-h-[60vh] -mr-6 pr-6">
+                 <div className="p-4 bg-muted/50 relative space-y-4">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Cover ID*</Label>
@@ -203,14 +182,169 @@ export default function AddDrugPage() {
                         <div className="space-y-2"><Label>Hour Quantity</Label><SelectionDialog triggerText="e.g. 8" title="Hour Quantity" options={selectionData?.hour_qty || []} onSelect={(val) => form.setValue(`hour_qty`, val)} icon={Clock} value={form.watch(`hour_qty`) || ''} /></div>
                         <div className="space-y-2"><Label>Additional Description</Label><SelectionDialog triggerText="Select Description" title="Additional Description" options={selectionData?.additional_description || []} onSelect={(val) => form.setValue(`additionalInstruction`, val)} icon={Pill} value={form.watch(`additionalInstruction`) || ''} /></div>
                     </div>
-                     <CardFooter className="p-0 pt-6">
-                        <Button type="submit" disabled={addDrugMutation.isPending}>
-                            {addDrugMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                            <Save className="mr-2 h-4 w-4" /> Save Drug
-                        </Button>
-                    </CardFooter>
-                </Card>
+                </div>
+                </ScrollArea>
+                 <DialogFooter className="pt-6">
+                     <DialogClose asChild><Button type="button" variant="outline" disabled={addDrugMutation.isPending}>Cancel</Button></DialogClose>
+                     <Button type="submit" disabled={addDrugMutation.isPending}>
+                        {addDrugMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        <Save className="mr-2 h-4 w-4" /> Save Drug
+                    </Button>
+                </DialogFooter>
             </form>
-        </div>
+        </DialogContent>
     )
+}
+
+const DrugItem = ({ drug, patientId, onDelete }: { drug: PrescriptionDetail, patientId: string, onDelete: (drug: PrescriptionDetail) => void }) => {
+    const queryClient = useQueryClient();
+    const [content, setContent] = useState(drug.content);
+    
+    const updateMutation = useMutation({
+        mutationFn: updatePrescriptionContent,
+        onSuccess: (updatedDrug) => {
+            queryClient.setQueryData<PrescriptionDetail[]>(['prescriptionDetails', patientId], (oldData) =>
+                oldData ? oldData.map(d => d.cover_id === updatedDrug.cover_id ? { ...updatedDrug, pres_code: drug.pres_code } : d) : []
+            );
+            toast({ title: 'Content Updated', description: `Drug content for ${updatedDrug.cover_id} has been saved.` });
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+            // Revert on error
+            setContent(drug.content);
+        },
+    });
+
+    const handleSave = () => {
+        if (content !== drug.content) {
+            updateMutation.mutate({ pres_code: drug.pres_code, cover_id: drug.cover_id, content: content });
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30 gap-2">
+            <Input 
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="text-sm font-medium flex-grow bg-background"
+                disabled={updateMutation.isPending}
+            />
+            <div className="flex items-center gap-1">
+                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSave} disabled={updateMutation.isPending || content === drug.content}>
+                    {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Save className="h-4 w-4" />}
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                    <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/drugs/edit/${drug.cover_id}`}>
+                        <Edit className="h-4 w-4 mr-2" /> Answers
+                    </Link>
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onDelete(drug)}>
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </div>
+        </div>
+    );
+};
+
+
+export default function ManageDrugsPage() {
+  const router = useRouter();
+  const params = useParams();
+  const patientId = params.patientId as string;
+  const [drugToDelete, setDrugToDelete] = useState<PrescriptionDetail | null>(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: prescriptionDetails, isLoading, isError, error } = useQuery<PrescriptionDetail[]>({
+    queryKey: ['prescriptionDetails', patientId],
+    queryFn: () => getPrescriptionDetails(patientId),
+    enabled: !!patientId,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (coverId: string) => {
+        // Placeholder for delete logic. In a real app, you would call an API endpoint.
+        console.log("Deleting drug with coverId:", coverId);
+        await new Promise(resolve => setTimeout(resolve, 500)); 
+    },
+    onSuccess: (data, coverId) => {
+      queryClient.setQueryData<PrescriptionDetail[]>(['prescriptionDetails', patientId], (oldData) => 
+          oldData ? oldData.filter(d => d.cover_id !== coverId) : []
+      );
+      toast({ title: 'Drug Removed', description: 'The drug has been removed from the prescription.' });
+    },
+    onError: (error: Error) => {
+        toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message });
+    },
+    onSettled: () => setDrugToDelete(null),
+  });
+
+  const handleDeleteConfirm = () => {
+    if (drugToDelete) {
+        // This is a mock deletion since there's no backend endpoint for it yet.
+        // It optimistically updates the UI.
+        deleteMutation.mutate(drugToDelete.cover_id);
+    }
+  };
+
+  return (
+    <div className="p-4 md:p-8 space-y-6 pb-20">
+       <AlertDialog open={!!drugToDelete} onOpenChange={() => setDrugToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>This will permanently delete the drug "{drugToDelete?.content}" from this prescription.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleteMutation.isPending}>
+                    {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Delete
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+           <AddDrugDialog patientId={patientId} onClose={() => setIsAddOpen(false)} />
+       </Dialog>
+
+      <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+        <div>
+          <Button variant="ghost" onClick={() => router.back()} className="-ml-4">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Patient Hub
+          </Button>
+          <h1 className="text-3xl font-headline font-semibold mt-2">Manage Prescription Drugs</h1>
+          <p className="text-muted-foreground">Add, edit, or remove medications for this prescription.</p>
+        </div>
+        <Button onClick={() => setIsAddOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4"/> Add Drug
+        </Button>
+      </header>
+      
+      <Card className="shadow-lg">
+        <CardHeader>
+            <CardTitle>Drug List</CardTitle>
+            <CardDescription>{prescriptionDetails?.length || 0} drugs currently in this prescription.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            {isLoading && (
+                 <div className="space-y-3">
+                    <Skeleton className="h-12 w-full"/>
+                    <Skeleton className="h-12 w-full"/>
+                 </div>
+            )}
+            {isError && <p className="text-destructive">{(error as Error).message}</p>}
+            <div className="space-y-3">
+                {!isLoading && !isError && prescriptionDetails && prescriptionDetails.length > 0 ? (
+                    prescriptionDetails.map(drug => (
+                        <DrugItem key={drug.cover_id} drug={drug} patientId={patientId} onDelete={setDrugToDelete} />
+                    ))
+                ) : !isLoading && (
+                    <p className="text-center py-8 text-muted-foreground">No drugs have been added to this prescription yet.</p>
+                )}
+            </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
