@@ -33,6 +33,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const drugSchema = z.object({
   id: z.string(),
   coverId: z.string().min(1, 'Cover ID is required'),
+  content: z.string().min(1, 'Prescription content is required'),
   correctDrugName: z.string().min(1, 'Correct Drug Name is required'),
   quantity: z.coerce.number().min(1, 'Quantity is required'),
   correctInstructionIds: z.array(z.string()).optional(),
@@ -251,7 +252,7 @@ const ProductSelector = ({ products, selected, onSelect, placeholder }: { produc
 
 
 // --- New POS Calculator Component ---
-const AdminPOSCalculator = ({ drugs, onUseTotal, closeDialog }: { drugs: { coverId: string; quantity: number }[]; onUseTotal: (total: number) => void; closeDialog: () => void; }) => {
+const AdminPOSCalculator = ({ drugs, onUseTotal, closeDialog }: { drugs: { coverId: string; quantity: number, content: string }[]; onUseTotal: (total: number) => void; closeDialog: () => void; }) => {
     const { data: masterProducts, isLoading } = useQuery<MasterProduct[]>({
         queryKey: ['masterProducts'],
         queryFn: getMasterProducts,
@@ -268,7 +269,7 @@ const AdminPOSCalculator = ({ drugs, onUseTotal, closeDialog }: { drugs: { cover
             const price = product ? parseFloat(product.SellingPrice) : 0;
             return {
                 index: index,
-                name: drug.coverId,
+                name: drug.content,
                 quantity: drug.quantity,
                 price: price,
                 total: price * drug.quantity,
@@ -423,7 +424,8 @@ export default function EditPatientPage() {
             totalBillValue: 0, // Placeholder
             drugs: prescriptionDetails.map(drug => ({
                 id: drug.cover_id,
-                coverId: drug.content, 
+                coverId: drug.cover_id,
+                content: drug.content, 
                 correctDrugName: "",
                 quantity: 1,
                 correctInstructionIds: [],
@@ -529,7 +531,7 @@ export default function EditPatientPage() {
                                     <Button type="button" variant="outline" size="icon"><Calculator className="h-4 w-4"/></Button>
                                 </DialogTrigger>
                                 <AdminPOSCalculator 
-                                    drugs={watchedDrugs.map(d => ({ coverId: d.coverId, quantity: d.quantity }))}
+                                    drugs={watchedDrugs.map(d => ({ coverId: d.coverId, quantity: d.quantity, content: d.content }))}
                                     onUseTotal={(total) => form.setValue('totalBillValue', total)}
                                     closeDialog={() => setIsCalculatorOpen(false)}
                                 />
@@ -552,8 +554,12 @@ export default function EditPatientPage() {
                     {fields.map((field, index) => (
                         <Card key={field.id} className="p-4 bg-muted/50 relative">
                              <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => remove(index)}><Trash2 className="h-4 w-4"/></Button>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2"><Label>Cover ID*</Label><Input {...form.register(`drugs.${index}.coverId`)} />{form.formState.errors.drugs?.[index]?.coverId && <p className="text-xs text-destructive">Required</p>}</div>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label>Prescription Content*</Label>
+                                  <Input {...form.register(`drugs.${index}.content`)} placeholder="e.g. Tab Metformin 500mg..." />
+                                  {form.formState.errors.drugs?.[index]?.content && <p className="text-xs text-destructive">Required</p>}
+                                </div>
                                 <div className="space-y-2">
                                   <Label>Correct Drug Name*</Label>
                                   <SelectionDialog triggerText="Select Drug" title="Correct Drug" options={selectionData?.drug_name || []} onSelect={(val) => form.setValue(`drugs.${index}.correctDrugName`, val)} icon={Pill} value={form.watch(`drugs.${index}.correctDrugName`)} />
@@ -640,7 +646,19 @@ export default function EditPatientPage() {
                             </div>
                         </Card>
                     ))}
-                    <Button type="button" variant="outline" className="w-full" onClick={() => append({ id: `new-${Date.now()}`, coverId: '', correctDrugName: '', quantity: 1, correctInstructionIds: [], dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "", usingFrequency: "", at_a_time: "" })}>
+                    <Button type="button" variant="outline" className="w-full" onClick={() => {
+                        const newIndex = fields.length + 1;
+                        append({ 
+                            id: `new-${Date.now()}`,
+                            coverId: `Cover${newIndex}`,
+                            content: '', 
+                            correctDrugName: '', 
+                            quantity: 1, 
+                            correctInstructionIds: [], 
+                            dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "",
+                            usingFrequency: "", at_a_time: "", hour_qty: "", additionalInstruction: "" 
+                        })
+                    }}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Another Drug
                     </Button>
                 </CardContent>
@@ -655,3 +673,4 @@ export default function EditPatientPage() {
     </div>
   );
 }
+
