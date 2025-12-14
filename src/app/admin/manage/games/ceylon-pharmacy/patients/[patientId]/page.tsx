@@ -27,7 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 
 
@@ -566,32 +566,15 @@ export default function EditPatientPage() {
                     <div className="space-y-2"><Label>Initial Time (seconds)*</Label><Input type="number" {...form.register('initialTime')} />{form.formState.errors.initialTime && <p className="text-xs text-destructive">{form.formState.errors.initialTime.message}</p>}</div>
                     <div className="space-y-2"><Label>Address</Label><Input {...form.register('address')} /></div>
                     <div className="space-y-2"><Label>Doctor's Name*</Label><Input {...form.register('doctor_name')} />{form.formState.errors.doctor_name && <p className="text-xs text-destructive">{form.formState.errors.doctor_name.message}</p>}</div>
-                    <div className="space-y-2">
-                        <Label>Total Bill Value (LKR)*</Label>
-                        <div className="flex gap-2">
-                            <Input type="number" step="0.01" {...form.register('totalBillValue')} className="flex-grow" />
-                            <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
-                                <DialogTrigger asChild>
-                                    <Button type="button" variant="outline" size="icon"><Calculator className="h-4 w-4"/></Button>
-                                </DialogTrigger>
-                                <AdminPOSCalculator 
-                                    drugs={watchedDrugs.map(d => ({ coverId: d.coverId, quantity: d.quantity, content: d.content }))}
-                                    onUseTotal={(total) => form.setValue('totalBillValue', total)}
-                                    closeDialog={() => setIsCalculatorOpen(false)}
-                                />
-                            </Dialog>
-                        </div>
-                        {form.formState.errors.totalBillValue && <p className="text-xs text-destructive">{form.formState.errors.totalBillValue.message}</p>}
-                    </div>
-                     <div className="space-y-2 lg:col-span-3"><Label>Patient Description</Label><Textarea {...form.register('patient_description')} rows={2}/></div>
-                     <div className="space-y-2 lg:col-span-3"><Label>Prescription Notes</Label><Textarea {...form.register('notes')} rows={2}/></div>
+                    <div className="space-y-2 lg:col-span-3"><Label>Patient Description</Label><Textarea {...form.register('patient_description')} rows={2}/></div>
+                    <div className="space-y-2 lg:col-span-3"><Label>Prescription Notes</Label><Textarea {...form.register('notes')} rows={2}/></div>
                 </CardContent>
             </Card>
 
             {/* --- Drugs Content Section --- */}
-            <Card className="shadow-lg">
+            <Card className="shadow-lg mb-6">
                 <CardHeader>
-                    <CardTitle>Prescribed Drugs (Content)</CardTitle>
+                    <CardTitle>Prescribed Drugs</CardTitle>
                     {form.formState.errors.drugs?.root && <p className="text-sm text-destructive font-medium">{form.formState.errors.drugs.root.message}</p>}
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -682,6 +665,31 @@ export default function EditPatientPage() {
                 </CardContent>
             </Card>
 
+             <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle>Bill Value</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-2">
+                        <Label>Total Bill Value (LKR)*</Label>
+                        <div className="flex gap-2">
+                            <Input type="number" step="0.01" {...form.register('totalBillValue')} className="flex-grow" />
+                            <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
+                                <DialogTrigger asChild>
+                                    <Button type="button" variant="outline" size="icon"><Calculator className="h-4 w-4"/></Button>
+                                </DialogTrigger>
+                                <AdminPOSCalculator 
+                                    drugs={watchedDrugs.map(d => ({ coverId: d.coverId, quantity: d.quantity, content: d.content }))}
+                                    onUseTotal={(total) => form.setValue('totalBillValue', total)}
+                                    closeDialog={() => setIsCalculatorOpen(false)}
+                                />
+                            </Dialog>
+                        </div>
+                        {form.formState.errors.totalBillValue && <p className="text-xs text-destructive">{form.formState.errors.totalBillValue.message}</p>}
+                    </div>
+                </CardContent>
+            </Card>
+
             <div className="flex justify-end mt-6">
                 <Button type="submit" size="lg" disabled={saveMutation.isPending}>
                     {saveMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
@@ -693,3 +701,4 @@ export default function EditPatientPage() {
   );
 }
 
+    
