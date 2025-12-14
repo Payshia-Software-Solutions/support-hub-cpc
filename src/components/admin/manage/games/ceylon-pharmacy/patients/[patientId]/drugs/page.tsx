@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import * as React from 'react';
 
 
 const addDrugSchema = z.object({
@@ -160,17 +161,15 @@ export default function ManageDrugsPage() {
     enabled: !!patientId,
   });
 
-  const nextCoverId = useMemo(() => {
-    if (!prescriptionDetails || prescriptionDetails.length === 0) {
-        return "Cover1";
-    }
+ const nextCoverId = useMemo(() => {
+    if (!prescriptionDetails) return "Cover1";
     const maxCoverNum = prescriptionDetails.reduce((max, detail) => {
-        const match = detail.cover_id.match(/Cover(\d+)/);
-        if (match && match[1]) {
-            const num = parseInt(match[1], 10);
-            return Math.max(max, num);
-        }
-        return max;
+      const match = detail.cover_id.match(/Cover(\d+)/);
+      if (match && match[1]) {
+        const num = parseInt(match[1], 10);
+        return Math.max(max, num);
+      }
+      return max;
     }, 0);
     return `Cover${maxCoverNum + 1}`;
   }, [prescriptionDetails]);
