@@ -34,6 +34,17 @@ export const updateMasterProduct = async ({ productId, name, price }: { productI
 
 
 export const getCeylonPharmacyPrescriptions = async (studentId: string, courseCode: string): Promise<GamePatient[]> => {
+    // If the admin user is passed, fetch all patients from the dedicated admin endpoint.
+    if (studentId === 'admin-user') {
+        const response = await fetch(`${QA_API_BASE_URL}/care-patients`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Failed to fetch all game patients' }));
+            throw new Error(errorData.message || `Request failed with status ${response.status}`);
+        }
+        return response.json();
+    }
+
+    // Otherwise, fetch per student for the student dashboard.
     const response = await fetch(`${QA_API_BASE_URL}/care-center-courses/student/${studentId}/course/${courseCode}`);
     if (response.status === 404) {
         return []; // No patients found for this course, return empty array
@@ -44,15 +55,13 @@ export const getCeylonPharmacyPrescriptions = async (studentId: string, courseCo
     }
     const data = await response.json();
     
-    // The API returns an object with prescription IDs as keys. We need to convert it to an array.
     if (typeof data === 'object' && data !== null && !data.error) {
         return Object.values(data).map((item: any) => ({
-            ...item.patient, // Spread the patient details
-            start_data: item.start_data // Add the start_data object
+            ...item.patient,
+            start_data: item.start_data 
         }));
     }
     
-    // If the API returns an error structure or is not what we expect, return empty
     return [];
 };
 
