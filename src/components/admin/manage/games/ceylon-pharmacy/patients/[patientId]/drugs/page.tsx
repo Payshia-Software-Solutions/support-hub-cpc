@@ -35,7 +35,10 @@ const AddDrugDialog = ({ patientId, nextCoverId, onClose }: { patientId: string,
     
     const form = useForm<AddDrugFormValues>({
         resolver: zodResolver(addDrugSchema),
-        defaultValues: { coverId: nextCoverId, content: '' },
+        defaultValues: {
+            coverId: nextCoverId,
+            content: ''
+        },
     });
     
     // Sync default value if the dialog re-opens for the same patient but with new data
