@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -35,6 +34,10 @@ const AddDrugDialog = ({ patientId, nextCoverId, onClose, isOpen, onOpenChange }
     
     const form = useForm<AddDrugFormValues>({
         resolver: zodResolver(addDrugSchema),
+        defaultValues: {
+            coverId: nextCoverId,
+            content: ''
+        },
     });
 
     useEffect(() => {
