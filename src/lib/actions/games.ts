@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload } from '../types';
@@ -375,34 +376,59 @@ export const savePrescriptionContent = async (payload: { pres_code: string; cove
     return response.json();
 }
 
-export const savePrescription = async (prescriptionPayload: PrescriptionSubmissionPayload, drugs: any[]): Promise<any> => {
-    // Step 1: Save the main prescription data
-    const presResponse = await fetch(`${QA_API_BASE_URL}/care-patients`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(prescriptionPayload),
-    });
+export const savePrescription = async (prescriptionPayload: PrescriptionSubmissionPayload, drugs: any[], prescriptionId?: string): Promise<any> => {
+    
+    let presCode = prescriptionId;
 
-    if (!presResponse.ok) {
-        const errorData = await presResponse.json().catch(() => ({ message: 'Failed to save prescription.' }));
-        throw new Error(errorData.message || `Request failed with status ${presResponse.status}`);
+    if (prescriptionId) {
+        // Update existing prescription
+        const presResponse = await fetch(`${QA_API_BASE_URL}/care-patients/${prescriptionId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(prescriptionPayload),
+        });
+
+        if (!presResponse.ok) {
+            const errorData = await presResponse.json().catch(() => ({ message: 'Failed to update prescription.' }));
+            throw new Error(errorData.message || `Request failed with status ${presResponse.status}`);
+        }
+    } else {
+        // Create new prescription
+        const presResponse = await fetch(`${QA_API_BASE_URL}/care-patients`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(prescriptionPayload),
+        });
+
+        if (!presResponse.ok) {
+            const errorData = await presResponse.json().catch(() => ({ message: 'Failed to save prescription.' }));
+            throw new Error(errorData.message || `Request failed with status ${presResponse.status}`);
+        }
+        
+        const presData = await presResponse.json();
+        presCode = presData?.prescription?.prescription_id;
+        if (!presCode) {
+            throw new Error("Failed to get prescription code from the response.");
+        }
     }
 
-    const presData = await presResponse.json();
-    const presCode = presData?.prescription?.prescription_id;
     if (!presCode) {
-        throw new Error("Failed to get prescription code from the response.");
+         throw new Error("Prescription ID is not available for saving drug content.");
     }
     
-    // Step 2: Save each drug's content
+    // Save each drug's content
     const contentPromises = drugs.map(drug => {
         const contentPayload = {
-            pres_code: presCode,
+            pres_code: presCode!,
             cover_id: drug.coverId,
             content: drug.content
         };
+        // Here we would ideally have an update (PUT) or create (POST) logic for content.
+        // Assuming for now the API handles this via POST, but a real-world API might need a PUT to /care-content/{id}
         return savePrescriptionContent(contentPayload);
     });
 
@@ -416,5 +442,5 @@ export const savePrescription = async (prescriptionPayload: PrescriptionSubmissi
         // For now, we'll let the successful parts complete.
     }
 
-    return presData;
+    return { message: 'Prescription saved successfully' };
 }

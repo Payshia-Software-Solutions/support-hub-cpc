@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -14,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, AlertTriangle, Search, Calculator, Check, ChevronsUpDown, Pill, Hash, Repeat, Clock, Calendar as CalendarIcon, User } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getAllCareInstructions, getMasterProducts, getFormSelectionData, savePrescription } from '@/lib/actions/games';
 import type { GamePatient, PrescriptionDetail, Instruction, MasterProduct, FormSelectionData, PrescriptionSubmissionPayload } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
@@ -368,6 +369,7 @@ export default function EditPatientPage() {
   const patientId = params.patientId as string; // This is prescription_id
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: patient, isLoading: isLoadingPatient, isError, error } = useQuery<GamePatient>({
       queryKey: ['ceylonPharmacyPatient', patientId],
@@ -412,13 +414,15 @@ export default function EditPatientPage() {
   });
   
    const saveMutation = useMutation({
-    mutationFn: (data: { prescriptionPayload: PrescriptionSubmissionPayload, drugs: PatientFormValues['drugs'] }) => savePrescription(data.prescriptionPayload, data.drugs),
+    mutationFn: (data: { prescriptionPayload: PrescriptionSubmissionPayload, drugs: PatientFormValues['drugs'], prescriptionId: string }) => 
+        savePrescription(data.prescriptionPayload, data.drugs, data.prescriptionId),
     onSuccess: () => {
         toast({
             title: 'Patient Updated!',
             description: `The prescription details have been saved.`
         });
-        // Optionally refetch data or navigate
+        queryClient.invalidateQueries({ queryKey: ['ceylonPharmacyPatient', patientId] });
+        queryClient.invalidateQueries({ queryKey: ['prescriptionDetails', patientId] });
     },
     onError: (error: Error) => {
         toast({
@@ -445,7 +449,7 @@ export default function EditPatientPage() {
             totalBillValue: 0, // Placeholder
             drugs: prescriptionDetails.map((drug, index) => ({
                 id: drug.cover_id,
-                coverId: `Cover${index + 1}`,
+                coverId: drug.cover_id,
                 content: drug.content, 
                 correctDrugName: "",
                 quantity: 1,
@@ -473,11 +477,11 @@ export default function EditPatientPage() {
     const prescriptionPayload: PrescriptionSubmissionPayload = {
       prescription_name: data.prescription_name,
       prescription_status: patient?.prescription_status || "Active",
-      created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+      created_at: patient?.created_at || format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
       created_by: user.username || 'admin',
       Pres_Name: data.name,
       pres_date: data.pres_date,
-      Pres_Age: parseInt(data.age, 10), // Convert age string to integer
+      Pres_Age: parseInt(data.age, 10),
       Pres_Method: patient?.Pres_Method || 'N/A',
       doctor_name: data.doctor_name,
       notes: data.notes || '',
@@ -485,7 +489,7 @@ export default function EditPatientPage() {
       address: data.address || '',
     };
     
-    saveMutation.mutate({ prescriptionPayload, drugs: data.drugs });
+    saveMutation.mutate({ prescriptionPayload, drugs: data.drugs, prescriptionId: patient!.prescription_id });
   };
   
   const isLoading = isLoadingPatient || isLoadingSelectionData;
@@ -689,3 +693,4 @@ export default function EditPatientPage() {
     </div>
   );
 }
+
