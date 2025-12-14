@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, AlertTriangle, Search, Calculator, Check, ChevronsUpDown, Pill, Hash, Repeat, Clock } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, AlertTriangle, Search, Calculator, Check, ChevronsUpDown, Pill, Hash, Repeat, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useQuery } from '@tanstack/react-query';
@@ -25,17 +25,16 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const drugSchema = z.object({
   id: z.string(),
-  drugName: z.string().min(1, 'Required'),
+  coverId: z.string().min(1, 'Cover ID is required'),
+  correctDrugName: z.string().min(1, 'Correct Drug Name is required'),
   quantity: z.coerce.number().min(1, 'Quantity is required'),
-  lines: z.string().min(1, 'Required'),
   correctInstructionIds: z.array(z.string()).optional(),
   
   // Fields from student side
@@ -62,6 +61,7 @@ const patientFormSchema = z.object({
 
   // Prescription Details
   prescription_name: z.string().min(1, 'Prescription name is required'),
+  pres_date: z.string().min(1, 'Prescription date is required'),
   doctor_name: z.string().min(1, 'Doctor name is required'),
   notes: z.string().optional(),
   totalBillValue: z.coerce.number().min(0, 'Bill value must be a positive number'),
@@ -251,24 +251,24 @@ const ProductSelector = ({ products, selected, onSelect, placeholder }: { produc
 
 
 // --- New POS Calculator Component ---
-const AdminPOSCalculator = ({ drugs, onUseTotal, closeDialog }: { drugs: { drugName: string; quantity: number }[]; onUseTotal: (total: number) => void; closeDialog: () => void; }) => {
+const AdminPOSCalculator = ({ drugs, onUseTotal, closeDialog }: { drugs: { coverId: string; quantity: number }[]; onUseTotal: (total: number) => void; closeDialog: () => void; }) => {
     const { data: masterProducts, isLoading } = useQuery<MasterProduct[]>({
         queryKey: ['masterProducts'],
         queryFn: getMasterProducts,
     });
 
-    const [selectedProducts, setSelectedProducts] = useState<Record<number, string>>({});
+    const [selectedProducts, setSelectedProducts] = useState<Record<string, string>>({});
     const [discount, setDiscount] = useState('0');
 
     const billItems = useMemo(() => {
         if (!masterProducts || !drugs) return [];
         return drugs.map((drug, index) => {
-            const selectedProductId = selectedProducts[index];
+            const selectedProductId = selectedProducts[index] || '';
             const product = masterProducts.find(p => p.product_id === selectedProductId);
             const price = product ? parseFloat(product.SellingPrice) : 0;
             return {
                 index: index,
-                name: drug.drugName,
+                name: drug.coverId,
                 quantity: drug.quantity,
                 price: price,
                 total: price * drug.quantity,
@@ -417,15 +417,16 @@ export default function EditPatientPage() {
             address: patient.address,
             patient_description: patient.patient_description,
             prescription_name: patient.prescription_name,
+            pres_date: patient.pres_date,
             doctor_name: patient.doctor_name,
             notes: patient.notes,
             totalBillValue: 0, // Placeholder
             drugs: prescriptionDetails.map(drug => ({
                 id: drug.cover_id,
-                drugName: drug.content, 
-                quantity: 1, // Not in API
-                lines: drug.content, // Not ideal, but what we have
-                correctInstructionIds: [], // To be fetched separately
+                coverId: drug.content, 
+                correctDrugName: "",
+                quantity: 1,
+                correctInstructionIds: [],
                 dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "",
                 usingFrequency: "", at_a_time: "", hour_qty: "", additionalInstruction: ""
             })),
@@ -484,7 +485,37 @@ export default function EditPatientPage() {
                     <CardTitle>Prescription Details</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                    <div className="space-y-2"><Label>Patient Name*</Label><Input {...form.register('name')} />{form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}</div>
+                    <div className="space-y-2">
+                        <Label>Patient Name*</Label>
+                        <SelectionDialog triggerText="Select Name" title="Patient Name" options={selectionData?.name || []} onSelect={(val) => form.setValue("name", val, { shouldValidate: true })} icon={User} value={form.watch('name')} />
+                        {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Prescription Date*</Label>
+                        <Controller
+                            control={form.control}
+                            name="pres_date"
+                            render={({ field }) => (
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline" className="w-full justify-start text-left font-normal h-10 text-sm">
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {field.value ? format(new Date(field.value), "PPP") : <span>Pick a date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={field.value ? new Date(field.value) : undefined}
+                                            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            )}
+                        />
+                        {form.formState.errors.pres_date && <p className="text-xs text-destructive">{form.formState.errors.pres_date.message}</p>}
+                    </div>
                     <div className="space-y-2"><Label>Patient Age*</Label><Input {...form.register('age')} placeholder="e.g. 45 Years" />{form.formState.errors.age && <p className="text-xs text-destructive">{form.formState.errors.age.message}</p>}</div>
                     <div className="space-y-2"><Label>Initial Time (seconds)*</Label><Input type="number" {...form.register('initialTime')} />{form.formState.errors.initialTime && <p className="text-xs text-destructive">{form.formState.errors.initialTime.message}</p>}</div>
                     <div className="space-y-2"><Label>Address</Label><Input {...form.register('address')} /></div>
@@ -498,7 +529,7 @@ export default function EditPatientPage() {
                                     <Button type="button" variant="outline" size="icon"><Calculator className="h-4 w-4"/></Button>
                                 </DialogTrigger>
                                 <AdminPOSCalculator 
-                                    drugs={watchedDrugs.map(d => ({ drugName: d.drugName, quantity: d.quantity }))}
+                                    drugs={watchedDrugs.map(d => ({ coverId: d.coverId, quantity: d.quantity }))}
                                     onUseTotal={(total) => form.setValue('totalBillValue', total)}
                                     closeDialog={() => setIsCalculatorOpen(false)}
                                 />
@@ -522,9 +553,13 @@ export default function EditPatientPage() {
                         <Card key={field.id} className="p-4 bg-muted/50 relative">
                              <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => remove(index)}><Trash2 className="h-4 w-4"/></Button>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2"><Label>Drug Name*</Label><Input {...form.register(`drugs.${index}.drugName`)} />{form.formState.errors.drugs?.[index]?.drugName && <p className="text-xs text-destructive">Required</p>}</div>
+                                <div className="space-y-2"><Label>Cover ID*</Label><Input {...form.register(`drugs.${index}.coverId`)} />{form.formState.errors.drugs?.[index]?.coverId && <p className="text-xs text-destructive">Required</p>}</div>
+                                <div className="space-y-2">
+                                  <Label>Correct Drug Name*</Label>
+                                  <SelectionDialog triggerText="Select Drug" title="Correct Drug" options={selectionData?.drug_name || []} onSelect={(val) => form.setValue(`drugs.${index}.correctDrugName`, val)} icon={Pill} value={form.watch(`drugs.${index}.correctDrugName`)} />
+                                  {form.formState.errors.drugs?.[index]?.correctDrugName && <p className="text-xs text-destructive">Required</p>}
+                                </div>
                                 <div className="space-y-2"><Label>Quantity*</Label><Input type="number" {...form.register(`drugs.${index}.quantity`)} />{form.formState.errors.drugs?.[index]?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
-                                <div className="md:col-span-2 space-y-2"><Label>Prescription Lines (one per line)*</Label><Textarea {...form.register(`drugs.${index}.lines`)} rows={2}/>{form.formState.errors.drugs?.[index]?.lines && <p className="text-xs text-destructive">Required</p>}</div>
                             </div>
 
                             <Separator className="my-4" />
@@ -605,7 +640,7 @@ export default function EditPatientPage() {
                             </div>
                         </Card>
                     ))}
-                    <Button type="button" variant="outline" className="w-full" onClick={() => append({ id: `new-${Date.now()}`, drugName: '', quantity: 1, lines: '', correctInstructionIds: [], dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "", usingFrequency: "", at_a_time: "" })}>
+                    <Button type="button" variant="outline" className="w-full" onClick={() => append({ id: `new-${Date.now()}`, coverId: '', correctDrugName: '', quantity: 1, correctInstructionIds: [], dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "", usingFrequency: "", at_a_time: "" })}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Another Drug
                     </Button>
                 </CardContent>
