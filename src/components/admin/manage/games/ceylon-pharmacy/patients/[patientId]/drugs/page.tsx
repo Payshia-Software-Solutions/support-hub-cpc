@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
@@ -35,7 +35,7 @@ const AddDrugDialog = ({ patientId, nextCoverId, onClose }: { patientId: string,
     
     const form = useForm<AddDrugFormValues>({
         resolver: zodResolver(addDrugSchema),
-        values: { // Use `values` to make the form fully controlled by the prop
+        defaultValues: {
             coverId: nextCoverId,
             content: ''
         },
@@ -217,7 +217,7 @@ export default function ManageDrugsPage() {
       </AlertDialog>
       
        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-           <AddDrugDialog patientId={patientId} nextCoverId={nextCoverId} onClose={() => setIsAddOpen(false)} />
+           <AddDrugDialog key={nextCoverId} patientId={patientId} nextCoverId={nextCoverId} onClose={() => setIsAddOpen(false)} />
        </Dialog>
 
       <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
