@@ -81,78 +81,80 @@ export default function CreatePatientPage() {
         </header>
 
         <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                {/* --- Patient & Prescription Info Column --- */}
-                <div className="lg:col-span-1 space-y-6 sticky top-24">
-                     <Card className="shadow-lg">
-                        <CardHeader><CardTitle>Patient Details</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2"><Label>Name*</Label><Input {...form.register('name')} />{form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}</div>
-                            <div className="space-y-2"><Label>Age*</Label><Input {...form.register('age')} placeholder="e.g. 45 Years" />{form.formState.errors.age && <p className="text-xs text-destructive">{form.formState.errors.age.message}</p>}</div>
-                            <div className="space-y-2"><Label>Initial Time (seconds)*</Label><Input type="number" {...form.register('initialTime')} />{form.formState.errors.initialTime && <p className="text-xs text-destructive">{form.formState.errors.initialTime.message}</p>}</div>
-                            <div className="space-y-2"><Label>Address</Label><Textarea {...form.register('address')} rows={2}/></div>
-                            <div className="space-y-2"><Label>Patient Description</Label><Textarea {...form.register('patient_description')} rows={2}/></div>
-                        </CardContent>
-                    </Card>
-                     <Card className="shadow-lg">
-                        <CardHeader><CardTitle>Prescription Details</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2"><Label>Prescription Name*</Label><Input {...form.register('prescription_name')} />{form.formState.errors.prescription_name && <p className="text-xs text-destructive">{form.formState.errors.prescription_name.message}</p>}</div>
-                            <div className="space-y-2"><Label>Doctor's Name*</Label><Input {...form.register('doctor_name')} />{form.formState.errors.doctor_name && <p className="text-xs text-destructive">{form.formState.errors.doctor_name.message}</p>}</div>
-                            <div className="space-y-2"><Label>Total Bill Value (LKR)*</Label><Input type="number" step="0.01" {...form.register('totalBillValue')} />{form.formState.errors.totalBillValue && <p className="text-xs text-destructive">{form.formState.errors.totalBillValue.message}</p>}</div>
-                            <div className="space-y-2"><Label>Notes</Label><Textarea {...form.register('notes')} rows={2}/></div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* --- Drugs Column --- */}
-                 <div className="lg:col-span-2 space-y-6">
-                    <Card className="shadow-lg">
-                        <CardHeader>
-                            <CardTitle>Prescribed Drugs</CardTitle>
-                            {form.formState.errors.drugs?.root && <p className="text-sm text-destructive font-medium">{form.formState.errors.drugs.root.message}</p>}
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {fields.map((field, index) => (
-                                <Card key={field.id} className="p-4 bg-muted/50 relative">
-                                    <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => remove(index)}><Trash2 className="h-4 w-4"/></Button>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2"><Label>Drug Name*</Label><Input {...form.register(`drugs.${index}.drugName`)} />{form.formState.errors.drugs?.[index]?.drugName && <p className="text-xs text-destructive">Required</p>}</div>
-                                        <div className="space-y-2"><Label>Generic Name</Label><Input {...form.register(`drugs.${index}.genericName`)} /></div>
-                                        <div className="space-y-2"><Label>Quantity*</Label><Input type="number" {...form.register(`drugs.${index}.quantity`)} />{form.formState.errors.drugs?.[index]?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
-                                        <div className="md:col-span-2 space-y-2"><Label>Prescription Lines (one per line)*</Label><Textarea {...form.register(`drugs.${index}.lines`)} rows={2}/>{form.formState.errors.drugs?.[index]?.lines && <p className="text-xs text-destructive">Required</p>}</div>
-                                        <div className="md:col-span-2 space-y-2">
-                                            <Label>Correct Counselling Instructions</Label>
-                                            <div className="p-3 border rounded-md max-h-32 overflow-y-auto space-y-2 bg-background">
-                                                {allInstructions.map(inst => (
-                                                    <div key={inst.id} className="flex items-center space-x-2">
-                                                        <Checkbox
-                                                            id={`drug-${index}-inst-${inst.id}`}
-                                                            onCheckedChange={(checked) => {
-                                                                const fieldName = `drugs.${index}.correctInstructionIds`;
-                                                                const currentIds = form.getValues(fieldName) || [];
-                                                                const newIds = checked ? [...currentIds, inst.id] : currentIds.filter(id => id !== inst.id);
-                                                                form.setValue(fieldName, newIds);
-                                                            }}
-                                                        />
-                                                        <Label htmlFor={`drug-${index}-inst-${inst.id}`} className="text-sm font-normal">{inst.text}</Label>
-                                                    </div>
-                                                ))}
-                                            </div>
+            <div className="space-y-6">
+                {/* --- Patient & Prescription Info --- */}
+                <Card className="shadow-lg">
+                    <CardHeader><CardTitle>Patient & Prescription Details</CardTitle></CardHeader>
+                    <CardContent className="space-y-6">
+                         <div className="space-y-4 p-4 border rounded-md">
+                            <h3 className="font-semibold">Patient Info</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><Label>Name*</Label><Input {...form.register('name')} />{form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}</div>
+                                <div><Label>Age*</Label><Input {...form.register('age')} placeholder="e.g. 45 Years" />{form.formState.errors.age && <p className="text-xs text-destructive">{form.formState.errors.age.message}</p>}</div>
+                                <div><Label>Initial Time (seconds)*</Label><Input type="number" {...form.register('initialTime')} />{form.formState.errors.initialTime && <p className="text-xs text-destructive">{form.formState.errors.initialTime.message}</p>}</div>
+                                <div className="md:col-span-2"><Label>Address</Label><Textarea {...form.register('address')} rows={2}/></div>
+                                <div className="md:col-span-2"><Label>Patient Description</Label><Textarea {...form.register('patient_description')} rows={2}/></div>
+                            </div>
+                        </div>
+                        <div className="space-y-4 p-4 border rounded-md">
+                            <h3 className="font-semibold">Prescription Info</h3>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><Label>Prescription Name*</Label><Input {...form.register('prescription_name')} />{form.formState.errors.prescription_name && <p className="text-xs text-destructive">{form.formState.errors.prescription_name.message}</p>}</div>
+                                <div><Label>Doctor's Name*</Label><Input {...form.register('doctor_name')} />{form.formState.errors.doctor_name && <p className="text-xs text-destructive">{form.formState.errors.doctor_name.message}</p>}</div>
+                                <div><Label>Total Bill Value (LKR)*</Label><Input type="number" step="0.01" {...form.register('totalBillValue')} />{form.formState.errors.totalBillValue && <p className="text-xs text-destructive">{form.formState.errors.totalBillValue.message}</p>}</div>
+                                <div className="md:col-span-2"><Label>Notes</Label><Textarea {...form.register('notes')} rows={2}/></div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                
+                {/* --- Drugs Section --- */}
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle>Prescribed Drugs</CardTitle>
+                        {form.formState.errors.drugs?.root && <p className="text-sm text-destructive font-medium">{form.formState.errors.drugs.root.message}</p>}
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {fields.map((field, index) => (
+                            <Card key={field.id} className="p-4 bg-muted/50 relative">
+                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => remove(index)}><Trash2 className="h-4 w-4"/></Button>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2"><Label>Drug Name*</Label><Input {...form.register(`drugs.${index}.drugName`)} />{form.formState.errors.drugs?.[index]?.drugName && <p className="text-xs text-destructive">Required</p>}</div>
+                                    <div className="space-y-2"><Label>Generic Name</Label><Input {...form.register(`drugs.${index}.genericName`)} /></div>
+                                    <div className="space-y-2"><Label>Quantity*</Label><Input type="number" {...form.register(`drugs.${index}.quantity`)} />{form.formState.errors.drugs?.[index]?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
+                                    <div className="md:col-span-2 space-y-2"><Label>Prescription Lines (one per line)*</Label><Textarea {...form.register(`drugs.${index}.lines`)} rows={2}/>{form.formState.errors.drugs?.[index]?.lines && <p className="text-xs text-destructive">Required</p>}</div>
+                                    <div className="md:col-span-2 space-y-2">
+                                        <Label>Correct Counselling Instructions</Label>
+                                        <div className="p-3 border rounded-md max-h-32 overflow-y-auto space-y-2 bg-background">
+                                            {allInstructions.map(inst => (
+                                                <div key={inst.id} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                        id={`drug-${index}-inst-${inst.id}`}
+                                                        onCheckedChange={(checked) => {
+                                                            const fieldName = `drugs.${index}.correctInstructionIds`;
+                                                            const currentIds = form.getValues(fieldName) || [];
+                                                            const newIds = checked ? [...currentIds, inst.id] : currentIds.filter(id => id !== inst.id);
+                                                            form.setValue(fieldName, newIds);
+                                                        }}
+                                                    />
+                                                    <Label htmlFor={`drug-${index}-inst-${inst.id}`} className="text-sm font-normal">{inst.text}</Label>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
-                                </Card>
-                            ))}
-                            <Button type="button" variant="outline" className="w-full" onClick={() => append({ drugName: '', quantity: 1, lines: '', correctInstructionIds: [] })}>
-                                <PlusCircle className="mr-2 h-4 w-4" /> Add Another Drug
-                            </Button>
-                        </CardContent>
-                    </Card>
-                     <div className="flex justify-end">
-                        <Button type="submit" size="lg">
-                            <Save className="mr-2 h-4 w-4" /> Create Patient
+                                </div>
+                            </Card>
+                        ))}
+                        <Button type="button" variant="outline" className="w-full" onClick={() => append({ drugName: '', quantity: 1, lines: '', correctInstructionIds: [] })}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Another Drug
                         </Button>
-                    </div>
+                    </CardContent>
+                </Card>
+
+                 <div className="flex justify-end">
+                    <Button type="submit" size="lg">
+                        <Save className="mr-2 h-4 w-4" /> Create Patient
+                    </Button>
                 </div>
             </div>
         </form>
