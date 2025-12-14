@@ -383,7 +383,7 @@ export const savePrescription = async (prescriptionPayload: PrescriptionSubmissi
     if (prescriptionId) {
         // Update existing prescription
         const presResponse = await fetch(`${QA_API_BASE_URL}/care-patients/${prescriptionId}`, {
-            method: 'PUT',
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
