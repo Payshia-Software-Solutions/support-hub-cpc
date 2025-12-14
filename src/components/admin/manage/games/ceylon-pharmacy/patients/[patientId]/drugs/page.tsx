@@ -35,16 +35,11 @@ const AddDrugDialog = ({ patientId, nextCoverId, onClose }: { patientId: string,
     
     const form = useForm<AddDrugFormValues>({
         resolver: zodResolver(addDrugSchema),
-        defaultValues: {
+        values: { // Use `values` to make the form fully controlled by the prop
             coverId: nextCoverId,
             content: ''
         },
     });
-    
-    // Sync default value if the dialog re-opens for the same patient but with new data
-    React.useEffect(() => {
-        form.reset({ coverId: nextCoverId, content: '' });
-    }, [nextCoverId, form]);
     
      const addDrugMutation = useMutation({
         mutationFn: async (data: AddDrugFormValues) => {
