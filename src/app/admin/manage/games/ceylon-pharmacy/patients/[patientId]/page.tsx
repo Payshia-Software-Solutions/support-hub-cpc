@@ -380,7 +380,7 @@ export default function EditPatientPage() {
 
   const { data: prescriptionDetails } = useQuery<PrescriptionDetail[]>({
       queryKey: ['prescriptionDetails', patientId],
-      queryFn: getPrescriptionDetails(patientId),
+      queryFn: () => getPrescriptionDetails(patientId),
       enabled: !!patient,
   });
   
@@ -482,7 +482,9 @@ export default function EditPatientPage() {
         <form onSubmit={form.handleSubmit(onSubmit)}>
             {/* --- Main Details Row --- */}
             <Card className="shadow-lg mb-6">
-                <CardHeader><CardTitle>Prescription Details</CardTitle></CardHeader>
+                <CardHeader>
+                    <CardTitle>Prescription Details</CardTitle>
+                </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
                     <div className="space-y-2"><Label>Patient Name*</Label><Input {...form.register('name')} />{form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}</div>
                     <div className="space-y-2"><Label>Patient Age*</Label><Input {...form.register('age')} placeholder="e.g. 45 Years" />{form.formState.errors.age && <p className="text-xs text-destructive">{form.formState.errors.age.message}</p>}</div>
@@ -622,4 +624,3 @@ export default function EditPatientPage() {
   );
 }
 
-    
