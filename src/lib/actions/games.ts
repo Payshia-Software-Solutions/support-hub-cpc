@@ -98,7 +98,9 @@ export const getPrescriptionDetails = async (prescriptionId: string): Promise<Pr
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch prescription details' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
-    return response.json();
+    const data: Omit<PrescriptionDetail, 'pres_code'>[] = await response.json();
+    // Manually add the pres_code to each item as the API doesn't include it in the array items
+    return data.map(item => ({ ...item, pres_code: prescriptionId }));
 }
 
 export const getDispensingAnswers = async (prescriptionId: string, coverId: string): Promise<DispensingAnswer | null> => {
@@ -494,5 +496,7 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
 
     return response.json();
 };
+
+    
 
     
