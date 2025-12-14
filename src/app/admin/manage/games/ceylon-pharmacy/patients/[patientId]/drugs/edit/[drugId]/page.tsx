@@ -32,8 +32,6 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const drugSchema = z.object({
   id: z.string(),
-  coverId: z.string().min(1, 'Cover ID is required'),
-  content: z.string().min(1, 'Prescription content is required'),
   correctDrugName: z.string().min(1, 'Correct Drug Name is required'),
   quantity: z.coerce.number().min(1, 'Quantity is required'),
   correctInstructionIds: z.array(z.string()).optional(),
@@ -237,8 +235,6 @@ export default function EditDrugPage() {
         if (drugToEdit) {
             const defaultValues: Partial<EditDrugFormValues> = {
                 id: drugToEdit.cover_id,
-                coverId: drugToEdit.cover_id,
-                content: drugToEdit.content,
                 quantity: 1, 
                 correctDrugName: "",
                 dosageForm: "",
@@ -303,20 +299,11 @@ export default function EditDrugPage() {
                  <Button variant="ghost" onClick={() => router.back()} className="-ml-4">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Drug List
                 </Button>
-                <h1 className="text-3xl font-headline font-semibold mt-2">Edit Drug: {drugToEdit.content}</h1>
+                <h1 className="text-3xl font-headline font-semibold mt-2">Edit Answers for: {drugToEdit.content}</h1>
             </header>
             <form onSubmit={form.handleSubmit(onSubmit)}>
                  <Card className="p-4 bg-muted/50 relative">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Cover ID*</Label>
-                          <Input {...form.register(`coverId`)} readOnly className="font-mono bg-gray-200" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Prescription Content*</Label>
-                          <Input {...form.register(`content`)} placeholder="e.g. Tab Metformin 500mg..." />
-                          {form.formState.errors?.content && <p className="text-xs text-destructive">Required</p>}
-                        </div>
                         <div className="space-y-2">
                           <Label>Correct Drug Name*</Label>
                           <SelectionDialog triggerText="Select Drug" title="Correct Drug" options={selectionData!.drug_name} onSelect={(val) => form.setValue(`correctDrugName`, val)} icon={Pill} value={form.watch(`correctDrugName`)} />
