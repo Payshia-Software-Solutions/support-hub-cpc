@@ -159,7 +159,7 @@ export default function ManageDrugsPage() {
     enabled: !!patientId,
   });
 
- const nextCoverId = useMemo(() => {
+  const nextCoverId = useMemo(() => {
     if (!prescriptionDetails) return "Cover1";
     const maxCoverNum = prescriptionDetails.reduce((max, detail) => {
       const match = detail.cover_id.match(/Cover(\d+)/);
