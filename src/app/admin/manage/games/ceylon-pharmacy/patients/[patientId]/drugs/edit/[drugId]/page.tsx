@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -235,15 +235,25 @@ export default function EditDrugPage() {
 
     useEffect(() => {
         if (drugToEdit) {
-            // Set defaults from the drug content first
             const defaultValues: Partial<EditDrugFormValues> = {
                 id: drugToEdit.cover_id,
                 coverId: drugToEdit.cover_id,
                 content: drugToEdit.content,
-                quantity: 1, // Default quantity
+                quantity: 1, 
+                correctDrugName: "",
+                dosageForm: "",
+                morningQty: "",
+                afternoonQty: "",
+                eveningQty: "",
+                nightQty: "",
+                mealType: "",
+                usingFrequency: "",
+                at_a_time: "",
+                hour_qty: "",
+                additionalInstruction: "",
+                correctInstructionIds: [],
             };
             
-            // If answers exist, overwrite with them
             if (drugAnswers) {
                 Object.assign(defaultValues, {
                     correctDrugName: drugAnswers.drug_name || "",
@@ -258,7 +268,6 @@ export default function EditDrugPage() {
                     at_a_time: drugAnswers.at_a_time || "",
                     hour_qty: drugAnswers.hour_qty || "",
                     additionalInstruction: drugAnswers.additional_description || "",
-                    correctInstructionIds: [], // Will be fetched separately
                 });
             }
             
@@ -272,7 +281,7 @@ export default function EditDrugPage() {
         console.log(data);
     };
 
-    if (isLoadingDetails || isLoadingSelectionData) {
+    if (isLoadingDetails || isLoadingSelectionData || isLoadingAnswers) {
         return <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto"/></div>
     }
 
