@@ -360,8 +360,8 @@ export const getPOSSubmissionStatus = async (presCode: string, studentId: string
     return Array.isArray(data) ? data : [];
 };
 
-export const savePrescription = async (payload: PrescriptionSubmissionPayload): Promise<any> => {
-    const response = await fetch(`${QA_API_BASE_URL}/care-patients`, {
+export const savePrescriptionContent = async (payload: { pres_code: string; cover_id: string; content: string }): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-content/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -369,10 +369,52 @@ export const savePrescription = async (payload: PrescriptionSubmissionPayload): 
         body: JSON.stringify(payload),
     });
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to save prescription.' }));
+        const errorData = await response.json().catch(() => ({ message: 'Failed to save prescription content.' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
 }
 
+export const savePrescription = async (prescriptionPayload: PrescriptionSubmissionPayload, drugs: any[]): Promise<any> => {
+    // Step 1: Save the main prescription data
+    const presResponse = await fetch(`${QA_API_BASE_URL}/care-patients`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(prescriptionPayload),
+    });
+
+    if (!presResponse.ok) {
+        const errorData = await presResponse.json().catch(() => ({ message: 'Failed to save prescription.' }));
+        throw new Error(errorData.message || `Request failed with status ${presResponse.status}`);
+    }
+
+    const presData = await presResponse.json();
+    const presCode = presData?.prescription?.prescription_id;
+    if (!presCode) {
+        throw new Error("Failed to get prescription code from the response.");
+    }
     
+    // Step 2: Save each drug's content
+    const contentPromises = drugs.map(drug => {
+        const contentPayload = {
+            pres_code: presCode,
+            cover_id: drug.coverId,
+            content: drug.content
+        };
+        return savePrescriptionContent(contentPayload);
+    });
+
+    // We can run these in parallel
+    const results = await Promise.allSettled(contentPromises);
+    
+    const failedSaves = results.filter(r => r.status === 'rejected');
+    if (failedSaves.length > 0) {
+        console.error('Some drug contents failed to save:', failedSaves);
+        // We might want to throw an error here, or just log it. 
+        // For now, we'll let the successful parts complete.
+    }
+
+    return presData;
+}

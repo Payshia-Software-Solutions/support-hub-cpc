@@ -382,7 +382,7 @@ export default function CreatePatientPage() {
   const watchedDrugs = form.watch('drugs');
 
   const saveMutation = useMutation({
-    mutationFn: (payload: PrescriptionSubmissionPayload) => savePrescription(payload),
+    mutationFn: (data: { prescriptionPayload: PrescriptionSubmissionPayload, drugs: PatientFormValues['drugs'] }) => savePrescription(data.prescriptionPayload, data.drugs),
     onSuccess: () => {
         toast({
             title: 'Patient Created!',
@@ -405,7 +405,7 @@ export default function CreatePatientPage() {
         return;
     }
     
-    const payload: PrescriptionSubmissionPayload = {
+    const prescriptionPayload: PrescriptionSubmissionPayload = {
       prescription_name: data.prescription_name,
       prescription_status: "Active",
       created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
@@ -420,7 +420,7 @@ export default function CreatePatientPage() {
       address: data.address || '',
     };
     
-    saveMutation.mutate(payload);
+    saveMutation.mutate({ prescriptionPayload, drugs: data.drugs });
   };
   
   const dailyQtyOptions = ['-', '1', '2', '3', '1/2', '4', '5', '1 1/2', '1 Drop', '10ml', '15ml', '1/4', '10U', '2 1/2', '2.5ml', '15U', '1puff', '2puff', '20ml', '30U']; 
@@ -605,5 +605,3 @@ export default function CreatePatientPage() {
     </div>
   );
 }
-
-    

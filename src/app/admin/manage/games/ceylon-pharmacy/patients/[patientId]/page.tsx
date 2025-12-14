@@ -411,8 +411,8 @@ export default function EditPatientPage() {
     },
   });
   
-  const saveMutation = useMutation({
-    mutationFn: (payload: PrescriptionSubmissionPayload) => savePrescription(payload),
+   const saveMutation = useMutation({
+    mutationFn: (data: { prescriptionPayload: PrescriptionSubmissionPayload, drugs: PatientFormValues['drugs'] }) => savePrescription(data.prescriptionPayload, data.drugs),
     onSuccess: () => {
         toast({
             title: 'Patient Updated!',
@@ -470,7 +470,7 @@ export default function EditPatientPage() {
         return;
     }
     
-    const payload: PrescriptionSubmissionPayload = {
+    const prescriptionPayload: PrescriptionSubmissionPayload = {
       prescription_name: data.prescription_name,
       prescription_status: patient?.prescription_status || "Active",
       created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
@@ -485,7 +485,7 @@ export default function EditPatientPage() {
       address: data.address || '',
     };
     
-    saveMutation.mutate(payload);
+    saveMutation.mutate({ prescriptionPayload, drugs: data.drugs });
   };
   
   const isLoading = isLoadingPatient || isLoadingSelectionData;
@@ -615,50 +615,20 @@ export default function EditPatientPage() {
 
                             <Separator className="my-4" />
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="space-y-2">
-                                  <Label>Morning Qty*</Label>
-                                  <SelectionDialog triggerText="Qty" title="Morning Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.morningQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.morningQty`)} />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Afternoon Qty*</Label>
-                                  <SelectionDialog triggerText="Qty" title="Afternoon Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.afternoonQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.afternoonQty`)} />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Evening Qty*</Label>
-                                  <SelectionDialog triggerText="Qty" title="Evening Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.eveningQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.eveningQty`)} />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Night Qty*</Label>
-                                  <SelectionDialog triggerText="Qty" title="Night Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.nightQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.nightQty`)} />
-                                </div>
+                                <div className="space-y-2"><Label>Morning Qty*</Label><SelectionDialog triggerText="Qty" title="Morning Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.morningQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.morningQty`)} /></div>
+                                <div className="space-y-2"><Label>Afternoon Qty*</Label><SelectionDialog triggerText="Qty" title="Afternoon Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.afternoonQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.afternoonQty`)} /></div>
+                                <div className="space-y-2"><Label>Evening Qty*</Label><SelectionDialog triggerText="Qty" title="Evening Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.eveningQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.eveningQty`)} /></div>
+                                <div className="space-y-2"><Label>Night Qty*</Label><SelectionDialog triggerText="Qty" title="Night Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.nightQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.nightQty`)} /></div>
                             </div>
                             
                             <Separator className="my-4" />
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <Label>Dosage Form*</Label>
-                                   <SelectionDialog triggerText="Select Form" title="Dosage Form" options={selectionData?.drug_type || []} onSelect={(val) => form.setValue(`drugs.${index}.dosageForm`, val)} icon={Pill} value={form.watch(`drugs.${index}.dosageForm`)} />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Meal Type*</Label>
-                                   <SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={selectionData?.meal_type || []} onSelect={(val) => form.setValue(`drugs.${index}.mealType`, val)} icon={Pill} value={form.watch(`drugs.${index}.mealType`)} />
-                                </div>
-                                 <div className="space-y-2">
-                                  <Label>Using Frequency*</Label>
-                                   <SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={selectionData?.using_type || []} onSelect={(val) => form.setValue(`drugs.${index}.usingFrequency`, val)} icon={Repeat} value={form.watch(`drugs.${index}.usingFrequency`)} />
-                                </div>
-                                 <div className="space-y-2">
-                                  <Label>At a Time*</Label>
-                                   <SelectionDialog triggerText="e.g. 5ml" title="At a Time" options={selectionData?.at_a_time || []} onSelect={(val) => form.setValue(`drugs.${index}.at_a_time`, val)} icon={Hash} value={form.watch(`drugs.${index}.at_a_time`)} />
-                                </div>
-                                 <div className="space-y-2">
-                                  <Label>Hour Quantity</Label>
-                                   <SelectionDialog triggerText="e.g. 8" title="Hour Quantity" options={selectionData?.hour_qty || []} onSelect={(val) => form.setValue(`drugs.${index}.hour_qty`, val)} icon={Clock} value={form.watch(`drugs.${index}.hour_qty`) || ''} />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Additional Description</Label>
-                                  <SelectionDialog triggerText="Select Description" title="Additional Description" options={selectionData?.additional_description || []} onSelect={(val) => form.setValue(`drugs.${index}.additionalInstruction`, val)} icon={Pill} value={form.watch(`drugs.${index}.additionalInstruction`) || ''} />
-                                </div>
+                                <div className="space-y-2"><Label>Dosage Form*</Label><SelectionDialog triggerText="Select Form" title="Dosage Form" options={selectionData?.drug_type || []} onSelect={(val) => form.setValue(`drugs.${index}.dosageForm`, val)} icon={Pill} value={form.watch(`drugs.${index}.dosageForm`)} /></div>
+                                <div className="space-y-2"><Label>Meal Type*</Label><SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={selectionData?.meal_type || []} onSelect={(val) => form.setValue(`drugs.${index}.mealType`, val)} icon={Pill} value={form.watch(`drugs.${index}.mealType`)} /></div>
+                                <div className="space-y-2"><Label>Using Frequency*</Label><SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={selectionData?.using_type || []} onSelect={(val) => form.setValue(`drugs.${index}.usingFrequency`, val)} icon={Repeat} value={form.watch(`drugs.${index}.usingFrequency`)} /></div>
+                                <div className="space-y-2"><Label>At a Time*</Label><SelectionDialog triggerText="e.g. 5ml" title="At a Time" options={selectionData?.at_a_time || []} onSelect={(val) => form.setValue(`drugs.${index}.at_a_time`, val)} icon={Hash} value={form.watch(`drugs.${index}.at_a_time`)} /></div>
+                                <div className="space-y-2"><Label>Hour Quantity</Label><SelectionDialog triggerText="e.g. 8" title="Hour Quantity" options={selectionData?.hour_qty || []} onSelect={(val) => form.setValue(`drugs.${index}.hour_qty`, val)} icon={Clock} value={form.watch(`drugs.${index}.hour_qty`) || ''} /></div>
+                                <div className="space-y-2"><Label>Additional Description</Label><SelectionDialog triggerText="Select Description" title="Additional Description" options={selectionData?.additional_description || []} onSelect={(val) => form.setValue(`drugs.${index}.additionalInstruction`, val)} icon={Pill} value={form.watch(`drugs.${index}.additionalInstruction`) || ''} /></div>
                             </div>
                             
                             <Separator className="my-4" />
@@ -719,5 +689,3 @@ export default function EditPatientPage() {
     </div>
   );
 }
-
-    
