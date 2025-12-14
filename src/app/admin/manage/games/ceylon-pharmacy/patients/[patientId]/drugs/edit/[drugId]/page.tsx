@@ -21,9 +21,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
-
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 
 const drugSchema = z.object({
+  date: z.string().nonempty("Date is required."),
+  patientName: z.string().nonempty("Patient name is required."),
   correctDrugName: z.string().min(1, 'Correct Drug Name is required'),
   quantity: z.string().min(1, 'Quantity is required'),
   dosageForm: z.string().nonempty("Dosage form is required."),
@@ -140,6 +144,8 @@ export default function EditDrugPage() {
     useEffect(() => {
         if (drugToEdit) {
             const defaultValues: Partial<EditDrugFormValues> = {
+                date: drugToEdit?.pres_date || format(new Date(), 'yyyy-MM-dd'),
+                patientName: drugToEdit?.pres_name || '',
                 quantity: "1", 
                 correctDrugName: "",
                 dosageForm: "",
@@ -156,6 +162,8 @@ export default function EditDrugPage() {
             
             if (drugAnswers) {
                 Object.assign(defaultValues, {
+                    date: drugAnswers.date || defaultValues.date,
+                    patientName: drugAnswers.name || defaultValues.patientName,
                     correctDrugName: drugAnswers.drug_name || "",
                     quantity: drugAnswers.drug_qty || "1",
                     dosageForm: drugAnswers.drug_type || "",
@@ -184,7 +192,8 @@ export default function EditDrugPage() {
             answer_id: drugAnswers?.answer_id,
             pres_id: patientId,
             cover_id: drugId,
-            name: drugToEdit?.pres_name || 'Patient Name',
+            date: data.date,
+            name: data.patientName,
             drug_name: data.correctDrugName,
             drug_type: data.dosageForm,
             drug_qty: data.quantity,
@@ -230,14 +239,52 @@ export default function EditDrugPage() {
             </header>
             <form onSubmit={form.handleSubmit(onSubmit)}>
                  <Card className="p-4 bg-muted/50 relative shadow-lg">
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Correct Drug Name*</Label>
-                          <SelectionDialog triggerText="Select Drug" title="Correct Drug" options={selectionData!.drug_name} onSelect={(val) => form.setValue(`correctDrugName`, val)} icon={Pill} value={form.watch(`correctDrugName`)} />
-                          {form.formState.errors?.correctDrugName && <p className="text-xs text-destructive">Required</p>}
+                    <CardContent className="p-0">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Date*</Label>
+                                <Controller
+                                    control={form.control}
+                                    name="date"
+                                    render={({ field }) => (
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" className="w-full justify-start text-left font-normal h-10 text-sm">
+                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                    {field.value ? format(new Date(field.value), "PPP") : <span>Pick a date</span>}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={field.value ? new Date(field.value) : undefined}
+                                                    onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                                                    initialFocus
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    )}
+                                />
+                                {form.formState.errors.date && <p className="text-xs text-destructive">{form.formState.errors.date.message}</p>}
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Patient Name*</Label>
+                                <SelectionDialog triggerText="Select Name" title="Patient Name" options={selectionData!.name} onSelect={(val) => form.setValue("patientName", val, { shouldValidate: true })} icon={User} value={form.watch('patientName')} />
+                                {form.formState.errors?.patientName && <p className="text-xs text-destructive">{form.formState.errors.patientName.message}</p>}
+                            </div>
                         </div>
-                        <div className="space-y-2"><Label>Quantity*</Label><Input {...form.register(`quantity`)} />{form.formState.errors?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
-                    </div>
+
+                         <Separator className="my-4" />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                            <Label>Correct Drug Name*</Label>
+                            <SelectionDialog triggerText="Select Drug" title="Correct Drug" options={selectionData!.drug_name} onSelect={(val) => form.setValue(`correctDrugName`, val)} icon={Pill} value={form.watch(`correctDrugName`)} />
+                            {form.formState.errors?.correctDrugName && <p className="text-xs text-destructive">Required</p>}
+                            </div>
+                            <div className="space-y-2"><Label>Quantity*</Label><Input {...form.register(`quantity`)} />{form.formState.errors?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
+                        </div>
+                    </CardContent>
 
                     <Separator className="my-4" />
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
