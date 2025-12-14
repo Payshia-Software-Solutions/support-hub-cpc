@@ -320,8 +320,8 @@ export const getAllCareInstructions = async (): Promise<Instruction[]> => {
     return response.json();
 };
 
-export const saveCounsellingAnswer = async (payload: SaveCounselingAnswerPayload): Promise<any> => {
-    const response = await fetch(`${QA_API_BASE_URL}/care-ins-answers/`, {
+export const saveCounsellingInstructionsForDrug = async (payload: { pres_code: string; cover_id: string; instructions: number[] }): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-instructions/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -329,7 +329,7 @@ export const saveCounsellingAnswer = async (payload: SaveCounselingAnswerPayload
         body: JSON.stringify(payload),
     });
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to save counselling answer.' }));
+        const errorData = await response.json().catch(() => ({ message: 'Failed to save counselling instructions.' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
@@ -391,7 +391,7 @@ export const savePrescriptionContent = async (payload: { pres_code: string; cove
 };
 
 export const saveOrUpdateDispensingAnswer = async (payload: Omit<DispensingAnswer, 'id' | 'created_at'> & { answer_id?: string }): Promise<any> => {
-    const endpoint = `${QA_API_BASE_URL}/care-answers`;
+    const endpoint = `${QA_API_BASE_URL}/care-answers/`;
     const method = 'POST';
 
     const response = await fetch(endpoint, {

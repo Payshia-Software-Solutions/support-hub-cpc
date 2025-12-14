@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit, Save, Loader2, MessageSquare, Check } from "lucide-react";
 import { toast } from '@/hooks/use-toast';
-import { getPrescriptionDetails, getAllCareInstructions, getCorrectInstructions, saveCounsellingAnswer } from '@/lib/actions/games';
-import type { PrescriptionDetail, Instruction, SaveCounselingAnswerPayload } from '@/lib/types';
+import { getPrescriptionDetails, getAllCareInstructions, getCorrectInstructions, saveCounsellingInstructionsForDrug } from '@/lib/actions/games';
+import type { PrescriptionDetail, Instruction } from '@/lib/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -112,7 +112,6 @@ const InstructionSelectionDialog = ({
 
 const DrugCounselingCard = ({ drug, patientId }: { drug: PrescriptionDetail, patientId: string }) => {
     const queryClient = useQueryClient();
-    const { user } = useAuth();
     
     const { data: correctInstructions } = useQuery<Instruction[]>({
         queryKey: ['correctInstructions', patientId, drug.cover_id],
@@ -140,20 +139,13 @@ const DrugCounselingCard = ({ drug, patientId }: { drug: PrescriptionDetail, pat
     }, [allInstructions]);
 
     const saveMutation = useMutation({
-        mutationFn: async (instructionIds: string[]) => {
-            if (!user) throw new Error("Not authenticated");
-            // Here you might want to clear old answers before saving new ones if the API supports it.
-            // For now, we just save the new set.
-            const promises = instructionIds.map(id => 
-                saveCounsellingAnswer({
-                    LoggedUser: user.username!,
-                    PresCode: patientId,
-                    Instruction: id,
-                    CoverCode: drug.cover_id,
-                    ans_status: 'Correct'
-                })
-            );
-            return Promise.all(promises);
+        mutationFn: (instructionIds: string[]) => {
+            const numericIds = instructionIds.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+            return saveCounsellingInstructionsForDrug({
+                pres_code: patientId,
+                cover_id: drug.cover_id,
+                instructions: numericIds,
+            });
         },
         onSuccess: () => {
             toast({ title: 'Success!', description: 'Counselling instructions saved.'});
@@ -177,7 +169,7 @@ const DrugCounselingCard = ({ drug, patientId }: { drug: PrescriptionDetail, pat
                     trigger={
                         <div className="space-y-2">
                             <Label>Correct Instructions</Label>
-                            <div className="w-full justify-start text-left font-normal h-auto min-h-10 p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors">
+                             <div className="w-full justify-start text-left font-normal h-auto min-h-10 p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors">
                                 {selectedInstructionIds.length > 0 ? (
                                     <div className="flex flex-wrap gap-1">
                                         {selectedInstructionIds.map(id => (
