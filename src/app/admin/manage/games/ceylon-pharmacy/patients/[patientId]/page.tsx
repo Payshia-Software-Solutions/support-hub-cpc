@@ -34,7 +34,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const drugSchema = z.object({
   id: z.string(),
   drugName: z.string().min(1, 'Required'),
-  genericName: z.string().optional(),
   quantity: z.coerce.number().min(1, 'Quantity is required'),
   lines: z.string().min(1, 'Required'),
   correctInstructionIds: z.array(z.string()).optional(),
@@ -424,7 +423,6 @@ export default function EditPatientPage() {
             drugs: prescriptionDetails.map(drug => ({
                 id: drug.cover_id,
                 drugName: drug.content, 
-                genericName: '', // Not in API
                 quantity: 1, // Not in API
                 lines: drug.content, // Not ideal, but what we have
                 correctInstructionIds: [], // To be fetched separately
@@ -525,7 +523,6 @@ export default function EditPatientPage() {
                              <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => remove(index)}><Trash2 className="h-4 w-4"/></Button>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2"><Label>Drug Name*</Label><Input {...form.register(`drugs.${index}.drugName`)} />{form.formState.errors.drugs?.[index]?.drugName && <p className="text-xs text-destructive">Required</p>}</div>
-                                <div className="space-y-2"><Label>Generic Name</Label><Input {...form.register(`drugs.${index}.genericName`)} /></div>
                                 <div className="space-y-2"><Label>Quantity*</Label><Input type="number" {...form.register(`drugs.${index}.quantity`)} />{form.formState.errors.drugs?.[index]?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
                                 <div className="md:col-span-2 space-y-2"><Label>Prescription Lines (one per line)*</Label><Textarea {...form.register(`drugs.${index}.lines`)} rows={2}/>{form.formState.errors.drugs?.[index]?.lines && <p className="text-xs text-destructive">Required</p>}</div>
                             </div>
@@ -623,4 +620,3 @@ export default function EditPatientPage() {
     </div>
   );
 }
-
