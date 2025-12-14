@@ -11,10 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, PlusCircle, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Save, Trash2, Calculator } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { allInstructions } from '@/lib/ceylon-pharmacy-data';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
+import { AdminPOSCalculator } from '../[patientId]/page';
 
 const drugSchema = z.object({
     drugName: z.string().min(1, 'Required'),
@@ -46,6 +48,7 @@ type PatientFormValues = z.infer<typeof patientFormSchema>;
 
 export default function CreatePatientPage() {
   const router = useRouter();
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientFormSchema),
@@ -60,6 +63,8 @@ export default function CreatePatientPage() {
     control: form.control,
     name: "drugs",
   });
+  
+  const watchedDrugs = form.watch('drugs');
 
   const onSubmit = (data: PatientFormValues) => {
     console.log("Submitting New Patient Data:", data);
@@ -101,7 +106,23 @@ export default function CreatePatientPage() {
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div><Label>Prescription Name*</Label><Input {...form.register('prescription_name')} />{form.formState.errors.prescription_name && <p className="text-xs text-destructive">{form.formState.errors.prescription_name.message}</p>}</div>
                                 <div><Label>Doctor's Name*</Label><Input {...form.register('doctor_name')} />{form.formState.errors.doctor_name && <p className="text-xs text-destructive">{form.formState.errors.doctor_name.message}</p>}</div>
-                                <div><Label>Total Bill Value (LKR)*</Label><Input type="number" step="0.01" {...form.register('totalBillValue')} />{form.formState.errors.totalBillValue && <p className="text-xs text-destructive">{form.formState.errors.totalBillValue.message}</p>}</div>
+                                <div className="space-y-2">
+                                    <Label>Total Bill Value (LKR)*</Label>
+                                    <div className="flex gap-2">
+                                        <Input type="number" step="0.01" {...form.register('totalBillValue')} className="flex-grow" />
+                                        <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
+                                            <DialogTrigger asChild>
+                                                <Button type="button" variant="outline" size="icon"><Calculator className="h-4 w-4"/></Button>
+                                            </DialogTrigger>
+                                            <AdminPOSCalculator 
+                                                drugs={watchedDrugs.map(d => ({ coverId: d.drugName, quantity: d.quantity }))}
+                                                onUseTotal={(total) => form.setValue('totalBillValue', total)}
+                                                closeDialog={() => setIsCalculatorOpen(false)}
+                                            />
+                                        </Dialog>
+                                    </div>
+                                    {form.formState.errors.totalBillValue && <p className="text-xs text-destructive">{form.formState.errors.totalBillValue.message}</p>}
+                                </div>
                                 <div className="md:col-span-2"><Label>Notes</Label><Textarea {...form.register('notes')} rows={2}/></div>
                             </div>
                         </div>
@@ -120,7 +141,6 @@ export default function CreatePatientPage() {
                                 <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => remove(index)}><Trash2 className="h-4 w-4"/></Button>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2"><Label>Drug Name*</Label><Input {...form.register(`drugs.${index}.drugName`)} />{form.formState.errors.drugs?.[index]?.drugName && <p className="text-xs text-destructive">Required</p>}</div>
-                                    <div className="space-y-2"><Label>Generic Name</Label><Input {...form.register(`drugs.${index}.genericName`)} /></div>
                                     <div className="space-y-2"><Label>Quantity*</Label><Input type="number" {...form.register(`drugs.${index}.quantity`)} />{form.formState.errors.drugs?.[index]?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
                                     <div className="md:col-span-2 space-y-2"><Label>Prescription Lines (one per line)*</Label><Textarea {...form.register(`drugs.${index}.lines`)} rows={2}/>{form.formState.errors.drugs?.[index]?.lines && <p className="text-xs text-destructive">Required</p>}</div>
                                     <div className="md:col-span-2 space-y-2">
