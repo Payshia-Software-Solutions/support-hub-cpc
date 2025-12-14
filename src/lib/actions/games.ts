@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload } from '../types';
@@ -389,22 +390,32 @@ export const savePrescriptionContent = async (payload: { pres_code: string; cove
     return response.json();
 };
 
-const savePrescriptionAnswer = async (payload: any): Promise<any> => {
-    const response = await fetch(`${QA_API_BASE_URL}/care-answers`, {
-        method: 'POST',
+export const saveOrUpdateDispensingAnswer = async (payload: Omit<DispensingAnswer, 'id' | 'created_at'> & { answer_id?: string }): Promise<any> => {
+    const { answer_id, ...body } = payload;
+    let endpoint = `${QA_API_BASE_URL}/care-answers`;
+    let method = 'POST';
+
+    if (answer_id) {
+        endpoint = `${endpoint}/${answer_id}`;
+        method = 'PUT';
+    }
+
+    const response = await fetch(endpoint, {
+        method: method,
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to save prescription answer.' }));
+        const errorData = await response.json().catch(() => ({ message: `Failed to ${method === 'POST' ? 'save' : 'update'} dispensing answer.` }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
 
     return response.json();
 };
+
 
 export const savePrescription = async (prescriptionPayload: PrescriptionSubmissionPayload, drugs: any[], prescriptionId?: string): Promise<any> => {
     
@@ -462,7 +473,7 @@ export const savePrescription = async (prescriptionPayload: PrescriptionSubmissi
               additional_description: drug.additionalInstruction,
               created_by: prescriptionPayload.created_by
           };
-          const answerPromise = savePrescriptionAnswer(answerPayload);
+          const answerPromise = saveOrUpdateDispensingAnswer(answerPayload);
           
           return Promise.all([contentPromise, answerPromise]);
       });

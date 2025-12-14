@@ -15,7 +15,7 @@ import { ArrowLeft, Save, Loader2, AlertTriangle, Search, Check, ChevronsUpDown,
 import { toast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getPrescriptionDetails, getAllCareInstructions, getFormSelectionData, savePrescription, getDispensingAnswers } from '@/lib/actions/games';
+import { getPrescriptionDetails, getAllCareInstructions, getFormSelectionData, saveOrUpdateDispensingAnswer, getDispensingAnswers } from '@/lib/actions/games';
 import type { PrescriptionDetail, Instruction, FormSelectionData, PrescriptionSubmissionPayload, DispensingAnswer, GamePatient } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -33,7 +33,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const drugSchema = z.object({
   id: z.string(),
   correctDrugName: z.string().min(1, 'Correct Drug Name is required'),
-  quantity: z.coerce.number().min(1, 'Quantity is required'),
+  quantity: z.string().min(1, 'Quantity is required'),
   correctInstructionIds: z.array(z.string()).optional(),
   
   // Fields from student side
@@ -208,7 +208,6 @@ export default function EditDrugPage() {
         queryFn: () => getDispensingAnswers(patientId, drugId),
         enabled: !!drugId && !!patientId,
         retry: (failureCount, error: any) => {
-            // Don't retry on 404, it just means no answer is saved yet
             if (error?.message?.includes('404')) {
                 return false;
             }
@@ -221,7 +220,17 @@ export default function EditDrugPage() {
         queryFn: getFormSelectionData,
     });
     
-    const instructionMap = useMemo(() => new Map<string, string>(), []);
+     const { data: allInstructions = [] } = useQuery<Instruction[]>({
+        queryKey: ['allCareInstructions'],
+        queryFn: getAllCareInstructions,
+    });
+    
+    const instructionMap = useMemo(() => {
+        return allInstructions.reduce((map, inst) => {
+            map.set(inst.id, inst.instruction);
+            return map;
+        }, new Map<string, string>());
+    }, [allInstructions]);
 
 
     const form = useForm<EditDrugFormValues>({
@@ -230,12 +239,24 @@ export default function EditDrugPage() {
     });
 
     const drugToEdit = useMemo(() => drugDetails?.find(d => d.cover_id === drugId), [drugDetails, drugId]);
+    
+    const saveMutation = useMutation({
+        mutationFn: saveOrUpdateDispensingAnswer,
+        onSuccess: () => {
+            toast({ title: 'Success', description: 'Dispensing answers have been saved.' });
+            queryClient.invalidateQueries({ queryKey: ['dispensingAnswers', patientId, drugId] });
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
+        }
+    });
+
 
     useEffect(() => {
         if (drugToEdit) {
             const defaultValues: Partial<EditDrugFormValues> = {
                 id: drugToEdit.cover_id,
-                quantity: 1, 
+                quantity: "1", 
                 correctDrugName: "",
                 dosageForm: "",
                 morningQty: "",
@@ -253,7 +274,7 @@ export default function EditDrugPage() {
             if (drugAnswers) {
                 Object.assign(defaultValues, {
                     correctDrugName: drugAnswers.drug_name || "",
-                    quantity: parseInt(drugAnswers.drug_qty, 10) || 1,
+                    quantity: drugAnswers.drug_qty || "1",
                     dosageForm: drugAnswers.drug_type || "",
                     morningQty: drugAnswers.morning_qty || "",
                     afternoonQty: drugAnswers.afternoon_qty || "",
@@ -272,9 +293,32 @@ export default function EditDrugPage() {
     }, [drugToEdit, drugAnswers, form]);
     
     const onSubmit = (data: EditDrugFormValues) => {
-        // This will be part of a larger form submission in a later step
-        toast({ title: "Local Save (dev)", description: "Data logged, not sent to API yet." });
-        console.log(data);
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Not Authenticated' });
+            return;
+        }
+
+        const payload: Omit<DispensingAnswer, 'id' | 'created_at'> & { answer_id?: string } = {
+            answer_id: drugAnswers?.answer_id,
+            pres_id: patientId,
+            cover_id: drugId,
+            name: drugToEdit?.pres_name || 'Patient Name',
+            drug_name: data.correctDrugName,
+            drug_type: data.dosageForm,
+            drug_qty: data.quantity,
+            morning_qty: data.morningQty,
+            afternoon_qty: data.afternoonQty,
+            evening_qty: data.eveningQty,
+            night_qty: data.nightQty,
+            meal_type: data.mealType,
+            using_type: data.usingFrequency,
+            at_a_time: data.at_a_time,
+            hour_qty: data.hour_qty,
+            additional_description: data.additionalInstruction || '',
+            created_by: user.username!,
+        };
+        
+        saveMutation.mutate(payload);
     };
 
     if (isLoadingDetails || isLoadingSelectionData || isLoadingAnswers) {
@@ -309,7 +353,7 @@ export default function EditDrugPage() {
                           <SelectionDialog triggerText="Select Drug" title="Correct Drug" options={selectionData!.drug_name} onSelect={(val) => form.setValue(`correctDrugName`, val)} icon={Pill} value={form.watch(`correctDrugName`)} />
                           {form.formState.errors?.correctDrugName && <p className="text-xs text-destructive">Required</p>}
                         </div>
-                        <div className="space-y-2"><Label>Quantity*</Label><Input type="number" {...form.register(`quantity`)} />{form.formState.errors?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
+                        <div className="space-y-2"><Label>Quantity*</Label><Input {...form.register(`quantity`)} />{form.formState.errors?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
                     </div>
 
                     <Separator className="my-4" />
@@ -359,8 +403,9 @@ export default function EditDrugPage() {
                         />
                     </div>
                      <CardFooter className="p-0 pt-6">
-                        <Button type="submit">
-                             <Save className="mr-2 h-4 w-4" /> Save Drug Changes
+                        <Button type="submit" disabled={saveMutation.isPending}>
+                            {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                            <Save className="mr-2 h-4 w-4" /> Save Drug Changes
                         </Button>
                     </CardFooter>
                 </Card>
