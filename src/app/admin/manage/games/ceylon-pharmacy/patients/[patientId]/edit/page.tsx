@@ -700,4 +700,3 @@ export default function EditPatientPage() {
     </div>
   );
 }
-
