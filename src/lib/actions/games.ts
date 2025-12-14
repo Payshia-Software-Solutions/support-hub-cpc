@@ -427,8 +427,6 @@ export const savePrescription = async (prescriptionPayload: PrescriptionSubmissi
             cover_id: drug.coverId,
             content: drug.content
         };
-        // Here we would ideally have an update (PUT) or create (POST) logic for content.
-        // Assuming for now the API handles this via POST, but a real-world API might need a PUT to /care-content/{id}
         return savePrescriptionContent(contentPayload);
     });
 
@@ -438,8 +436,6 @@ export const savePrescription = async (prescriptionPayload: PrescriptionSubmissi
     const failedSaves = results.filter(r => r.status === 'rejected');
     if (failedSaves.length > 0) {
         console.error('Some drug contents failed to save:', failedSaves);
-        // We might want to throw an error here, or just log it. 
-        // For now, we'll let the successful parts complete.
     }
 
     return { message: 'Prescription saved successfully' };
