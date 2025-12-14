@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -442,13 +442,18 @@ export default function CreatePatientPage() {
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
                     <div className="space-y-2">
+                        <Label>Prescription Name*</Label>
+                        <Input {...form.register('prescription_name')} placeholder="e.g. Regular Checkup"/>
+                        {form.formState.errors.prescription_name && <p className="text-xs text-destructive">{form.formState.errors.prescription_name.message}</p>}
+                    </div>
+                    <div className="space-y-2">
                         <Label>Patient Name*</Label>
                         <Input {...form.register('name')} />
                         {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
                     </div>
-                    <div className="space-y-2">
+                     <div className="space-y-2">
                         <Label>Prescription Date*</Label>
-                         <Controller
+                        <Controller
                             control={form.control}
                             name="pres_date"
                             render={({ field }) => (
@@ -600,3 +605,5 @@ export default function CreatePatientPage() {
     </div>
   );
 }
+
+    
