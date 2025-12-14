@@ -227,12 +227,14 @@ export default function ManageCounselingPage() {
                     <CardTitle>Drugs & Instructions</CardTitle>
                     <CardDescription>Set the correct instructions for each drug below.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent>
                     {isLoading && <p>Loading drugs...</p>}
                     {isError && <p className="text-destructive">Error: {(error as Error).message}</p>}
-                    {prescriptionDetails?.map(drug => (
-                        <DrugCounselingCard key={drug.cover_id} drug={drug} patientId={patientId} />
-                    ))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {prescriptionDetails?.map(drug => (
+                            <DrugCounselingCard key={drug.cover_id} drug={drug} patientId={patientId} />
+                        ))}
+                    </div>
                 </CardContent>
              </Card>
         </div>
