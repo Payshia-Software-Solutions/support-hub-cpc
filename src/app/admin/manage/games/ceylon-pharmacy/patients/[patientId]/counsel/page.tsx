@@ -148,8 +148,8 @@ const DrugCounselingCard = ({ drug, patientId }: { drug: PrescriptionDetail, pat
                 saveCounsellingAnswer({
                     LoggedUser: user.username!,
                     PresCode: patientId,
-                    CoverCode: drug.cover_id,
                     Instruction: id,
+                    CoverCode: drug.cover_id,
                     ans_status: 'Correct'
                 })
             );
@@ -177,15 +177,15 @@ const DrugCounselingCard = ({ drug, patientId }: { drug: PrescriptionDetail, pat
                     trigger={
                         <div className="space-y-2">
                             <Label>Correct Instructions</Label>
-                            <Button type="button" variant="outline" className="w-full justify-start text-left font-normal h-auto min-h-10">
+                            <div className="w-full justify-start text-left font-normal h-auto min-h-10 p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors">
                                 {selectedInstructionIds.length > 0 ? (
                                     <div className="flex flex-wrap gap-1">
                                         {selectedInstructionIds.map(id => (
                                             <Badge key={id} variant="secondary">{instructionMap.get(id) || 'Unknown'}</Badge>
                                         ))}
                                     </div>
-                                ) : "Select instructions..."}
-                            </Button>
+                                ) : <span className="text-muted-foreground">Select instructions...</span>}
+                            </div>
                         </div>
                     }
                 />
