@@ -161,10 +161,12 @@ export default function ManageDrugsPage() {
   });
 
   const nextCoverId = useMemo(() => {
-    if (!prescriptionDetails) return "Cover1";
+    if (!prescriptionDetails || prescriptionDetails.length === 0) {
+        return "Cover1";
+    }
     const maxCoverNum = prescriptionDetails.reduce((max, detail) => {
         const match = detail.cover_id.match(/Cover(\d+)/);
-        if (match) {
+        if (match && match[1]) {
             const num = parseInt(match[1], 10);
             return Math.max(max, num);
         }
@@ -172,6 +174,7 @@ export default function ManageDrugsPage() {
     }, 0);
     return `Cover${maxCoverNum + 1}`;
   }, [prescriptionDetails]);
+
 
   const deleteMutation = useMutation({
     mutationFn: async (coverId: string) => {
