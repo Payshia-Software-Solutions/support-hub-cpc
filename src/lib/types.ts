@@ -4,6 +4,7 @@
 
 
 
+
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -810,6 +811,7 @@ export interface GamePatient {
 }
 
 export interface PrescriptionDetail {
+    pres_code: string;
     cover_id: string;
     content: string;
 }
@@ -930,4 +932,19 @@ export interface RecoveryRecord {
     student_number: string;
     patient_id: string;
     created_at: string;
+}
+
+export interface PrescriptionSubmissionPayload {
+  prescription_name: string;
+  prescription_status: string;
+  created_at: string;
+  created_by: string;
+  Pres_Name: string;
+  pres_date: string;
+  Pres_Age: number;
+  Pres_Method: string;
+  doctor_name: string;
+  notes: string;
+  patient_description: string;
+  address: string;
 }
