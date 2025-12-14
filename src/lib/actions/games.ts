@@ -407,7 +407,7 @@ const savePrescriptionAnswer = async (payload: any): Promise<any> => {
 export const savePrescription = async (prescriptionPayload: PrescriptionSubmissionPayload, drugs: any[], prescriptionId?: string): Promise<any> => {
     
     let presCode = prescriptionId;
-    let method = prescriptionId ? 'POST' : 'POST';
+    let method = 'POST';
     let endpoint = prescriptionId ? `${QA_API_BASE_URL}/care-patients/${prescriptionId}` : `${QA_API_BASE_URL}/care-patients`;
     
     const presResponse = await fetch(endpoint, {
@@ -480,7 +480,7 @@ export const savePrescription = async (prescriptionPayload: PrescriptionSubmissi
 
 export const updatePrescriptionContent = async (payload: { pres_code: string; cover_id: string; content: string }): Promise<PrescriptionDetail> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-content/${payload.pres_code}/${payload.cover_id}`, {
-        method: 'PUT',
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -494,3 +494,5 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
 
     return response.json();
 };
+
+    
