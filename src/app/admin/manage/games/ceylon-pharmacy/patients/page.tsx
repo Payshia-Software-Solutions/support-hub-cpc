@@ -71,23 +71,27 @@ export default function ManagePatientsPage() {
                             <p className="text-sm">{error.message}</p>
                         </div>
                     )}
-                    {!isLoading && !isError && patients?.map(patient => (
-                        <Link key={patient.prescription_id} href={`/admin/manage/games/ceylon-pharmacy/patients/${patient.prescription_id}`} className="group block">
-                            <Card className="hover:shadow-md hover:border-primary transition-all">
-                                <CardContent className="p-4 flex items-center gap-4">
-                                    <Avatar className="h-12 w-12 text-lg">
-                                        <AvatarImage src={`https://placehold.co/100x100.png?text=${patient.Pres_Name.charAt(0)}`} alt={patient.Pres_Name} />
-                                        <AvatarFallback>{patient.Pres_Name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1">
-                                        <p className="font-semibold text-card-foreground group-hover:text-primary">{patient.Pres_Name}</p>
-                                        <p className="text-sm text-muted-foreground">{patient.Pres_Age}</p>
-                                    </div>
-                                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform"/>
-                                </CardContent>
-                            </Card>
-                        </Link>
-                    ))}
+                    {!isLoading && !isError && patients?.map(patient => {
+                        const patientName = patient.Pres_Name || 'Unknown Patient';
+                        const fallbackInitial = patientName.charAt(0) || 'P';
+                        return (
+                            <Link key={patient.prescription_id} href={`/admin/manage/games/ceylon-pharmacy/patients/${patient.prescription_id}`} className="group block">
+                                <Card className="hover:shadow-md hover:border-primary transition-all">
+                                    <CardContent className="p-4 flex items-center gap-4">
+                                        <Avatar className="h-12 w-12 text-lg">
+                                            <AvatarImage src={`https://placehold.co/100x100.png?text=${fallbackInitial}`} alt={patientName} />
+                                            <AvatarFallback>{fallbackInitial}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-card-foreground group-hover:text-primary">{patientName}</p>
+                                            <p className="text-sm text-muted-foreground">{patient.Pres_Age}</p>
+                                        </div>
+                                        <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform"/>
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                        );
+                    })}
                 </CardContent>
             </Card>
         </div>
