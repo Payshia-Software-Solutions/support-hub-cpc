@@ -6,13 +6,65 @@ import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, AlertTriangle, PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Loader2, AlertTriangle, PlusCircle, Edit, Trash2, Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { getPrescriptionDetails, deleteSection } from '@/lib/actions/games';
+import { getPrescriptionDetails, deleteSection, updatePrescriptionContent } from '@/lib/actions/games';
 import type { PrescriptionDetail } from '@/lib/types';
 import Link from 'next/link';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
+
+const DrugItem = ({ drug, patientId, onDelete }: { drug: PrescriptionDetail, patientId: string, onDelete: (drug: PrescriptionDetail) => void }) => {
+    const queryClient = useQueryClient();
+    const [content, setContent] = useState(drug.content);
+    
+    const updateMutation = useMutation({
+        mutationFn: updatePrescriptionContent,
+        onSuccess: (updatedDrug) => {
+            queryClient.setQueryData<PrescriptionDetail[]>(['prescriptionDetails', patientId], (oldData) =>
+                oldData ? oldData.map(d => d.cover_id === updatedDrug.cover_id ? updatedDrug : d) : []
+            );
+            toast({ title: 'Content Updated', description: `Drug content for ${updatedDrug.cover_id} has been saved.` });
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+            // Revert on error
+            setContent(drug.content);
+        },
+    });
+
+    const handleSave = () => {
+        if (content !== drug.content) {
+            updateMutation.mutate({ pres_code: drug.pres_code, cover_id: drug.cover_id, content: content });
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30 gap-2">
+            <Input 
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="text-sm font-medium flex-grow bg-background"
+                disabled={updateMutation.isPending}
+            />
+            <div className="flex items-center gap-1">
+                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSave} disabled={updateMutation.isPending || content === drug.content}>
+                    {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Save className="h-4 w-4" />}
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                    <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/drugs/edit/${drug.cover_id}`}>
+                        <Edit className="h-4 w-4 mr-2" /> Answers
+                    </Link>
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onDelete(drug)}>
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </div>
+        </div>
+    );
+};
+
 
 export default function ManageDrugsPage() {
   const router = useRouter();
@@ -29,7 +81,7 @@ export default function ManageDrugsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (coverId: string) => {
-        // Placeholder for delete logic
+        // Placeholder for delete logic. In a real app, you would call an API endpoint.
         console.log("Deleting drug with coverId:", coverId);
         await new Promise(resolve => setTimeout(resolve, 500)); 
     },
@@ -47,6 +99,8 @@ export default function ManageDrugsPage() {
 
   const handleDeleteConfirm = () => {
     if (drugToDelete) {
+        // This is a mock deletion since there's no backend endpoint for it yet.
+        // It optimistically updates the UI.
         deleteMutation.mutate(drugToDelete.cover_id);
     }
   };
@@ -99,19 +153,7 @@ export default function ManageDrugsPage() {
             <div className="space-y-3">
                 {!isLoading && !isError && prescriptionDetails && prescriptionDetails.length > 0 ? (
                     prescriptionDetails.map(drug => (
-                        <div key={drug.cover_id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
-                            <p className="font-medium text-sm">{drug.content}</p>
-                            <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" asChild>
-                                    <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/drugs/edit/${drug.cover_id}`}>
-                                        <Edit className="h-4 w-4" />
-                                    </Link>
-                                </Button>
-                                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDrugToDelete(drug)}>
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
+                        <DrugItem key={drug.cover_id} drug={drug} patientId={patientId} onDelete={setDrugToDelete} />
                     ))
                 ) : !isLoading && (
                     <p className="text-center py-8 text-muted-foreground">No drugs have been added to this prescription yet.</p>

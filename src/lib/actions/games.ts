@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload } from '../types';
@@ -396,13 +395,14 @@ const savePrescriptionAnswer = async (payload: any): Promise<any> => {
 export const savePrescription = async (prescriptionPayload: PrescriptionSubmissionPayload, drugs: any[], prescriptionId?: string): Promise<any> => {
     
     let presCode = prescriptionId;
+    let method = 'POST';
     let endpoint = `${QA_API_BASE_URL}/care-patients`;
     if (prescriptionId) {
         endpoint = `${QA_API_BASE_URL}/care-patients/${prescriptionId}`;
     }
-
+    
     const presResponse = await fetch(endpoint, {
-        method: 'POST',
+        method: method,
         headers: {
             'Content-Type': 'application/json',
         },
@@ -414,55 +414,75 @@ export const savePrescription = async (prescriptionPayload: PrescriptionSubmissi
         throw new Error(errorData.message || `Request failed with status ${presResponse.status}`);
     }
     
-    // If it's a new prescription, we need the returned ID.
+    const presData = await presResponse.json();
     if (!presCode) {
-        const presData = await presResponse.json();
         presCode = presData?.prescription?.prescription_id;
         if (!presCode) {
             throw new Error("Failed to get new prescription ID from the response.");
         }
     }
 
-    const drugPromises = drugs.map(drug => {
-        // Step 2: Save Content
-        const contentPayload = {
-            pres_code: presCode!,
-            cover_id: drug.coverId,
-            content: drug.content
-        };
-        const contentPromise = savePrescriptionContent(contentPayload);
+    if (drugs && drugs.length > 0) {
+      const drugPromises = drugs.map(drug => {
+          // Step 2: Save Content
+          const contentPayload = {
+              pres_code: presCode!,
+              cover_id: drug.coverId,
+              content: drug.content
+          };
+          const contentPromise = savePrescriptionContent(contentPayload);
 
-        // Step 3: Save Answers
-        const answerPayload = {
-            pres_id: presCode!,
-            cover_id: drug.coverId,
-            name: prescriptionPayload.Pres_Name,
-            drug_name: drug.correctDrugName,
-            drug_type: drug.dosageForm,
-            drug_qty: String(drug.quantity),
-            morning_qty: drug.morningQty,
-            afternoon_qty: drug.afternoonQty,
-            evening_qty: drug.eveningQty,
-            night_qty: drug.nightQty,
-            meal_type: drug.mealType,
-            using_type: drug.usingFrequency,
-            at_a_time: drug.at_a_time,
-            hour_qty: drug.hour_qty,
-            additional_description: drug.additionalInstruction,
-            created_by: prescriptionPayload.created_by
-        };
-        const answerPromise = savePrescriptionAnswer(answerPayload);
-        
-        return Promise.all([contentPromise, answerPromise]);
-    });
+          // Step 3: Save Answers
+          const answerPayload = {
+              pres_id: presCode!,
+              cover_id: drug.coverId,
+              name: prescriptionPayload.Pres_Name,
+              drug_name: drug.correctDrugName,
+              drug_type: drug.dosageForm,
+              drug_qty: String(drug.quantity),
+              morning_qty: drug.morningQty,
+              afternoon_qty: drug.afternoonQty,
+              evening_qty: drug.eveningQty,
+              night_qty: drug.nightQty,
+              meal_type: drug.mealType,
+              using_type: drug.usingFrequency,
+              at_a_time: drug.at_a_time,
+              hour_qty: drug.hour_qty,
+              additional_description: drug.additionalInstruction,
+              created_by: prescriptionPayload.created_by
+          };
+          const answerPromise = savePrescriptionAnswer(answerPayload);
+          
+          return Promise.all([contentPromise, answerPromise]);
+      });
 
-    const results = await Promise.allSettled(drugPromises);
-    
-    const failedSaves = results.filter(r => r.status === 'rejected');
-    if (failedSaves.length > 0) {
-        console.error('Some drug contents or answers failed to save:', failedSaves);
-        throw new Error(`${failedSaves.length} drug(s) failed to save properly.`);
+      const results = await Promise.allSettled(drugPromises);
+      
+      const failedSaves = results.filter(r => r.status === 'rejected');
+      if (failedSaves.length > 0) {
+          console.error('Some drug contents or answers failed to save:', failedSaves);
+          throw new Error(`${failedSaves.length} drug(s) failed to save properly.`);
+      }
     }
 
-    return { message: 'Prescription saved successfully' };
+
+    return presData;
 };
+
+export const updatePrescriptionContent = async (payload: { pres_code: string; cover_id: string; content: string }): Promise<PrescriptionDetail> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-content/${payload.pres_code}/${payload.cover_id}/`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: payload.content }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update prescription content.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+
+    return response.json();
+};
+
