@@ -11,12 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, AlertTriangle, Search, Calculator, Check, ChevronsUpDown } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, AlertTriangle, Search, Calculator, Check, ChevronsUpDown, Pill, Hash, Repeat, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useQuery } from '@tanstack/react-query';
-import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getAllCareInstructions, getMasterProducts } from '@/lib/actions/games';
-import type { GamePatient, PrescriptionDetail, Instruction, MasterProduct } from '@/lib/types';
+import { getCeylonPharmacyPrescriptions, getPrescriptionDetails, getAllCareInstructions, getMasterProducts, getFormSelectionData } from '@/lib/actions/games';
+import type { GamePatient, PrescriptionDetail, Instruction, MasterProduct, FormSelectionData } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -25,16 +25,33 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const drugSchema = z.object({
-    id: z.string(), // Keep track of existing drugs
-    drugName: z.string().min(1, 'Required'),
-    genericName: z.string().optional(),
-    quantity: z.coerce.number().min(1),
-    lines: z.string().min(1, 'Required'),
-    correctInstructionIds: z.array(z.string()).optional(),
+  id: z.string(),
+  drugName: z.string().min(1, 'Required'),
+  genericName: z.string().optional(),
+  quantity: z.coerce.number().min(1, 'Quantity is required'),
+  lines: z.string().min(1, 'Required'),
+  correctInstructionIds: z.array(z.string()).optional(),
+  
+  // Fields from student side
+  dosageForm: z.string().nonempty("Dosage form is required."),
+  morningQty: z.string().nonempty("Morning quantity is required."),
+  afternoonQty: z.string().nonempty("Afternoon quantity is required."),
+  eveningQty: z.string().nonempty("Evening quantity is required."),
+  nightQty: z.string().nonempty("Night quantity is required."),
+  mealType: z.string().nonempty("Meal type is required."),
+  usingFrequency: z.string().nonempty("Using frequency is required."),
+  at_a_time: z.string().nonempty("This field is required."),
+  hour_qty: z.string().optional(),
+  additionalInstruction: z.string().optional(),
 });
+
 
 const patientFormSchema = z.object({
   // Patient Details
@@ -55,6 +72,55 @@ const patientFormSchema = z.object({
 });
 
 type PatientFormValues = z.infer<typeof patientFormSchema>;
+
+
+const SelectionDialog = ({ triggerText, title, options, onSelect, icon: Icon, value }: { triggerText: string, title: string, options: string[], onSelect: (value: string) => void, icon: React.ElementType, value: string; }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    
+    const filteredOptions = useMemo(() => {
+        const sortedOptions = [...options].sort((a, b) => a.localeCompare(b));
+        if (!searchTerm) return sortedOptions;
+        return sortedOptions.filter(option => option.toLowerCase().includes(searchTerm.toLowerCase()));
+    }, [options, searchTerm]);
+
+    return (
+        <Dialog onOpenChange={(open) => !open && setSearchTerm('')}>
+            <DialogTrigger asChild>
+            <Button variant="outline" className="w-full justify-start pl-10 relative h-10 text-sm">
+                <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <span className="truncate">{value || triggerText}</span>
+            </Button>
+            </DialogTrigger>
+            <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Select {title}</DialogTitle>
+                 <div className="relative pt-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search options..." 
+                        className="pl-10" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </DialogHeader>
+            <ScrollArea className="max-h-[50vh]">
+                <div className="py-2 grid grid-cols-2 gap-2 pr-4">
+                    {filteredOptions.map((option, index) => (
+                    <DialogClose asChild key={`${option}-${index}`}>
+                        <Button variant="outline" onClick={() => onSelect(option)} className="h-auto min-h-12 whitespace-normal break-words text-left justify-start p-2">
+                            {option}
+                        </Button>
+                    </DialogClose>
+                    ))}
+                    {filteredOptions.length === 0 && <p className="col-span-2 text-center text-sm text-muted-foreground py-4">No results found.</p>}
+                </div>
+            </ScrollArea>
+            </DialogContent>
+        </Dialog>
+    )
+};
+
 
 const InstructionSelectionDialog = ({
     selectedIds,
@@ -314,13 +380,18 @@ export default function EditPatientPage() {
 
   const { data: prescriptionDetails } = useQuery<PrescriptionDetail[]>({
       queryKey: ['prescriptionDetails', patientId],
-      queryFn: () => getPrescriptionDetails(patientId),
+      queryFn: getPrescriptionDetails(patientId),
       enabled: !!patient,
   });
   
   const { data: allInstructions = [] } = useQuery<Instruction[]>({
       queryKey: ['allCareInstructions'],
       queryFn: getAllCareInstructions,
+  });
+  
+  const { data: selectionData, isLoading: isLoadingSelectionData } = useQuery<FormSelectionData>({
+    queryKey: ['formSelectionData'],
+    queryFn: getFormSelectionData,
   });
 
   const instructionMap = useMemo(() => {
@@ -357,6 +428,8 @@ export default function EditPatientPage() {
                 quantity: 1, // Not in API
                 lines: drug.content, // Not ideal, but what we have
                 correctInstructionIds: [], // To be fetched separately
+                dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "",
+                usingFrequency: "", at_a_time: "", hour_qty: "", additionalInstruction: ""
             })),
         });
     }
@@ -378,7 +451,9 @@ export default function EditPatientPage() {
     router.push('/admin/manage/games/ceylon-pharmacy/patients');
   };
   
-  if (isLoadingPatient) {
+  const isLoading = isLoadingPatient || isLoadingSelectionData;
+
+  if (isLoading) {
       return <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto"/></div>
   }
   
@@ -391,6 +466,8 @@ export default function EditPatientPage() {
           </div>
       )
   }
+  
+  const dailyQtyOptions = ['-', '1', '2', '3', '1/2', '4', '5', '1 1/2', '1 Drop', '10ml', '15ml', '1/4', '10U', '2 1/2', '2.5ml', '15U', '1puff', '2puff', '20ml', '30U']; 
 
   return (
     <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -443,44 +520,93 @@ export default function EditPatientPage() {
                 <CardContent className="space-y-4">
                     {fields.map((field, index) => (
                         <Card key={field.id} className="p-4 bg-muted/50 relative">
-                            <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => remove(index)}><Trash2 className="h-4 w-4"/></Button>
+                             <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => remove(index)}><Trash2 className="h-4 w-4"/></Button>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2"><Label>Drug Name*</Label><Input {...form.register(`drugs.${index}.drugName`)} />{form.formState.errors.drugs?.[index]?.drugName && <p className="text-xs text-destructive">Required</p>}</div>
                                 <div className="space-y-2"><Label>Generic Name</Label><Input {...form.register(`drugs.${index}.genericName`)} /></div>
                                 <div className="space-y-2"><Label>Quantity*</Label><Input type="number" {...form.register(`drugs.${index}.quantity`)} />{form.formState.errors.drugs?.[index]?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
                                 <div className="md:col-span-2 space-y-2"><Label>Prescription Lines (one per line)*</Label><Textarea {...form.register(`drugs.${index}.lines`)} rows={2}/>{form.formState.errors.drugs?.[index]?.lines && <p className="text-xs text-destructive">Required</p>}</div>
-                                
-                                <div className="md:col-span-2 space-y-2">
-                                    <Controller
-                                        control={form.control}
-                                        name={`drugs.${index}.correctInstructionIds`}
-                                        render={({ field: { onChange, value } }) => (
-                                            <InstructionSelectionDialog
-                                                selectedIds={value || []}
-                                                onSelectionChange={onChange}
-                                                trigger={
-                                                    <div className="space-y-2">
-                                                        <Label>Correct Counselling Instructions</Label>
-                                                        <Button type="button" variant="outline" className="w-full justify-start text-left font-normal">
-                                                            {value && value.length > 0 ? `${value.length} instruction(s) selected` : "Select instructions..."}
-                                                        </Button>
-                                                          {value && value.length > 0 && (
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {value.map(id => (
-                                                                    <Badge key={id} variant="secondary" className="font-normal">{instructionMap[id] || 'Unknown'}</Badge>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                }
-                                            />
-                                        )}
-                                    />
+                            </div>
+
+                            <Separator className="my-4" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="space-y-2">
+                                  <Label>Morning Qty*</Label>
+                                  <SelectionDialog triggerText="Qty" title="Morning Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.morningQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.morningQty`)} />
                                 </div>
+                                <div className="space-y-2">
+                                  <Label>Afternoon Qty*</Label>
+                                  <SelectionDialog triggerText="Qty" title="Afternoon Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.afternoonQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.afternoonQty`)} />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Evening Qty*</Label>
+                                  <SelectionDialog triggerText="Qty" title="Evening Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.eveningQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.eveningQty`)} />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Night Qty*</Label>
+                                  <SelectionDialog triggerText="Qty" title="Night Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`drugs.${index}.nightQty`, val)} icon={Hash} value={form.watch(`drugs.${index}.nightQty`)} />
+                                </div>
+                            </div>
+                            
+                            <Separator className="my-4" />
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label>Dosage Form*</Label>
+                                   <SelectionDialog triggerText="Select Form" title="Dosage Form" options={selectionData?.drug_type || []} onSelect={(val) => form.setValue(`drugs.${index}.dosageForm`, val)} icon={Pill} value={form.watch(`drugs.${index}.dosageForm`)} />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Meal Type*</Label>
+                                   <SelectionDialog triggerText="Select Meal Type" title="Meal Type" options={selectionData?.meal_type || []} onSelect={(val) => form.setValue(`drugs.${index}.mealType`, val)} icon={Pill} value={form.watch(`drugs.${index}.mealType`)} />
+                                </div>
+                                 <div className="space-y-2">
+                                  <Label>Using Frequency*</Label>
+                                   <SelectionDialog triggerText="Select Frequency" title="Using Frequency" options={selectionData?.using_type || []} onSelect={(val) => form.setValue(`drugs.${index}.usingFrequency`, val)} icon={Repeat} value={form.watch(`drugs.${index}.usingFrequency`)} />
+                                </div>
+                                 <div className="space-y-2">
+                                  <Label>At a Time*</Label>
+                                   <SelectionDialog triggerText="e.g. 5ml" title="At a Time" options={selectionData?.at_a_time || []} onSelect={(val) => form.setValue(`drugs.${index}.at_a_time`, val)} icon={Hash} value={form.watch(`drugs.${index}.at_a_time`)} />
+                                </div>
+                                 <div className="space-y-2">
+                                  <Label>Hour Quantity</Label>
+                                   <SelectionDialog triggerText="e.g. 8" title="Hour Quantity" options={selectionData?.hour_qty || []} onSelect={(val) => form.setValue(`drugs.${index}.hour_qty`, val)} icon={Clock} value={form.watch(`drugs.${index}.hour_qty`) || ''} />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Additional Description</Label>
+                                  <SelectionDialog triggerText="Select Description" title="Additional Description" options={selectionData?.additional_description || []} onSelect={(val) => form.setValue(`drugs.${index}.additionalInstruction`, val)} icon={Pill} value={form.watch(`drugs.${index}.additionalInstruction`) || ''} />
+                                </div>
+                            </div>
+                            
+                            <Separator className="my-4" />
+                            <div className="md:col-span-2 space-y-2">
+                                <Controller
+                                    control={form.control}
+                                    name={`drugs.${index}.correctInstructionIds`}
+                                    render={({ field: { onChange, value } }) => (
+                                        <InstructionSelectionDialog
+                                            selectedIds={value || []}
+                                            onSelectionChange={onChange}
+                                            trigger={
+                                                <div className="space-y-2">
+                                                    <Label>Correct Counselling Instructions</Label>
+                                                    <Button type="button" variant="outline" className="w-full justify-start text-left font-normal">
+                                                        {value && value.length > 0 ? `${value.length} instruction(s) selected` : "Select instructions..."}
+                                                    </Button>
+                                                      {value && value.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {value.map(id => (
+                                                                <Badge key={id} variant="secondary" className="font-normal">{instructionMap[id] || 'Unknown'}</Badge>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            }
+                                        />
+                                    )}
+                                />
                             </div>
                         </Card>
                     ))}
-                    <Button type="button" variant="outline" className="w-full" onClick={() => append({ id: `new-${Date.now()}`, drugName: '', quantity: 1, lines: '', correctInstructionIds: [] })}>
+                    <Button type="button" variant="outline" className="w-full" onClick={() => append({ id: `new-${Date.now()}`, drugName: '', quantity: 1, lines: '', correctInstructionIds: [], dosageForm: "", morningQty: "", afternoonQty: "", eveningQty: "", nightQty: "", mealType: "", usingFrequency: "", at_a_time: "" })}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Another Drug
                     </Button>
                 </CardContent>
