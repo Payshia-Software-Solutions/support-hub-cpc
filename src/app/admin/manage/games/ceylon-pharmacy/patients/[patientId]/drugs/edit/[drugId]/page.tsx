@@ -199,13 +199,13 @@ export default function EditDrugPage() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     
-    const { data: drugDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
+    const { data: drugDetails, isLoading: isLoadingDetails, isError: isDetailsError } = useQuery<PrescriptionDetail[]>({
         queryKey: ['prescriptionDetails', patientId],
         queryFn: () => getPrescriptionDetails(patientId),
         enabled: !!patientId,
     });
     
-    const { data: drugAnswers, isLoading: isLoadingAnswers } = useQuery<DispensingAnswer>({
+    const { data: drugAnswers, isLoading: isLoadingAnswers, isError: isAnswersError } = useQuery<DispensingAnswer>({
         queryKey: ['dispensingAnswers', patientId, drugId],
         queryFn: () => getDispensingAnswers(patientId, drugId),
         enabled: !!drugId,
@@ -215,6 +215,9 @@ export default function EditDrugPage() {
         queryKey: ['formSelectionData'],
         queryFn: getFormSelectionData,
     });
+    
+    const instructionMap = useMemo(() => new Map<string, string>(), []);
+
 
     const form = useForm<EditDrugFormValues>({
         resolver: zodResolver(drugSchema),
@@ -222,8 +225,6 @@ export default function EditDrugPage() {
     });
 
     const drugToEdit = useMemo(() => drugDetails?.find(d => d.cover_id === drugId), [drugDetails, drugId]);
-    const { fields, append, remove } = useFieldArray({ control: form.control, name: "drugs" as never }); // Temp fix
-    const instructionMap = useMemo(() => new Map<string, string>(), []);
 
     useEffect(() => {
         if (drugToEdit && drugAnswers) {
@@ -247,12 +248,18 @@ export default function EditDrugPage() {
             });
         }
     }, [drugToEdit, drugAnswers, form]);
+    
+    const onSubmit = (data: EditDrugFormValues) => {
+        // This will be part of a larger form submission in a later step
+        toast({ title: "Local Save (dev)", description: "Data logged, not sent to API yet." });
+        console.log(data);
+    };
 
     if (isLoadingDetails || isLoadingAnswers || isLoadingSelectionData) {
         return <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto"/></div>
     }
 
-    if (!drugToEdit || !drugAnswers || !selectionData) {
+    if (isDetailsError || isAnswersError || !drugToEdit || !drugAnswers || !selectionData) {
         return (
             <div className="p-8 text-center">
                 <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-2" />
@@ -261,12 +268,6 @@ export default function EditDrugPage() {
             </div>
         )
     }
-
-    const onSubmit = (data: EditDrugFormValues) => {
-        // This will be part of a larger form submission in a later step
-        toast({ title: "Local Save (dev)", description: "Data logged, not sent to API yet." });
-        console.log(data);
-    };
 
     const dailyQtyOptions = ['-', '1', '2', '3', '1/2', '4', '5', '1 1/2', '1 Drop', '10ml', '15ml', '1/4', '10U', '2 1/2', '2.5ml', '15U', '1puff', '2puff', '20ml', '30U'];
 
@@ -355,3 +356,4 @@ export default function EditDrugPage() {
     );
 }
 
+    
