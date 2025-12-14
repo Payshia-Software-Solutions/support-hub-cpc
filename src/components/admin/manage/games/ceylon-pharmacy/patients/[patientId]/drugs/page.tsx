@@ -23,7 +23,7 @@ const DrugItem = ({ drug, patientId, onDelete }: { drug: PrescriptionDetail, pat
         mutationFn: updatePrescriptionContent,
         onSuccess: (updatedDrug) => {
             queryClient.setQueryData<PrescriptionDetail[]>(['prescriptionDetails', patientId], (oldData) =>
-                oldData ? oldData.map(d => d.cover_id === updatedDrug.cover_id ? updatedDrug : d) : []
+                oldData ? oldData.map(d => d.cover_id === updatedDrug.cover_id ? { ...updatedDrug, pres_code: drug.pres_code } : d) : []
             );
             toast({ title: 'Content Updated', description: `Drug content for ${updatedDrug.cover_id} has been saved.` });
         },

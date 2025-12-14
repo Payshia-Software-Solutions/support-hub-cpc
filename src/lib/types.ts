@@ -1,10 +1,4 @@
 
-
-
-
-
-
-
 export interface ApiStaffMember {
   id: string;
   fname: string;

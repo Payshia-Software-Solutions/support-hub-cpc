@@ -101,11 +101,19 @@ export const getPrescriptionDetails = async (prescriptionId: string): Promise<Pr
     return response.json();
 }
 
-export const getDispensingAnswers = async (prescriptionId: string, coverId: string): Promise<DispensingAnswer> => {
+export const getDispensingAnswers = async (prescriptionId: string, coverId: string): Promise<DispensingAnswer | null> => {
     if (!prescriptionId || !coverId) {
         throw new Error("Prescription ID and Cover ID are required.");
     }
     const response = await fetch(`${QA_API_BASE_URL}/care-answers/pres-id/${prescriptionId}/cover-id/${coverId}/`);
+    
+    if (response.status === 404) {
+        const errorData = await response.json().catch(() => null);
+        if (errorData?.error === "Answer not found") {
+            return null; // This is a valid case where answers haven't been submitted yet.
+        }
+    }
+    
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch dispensing answers' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
@@ -115,6 +123,10 @@ export const getDispensingAnswers = async (prescriptionId: string, coverId: stri
     if (Array.isArray(data) && data.length > 0) {
         return data[0];
     }
+    if (Array.isArray(data) && data.length === 0) {
+        return null; // Treat empty array as not found
+    }
+
     throw new Error("Invalid answer data format received from API.");
 };
 
@@ -395,11 +407,8 @@ const savePrescriptionAnswer = async (payload: any): Promise<any> => {
 export const savePrescription = async (prescriptionPayload: PrescriptionSubmissionPayload, drugs: any[], prescriptionId?: string): Promise<any> => {
     
     let presCode = prescriptionId;
-    let method = 'POST';
-    let endpoint = `${QA_API_BASE_URL}/care-patients`;
-    if (prescriptionId) {
-        endpoint = `${QA_API_BASE_URL}/care-patients/${prescriptionId}`;
-    }
+    let method = prescriptionId ? 'POST' : 'POST';
+    let endpoint = prescriptionId ? `${QA_API_BASE_URL}/care-patients/${prescriptionId}` : `${QA_API_BASE_URL}/care-patients`;
     
     const presResponse = await fetch(endpoint, {
         method: method,
@@ -470,7 +479,7 @@ export const savePrescription = async (prescriptionPayload: PrescriptionSubmissi
 };
 
 export const updatePrescriptionContent = async (payload: { pres_code: string; cover_id: string; content: string }): Promise<PrescriptionDetail> => {
-    const response = await fetch(`${QA_API_BASE_URL}/care-content/${payload.pres_code}/${payload.cover_id}/`, {
+    const response = await fetch(`${QA_API_BASE_URL}/care-content/${payload.pres_code}/${payload.cover_id}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -485,4 +494,3 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
 
     return response.json();
 };
-
