@@ -4,20 +4,18 @@
 import { useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, User, Pill, FileText, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { getCeylonPharmacyPrescriptions, getPrescriptionDetails } from '@/lib/actions/games';
 import type { GamePatient, PrescriptionDetail } from '@/lib/types';
-import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PatientHubPage() {
   const router = useRouter();
   const params = useParams();
-  const patientId = params.patientId as string; // This is prescription_id
-  const { user } = useAuth();
+  const patientId = params.patientId as string; 
 
   const { data: patient, isLoading: isLoadingPatient, isError: isPatientError, error: patientError } = useQuery<GamePatient>({
       queryKey: ['ceylonPharmacyPatient', patientId],
@@ -63,7 +61,6 @@ export default function PatientHubPage() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Basic Info Card */}
             <Card className="shadow-lg flex flex-col">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><User className="h-5 w-5"/> Basic Info</CardTitle>
@@ -76,12 +73,11 @@ export default function PatientHubPage() {
                  </CardContent>
                 <CardFooter>
                     <Button variant="outline" asChild className="w-full">
-                        <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/edit`}>Manage Details <ArrowRight className="ml-2 h-4 w-4"/></Link>
+                        <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/basic-info`}>Manage Details <ArrowRight className="ml-2 h-4 w-4"/></Link>
                     </Button>
                 </CardFooter>
             </Card>
 
-            {/* Drugs Card */}
              <Card className="shadow-lg flex flex-col">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Pill className="h-5 w-5"/> Prescription Drugs</CardTitle>
@@ -94,12 +90,11 @@ export default function PatientHubPage() {
                 </CardContent>
                 <CardFooter>
                     <Button variant="outline" asChild className="w-full">
-                        <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/edit`}>Manage Drugs <ArrowRight className="ml-2 h-4 w-4"/></Link>
+                        <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/drugs`}>Manage Drugs <ArrowRight className="ml-2 h-4 w-4"/></Link>
                     </Button>
                 </CardFooter>
             </Card>
             
-            {/* Bill Value Card */}
              <Card className="shadow-lg flex flex-col">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5"/> Billing</CardTitle>
@@ -110,7 +105,7 @@ export default function PatientHubPage() {
                 </CardContent>
                 <CardFooter>
                     <Button variant="outline" asChild className="w-full">
-                        <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/edit`}>Manage Billing <ArrowRight className="ml-2 h-4 w-4"/></Link>
+                        <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patientId}/billing`}>Manage Billing <ArrowRight className="ml-2 h-4 w-4"/></Link>
                     </Button>
                 </CardFooter>
             </Card>
