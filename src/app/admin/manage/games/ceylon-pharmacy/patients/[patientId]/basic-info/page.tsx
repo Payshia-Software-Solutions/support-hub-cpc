@@ -33,6 +33,7 @@ const patientFormSchema = z.object({
   prescription_name: z.string().min(1, 'Prescription name is required'),
   pres_date: z.string().min(1, 'Prescription date is required'),
   doctor_name: z.string().min(1, 'Doctor name is required'),
+  Pres_Method: z.string().min(1, 'Prescription Method is required.'),
   notes: z.string().optional(),
 });
 
@@ -93,6 +94,7 @@ export default function EditPatientBasicInfoPage() {
             prescription_name: patient.prescription_name,
             pres_date: patient.pres_date,
             doctor_name: patient.doctor_name,
+            Pres_Method: patient.Pres_Method,
             notes: patient.notes,
         });
     }
@@ -112,7 +114,7 @@ export default function EditPatientBasicInfoPage() {
       Pres_Name: data.name,
       pres_date: data.pres_date,
       Pres_Age: parseInt(data.age, 10),
-      Pres_Method: patient.Pres_Method || 'N/A',
+      Pres_Method: data.Pres_Method,
       doctor_name: data.doctor_name,
       notes: data.notes || '',
       patient_description: data.patient_description || '',
@@ -191,6 +193,7 @@ export default function EditPatientBasicInfoPage() {
                     <div className="space-y-2"><Label>Patient Age*</Label><Input {...form.register('age')} placeholder="e.g. 45 Years" />{form.formState.errors.age && <p className="text-xs text-destructive">{form.formState.errors.age.message}</p>}</div>
                     <div className="space-y-2"><Label>Address</Label><Input {...form.register('address')} /></div>
                     <div className="space-y-2"><Label>Doctor's Name*</Label><Input {...form.register('doctor_name')} />{form.formState.errors.doctor_name && <p className="text-xs text-destructive">{form.formState.errors.doctor_name.message}</p>}</div>
+                    <div className="space-y-2"><Label>Prescription Method*</Label><Input {...form.register('Pres_Method')} />{form.formState.errors.Pres_Method && <p className="text-xs text-destructive">{form.formState.errors.Pres_Method.message}</p>}</div>
                     <div className="space-y-2 lg:col-span-3"><Label>Patient Description</Label><Textarea {...form.register('patient_description')} rows={2}/></div>
                     <div className="space-y-2 lg:col-span-3"><Label>Prescription Notes</Label><Textarea {...form.register('notes')} rows={2}/></div>
                 </CardContent>
