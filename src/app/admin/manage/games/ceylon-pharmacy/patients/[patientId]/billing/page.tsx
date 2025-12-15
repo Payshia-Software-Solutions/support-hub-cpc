@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -294,9 +293,9 @@ export default function ManageBillingPage() {
                             <Calculator className="h-4 w-4" />
                         </Button>
                     </div>
-                     {existingAnswer && (
+                     {correctAmountData && (
                         <p className="text-xs text-muted-foreground">
-                            Last saved value was LKR {existingAnswer.value} on {new Date(existingAnswer.created_at).toLocaleDateString()}.
+                            Last saved value was LKR {correctAmountData.value} on {new Date(correctAmountData.created_at).toLocaleDateString()}.
                         </p>
                     )}
                 </div>
