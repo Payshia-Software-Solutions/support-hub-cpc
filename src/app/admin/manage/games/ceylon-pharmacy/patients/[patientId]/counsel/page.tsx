@@ -147,8 +147,13 @@ const DrugCounselingCard = ({ drug, patientId }: { drug: PrescriptionDetail, pat
                 instructions: numericIds,
             });
         },
-        onSuccess: () => {
+        onSuccess: (savedData) => {
             toast({ title: 'Success!', description: 'Counselling instructions saved.'});
+            // Update the local state with the actual IDs returned from the backend
+            if(savedData && Array.isArray(savedData)) {
+                const newIds = savedData.map(item => String(item.id));
+                setSelectedInstructionIds(newIds);
+            }
             queryClient.invalidateQueries({queryKey: ['correctInstructions', patientId, drug.cover_id]});
         },
         onError: (err: Error) => {
@@ -167,9 +172,9 @@ const DrugCounselingCard = ({ drug, patientId }: { drug: PrescriptionDetail, pat
                     selectedIds={selectedInstructionIds}
                     onSelectionChange={setSelectedInstructionIds}
                     trigger={
-                        <div className="space-y-2">
+                         <div className="space-y-2 cursor-pointer group">
                             <Label>Correct Instructions</Label>
-                             <div className="w-full justify-start text-left font-normal h-auto min-h-10 p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors">
+                             <div className="w-full justify-start text-left font-normal h-auto min-h-10 p-2 border rounded-md group-hover:bg-muted/50 transition-colors">
                                 {selectedInstructionIds.length > 0 ? (
                                     <div className="flex flex-wrap gap-1">
                                         {selectedInstructionIds.map(id => (
