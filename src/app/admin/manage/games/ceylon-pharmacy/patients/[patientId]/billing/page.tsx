@@ -1,24 +1,174 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Calculator, Save, AlertTriangle } from 'lucide-react';
-import { getCeylonPharmacyPrescriptions, getPOSCorrectAmount, saveCorrectBillValue } from '@/lib/actions/games';
-import type { GamePatient, POSCorrectAnswer } from '@/lib/types';
+import { ArrowLeft, Loader2, Calculator, Save, AlertTriangle, Search, Check, ChevronsUpDown, Pill } from 'lucide-react';
+import { getCeylonPharmacyPrescriptions, getPOSCorrectAmount, saveCorrectBillValue, getMasterProducts, getPrescriptionDetails } from '@/lib/actions/games';
+import type { GamePatient, POSCorrectAnswer, MasterProduct, PrescriptionDetail } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
+
+
+const ProductSelector = ({ products, selected, onSelect, placeholder }: { products: MasterProduct[], selected?: string, onSelect: (value: string) => void, placeholder: string }) => {
+    const [open, setOpen] = useState(false);
+    
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between h-8 text-xs">
+                    <span className="truncate">
+                        {selected ? products.find(p => p.product_id === selected)?.DisplayName : placeholder}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <Command>
+                    <CommandInput placeholder="Search product..." />
+                    <CommandEmpty>No product found.</CommandEmpty>
+                    <CommandGroup className="max-h-60 overflow-y-auto">
+                        {products.map((product) => (
+                            <CommandItem
+                                key={product.product_id}
+                                value={product.DisplayName}
+                                onSelect={() => {
+                                    onSelect(product.product_id);
+                                    setOpen(false);
+                                }}
+                            >
+                                <Check className={cn("mr-2 h-4 w-4", selected === product.product_id ? "opacity-100" : "opacity-0")} />
+                                <span className="truncate">{product.DisplayName}</span>
+                            </CommandItem>
+                        ))}
+                    </CommandGroup>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+};
+
+
+const POSCalculatorDialog = ({ prescriptionDrugs, onUseTotal, closeDialog }: { prescriptionDrugs: PrescriptionDetail[], onUseTotal: (total: number) => void, closeDialog: () => void }) => {
+    const { data: masterProducts, isLoading } = useQuery<MasterProduct[]>({
+        queryKey: ['masterProducts'],
+        queryFn: getMasterProducts,
+    });
+
+    const [selectedProducts, setSelectedProducts] = useState<Record<string, string>>({});
+    const [discount, setDiscount] = useState('0');
+
+    const billItems = useMemo(() => {
+        if (!masterProducts || !prescriptionDrugs) return [];
+        return prescriptionDrugs.map((drug, index) => {
+            const selectedProductId = selectedProducts[index] || '';
+            const product = masterProducts.find(p => p.product_id === selectedProductId);
+            const price = product ? parseFloat(product.SellingPrice) : 0;
+            return {
+                index: index,
+                name: drug.content,
+                quantity: 1, // Assuming quantity of 1 for simplicity, this could be enhanced
+                price: price,
+                total: price * 1,
+                productId: selectedProductId,
+            };
+        });
+    }, [prescriptionDrugs, masterProducts, selectedProducts]);
+
+    const subtotal = useMemo(() => billItems.reduce((acc, item) => acc + item.total, 0), [billItems]);
+    const total = subtotal - parseFloat(discount || '0');
+
+    const handleProductSelect = (drugIndex: number, productId: string) => {
+        setSelectedProducts(prev => ({
+            ...prev,
+            [drugIndex]: productId,
+        }));
+    };
+    
+    const getFilteredProducts = (drugName: string) => {
+        if (!masterProducts) return [];
+        if (!drugName) return masterProducts;
+        const searchName = drugName.split(' ')[0].toLowerCase();
+        return masterProducts.filter(p => p.DisplayName.toLowerCase().includes(searchName));
+    };
+
+    const handleUseTotal = () => {
+        onUseTotal(total);
+        closeDialog();
+    }
+
+    return (
+        <DialogContent className="max-w-2xl">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2"><Calculator className="h-5 w-5"/>POS Bill Calculator</DialogTitle>
+                <DialogDescription>Select the corresponding POS item for each drug to calculate the total.</DialogDescription>
+            </DialogHeader>
+            {isLoading ? (
+                <div className="space-y-2"><p>Loading product prices...</p><Skeleton className="h-20 w-full" /></div>
+            ) : (
+                <div className="space-y-3 py-4">
+                    <div className="border rounded-lg max-h-60 overflow-y-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b">
+                                    <th className="p-2 text-left font-medium">Prescription Item</th>
+                                    <th className="p-2 text-right font-medium">Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {billItems.map((item) => (
+                                    <tr key={item.index} className="border-b last:border-none">
+                                        <td className="p-2 space-y-1">
+                                            <p className="font-medium">{item.name || 'Untitled Drug'}</p>
+                                            <ProductSelector
+                                                products={getFilteredProducts(item.name)}
+                                                selected={item.productId}
+                                                onSelect={(productId) => handleProductSelect(item.index, productId)}
+                                                placeholder="Select Product..."
+                                            />
+                                        </td>
+                                        <td className="p-2 text-right font-semibold">{item.price.toFixed(2)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <Separator />
+                    <div className="space-y-2">
+                         <div className="flex justify-between items-center"><span className="text-muted-foreground">Subtotal</span><span>LKR {subtotal.toFixed(2)}</span></div>
+                         <div className="flex justify-between items-center">
+                            <Label htmlFor="calc-discount" className="text-muted-foreground">Discount</Label>
+                            <Input id="calc-discount" type="number" placeholder="0.00" value={discount} onChange={e => setDiscount(e.target.value)} className="h-8 w-24 text-right" />
+                        </div>
+                         <div className="flex justify-between font-bold text-lg text-primary"><span >Total</span><span>LKR {total.toFixed(2)}</span></div>
+                    </div>
+                </div>
+            )}
+             <DialogFooter>
+                <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                <Button onClick={handleUseTotal} disabled={isLoading}>Use This Total</Button>
+            </DialogFooter>
+        </DialogContent>
+    );
+};
+
 
 export default function ManageBillingPage() {
   const router = useRouter();
   const params = useParams();
   const patientId = params.patientId as string;
   const queryClient = useQueryClient();
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
 
   const [billValue, setBillValue] = useState('');
 
@@ -33,12 +183,17 @@ export default function ManageBillingPage() {
       enabled: !!patientId,
   });
 
+  const { data: prescriptionDetails, isLoading: isLoadingDetails } = useQuery<PrescriptionDetail[]>({
+      queryKey: ['prescriptionDetails', patientId],
+      queryFn: () => getPrescriptionDetails(patientId),
+      enabled: !!patient,
+  });
+
   const { data: existingAnswer, isLoading: isLoadingAnswer } = useQuery<POSCorrectAnswer | null>({
     queryKey: ['posCorrectAmount', patientId],
     queryFn: () => getPOSCorrectAmount(patientId),
     enabled: !!patientId,
     retry: (failureCount, error: any) => {
-        // Don't retry if the error is a 404, which is a valid "not found" state
         if (error?.message?.includes('404')) {
             return false;
         }
@@ -72,10 +227,19 @@ export default function ManageBillingPage() {
     saveBillMutation.mutate({ PresCode: patientId, value: billValue });
   };
   
-  const isLoading = isLoadingPatient || isLoadingAnswer;
+  const isLoading = isLoadingPatient || isLoadingAnswer || isLoadingDetails;
 
   return (
     <div className="p-4 md:p-8 space-y-6 pb-20">
+       <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
+          {prescriptionDetails && (
+              <POSCalculatorDialog 
+                  prescriptionDrugs={prescriptionDetails}
+                  onUseTotal={(total) => setBillValue(total.toFixed(2))}
+                  closeDialog={() => setIsCalculatorOpen(false)}
+              />
+          )}
+       </Dialog>
       <header>
         <Button variant="ghost" onClick={() => router.back()} className="-ml-4">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Patient Hub
@@ -100,6 +264,9 @@ export default function ManageBillingPage() {
                     <Label htmlFor="bill-value">Total Bill Value (LKR)</Label>
                     <div className="flex items-center gap-2">
                         <Input id="bill-value" type="number" step="0.01" value={billValue} onChange={(e) => setBillValue(e.target.value)} placeholder="0.00" />
+                        <Button variant="outline" size="icon" onClick={() => setIsCalculatorOpen(true)} disabled={!prescriptionDetails}>
+                            <Calculator className="h-4 w-4" />
+                        </Button>
                     </div>
                      {existingAnswer && (
                         <p className="text-xs text-muted-foreground">
