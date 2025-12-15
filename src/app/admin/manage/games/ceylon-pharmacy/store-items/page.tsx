@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getMasterProducts, updateMasterProduct } from '@/lib/actions/games';
+import { getMasterProducts, updateMasterProduct, createMasterProduct } from '@/lib/actions/games';
 import type { MasterProduct } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -63,22 +63,8 @@ export default function ManageStoreItemsPage() {
         queryFn: getMasterProducts,
     });
     
-    const mockCreateMutation = useMutation({
-        mutationFn: async (data: { name: string, price: string }) => {
-            // Simulate API call and response
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const newItem: MasterProduct = {
-                product_id: `new_${Date.now()}`,
-                DisplayName: data.name,
-                SellingPrice: data.price,
-                // Add other required MasterProduct fields with default/mock values
-                product_code: `P${Date.now()}`,
-                PrintName: data.name,
-                Pos_Category: 'Other',
-                ProductName: data.name,
-            };
-            return newItem;
-        },
+    const createMutation = useMutation({
+        mutationFn: createMasterProduct,
         onSuccess: (newItem) => {
             queryClient.setQueryData<MasterProduct[]>(['masterProducts'], (oldData = []) => [newItem, ...oldData]);
             toast({ title: 'Item Added', description: `${newItem.DisplayName} has been added.` });
@@ -133,7 +119,7 @@ export default function ManageStoreItemsPage() {
         if (currentItem) {
             updateMutation.mutate({ productId: currentItem.product_id, ...data });
         } else {
-            mockCreateMutation.mutate(data);
+            createMutation.mutate(data);
         }
     };
 
@@ -153,7 +139,7 @@ export default function ManageStoreItemsPage() {
                         item={currentItem} 
                         onSave={handleSave} 
                         onClose={() => setIsDialogOpen(false)}
-                        isSaving={updateMutation.isPending || mockCreateMutation.isPending}
+                        isSaving={updateMutation.isPending || createMutation.isPending}
                     />
                 </DialogContent>
             </Dialog>

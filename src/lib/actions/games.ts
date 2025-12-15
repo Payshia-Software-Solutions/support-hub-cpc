@@ -15,6 +15,29 @@ export const getMasterProducts = async (): Promise<MasterProduct[]> => {
     return response.json();
 };
 
+export const createMasterProduct = async (data: { name: string, price: string }): Promise<MasterProduct> => {
+    const payload = {
+        DisplayName: data.name,
+        SellingPrice: data.price,
+        product_code: `P${Date.now()}`,
+        PrintName: data.name,
+        Pos_Category: 'Other',
+        ProductName: data.name,
+    };
+    const response = await fetch(`${QA_API_BASE_URL}/master-products/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create product' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
 export const updateMasterProduct = async ({ productId, name, price }: { productId: string, name: string, price: string }): Promise<{ message: string }> => {
     const response = await fetch(`${QA_API_BASE_URL}/master-products/${productId}/update-name-and-price/`, {
         method: 'POST',
@@ -535,5 +558,6 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
 
