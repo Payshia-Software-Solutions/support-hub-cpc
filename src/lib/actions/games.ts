@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload } from '../types';
@@ -17,13 +18,29 @@ export const getMasterProducts = async (): Promise<MasterProduct[]> => {
 
 export const createMasterProduct = async (data: { name: string, price: string }): Promise<MasterProduct> => {
     const payload = {
-        DisplayName: data.name,
-        SellingPrice: data.price,
         product_code: `P${Date.now()}`,
-        PrintName: data.name,
-        Pos_Category: 'Other',
-        ProductName: data.name,
+        product_name: data.name,
+        display_name: data.name,
+        print_name: data.name,
+        section_id: 1,
+        department_id: 10,
+        category_id: 10,
+        measurement: "1",
+        cost_price: parseFloat(data.price),
+        selling_price: parseFloat(data.price),
+        minimum_price: parseFloat(data.price),
+        wholesale_price: parseFloat(data.price),
+        item_type: "Raw",
+        item_location: "4",
+        image_path: "no-image.png",
+        created_by: "Admin",
+        supplier_list: "1",
+        product_description: `<p>${data.name}</p>`,
+        barcode: `BAR${Date.now()}`,
+        expiry_good: 0,
+        location_list: "4,3,2,1"
     };
+
     const response = await fetch(`${QA_API_BASE_URL}/master-products/`, {
         method: 'POST',
         headers: {
@@ -31,12 +48,14 @@ export const createMasterProduct = async (data: { name: string, price: string })
         },
         body: JSON.stringify(payload),
     });
+
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to create product' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
 };
+
 
 export const updateMasterProduct = async ({ productId, name, price }: { productId: string, name: string, price: string }): Promise<{ message: string }> => {
     const response = await fetch(`${QA_API_BASE_URL}/master-products/${productId}/update-name-and-price/`, {
@@ -309,14 +328,11 @@ export const updatePatientStatus = async (studentNumber: string, presCode: strin
 };
 
 
-export const getShuffledInstructions = async (presCode: string, coverId: string): Promise<Instruction[]> => {
-    const response = await fetch(`${QA_API_BASE_URL}/care-instructions/shuffled/pres-code/${presCode}/cover-id/${coverId}/`);
-    if (response.status === 404) {
-        return [];
-    }
+export const getAllCareInstructions = async (): Promise<Instruction[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-instructions-pre`);
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch shuffled instructions' }));
-        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch all instructions' }));
+        throw new Error(errorData.message || 'Failed to fetch all instructions');
     }
     return response.json();
 };
@@ -333,14 +349,6 @@ export const getCorrectInstructions = async (presCode: string, coverId: string):
     return response.json();
 };
 
-export const getAllCareInstructions = async (): Promise<Instruction[]> => {
-    const response = await fetch(`${QA_API_BASE_URL}/care-instructions-pre`);
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch all instructions' }));
-        throw new Error(errorData.message || 'Failed to fetch all instructions');
-    }
-    return response.json();
-};
 
 export const saveCounsellingInstructionsForDrug = async (payload: { pres_code: string; cover_id: string; instructions: number[] }): Promise<Instruction[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-instructions/`, {
@@ -467,7 +475,7 @@ export const saveOrUpdateDispensingAnswer = async (payload: Omit<DispensingAnswe
 export const savePrescription = async (prescriptionPayload: PrescriptionSubmissionPayload, drugs: any[], prescriptionId?: string): Promise<any> => {
     
     let presCode = prescriptionId;
-    let method = 'POST';
+    let method = prescriptionId ? 'PUT' : 'POST';
     let endpoint = prescriptionId ? `${QA_API_BASE_URL}/care-patients/${prescriptionId}` : `${QA_API_BASE_URL}/care-patients`;
     
     const presResponse = await fetch(endpoint, {
@@ -558,6 +566,7 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
 
 
