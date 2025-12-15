@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -7,8 +8,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, Calculator, Save, AlertTriangle, Search, Check, ChevronsUpDown, Pill } from 'lucide-react';
-import { getCeylonPharmacyPrescriptions, getPOSCorrectAmount, saveCorrectBillValue, getMasterProducts, getPrescriptionDetails } from '@/lib/actions/games';
-import type { GamePatient, POSCorrectAnswer, MasterProduct, PrescriptionDetail } from '@/lib/types';
+import { getCeylonPharmacyPrescriptions, getPOSCorrectAmount, saveCorrectBillValue, getMasterProducts, getPrescriptionDetails, getDispensingAnswers } from '@/lib/actions/games';
+import type { GamePatient, POSCorrectAnswer, MasterProduct, PrescriptionDetail, DispensingAnswer } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
@@ -59,7 +60,7 @@ const ProductSelector = ({ products, selected, onSelect, placeholder }: { produc
 };
 
 
-const POSCalculatorDialog = ({ prescriptionDrugs, onUseTotal, closeDialog }: { prescriptionDrugs: PrescriptionDetail[], onUseTotal: (total: number) => void, closeDialog: () => void }) => {
+const POSCalculatorDialog = ({ prescriptionDrugs, drugAnswers, onUseTotal, closeDialog }: { prescriptionDrugs: PrescriptionDetail[], drugAnswers: Record<string, DispensingAnswer | null>, onUseTotal: (total: number) => void, closeDialog: () => void }) => {
     const { data: masterProducts, isLoading } = useQuery<MasterProduct[]>({
         queryKey: ['masterProducts'],
         queryFn: getMasterProducts,
@@ -74,16 +75,17 @@ const POSCalculatorDialog = ({ prescriptionDrugs, onUseTotal, closeDialog }: { p
             const selectedProductId = selectedProducts[index] || '';
             const product = masterProducts.find(p => p.product_id === selectedProductId);
             const price = product ? parseFloat(product.SellingPrice) : 0;
+            const quantity = parseInt(drugAnswers[drug.cover_id]?.drug_qty || '1', 10);
             return {
                 index: index,
                 name: drug.content,
-                quantity: 1, // Assuming quantity of 1 for simplicity, this could be enhanced
+                quantity: isNaN(quantity) ? 1 : quantity,
                 price: price,
-                total: price * 1,
+                total: price * (isNaN(quantity) ? 1 : quantity),
                 productId: selectedProductId,
             };
         });
-    }, [prescriptionDrugs, masterProducts, selectedProducts]);
+    }, [prescriptionDrugs, masterProducts, selectedProducts, drugAnswers]);
 
     const subtotal = useMemo(() => billItems.reduce((acc, item) => acc + item.total, 0), [billItems]);
     const total = subtotal - parseFloat(discount || '0');
@@ -122,7 +124,9 @@ const POSCalculatorDialog = ({ prescriptionDrugs, onUseTotal, closeDialog }: { p
                             <thead>
                                 <tr className="border-b">
                                     <th className="p-2 text-left font-medium">Prescription Item</th>
+                                    <th className="p-2 text-center font-medium">Qty</th>
                                     <th className="p-2 text-right font-medium">Price</th>
+                                    <th className="p-2 text-right font-medium">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -137,7 +141,9 @@ const POSCalculatorDialog = ({ prescriptionDrugs, onUseTotal, closeDialog }: { p
                                                 placeholder="Select Product..."
                                             />
                                         </td>
-                                        <td className="p-2 text-right font-semibold">{item.price.toFixed(2)}</td>
+                                        <td className="p-2 text-center font-medium">{item.quantity}</td>
+                                        <td className="p-2 text-right">{item.price.toFixed(2)}</td>
+                                        <td className="p-2 text-right font-semibold">{(item.total).toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -189,7 +195,7 @@ export default function ManageBillingPage() {
       enabled: !!patient,
   });
 
-  const { data: existingAnswer, isLoading: isLoadingAnswer } = useQuery<POSCorrectAnswer | null>({
+  const { data: correctAmountData, isLoading: isLoadingCorrectAmount } = useQuery<POSCorrectAnswer | null>({
     queryKey: ['posCorrectAmount', patientId],
     queryFn: () => getPOSCorrectAmount(patientId),
     enabled: !!patientId,
@@ -201,11 +207,30 @@ export default function ManageBillingPage() {
     },
   });
 
+  const { data: drugAnswers, isLoading: isLoadingAllAnswers } = useQuery<Record<string, DispensingAnswer | null>>({
+    queryKey: ['allDrugAnswers', patientId, prescriptionDetails],
+    queryFn: async () => {
+        if (!prescriptionDetails) return {};
+        const answerPromises = prescriptionDetails.map(drug => 
+            getDispensingAnswers(patientId, drug.cover_id)
+        );
+        const results = await Promise.allSettled(answerPromises);
+        const answers: Record<string, DispensingAnswer | null> = {};
+        results.forEach((result, index) => {
+            if (result.status === 'fulfilled') {
+                answers[prescriptionDetails[index].cover_id] = result.value;
+            }
+        });
+        return answers;
+    },
+    enabled: !!prescriptionDetails && prescriptionDetails.length > 0
+  });
+
   useEffect(() => {
-    if (existingAnswer) {
-      setBillValue(existingAnswer.value);
+    if (correctAmountData) {
+      setBillValue(correctAmountData.value);
     }
-  }, [existingAnswer]);
+  }, [correctAmountData]);
   
   const saveBillMutation = useMutation({
     mutationFn: saveCorrectBillValue,
@@ -227,14 +252,15 @@ export default function ManageBillingPage() {
     saveBillMutation.mutate({ PresCode: patientId, value: billValue });
   };
   
-  const isLoading = isLoadingPatient || isLoadingAnswer || isLoadingDetails;
+  const isLoading = isLoadingPatient || isLoadingCorrectAmount || isLoadingDetails || isLoadingAllAnswers;
 
   return (
     <div className="p-4 md:p-8 space-y-6 pb-20">
        <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
-          {prescriptionDetails && (
+          {prescriptionDetails && drugAnswers && (
               <POSCalculatorDialog 
                   prescriptionDrugs={prescriptionDetails}
+                  drugAnswers={drugAnswers}
                   onUseTotal={(total) => setBillValue(total.toFixed(2))}
                   closeDialog={() => setIsCalculatorOpen(false)}
               />
