@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -26,6 +26,11 @@ export default function ManagePatientsPage() {
         queryFn: () => getCeylonPharmacyPrescriptions('admin-user', 'CPCC20'), // Using a generic user for fetching all
         enabled: !!user,
     });
+    
+    const sortedPatients = useMemo(() => {
+        if (!patients) return [];
+        return [...patients].sort((a, b) => parseInt(b.prescription_id, 10) - parseInt(a.prescription_id, 10));
+    }, [patients]);
 
 
     return (
@@ -49,7 +54,7 @@ export default function ManagePatientsPage() {
                 <CardHeader>
                     <CardTitle>Patient List</CardTitle>
                     <CardDescription>
-                        {isLoading ? 'Loading patients...' : `${patients?.length || 0} patients configured for the game.`}
+                        {isLoading ? 'Loading patients...' : `${sortedPatients?.length || 0} patients configured for the game.`}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -71,23 +76,27 @@ export default function ManagePatientsPage() {
                             <p className="text-sm">{error.message}</p>
                         </div>
                     )}
-                    {!isLoading && !isError && patients?.map(patient => (
-                        <Link key={patient.prescription_id} href={`/admin/manage/games/ceylon-pharmacy/patients/${patient.prescription_id}`} className="group block">
-                            <Card className="hover:shadow-md hover:border-primary transition-all">
-                                <CardContent className="p-4 flex items-center gap-4">
-                                    <Avatar className="h-12 w-12 text-lg">
-                                        <AvatarImage src={`https://placehold.co/100x100.png?text=${patient.Pres_Name.charAt(0)}`} alt={patient.Pres_Name} />
-                                        <AvatarFallback>{patient.Pres_Name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1">
-                                        <p className="font-semibold text-card-foreground group-hover:text-primary">{patient.Pres_Name}</p>
-                                        <p className="text-sm text-muted-foreground">{patient.Pres_Age}</p>
-                                    </div>
-                                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform"/>
-                                </CardContent>
-                            </Card>
-                        </Link>
-                    ))}
+                    {!isLoading && !isError && sortedPatients?.map(patient => {
+                        const patientName = patient.Pres_Name || 'Unknown Patient';
+                        const fallbackInitial = patientName.charAt(0) || 'P';
+                        return (
+                            <Link key={patient.prescription_id} href={`/admin/manage/games/ceylon-pharmacy/patients/${patient.prescription_id}`} className="group block">
+                                <Card className="hover:shadow-md hover:border-primary transition-all">
+                                    <CardContent className="p-4 flex items-center gap-4">
+                                        <Avatar className="h-12 w-12 text-lg">
+                                            <AvatarImage src={`https://placehold.co/100x100.png?text=${fallbackInitial}`} alt={patientName} />
+                                            <AvatarFallback>{fallbackInitial}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-card-foreground group-hover:text-primary">{patientName}</p>
+                                            <p className="text-sm text-muted-foreground">{patient.Pres_Age}</p>
+                                        </div>
+                                        <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform"/>
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                        );
+                    })}
                 </CardContent>
             </Card>
         </div>

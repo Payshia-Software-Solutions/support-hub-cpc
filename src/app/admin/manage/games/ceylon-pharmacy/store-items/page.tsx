@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from 'react';
@@ -11,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getMasterProducts, updateMasterProduct } from '@/lib/actions/games';
+import { getMasterProducts, updateMasterProduct, createMasterProduct, deleteMasterProduct } from '@/lib/actions/games';
 import type { MasterProduct } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -62,6 +63,46 @@ export default function ManageStoreItemsPage() {
         queryKey: ['masterProducts'],
         queryFn: getMasterProducts,
     });
+    
+    const createMutation = useMutation({
+        mutationFn: createMasterProduct,
+        onSuccess: (newItemData, variables) => {
+            queryClient.setQueryData<MasterProduct[]>(['masterProducts'], (oldData = []) => {
+                const optimisticNewItem: MasterProduct = {
+                    product_id: newItemData.id,
+                    product_code: `P${Date.now()}`, // Placeholder
+                    ProductName: variables.name,
+                    DisplayName: variables.name,
+                    PrintName: variables.name,
+                    SellingPrice: variables.price,
+                    SectionID: 1,
+                    DepartmentID: 10,
+                    CategoryID: 10,
+                    BrandId: 1,
+                    UOMeasurement: "1",
+                    ReOderLevel: 0,
+                    LeadDays: 0,
+                    CostPrice: variables.price,
+                    MinimumPrice: variables.price,
+                    WholesalePrice: variables.price,
+                    ItemType: "Raw",
+                    ItemLocation: "4",
+                    ImagePath: "no-image.png",
+                    CreatedBy: "Admin",
+                    CreatedAt: new Date().toISOString(),
+                    active_status: "1",
+                    GenericID: 0,
+                    Pos_Category: 'Other',
+                };
+                return [optimisticNewItem, ...oldData];
+            });
+            toast({ title: 'Item Added', description: `${variables.name} has been added.` });
+            setIsDialogOpen(false);
+        },
+        onError: (err: Error) => {
+            toast({ variant: 'destructive', title: 'Create Error', description: err.message });
+        }
+    });
 
     const updateMutation = useMutation({
         mutationFn: updateMasterProduct,
@@ -82,10 +123,8 @@ export default function ManageStoreItemsPage() {
         }
     });
 
-    const mockDeleteMutation = useMutation({
-        mutationFn: async (id: string) => {
-            await new Promise(resolve => setTimeout(resolve, 500));
-        },
+    const deleteMutation = useMutation({
+        mutationFn: deleteMasterProduct,
         onSuccess: (data, id) => {
             queryClient.setQueryData<MasterProduct[]>(['masterProducts'], (oldData) => 
                 oldData ? oldData.filter(item => item.product_id !== id) : []
@@ -107,8 +146,7 @@ export default function ManageStoreItemsPage() {
         if (currentItem) {
             updateMutation.mutate({ productId: currentItem.product_id, ...data });
         } else {
-            // Create logic would go here if an endpoint existed.
-            toast({ title: 'Create not implemented' });
+            createMutation.mutate(data);
         }
     };
 
@@ -128,7 +166,7 @@ export default function ManageStoreItemsPage() {
                         item={currentItem} 
                         onSave={handleSave} 
                         onClose={() => setIsDialogOpen(false)}
-                        isSaving={updateMutation.isPending}
+                        isSaving={updateMutation.isPending || createMutation.isPending}
                     />
                 </DialogContent>
             </Dialog>
@@ -139,9 +177,9 @@ export default function ManageStoreItemsPage() {
                         <AlertDialogDescription>This will permanently delete "{itemToDelete?.DisplayName}".</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={mockDeleteMutation.isPending}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => mockDeleteMutation.mutate(itemToDelete!.product_id)} disabled={mockDeleteMutation.isPending}>
-                            {mockDeleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Delete
+                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteMutation.mutate(itemToDelete!.product_id)} disabled={deleteMutation.isPending}>
+                            {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -155,7 +193,7 @@ export default function ManageStoreItemsPage() {
                     <h1 className="text-3xl font-headline font-semibold mt-2">Manage Store Items</h1>
                     <p className="text-muted-foreground">Configure items available in the POS system.</p>
                 </div>
-                <Button onClick={() => openDialog()} disabled>
+                <Button onClick={() => openDialog()}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
                 </Button>
             </header>
