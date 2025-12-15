@@ -349,13 +349,29 @@ export const saveCounsellingAnswer = async (payload: SaveCounselingAnswerPayload
     return response.json();
 };
 
-export const getPOSCorrectAmount = async (presCode: string): Promise<POSCorrectAnswer> => {
+export const getPOSCorrectAmount = async (presCode: string): Promise<POSCorrectAnswer | null> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-payments/last/${presCode}`);
     if (response.status === 404) {
-        throw new Error(`No POS payment information found for prescription code: ${presCode}`);
+        return null;
     }
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch correct POS amount.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
+export const saveCorrectBillValue = async (payload: { PresCode: string, value: string }): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-payments/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            ...payload,
+            created_at: new Date().toISOString(),
+        }),
+    });
+     if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to save bill value.' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
@@ -519,4 +535,5 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
