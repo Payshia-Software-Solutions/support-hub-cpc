@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from 'react';
@@ -11,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getMasterProducts, updateMasterProduct, createMasterProduct } from '@/lib/actions/games';
+import { getMasterProducts, updateMasterProduct, createMasterProduct, deleteMasterProduct } from '@/lib/actions/games';
 import type { MasterProduct } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -74,7 +75,6 @@ export default function ManageStoreItemsPage() {
                     DisplayName: variables.name,
                     PrintName: variables.name,
                     SellingPrice: variables.price,
-                    // Add other default fields if needed for display
                     SectionID: 1,
                     DepartmentID: 10,
                     CategoryID: 10,
@@ -123,10 +123,8 @@ export default function ManageStoreItemsPage() {
         }
     });
 
-    const mockDeleteMutation = useMutation({
-        mutationFn: async (id: string) => {
-            await new Promise(resolve => setTimeout(resolve, 500));
-        },
+    const deleteMutation = useMutation({
+        mutationFn: deleteMasterProduct,
         onSuccess: (data, id) => {
             queryClient.setQueryData<MasterProduct[]>(['masterProducts'], (oldData) => 
                 oldData ? oldData.filter(item => item.product_id !== id) : []
@@ -179,9 +177,9 @@ export default function ManageStoreItemsPage() {
                         <AlertDialogDescription>This will permanently delete "{itemToDelete?.DisplayName}".</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={mockDeleteMutation.isPending}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => mockDeleteMutation.mutate(itemToDelete!.product_id)} disabled={mockDeleteMutation.isPending}>
-                            {mockDeleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Delete
+                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteMutation.mutate(itemToDelete!.product_id)} disabled={deleteMutation.isPending}>
+                            {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

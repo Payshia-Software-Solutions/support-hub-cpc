@@ -16,7 +16,7 @@ export const getMasterProducts = async (): Promise<MasterProduct[]> => {
     return response.json();
 };
 
-export const createMasterProduct = async (data: { name: string; price: string }): Promise<MasterProduct> => {
+export const createMasterProduct = async (data: { name: string; price: string }): Promise<{ message: string, id: string }> => {
     const numericPrice = parseFloat(data.price);
     if (isNaN(numericPrice)) {
         throw new Error("Invalid price provided.");
@@ -42,6 +42,7 @@ export const createMasterProduct = async (data: { name: string; price: string })
         ItemLocation: "4",
         ImagePath: "no-image.png",
         CreatedBy: "Admin",
+        CreatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
         active_status: "1",
         GenericID: 0,
     };
@@ -77,6 +78,17 @@ export const updateMasterProduct = async ({ productId, name, price }: { productI
     }
 
     return response.json();
+};
+
+export const deleteMasterProduct = async (productId: string): Promise<void> => {
+    const response = await fetch(`${QA_API_BASE_URL}/master-products/${productId}`, {
+        method: 'DELETE',
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete product' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
 };
 
 
@@ -571,6 +583,7 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
 
 
