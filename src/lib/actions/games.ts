@@ -312,7 +312,7 @@ export const getCorrectInstructions = async (presCode: string, coverId: string):
 };
 
 export const getAllCareInstructions = async (): Promise<Instruction[]> => {
-    const response = await fetch(`${QA_API_BASE_URL}/updated-care-instructions/`);
+    const response = await fetch(`${QA_API_BASE_URL}/care-instructions-pre`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch all instructions' }));
         throw new Error(errorData.message || 'Failed to fetch all instructions');
@@ -330,6 +330,21 @@ export const saveCounsellingInstructionsForDrug = async (payload: { pres_code: s
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to save counselling instructions.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
+};
+
+export const saveCounsellingAnswer = async (payload: SaveCounselingAnswerPayload): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-ins-answers/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to save counselling answer.' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
     return response.json();
