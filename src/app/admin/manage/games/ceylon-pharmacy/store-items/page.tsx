@@ -65,9 +65,38 @@ export default function ManageStoreItemsPage() {
     
     const createMutation = useMutation({
         mutationFn: createMasterProduct,
-        onSuccess: (newItem) => {
-            queryClient.setQueryData<MasterProduct[]>(['masterProducts'], (oldData = []) => [newItem, ...oldData]);
-            toast({ title: 'Item Added', description: `${newItem.DisplayName} has been added.` });
+        onSuccess: (newItemData, variables) => {
+            queryClient.setQueryData<MasterProduct[]>(['masterProducts'], (oldData = []) => {
+                const optimisticNewItem: MasterProduct = {
+                    product_id: newItemData.id,
+                    product_code: `P${Date.now()}`, // Placeholder
+                    ProductName: variables.name,
+                    DisplayName: variables.name,
+                    PrintName: variables.name,
+                    SellingPrice: variables.price,
+                    // Add other default fields if needed for display
+                    SectionID: 1,
+                    DepartmentID: 10,
+                    CategoryID: 10,
+                    BrandId: 1,
+                    UOMeasurement: "1",
+                    ReOderLevel: 0,
+                    LeadDays: 0,
+                    CostPrice: variables.price,
+                    MinimumPrice: variables.price,
+                    WholesalePrice: variables.price,
+                    ItemType: "Raw",
+                    ItemLocation: "4",
+                    ImagePath: "no-image.png",
+                    CreatedBy: "Admin",
+                    CreatedAt: new Date().toISOString(),
+                    active_status: "1",
+                    GenericID: 0,
+                    Pos_Category: 'Other',
+                };
+                return [optimisticNewItem, ...oldData];
+            });
+            toast({ title: 'Item Added', description: `${variables.name} has been added.` });
             setIsDialogOpen(false);
         },
         onError: (err: Error) => {
