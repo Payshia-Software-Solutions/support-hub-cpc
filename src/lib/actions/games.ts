@@ -25,10 +25,10 @@ export const createMasterProduct = async (data: { name: string, price: string })
         SectionID: 1,
         DepartmentID: 10,
         CategoryID: 10,
-        BrandId: 1, // Default value
+        BrandId: 1,
         UOMeasurement: "1",
-        ReOderLevel: 0, // Default value
-        LeadDays: 0, // Default value
+        ReOderLevel: 0,
+        LeadDays: 0,
         CostPrice: parseFloat(data.price),
         SellingPrice: parseFloat(data.price),
         MinimumPrice: parseFloat(data.price),
@@ -36,13 +36,9 @@ export const createMasterProduct = async (data: { name: string, price: string })
         ItemType: "Raw",
         ItemLocation: "4",
         ImagePath: "no-image.png",
-        CreatedBy: "Admin", // Assuming a default admin creator
-        active_status: "1", // Default to active
-        GenericID: 0, // Default value
-        product_description: `<p>${data.name}</p>`,
-        barcode: `BAR${Date.now()}`,
-        expiry_good: 0,
-        location_list: "4,3,2,1"
+        CreatedBy: "Admin",
+        active_status: "1",
+        GenericID: 0,
     };
 
     const response = await fetch(`${QA_API_BASE_URL}/master-products/`, {
@@ -570,6 +566,7 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
 
 
