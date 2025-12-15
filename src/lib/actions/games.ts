@@ -319,7 +319,7 @@ export const getAllCareInstructions = async (): Promise<Instruction[]> => {
     return response.json();
 };
 
-export const saveCounsellingInstructionsForDrug = async (payload: { pres_code: string; cover_id: string; instructions: number[] }): Promise<any> => {
+export const saveCounsellingInstructionsForDrug = async (payload: { pres_code: string; cover_id: string; instructions: number[] }): Promise<Instruction[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-instructions/`, {
         method: 'POST',
         headers: {
@@ -519,3 +519,4 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+

@@ -113,7 +113,7 @@ const InstructionSelectionDialog = ({
 const DrugCounselingCard = ({ drug, patientId }: { drug: PrescriptionDetail, patientId: string }) => {
     const queryClient = useQueryClient();
     
-    const { data: correctInstructions } = useQuery<Instruction[]>({
+    const { data: correctInstructions, isLoading: isLoadingCorrect } = useQuery<Instruction[]>({
         queryKey: ['correctInstructions', patientId, drug.cover_id],
         queryFn: () => getCorrectInstructions(patientId, drug.cover_id),
     });
@@ -122,7 +122,8 @@ const DrugCounselingCard = ({ drug, patientId }: { drug: PrescriptionDetail, pat
 
     useEffect(() => {
         if (correctInstructions) {
-            setSelectedInstructionIds(correctInstructions.map(i => i.id));
+            // The content property from this endpoint is the actual instruction ID from the master list
+            setSelectedInstructionIds(correctInstructions.map(i => i.content));
         }
     }, [correctInstructions]);
 
@@ -149,11 +150,6 @@ const DrugCounselingCard = ({ drug, patientId }: { drug: PrescriptionDetail, pat
         },
         onSuccess: (savedData) => {
             toast({ title: 'Success!', description: 'Counselling instructions saved.'});
-            // Update the local state with the actual IDs returned from the backend
-            if(savedData && Array.isArray(savedData)) {
-                const newIds = savedData.map(item => String(item.id));
-                setSelectedInstructionIds(newIds);
-            }
             queryClient.invalidateQueries({queryKey: ['correctInstructions', patientId, drug.cover_id]});
         },
         onError: (err: Error) => {
@@ -175,13 +171,15 @@ const DrugCounselingCard = ({ drug, patientId }: { drug: PrescriptionDetail, pat
                          <div className="space-y-2 cursor-pointer group">
                             <Label>Correct Instructions</Label>
                              <div className="w-full justify-start text-left font-normal h-auto min-h-10 p-2 border rounded-md group-hover:bg-muted/50 transition-colors">
-                                {selectedInstructionIds.length > 0 ? (
-                                    <div className="flex flex-wrap gap-1">
-                                        {selectedInstructionIds.map(id => (
-                                            <Badge key={id} variant="secondary">{instructionMap.get(id) || 'Unknown'}</Badge>
-                                        ))}
-                                    </div>
-                                ) : <span className="text-muted-foreground">Select instructions...</span>}
+                                {isLoadingCorrect ? <Loader2 className="h-4 w-4 animate-spin"/> : (
+                                    selectedInstructionIds.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1">
+                                            {selectedInstructionIds.map(id => (
+                                                <Badge key={id} variant="secondary">{instructionMap.get(id) || 'Unknown ID'}</Badge>
+                                            ))}
+                                        </div>
+                                    ) : <span className="text-muted-foreground">Select instructions...</span>
+                                )}
                             </div>
                         </div>
                     }
