@@ -371,7 +371,7 @@ export const createCareInstruction = async (payload: { instruction: string; crea
     return response.json();
 };
 
-export const updateCareInstruction = async (payload: { id: string; instruction: string; created_by: string; created_at: string; }): Promise<Instruction> => {
+export const updateCareInstruction = async (payload: Instruction): Promise<Instruction> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-instructions-pre/${payload.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -627,6 +627,7 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
 
 
