@@ -354,13 +354,15 @@ export const getAllCareInstructions = async (): Promise<Instruction[]> => {
 };
 
 export const createCareInstruction = async (payload: { instruction: string; created_by: string; }): Promise<Instruction> => {
+    const fullPayload = {
+        ...payload,
+        created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+    };
+    
     const response = await fetch(`${QA_API_BASE_URL}/care-instructions-pre/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            ...payload,
-            created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        }),
+        body: JSON.stringify(fullPayload),
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to create instruction' }));
@@ -621,6 +623,7 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
 
 
