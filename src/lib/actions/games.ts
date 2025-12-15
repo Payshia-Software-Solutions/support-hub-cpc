@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload } from '../types';
@@ -44,7 +43,7 @@ export const createMasterProduct = async (data: { name: string; price: string })
         CreatedBy: "Admin",
         CreatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
         active_status: "1",
-        GenericID: 0,
+        GenericID: 0
     };
 
     const response = await fetch(`${QA_API_BASE_URL}/master-products/`, {
@@ -355,7 +354,7 @@ export const getAllCareInstructions = async (): Promise<Instruction[]> => {
 };
 
 export const getShuffledInstructions = async (presCode: string, coverId: string): Promise<Instruction[]> => {
-    const response = await fetch(`${QA_API_BASE_URL}/care-instructions/shuffled/${presCode}/${coverId}/`);
+    const response = await fetch(`${QA_API_BASE_URL}/care-instructions/shuffled/pres-code/${presCode}/cover-id/${coverId}/`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch shuffled instructions' }));
         throw new Error(errorData.message || 'Failed to fetch shuffled instructions');
@@ -637,6 +636,7 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
 
 
