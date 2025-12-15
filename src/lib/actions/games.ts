@@ -43,7 +43,7 @@ export const createMasterProduct = async (data: { name: string; price: string })
         CreatedBy: "Admin",
         CreatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
         active_status: "1",
-        GenericID: 0,
+        GenericID: 0
     };
 
     const response = await fetch(`${QA_API_BASE_URL}/master-products/`, {
@@ -353,6 +353,15 @@ export const getAllCareInstructions = async (): Promise<Instruction[]> => {
     return response.json();
 };
 
+export const getShuffledInstructions = async (presCode: string, coverId: string): Promise<Instruction[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-instructions/shuffled/pres-code/${presCode}/cover-id/${coverId}/`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch shuffled instructions' }));
+        throw new Error(errorData.message || 'Failed to fetch shuffled instructions');
+    }
+    return response.json();
+};
+
 export const createCareInstruction = async (payload: { instruction: string; created_by: string; }): Promise<Instruction> => {
     const fullPayload = {
         ...payload,
@@ -627,6 +636,8 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
+
 
 
 
