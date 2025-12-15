@@ -72,8 +72,9 @@ const POSCalculatorDialog = ({ prescriptionDrugs, drugAnswers, onUseTotal, close
     useEffect(() => {
         const initialQuantities: Record<number, number> = {};
         prescriptionDrugs.forEach((drug, index) => {
-            const qty = parseInt(drugAnswers[drug.cover_id]?.drug_qty || '1', 10);
-            initialQuantities[index] = isNaN(qty) ? 1 : qty;
+            const qtyString = drugAnswers[drug.cover_id]?.drug_qty || '1';
+            const qty = !isNaN(parseFloat(qtyString)) ? parseFloat(qtyString) : 1;
+            initialQuantities[index] = qty;
         });
         setItemQuantities(initialQuantities);
     }, [prescriptionDrugs, drugAnswers]);
@@ -107,7 +108,7 @@ const POSCalculatorDialog = ({ prescriptionDrugs, drugAnswers, onUseTotal, close
     };
     
     const handleQuantityChange = (drugIndex: number, qtyString: string) => {
-        const qty = parseInt(qtyString, 10);
+        const qty = parseFloat(qtyString);
         setItemQuantities(prev => ({
             ...prev,
             [drugIndex]: isNaN(qty) ? 0 : qty,
@@ -164,6 +165,8 @@ const POSCalculatorDialog = ({ prescriptionDrugs, drugAnswers, onUseTotal, close
                                                 value={item.quantity}
                                                 onChange={(e) => handleQuantityChange(item.index, e.target.value)}
                                                 className="h-8 w-20 text-center"
+                                                step="any"
+                                                min="0"
                                             />
                                         </td>
                                         <td className="p-2 text-right">{item.price.toFixed(2)}</td>
@@ -281,9 +284,9 @@ export default function ManageBillingPage() {
   return (
     <div className="p-4 md:p-8 space-y-6 pb-20">
        <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
-          {prescriptionDrugs && drugAnswers && (
+          {prescriptionDetails && drugAnswers && (
               <POSCalculatorDialog 
-                  prescriptionDrugs={prescriptionDrugs}
+                  prescriptionDrugs={prescriptionDetails}
                   drugAnswers={drugAnswers}
                   onUseTotal={(total) => setBillValue(total.toFixed(2))}
                   closeDialog={() => setIsCalculatorOpen(false)}
@@ -336,4 +339,3 @@ export default function ManageBillingPage() {
     </div>
   );
 }
-
