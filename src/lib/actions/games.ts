@@ -19,22 +19,26 @@ export const getMasterProducts = async (): Promise<MasterProduct[]> => {
 export const createMasterProduct = async (data: { name: string, price: string }): Promise<MasterProduct> => {
     const payload = {
         product_code: `P${Date.now()}`,
-        product_name: data.name,
-        display_name: data.name,
-        print_name: data.name,
-        section_id: 1,
-        department_id: 10,
-        category_id: 10,
-        measurement: "1",
-        cost_price: parseFloat(data.price),
-        selling_price: parseFloat(data.price),
-        minimum_price: parseFloat(data.price),
-        wholesale_price: parseFloat(data.price),
-        item_type: "Raw",
-        item_location: "4",
-        image_path: "no-image.png",
-        created_by: "Admin",
-        supplier_list: "1",
+        ProductName: data.name,
+        DisplayName: data.name,
+        PrintName: data.name,
+        SectionID: 1,
+        DepartmentID: 10,
+        CategoryID: 10,
+        BrandId: 1, // Default value
+        UOMeasurement: "1",
+        ReOderLevel: 0, // Default value
+        LeadDays: 0, // Default value
+        CostPrice: parseFloat(data.price),
+        SellingPrice: parseFloat(data.price),
+        MinimumPrice: parseFloat(data.price),
+        WholesalePrice: parseFloat(data.price),
+        ItemType: "Raw",
+        ItemLocation: "4",
+        ImagePath: "no-image.png",
+        CreatedBy: "Admin", // Assuming a default admin creator
+        active_status: "1", // Default to active
+        GenericID: 0, // Default value
         product_description: `<p>${data.name}</p>`,
         barcode: `BAR${Date.now()}`,
         expiry_good: 0,
@@ -329,7 +333,7 @@ export const updatePatientStatus = async (studentNumber: string, presCode: strin
 
 
 export const getAllCareInstructions = async (): Promise<Instruction[]> => {
-    const response = await fetch(`${QA_API_BASE_URL}/care-instructions-pre`);
+    const response = await fetch(`https://qa-api.pharmacollege.lk/care-instructions-pre`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch all instructions' }));
         throw new Error(errorData.message || 'Failed to fetch all instructions');
@@ -566,6 +570,7 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
 
 
