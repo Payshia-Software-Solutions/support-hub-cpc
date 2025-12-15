@@ -16,7 +16,12 @@ export const getMasterProducts = async (): Promise<MasterProduct[]> => {
     return response.json();
 };
 
-export const createMasterProduct = async (data: { name: string, price: string }): Promise<MasterProduct> => {
+export const createMasterProduct = async (data: { name: string; price: string }): Promise<MasterProduct> => {
+    const numericPrice = parseFloat(data.price);
+    if (isNaN(numericPrice)) {
+        throw new Error("Invalid price provided.");
+    }
+    
     const payload = {
         product_code: `P${Date.now()}`,
         ProductName: data.name,
@@ -29,10 +34,10 @@ export const createMasterProduct = async (data: { name: string, price: string })
         UOMeasurement: "1",
         ReOderLevel: 0,
         LeadDays: 0,
-        CostPrice: parseFloat(data.price),
-        SellingPrice: parseFloat(data.price),
-        MinimumPrice: parseFloat(data.price),
-        WholesalePrice: parseFloat(data.price),
+        CostPrice: numericPrice,
+        SellingPrice: numericPrice,
+        MinimumPrice: numericPrice,
+        WholesalePrice: numericPrice,
         ItemType: "Raw",
         ItemLocation: "4",
         ImagePath: "no-image.png",
@@ -566,6 +571,7 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
 
 
