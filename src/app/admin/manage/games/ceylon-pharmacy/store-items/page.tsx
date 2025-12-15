@@ -62,6 +62,32 @@ export default function ManageStoreItemsPage() {
         queryKey: ['masterProducts'],
         queryFn: getMasterProducts,
     });
+    
+    const mockCreateMutation = useMutation({
+        mutationFn: async (data: { name: string, price: string }) => {
+            // Simulate API call and response
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const newItem: MasterProduct = {
+                product_id: `new_${Date.now()}`,
+                DisplayName: data.name,
+                SellingPrice: data.price,
+                // Add other required MasterProduct fields with default/mock values
+                product_code: `P${Date.now()}`,
+                PrintName: data.name,
+                Pos_Category: 'Other',
+                ProductName: data.name,
+            };
+            return newItem;
+        },
+        onSuccess: (newItem) => {
+            queryClient.setQueryData<MasterProduct[]>(['masterProducts'], (oldData = []) => [newItem, ...oldData]);
+            toast({ title: 'Item Added', description: `${newItem.DisplayName} has been added.` });
+            setIsDialogOpen(false);
+        },
+        onError: (err: Error) => {
+            toast({ variant: 'destructive', title: 'Create Error', description: err.message });
+        }
+    });
 
     const updateMutation = useMutation({
         mutationFn: updateMasterProduct,
@@ -107,8 +133,7 @@ export default function ManageStoreItemsPage() {
         if (currentItem) {
             updateMutation.mutate({ productId: currentItem.product_id, ...data });
         } else {
-            // Create logic would go here if an endpoint existed.
-            toast({ title: 'Create not implemented' });
+            mockCreateMutation.mutate(data);
         }
     };
 
@@ -128,7 +153,7 @@ export default function ManageStoreItemsPage() {
                         item={currentItem} 
                         onSave={handleSave} 
                         onClose={() => setIsDialogOpen(false)}
-                        isSaving={updateMutation.isPending}
+                        isSaving={updateMutation.isPending || mockCreateMutation.isPending}
                     />
                 </DialogContent>
             </Dialog>
@@ -155,7 +180,7 @@ export default function ManageStoreItemsPage() {
                     <h1 className="text-3xl font-headline font-semibold mt-2">Manage Store Items</h1>
                     <p className="text-muted-foreground">Configure items available in the POS system.</p>
                 </div>
-                <Button onClick={() => openDialog()} disabled>
+                <Button onClick={() => openDialog()}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
                 </Button>
             </header>
