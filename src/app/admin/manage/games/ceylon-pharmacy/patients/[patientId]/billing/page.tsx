@@ -66,7 +66,17 @@ const POSCalculatorDialog = ({ prescriptionDrugs, drugAnswers, onUseTotal, close
     });
 
     const [selectedProducts, setSelectedProducts] = useState<Record<string, string>>({});
+    const [itemQuantities, setItemQuantities] = useState<Record<number, number>>({});
     const [discount, setDiscount] = useState('0');
+
+    useEffect(() => {
+        const initialQuantities: Record<number, number> = {};
+        prescriptionDrugs.forEach((drug, index) => {
+            const qty = parseInt(drugAnswers[drug.cover_id]?.drug_qty || '1', 10);
+            initialQuantities[index] = isNaN(qty) ? 1 : qty;
+        });
+        setItemQuantities(initialQuantities);
+    }, [prescriptionDrugs, drugAnswers]);
 
     const billItems = useMemo(() => {
         if (!masterProducts || !prescriptionDrugs) return [];
@@ -74,17 +84,17 @@ const POSCalculatorDialog = ({ prescriptionDrugs, drugAnswers, onUseTotal, close
             const selectedProductId = selectedProducts[index] || '';
             const product = masterProducts.find(p => p.product_id === selectedProductId);
             const price = product ? parseFloat(product.SellingPrice) : 0;
-            const quantity = parseInt(drugAnswers[drug.cover_id]?.drug_qty || '1', 10);
+            const quantity = itemQuantities[index] || 1;
             return {
                 index: index,
                 name: drug.content,
-                quantity: isNaN(quantity) ? 1 : quantity,
+                quantity: quantity,
                 price: price,
-                total: price * (isNaN(quantity) ? 1 : quantity),
+                total: price * quantity,
                 productId: selectedProductId,
             };
         });
-    }, [prescriptionDrugs, masterProducts, selectedProducts, drugAnswers]);
+    }, [prescriptionDrugs, masterProducts, selectedProducts, itemQuantities]);
 
     const subtotal = useMemo(() => billItems.reduce((acc, item) => acc + item.total, 0), [billItems]);
     const total = subtotal - parseFloat(discount || '0');
@@ -93,6 +103,14 @@ const POSCalculatorDialog = ({ prescriptionDrugs, drugAnswers, onUseTotal, close
         setSelectedProducts(prev => ({
             ...prev,
             [drugIndex]: productId,
+        }));
+    };
+    
+    const handleQuantityChange = (drugIndex: number, qtyString: string) => {
+        const qty = parseInt(qtyString, 10);
+        setItemQuantities(prev => ({
+            ...prev,
+            [drugIndex]: isNaN(qty) ? 0 : qty,
         }));
     };
     
@@ -140,7 +158,14 @@ const POSCalculatorDialog = ({ prescriptionDrugs, drugAnswers, onUseTotal, close
                                                 placeholder="Select Product..."
                                             />
                                         </td>
-                                        <td className="p-2 text-center font-medium">{item.quantity}</td>
+                                        <td className="p-2 text-center">
+                                            <Input
+                                                type="number"
+                                                value={item.quantity}
+                                                onChange={(e) => handleQuantityChange(item.index, e.target.value)}
+                                                className="h-8 w-20 text-center"
+                                            />
+                                        </td>
                                         <td className="p-2 text-right">{item.price.toFixed(2)}</td>
                                         <td className="p-2 text-right font-semibold">{(item.total).toFixed(2)}</td>
                                     </tr>
@@ -256,9 +281,9 @@ export default function ManageBillingPage() {
   return (
     <div className="p-4 md:p-8 space-y-6 pb-20">
        <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
-          {prescriptionDetails && drugAnswers && (
+          {prescriptionDrugs && drugAnswers && (
               <POSCalculatorDialog 
-                  prescriptionDrugs={prescriptionDetails}
+                  prescriptionDrugs={prescriptionDrugs}
                   drugAnswers={drugAnswers}
                   onUseTotal={(total) => setBillValue(total.toFixed(2))}
                   closeDialog={() => setIsCalculatorOpen(false)}
@@ -311,3 +336,4 @@ export default function ManageBillingPage() {
     </div>
   );
 }
+
