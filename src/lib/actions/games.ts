@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload } from '../types';
@@ -346,12 +345,51 @@ export const updatePatientStatus = async (studentNumber: string, presCode: strin
 
 
 export const getAllCareInstructions = async (): Promise<Instruction[]> => {
-    const response = await fetch(`https://qa-api.pharmacollege.lk/care-instructions-pre`);
+    const response = await fetch(`${QA_API_BASE_URL}/care-instructions-pre`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch all instructions' }));
         throw new Error(errorData.message || 'Failed to fetch all instructions');
     }
     return response.json();
+};
+
+export const createCareInstruction = async (payload: { instruction: string; created_by: string; }): Promise<Instruction> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-instructions-pre/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            ...payload,
+            created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        }),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create instruction' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+};
+
+export const updateCareInstruction = async (payload: { id: string; instruction: string; }): Promise<Instruction> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-instructions-pre/${payload.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instruction: payload.instruction }),
+    });
+     if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update instruction' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+};
+
+export const deleteCareInstruction = async (id: string): Promise<void> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-instructions-pre/${id}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+         const errorData = await response.json().catch(() => ({ message: 'Failed to delete instruction' }));
+        throw new Error(errorData.message || 'API Error');
+    }
 };
 
 export const getCorrectInstructions = async (presCode: string, coverId: string): Promise<Instruction[]> => {
@@ -583,6 +621,7 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
 
 

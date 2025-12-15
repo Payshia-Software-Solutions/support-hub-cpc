@@ -11,54 +11,20 @@ import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { getAllCareInstructions } from '@/lib/actions/games';
+import { getAllCareInstructions, createCareInstruction, updateCareInstruction, deleteCareInstruction } from '@/lib/actions/games';
 import type { Instruction } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Mock mutations as API endpoints don't exist for CUD operations
-const useInstructionMutations = (initialData: Instruction[]) => {
-    const queryClient = useQueryClient();
-
-    const addInstruction = useMutation({
-        mutationFn: async (text: string) => {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const newInstruction: Instruction = { id: `new-${Date.now()}`, instruction: text, pres_code: 'admin', cover_id: 'admin', content: '', created_at: new Date().toISOString() };
-            return newInstruction;
-        },
-        onSuccess: (newInstruction) => {
-            queryClient.setQueryData<Instruction[]>(['allCareInstructions'], (oldData = []) => [...oldData, newInstruction]);
-            toast({ title: 'Instruction Added' });
-        }
-    });
-
-    const updateInstruction = useMutation({
-        mutationFn: async (instruction: { id: string, text: string }) => {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            return instruction;
-        },
-        onSuccess: (updated) => {
-            queryClient.setQueryData<Instruction[]>(['allCareInstructions'], (oldData = []) => 
-                oldData.map(i => i.id === updated.id ? { ...i, instruction: updated.text } : i)
-            );
-            toast({ title: 'Instruction Updated' });
-        }
-    });
-
-    const deleteInstruction = useMutation({
-         mutationFn: async (id: string) => {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            return id;
-        },
-        onSuccess: (id) => {
-            queryClient.setQueryData<Instruction[]>(['allCareInstructions'], (oldData = []) => 
-                oldData.filter(i => i.id !== id)
-            );
-            toast({ title: 'Instruction Deleted' });
-        }
-    });
-
-    return { addInstruction, updateInstruction, deleteInstruction };
-};
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const InstructionForm = ({ instruction, onSave, onClose, isSaving }: { instruction: Instruction | null; onSave: (text: string) => void; onClose: () => void; isSaving: boolean; }) => {
     const [instructionText, setInstructionText] = useState(instruction?.instruction || '');
@@ -70,7 +36,6 @@ const InstructionForm = ({ instruction, onSave, onClose, isSaving }: { instructi
             return;
         }
         onSave(instructionText);
-        onClose();
     };
 
     return (
@@ -92,8 +57,12 @@ const InstructionForm = ({ instruction, onSave, onClose, isSaving }: { instructi
 
 export default function ManageInstructionsPage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
+    const { user } = useAuth();
+
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentInstruction, setCurrentInstruction] = useState<Instruction | null>(null);
+    const [instructionToDelete, setInstructionToDelete] = useState<Instruction | null>(null);
 
     const { data: allInstructions = [], isLoading, isError, error } = useQuery<Instruction[]>({
         queryKey: ['allCareInstructions'],
@@ -114,7 +83,44 @@ export default function ManageInstructionsPage() {
         }).sort((a,b) => a.instruction.localeCompare(b.instruction));
     }, [allInstructions]);
 
-    const { addInstruction, updateInstruction, deleteInstruction } = useInstructionMutations(uniqueInstructions);
+    const createMutation = useMutation({
+        mutationFn: createCareInstruction,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['allCareInstructions'] });
+            toast({ title: 'Instruction Added' });
+            setIsDialogOpen(false);
+        },
+        onError: (err: Error) => {
+            toast({ variant: 'destructive', title: 'Create Failed', description: err.message });
+        }
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: updateCareInstruction,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['allCareInstructions'] });
+            toast({ title: 'Instruction Updated' });
+            setIsDialogOpen(false);
+        },
+        onError: (err: Error) => {
+            toast({ variant: 'destructive', title: 'Update Failed', description: err.message });
+        }
+    });
+
+     const deleteMutation = useMutation({
+        mutationFn: deleteCareInstruction,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['allCareInstructions'] });
+            toast({ title: 'Instruction Deleted' });
+        },
+        onError: (err: Error) => {
+            toast({ variant: 'destructive', title: 'Delete Failed', description: err.message });
+        },
+        onSettled: () => {
+            setInstructionToDelete(null);
+        }
+    });
+
 
     const openDialog = (instruction: Instruction | null = null) => {
         setCurrentInstruction(instruction);
@@ -122,16 +128,21 @@ export default function ManageInstructionsPage() {
     };
 
     const handleSave = (text: string) => {
+        if (!user?.username) {
+            toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
+            return;
+        }
+
         if (currentInstruction) {
-            updateInstruction.mutate({ id: currentInstruction.id, text });
+            updateMutation.mutate({ id: currentInstruction.id, instruction: text });
         } else {
-            addInstruction.mutate(text);
+            createMutation.mutate({ instruction: text, created_by: user.username });
         }
     };
     
-    const handleDelete = (id: string) => {
-        deleteInstruction.mutate(id);
-    }
+    const handleDelete = (instruction: Instruction) => {
+        setInstructionToDelete(instruction);
+    };
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -145,10 +156,30 @@ export default function ManageInstructionsPage() {
                         instruction={currentInstruction}
                         onSave={handleSave}
                         onClose={() => setIsDialogOpen(false)}
-                        isSaving={addInstruction.isPending || updateInstruction.isPending}
+                        isSaving={createMutation.isPending || updateMutation.isPending}
                     />
                 </DialogContent>
             </Dialog>
+            <AlertDialog open={!!instructionToDelete} onOpenChange={() => setInstructionToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action will permanently delete the instruction "{instructionToDelete?.instruction}".
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => deleteMutation.mutate(instructionToDelete!.id)}
+                            disabled={deleteMutation.isPending}
+                        >
+                            {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
                     <Button variant="ghost" onClick={() => router.push('/admin/manage/games/ceylon-pharmacy')} className="-ml-4">
@@ -179,7 +210,7 @@ export default function ManageInstructionsPage() {
                             <p className="text-sm font-medium">{instruction.instruction}</p>
                             <div className="flex gap-1">
                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDialog(instruction)}><Edit className="h-4 w-4" /></Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(instruction.id)} disabled={deleteInstruction.isPending}><Trash2 className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(instruction)}><Trash2 className="h-4 w-4" /></Button>
                             </div>
                         </div>
                     ))}
