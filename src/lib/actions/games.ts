@@ -371,11 +371,14 @@ export const createCareInstruction = async (payload: { instruction: string; crea
     return response.json();
 };
 
-export const updateCareInstruction = async (payload: { id: string; instruction: string; }): Promise<Instruction> => {
+export const updateCareInstruction = async (payload: { id: string; instruction: string; created_by: string; }): Promise<Instruction> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-instructions-pre/${payload.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instruction: payload.instruction }),
+        body: JSON.stringify({ 
+            instruction: payload.instruction,
+            created_by: payload.created_by, // Send created_by as it might be needed for validation
+        }),
     });
      if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to update instruction' }));
@@ -623,6 +626,7 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
 
 
