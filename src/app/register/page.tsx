@@ -160,15 +160,56 @@ export default function RegisterPage() {
 
     setIsRegistering(true);
     
-    setTimeout(() => {
-        console.log("Registering user with all details");
-        toast({
-            title: "Registration Successful!",
-            description: "Your application has been submitted for review.",
-        });
-        router.push('/login');
-        setIsRegistering(false);
-    }, 2000);
+    const formData = new FormData();
+    formData.append('email_address', email);
+    formData.append('civil_status', civilStatus);
+    formData.append('first_name', firstName);
+    formData.append('last_name', lastName);
+    formData.append('password', 'defaultPassword'); // As specified
+    formData.append('nic_number', nic);
+    formData.append('phone_number', phone1);
+    formData.append('whatsapp_number', whatsapp || phone1);
+    formData.append('address_l1', address.split(',')[0] || '');
+    formData.append('address_l2', address.split(',').slice(1).join(',').trim() || '');
+    formData.append('city', city);
+    formData.append('district', 'N/A'); // Placeholder, not in form
+    formData.append('postal_code', 'N/A'); // Placeholder
+    formData.append('paid_amount', '0');
+    formData.append('aprroved_status', 'Not Approved');
+    formData.append('created_at', new Date().toISOString());
+    formData.append('full_name', `${firstName} ${lastName}`);
+    formData.append('name_with_initials', nameWithInitials);
+    formData.append('gender', gender);
+    formData.append('index_number', '000'); // Placeholder
+    formData.append('name_on_certificate', nameOnCertificate);
+    formData.append('selected_course', selectedCourse);
+
+    try {
+      const response = await fetch('https://qa-api.pharmacollege.lk/temp-users', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+      }
+
+      toast({
+        title: "Registration Successful!",
+        description: "Your application has been submitted for review. You will be redirected to the login page.",
+      });
+      router.push('/login');
+
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: error instanceof Error ? error.message : "Could not submit your registration.",
+      });
+    } finally {
+      setIsRegistering(false);
+    }
   };
   
   const DatePickerField = () => {
@@ -377,3 +418,5 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+    
