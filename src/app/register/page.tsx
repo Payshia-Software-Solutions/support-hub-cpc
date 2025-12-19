@@ -11,13 +11,14 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, ArrowRight, User, MapPin, BadgeCheck, Phone, BookOpen, Check } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, User, MapPin, BadgeCheck, Phone, BookOpen, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from "@/components/ui/calendar";
 import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { parseNIC } from '@/lib/nic-parser';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -39,6 +40,12 @@ const courses = [
     { id: 'CS0004', name: 'Professional Pharmacy Practice', code: 'CS0004', duration: '6 Months', fee: 'LKR 25000.00' },
 ]
 
+interface City {
+    id: string;
+    district_id: string;
+    name_en: string;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
@@ -55,6 +62,9 @@ export default function RegisterPage() {
   // Step 2 State
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
+  const [cities, setCities] = useState<City[]>([]);
+  const [isLoadingCities, setIsLoadingCities] = useState(true);
+
 
   // Step 3 State
   const [nic, setNic] = useState('');
@@ -71,6 +81,23 @@ export default function RegisterPage() {
 
   const [isRegistering, setIsRegistering] = useState(false);
   
+    useEffect(() => {
+        async function fetchCities() {
+            try {
+                const response = await fetch('https://qa-api.pharmacollege.lk/cities');
+                if (!response.ok) throw new Error('Failed to fetch cities');
+                const data = await response.json();
+                setCities(Object.values(data));
+            } catch (error) {
+                console.error("Failed to load cities:", error);
+                toast({ variant: 'destructive', title: 'Could not load cities', description: 'Please check your connection and try again.'});
+            } finally {
+                setIsLoadingCities(false);
+            }
+        }
+        fetchCities();
+    }, []);
+
   const validateStep = (step: number) => {
     const showValidationError = (message: string) => {
         toast({ variant: "destructive", title: "Missing Information", description: message });
@@ -259,6 +286,54 @@ export default function RegisterPage() {
         </Popover>
     )
   }
+  
+    const CitySelector = () => {
+        const [open, setOpen] = useState(false);
+        return (
+            <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={open}
+                        className="w-full justify-between"
+                        disabled={isLoadingCities}
+                    >
+                        {isLoadingCities ? "Loading cities..." : (
+                            city ? cities.find(c => c.name_en === city)?.name_en : "Select a city..."
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                        <CommandInput placeholder="Search city..." />
+                        <CommandEmpty>No city found.</CommandEmpty>
+                        <CommandGroup>
+                            {cities.map((c) => (
+                                <CommandItem
+                                    key={c.id}
+                                    value={c.name_en}
+                                    onSelect={(currentValue) => {
+                                        setCity(currentValue === city ? "" : currentValue)
+                                        setOpen(false)
+                                    }}
+                                >
+                                    <Check
+                                        className={cn(
+                                            "mr-2 h-4 w-4",
+                                            city === c.name_en ? "opacity-100" : "opacity-0"
+                                        )}
+                                    />
+                                    {c.name_en}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </Command>
+                </PopoverContent>
+            </Popover>
+        )
+    }
 
   return (
     <div className={cn("flex min-h-screen items-center justify-center p-4", "bg-background")}>
@@ -342,7 +417,10 @@ export default function RegisterPage() {
                     {currentStep === 2 && (
                         <div className="space-y-4 animate-in fade-in-50">
                             <div className="space-y-2"><Label>Street Address</Label><Textarea value={address} onChange={(e) => setAddress(e.target.value)} required /></div>
-                            <div className="space-y-2"><Label>City</Label><Input value={city} onChange={(e) => setCity(e.target.value)} required /></div>
+                            <div className="space-y-2">
+                                <Label>City</Label>
+                                <CitySelector />
+                            </div>
                         </div>
                     )}
                      {currentStep === 3 && (
@@ -434,7 +512,7 @@ export default function RegisterPage() {
             ) : (
                  <div className="w-full flex flex-col sm:flex-row gap-2">
                     <Button onClick={() => router.push(`/payment?registrationId=${registrationId}`)} className="flex-1">
-                        Proceed to Payment
+                        Proceed to payment
                     </Button>
                     <Button asChild variant="outline" className="flex-1">
                         <Link href="/login">Go to Login</Link>
