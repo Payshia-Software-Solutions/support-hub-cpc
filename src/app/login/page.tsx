@@ -75,13 +75,22 @@ export default function LoginPage() {
             </Button>
           </form>
         </CardContent>
-         <CardFooter className="text-center text-sm text-muted-foreground">
-            <p className="w-full">
-                Don&apos;t have an account?{' '}
-                <Link href="/register" className="text-primary font-semibold hover:underline">
-                    Sign Up
-                </Link>
-            </p>
+         <CardFooter className="flex-col gap-4">
+            <div className="text-center text-sm text-muted-foreground w-full">
+                <p>
+                    Don&apos;t have an account?{' '}
+                    <Link href="/register" className="text-primary font-semibold hover:underline">
+                        Sign Up
+                    </Link>
+                </p>
+            </div>
+            <div className="w-full">
+                 <Button asChild variant="outline" className="w-full">
+                    <Link href="/payment">
+                        Go to payment
+                    </Link>
+                </Button>
+            </div>
         </CardFooter>
       </Card>
     </div>
