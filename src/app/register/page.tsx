@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -295,13 +296,6 @@ export default function RegisterPage() {
                                 </Label>
                             ))}
                         </RadioGroup>
-                    </div>
-                     <div className="space-y-2 pt-4">
-                        <Label>Payment Slip</Label>
-                        <div className="flex items-center gap-2 p-2 border rounded-lg">
-                            <Upload className="h-5 w-5 text-muted-foreground"/>
-                            <Input type="file" onChange={(e) => setPaymentSlip(e.target.files ? e.target.files[0] : null)} className="border-0 shadow-none file:mr-2 file:rounded-full file:bg-primary/10 file:text-primary file:font-semibold file:border-0 file:px-2 file:py-1 file:text-xs" required />
-                        </div>
                     </div>
                 </div>
             )}
