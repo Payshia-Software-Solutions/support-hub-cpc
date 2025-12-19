@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -22,6 +23,9 @@ import { getPaymentRequestsByReference } from '@/lib/api';
 import type { PaymentRequest } from '@/lib/types';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog';
+
+const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
 
 
 const STEPS = [
@@ -61,6 +65,27 @@ const maskNic = (nic: string) => {
     return `${nic.substring(0, 4)}***${nic.substring(nic.length - 4)}`;
 };
 
+const ViewSlipDialog = ({ slipPath, isOpen, onOpenChange }: { slipPath: string | null; isOpen: boolean; onOpenChange: (open: boolean) => void }) => {
+    if (!isOpen || !slipPath) return null;
+    const fullSlipUrl = `${CONTENT_PROVIDER_URL}${slipPath}`;
+    const isImage = /\.(jpg|jpeg|png|gif)$/i.test(slipPath);
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader><DialogTitle>Payment Slip</DialogTitle></DialogHeader>
+                <div className="mt-4 max-h-[70vh] overflow-auto border rounded-lg p-2 bg-muted">
+                    {isImage ? (
+                        <Image src={fullSlipUrl} alt="Payment Slip" width={800} height={1200} className="w-full h-auto object-contain" />
+                    ) : (
+                        <div className="flex items-center justify-center p-8"><a href={fullSlipUrl} target="_blank" rel="noopener noreferrer"><Button>Open Slip</Button></a></div>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 export default function PaymentPage() {
     const router = useRouter();
@@ -83,6 +108,7 @@ export default function PaymentPage() {
     
     const [previousPayments, setPreviousPayments] = useState<PaymentRequest[]>([]);
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+    const [viewingSlipPath, setViewingSlipPath] = useState<string | null>(null);
 
     const { data: banks, isLoading: isLoadingBanks } = useQuery<Bank[]>({
         queryKey: ['banks'],
@@ -328,7 +354,10 @@ export default function PaymentPage() {
                                                             <p><strong>Amount:</strong> LKR {p.paid_amount}</p>
                                                             <p className="text-xs text-muted-foreground">Submitted: {format(new Date(p.created_at), 'Pp')}</p>
                                                         </div>
-                                                        <Badge variant={p.payment_status === 'Pending' ? 'destructive' : p.payment_status === 'Approved' ? 'default' : 'secondary'}>{p.payment_status}</Badge>
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant={p.payment_status === 'Pending' ? 'destructive' : p.payment_status === 'Approved' ? 'default' : 'secondary'}>{p.payment_status}</Badge>
+                                                            <Button size="sm" variant="outline" onClick={() => setViewingSlipPath(p.slip_path)}>View</Button>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -385,6 +414,8 @@ export default function PaymentPage() {
     };
 
     return (
+        <>
+        <ViewSlipDialog slipPath={viewingSlipPath} isOpen={!!viewingSlipPath} onOpenChange={(open) => !open && setViewingSlipPath(null)} />
         <div className="flex min-h-screen items-center justify-center p-4 bg-gray-100/50 dark:bg-gray-900/50 auth-background">
             <Card className="w-full max-w-lg shadow-2xl">
                 <CardHeader className="text-center">
@@ -456,6 +487,6 @@ export default function PaymentPage() {
                 </CardFooter>
             </Card>
         </div>
+        </>
     );
 }
-

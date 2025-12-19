@@ -51,7 +51,7 @@ import {
 import { Skeleton } from '../ui/skeleton';
 
 
-const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk';
+const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
 
 
 // --- SUB-COMPONENTS (DEFINED AT TOP LEVEL FOR STABILITY) ---
@@ -65,13 +65,13 @@ function ViewSlipDialog({ slipPath, isOpen, onOpenChange }: { slipPath: string, 
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Duplicate Slip Viewer</DialogTitle>
+                    <DialogTitle>Slip Viewer</DialogTitle>
                 </DialogHeader>
                 <div className="mt-4 max-h-[70vh] overflow-auto border rounded-lg p-2 bg-muted">
                      {isImage ? (
                         <Image
                             src={fullSlipUrl}
-                            alt="Duplicate Payment Slip"
+                            alt="Payment Slip"
                             width={800}
                             height={1200}
                             className="w-full h-auto object-contain"
@@ -183,193 +183,27 @@ function DuplicateSlipCheck({ hashValue, currentRequestId }: { hashValue: string
     return null; 
 };
 
-function ManageEnrollmentsDialog({ isOpen, onOpenChange, studentNumber, allCourses, currentEnrollments, onEnrollmentsChange }: {
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    studentNumber: string;
-    allCourses: Course[];
-    currentEnrollments: StudentEnrollmentInfo[];
-    onEnrollmentsChange: () => void;
-}) {
-    const [newCourseCode, setNewCourseCode] = useState('');
-
-    const addMutation = useMutation({
-        mutationFn: addStudentEnrollment,
-        onSuccess: () => {
-            toast({ title: 'Enrollment Added' });
-            onEnrollmentsChange(); 
-            setNewCourseCode('');
-        },
-        onError: (error: Error) => toast({ variant: 'destructive', title: 'Failed to Add Enrollment', description: error.message })
-    });
-
-    const removeMutation = useMutation({
-        mutationFn: removeStudentEnrollment,
-        onSuccess: () => {
-            toast({ title: 'Enrollment Removed' });
-            onEnrollmentsChange();
-        },
-        onError: (error: Error) => toast({ variant: 'destructive', title: 'Failed to Remove Enrollment', description: error.message })
-    });
-
-    const availableCourses = useMemo(() => {
-        return allCourses.filter(course => !currentEnrollments.some(e => e.course_code === course.courseCode));
-    }, [allCourses, currentEnrollments]);
-
+function TempUserInfo({ user }: { user: TempUser }) {
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Manage Enrollments for {studentNumber}</DialogTitle>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                    <div>
-                        <Label>Current Enrollments</Label>
-                        <div className="mt-2 space-y-2 max-h-48 overflow-y-auto pr-2">
-                            {currentEnrollments.length > 0 ? currentEnrollments.map(e => (
-                                <div key={e.student_course_id} className="flex items-center justify-between p-2 border rounded-md">
-                                    <p className="text-sm font-medium">
-                                        {allCourses.find(c => c.courseCode === e.course_code)?.name || e.course_code}
-                                        <span className="text-muted-foreground"> ({e.course_code})</span>
-                                    </p>
-                                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => removeMutation.mutate(e.student_course_id)} disabled={removeMutation.isPending && removeMutation.variables === e.student_course_id}>
-                                        {removeMutation.isPending && removeMutation.variables === e.student_course_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                    </Button>
-                                </div>
-                            )) : <p className="text-sm text-muted-foreground text-center p-4">No enrollments found.</p>}
-                        </div>
-                    </div>
-                    <div className="pt-4 border-t">
-                        <Label>Add New Enrollment</Label>
-                        <div className="mt-2 flex gap-2">
-                            <Select value={newCourseCode} onValueChange={setNewCourseCode}>
-                                <SelectTrigger><SelectValue placeholder="Select a course..." /></SelectTrigger>
-                                <SelectContent>
-                                    {availableCourses.map(c => <SelectItem key={c.id} value={c.courseCode}>{c.name} ({c.courseCode})</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <Button onClick={() => addMutation.mutate({ student_id: currentEnrollments[0]?.student_id, course_code: newCourseCode })} disabled={addMutation.isPending || !newCourseCode || !currentEnrollments[0]?.student_id}>
-                                {addMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />} Add
-                            </Button>
-                        </div>
+        <div className="space-y-2 text-muted-foreground text-sm">
+            <p className="flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary shrink-0" /><strong className="text-card-foreground">{user.full_name}</strong></p>
+            <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{user.email_address}</span></p>
+            {user.phone_number && (
+                <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-primary shrink-0" />
+                    <span className="font-medium text-card-foreground">{user.phone_number}</span>
+                    <div className="ml-auto flex gap-1">
+                        <a href={`https://wa.me/${user.phone_number.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
+                        <a href={`tel:${user.phone_number}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
                     </div>
                 </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-};
-
-const StudentPaymentInfo = ({ studentNumber }: { studentNumber: string }) => {
-    const { data: balanceData, isLoading, isError, error } = useQuery<StudentBalanceData>({
-        queryKey: ['studentBalance', studentNumber],
-        queryFn: () => getStudentBalance(studentNumber),
-        enabled: !!studentNumber,
-    });
-    
-    if (isLoading) {
-        return (
-            <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                </div>
-                <Skeleton className="h-40 w-full" />
-            </div>
-        );
-    }
-    
-    if (isError) {
-        return <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error.message}</AlertDescription></Alert>
-    }
-
-    if (!balanceData) {
-        return <Alert><AlertDescription>No payment data found for this student.</AlertDescription></Alert>
-    }
-
-    const paymentRecordsArray = Object.values(balanceData.paymentRecords || {}).sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-    return (
-        <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
-                        <Wallet className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">LKR {balanceData.totalPaymentAmount.toLocaleString()}</div>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Outstanding Balance</CardTitle>
-                         <Wallet className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-destructive">LKR {balanceData.studentBalance.toLocaleString()}</div>
-                    </CardContent>
-                </Card>
-            </div>
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-base">Payment History</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {/* Mobile View */}
-                    <div className="md:hidden space-y-3">
-                        {paymentRecordsArray.length > 0 ? (
-                            paymentRecordsArray.map(rec => (
-                                <div key={rec.id} className="p-3 border rounded-md text-sm space-y-1 bg-muted/50">
-                                    <div className="flex justify-between items-start">
-                                        <p className="font-semibold text-card-foreground break-all">{rec.receipt_number}</p>
-                                        <p className="font-bold text-card-foreground">LKR {parseFloat(rec.paid_amount).toLocaleString()}</p>
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                        <p>{rec.course_code} - {rec.payment_type}</p>
-                                        <p>Paid on: {format(new Date(rec.paid_date), 'yyyy-MM-dd')}</p>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                             <p className="text-muted-foreground text-center text-sm py-4">No payment records found.</p>
-                        )}
-                    </div>
-                     {/* Desktop View */}
-                    <div className="hidden md:block relative w-full overflow-auto max-h-64">
-                         <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Receipt #</TableHead>
-                                    <TableHead>Amount</TableHead>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Type</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {paymentRecordsArray.map(rec => (
-                                    <TableRow key={rec.id}>
-                                        <TableCell className="font-mono text-xs">{rec.receipt_number}</TableCell>
-                                        <TableCell className="font-medium">LKR {parseFloat(rec.paid_amount).toLocaleString()}</TableCell>
-                                        <TableCell>{format(new Date(rec.paid_date), 'yyyy-MM-dd')}</TableCell>
-                                        <TableCell>{rec.payment_type}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                         {paymentRecordsArray.length === 0 && !isLoading && (
-                            <p className="text-muted-foreground text-center text-sm py-4">No payment records found.</p>
-                         )}
-                    </div>
-                </CardContent>
-            </Card>
+            )}
         </div>
-    );
+    )
 }
 
-const RegisteredStudentInfo = ({ user, studentNumber }: { user: UserFullDetails, studentNumber: string }) => (
+function RegisteredStudentInfo({ user, studentNumber }: { user: UserFullDetails, studentNumber: string }) {
+    return (
     <Tabs defaultValue="details" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="details">Student Details</TabsTrigger>
@@ -394,7 +228,7 @@ const RegisteredStudentInfo = ({ user, studentNumber }: { user: UserFullDetails,
                     <span className="font-medium text-card-foreground">{user.telephone_2} (Tel 2)</span>
                     <div className="ml-auto flex gap-1">
                         <a href={`https://wa.me/${user.telephone_2.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.204-1.64a11.816 11.816 0 005.79 1.548h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></Button></a>
-                    <a href={`tel:${user.whatsapp_number}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
+                    <a href={`tel:${user.telephone_2}`}><Button variant="ghost" size="icon" className="h-7 w-7"><Phone/></Button></a>
                 </div>
             </div>
         )}
