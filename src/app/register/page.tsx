@@ -160,39 +160,44 @@ export default function RegisterPage() {
 
     setIsRegistering(true);
     
-    const formData = new FormData();
-    formData.append('email_address', email);
-    formData.append('civil_status', civilStatus);
-    formData.append('first_name', firstName);
-    formData.append('last_name', lastName);
-    formData.append('password', 'defaultPassword'); // As specified
-    formData.append('nic_number', nic);
-    formData.append('phone_number', phone1);
-    formData.append('whatsapp_number', whatsapp || phone1);
-    formData.append('address_l1', address.split(',')[0] || '');
-    formData.append('address_l2', address.split(',').slice(1).join(',').trim() || '');
-    formData.append('city', city);
-    formData.append('district', 'N/A'); // Placeholder, not in form
-    formData.append('postal_code', 'N/A'); // Placeholder
-    formData.append('paid_amount', '0');
-    formData.append('aprroved_status', 'Not Approved');
-    formData.append('created_at', new Date().toISOString());
-    formData.append('full_name', `${firstName} ${lastName}`);
-    formData.append('name_with_initials', nameWithInitials);
-    formData.append('gender', gender);
-    formData.append('index_number', '000'); // Placeholder
-    formData.append('name_on_certificate', nameOnCertificate);
-    formData.append('selected_course', selectedCourse);
+    const payload = {
+        email_address: email,
+        civil_status: civilStatus,
+        first_name: firstName,
+        last_name: lastName,
+        password: 'defaultPassword',
+        nic_number: nic,
+        phone_number: phone1,
+        whatsapp_number: whatsapp || phone1,
+        address_l1: address.split(',')[0] || '',
+        address_l2: address.split(',').slice(1).join(',').trim() || '',
+        city: city,
+        district: 'N/A', // Placeholder
+        postal_code: 'N/A', // Placeholder
+        paid_amount: 0,
+        aprroved_status: 'Not Approved',
+        created_at: new Date().toISOString(),
+        full_name: `${firstName} ${lastName}`,
+        name_with_initials: nameWithInitials,
+        gender: gender,
+        index_number: '000', // Placeholder
+        name_on_certificate: nameOnCertificate,
+        selected_course: selectedCourse,
+    };
 
     try {
       const response = await fetch('https://qa-api.pharmacollege.lk/temp-users', {
         method: 'POST',
-        body: formData,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred.' }));
-        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+        const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred during registration.' }));
+        // Use the detailed error message from the API if available
+        throw new Error(errorData.details || errorData.error || errorData.message || `Request failed with status ${response.status}`);
       }
 
       toast({
@@ -418,5 +423,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-    
