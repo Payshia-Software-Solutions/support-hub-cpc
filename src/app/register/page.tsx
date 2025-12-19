@@ -23,6 +23,7 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { parseNIC } from '@/lib/nic-parser';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const STEPS = [
@@ -309,26 +310,28 @@ export default function RegisterPage() {
                     <Command>
                         <CommandInput placeholder="Search city..." />
                         <CommandEmpty>No city found.</CommandEmpty>
-                        <CommandGroup>
-                            {cities.map((c) => (
-                                <CommandItem
-                                    key={c.id}
-                                    value={c.name_en}
-                                    onSelect={(currentValue) => {
-                                        setCity(currentValue === city ? "" : currentValue)
-                                        setOpen(false)
-                                    }}
-                                >
-                                    <Check
-                                        className={cn(
-                                            "mr-2 h-4 w-4",
-                                            city.toLowerCase() === c.name_en.toLowerCase() ? "opacity-100" : "opacity-0"
-                                        )}
-                                    />
-                                    {c.name_en}
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
+                        <ScrollArea className="max-h-60">
+                          <CommandGroup>
+                              {cities.map((c) => (
+                                  <CommandItem
+                                      key={c.id}
+                                      value={c.name_en}
+                                      onSelect={(currentValue) => {
+                                          setCity(currentValue === city ? "" : currentValue)
+                                          setOpen(false)
+                                      }}
+                                  >
+                                      <Check
+                                          className={cn(
+                                              "mr-2 h-4 w-4",
+                                              city.toLowerCase() === c.name_en.toLowerCase() ? "opacity-100" : "opacity-0"
+                                          )}
+                                      />
+                                      {c.name_en}
+                                  </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </ScrollArea>
                     </Command>
                 </PopoverContent>
             </Popover>
@@ -512,7 +515,7 @@ export default function RegisterPage() {
             ) : (
                  <div className="w-full flex flex-col sm:flex-row gap-2">
                     <Button onClick={() => router.push(`/payment?registrationId=${registrationId}`)} className="flex-1">
-                        Proceed to payment
+                        Proceed to Payment
                     </Button>
                     <Button asChild variant="outline" className="flex-1">
                         <Link href="/login">Go to Login</Link>
