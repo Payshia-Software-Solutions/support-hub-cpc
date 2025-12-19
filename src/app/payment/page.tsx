@@ -10,20 +10,19 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from "@/hooks/use-toast";
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { Loader2, ArrowLeft, ArrowRight, Banknote, ShieldCheck, FileText, Check, User, AlertTriangle } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, Banknote, ShieldCheck, FileText, Check, User, AlertTriangle, Search, Check as CheckIcon, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
 
 const STEPS = [
   { id: 1, title: 'Student Info', icon: User },
-  { id: 2, title: 'Payment', icon: Banknote },
-  { id: 3, title: 'Bank Details', icon: ShieldCheck },
-  { id: 4, title: 'Review', icon: FileText },
+  { id: 2, title: 'Payment Details', icon: Banknote },
+  { id: 3, title: 'Review', icon: FileText },
 ];
 
 interface TempUser {
@@ -71,7 +70,7 @@ export default function PaymentPage() {
     const [isLoadingUser, setIsLoadingUser] = useState(false);
     const [userError, setUserError] = useState<string | null>(null);
 
-    const [paymentReason, setPaymentReason] = useState('Course Fee');
+    const paymentReason = 'Course Fee'; // Hardcoded
     const [amount, setAmount] = useState('15000');
     const [selectedBank, setSelectedBank] = useState<string | null>(null);
     const [branch, setBranch] = useState('');
@@ -123,8 +122,12 @@ export default function PaymentPage() {
             toast({ variant: 'destructive', title: 'Invalid Reference', description: 'Please enter a valid reference number to continue.' });
             return;
         }
-        if (currentStep === 3) {
-            if (!selectedBank) {
+        if (currentStep === 2) {
+            if (!amount) {
+                 toast({ variant: 'destructive', title: 'Amount Required', description: 'Please enter the payment amount.' });
+                return;
+            }
+             if (!selectedBank) {
                  toast({ variant: 'destructive', title: 'Bank Not Selected', description: 'Please select the bank you made the payment to.' });
                 return;
             }
@@ -193,6 +196,55 @@ export default function PaymentPage() {
             setPaymentSlip(e.target.files[0]);
         }
     };
+    
+    const BankSelector = () => {
+        const [open, setOpen] = React.useState(false)
+
+        return (
+            <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={open}
+                        className="w-full justify-between"
+                        disabled={isLoadingBanks}
+                    >
+                        {isLoadingBanks ? "Loading banks..." : (
+                            selectedBank ? banks?.find(bank => bank.id === selectedBank)?.bank_name : "Select a bank..."
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                        <CommandInput placeholder="Search bank..." />
+                        <CommandEmpty>No bank found.</CommandEmpty>
+                        <CommandGroup>
+                            {banks?.map((bank) => (
+                                <CommandItem
+                                    key={bank.id}
+                                    value={bank.bank_name}
+                                    onSelect={() => {
+                                        setSelectedBank(bank.id)
+                                        setOpen(false)
+                                    }}
+                                >
+                                    <CheckIcon
+                                        className={cn(
+                                            "mr-2 h-4 w-4",
+                                            selectedBank === bank.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                    />
+                                    {bank.bank_name}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </Command>
+                </PopoverContent>
+            </Popover>
+        )
+    }
 
     const renderStepContent = () => {
         switch (currentStep) {
@@ -241,53 +293,18 @@ export default function PaymentPage() {
                 );
             case 2:
                 return (
-                    <Card className="border-0 shadow-none">
-                        <CardHeader className="px-0">
-                            <div className="flex items-center gap-2">
-                                <Banknote className="w-6 h-6 text-primary" />
-                                <div>
-                                    <CardTitle>Payment Details</CardTitle>
-                                    <CardDescription>Select payment type and amount.</CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="px-0 space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="payment-reason">Payment Reason</Label>
-                                <Select value={paymentReason} onValueChange={setPaymentReason}>
-                                    <SelectTrigger id="payment-reason">
-                                        <SelectValue placeholder="Select a reason" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Course Fee">Course Fee</SelectItem>
-                                        <SelectItem value="Registration Fee">Registration Fee</SelectItem>
-                                        <SelectItem value="Other">Other</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="amount">Amount</Label>
-                                <Input id="amount" value={amount} onChange={e => setAmount(e.target.value)} placeholder="LKR 15000" />
-                            </div>
-                        </CardContent>
-                    </Card>
-                );
-            case 3:
-                return (
                      <div className="space-y-4">
-                        <p className="text-sm text-center text-muted-foreground">Select the bank you made the payment to and upload the payment slip.</p>
                         <div className="space-y-2">
-                            <Label htmlFor="bank-select">Bank Name</Label>
-                            <Select value={selectedBank || ''} onValueChange={setSelectedBank} disabled={isLoadingBanks}>
-                                <SelectTrigger id="bank-select">
-                                    <SelectValue placeholder={isLoadingBanks ? 'Loading banks...' : 'Select a bank...'} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {banks?.map(bank => (
-                                        <SelectItem key={bank.id} value={bank.id}>{bank.bank_name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <Label htmlFor="payment-reason">Payment Reason</Label>
+                            <Input id="payment-reason" value="Course Fee" readOnly className="bg-muted"/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="amount">Amount</Label>
+                            <Input id="amount" value={amount} onChange={e => setAmount(e.target.value)} placeholder="LKR 15000" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Bank Name</Label>
+                            <BankSelector />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="branch">Branch (Optional)</Label>
@@ -299,13 +316,13 @@ export default function PaymentPage() {
                         </div>
                     </div>
                 );
-            case 4:
+            case 3:
                 return (
                     <div className="text-center p-4">
                         <p className="text-muted-foreground">You have selected <span className="font-semibold text-primary">{banks?.find(b => b.id === selectedBank)?.bank_name || 'the selected bank'}</span>{branch && ` (${branch} branch)`}. Click submit to finalize your payment submission.</p>
                     </div>
                 );
-            case 5:
+            case 4:
                 return (
                      <div className="text-center p-8 flex flex-col items-center gap-4">
                         <Check className="w-16 h-16 bg-green-100 text-green-600 p-2 rounded-full"/>
@@ -326,7 +343,7 @@ export default function PaymentPage() {
                     <CardTitle className="text-2xl font-headline">External Student Payment Portal</CardTitle>
                     {currentStep <= STEPS.length && (
                         <div className="flex items-start justify-center pt-8 pb-4">
-                            <div className="flex w-full max-w-md items-center justify-between">
+                            <div className="flex w-full max-w-xs items-center justify-between">
                                 {STEPS.map((step, index) => (
                                     <React.Fragment key={step.id}>
                                         <div className="flex flex-col items-center gap-2">
