@@ -41,18 +41,19 @@ interface Bank {
 }
 
 const maskEmail = (email: string) => {
+    if (!email) return '';
     const [user, domain] = email.split('@');
     if (user.length <= 2) return `${user.substring(0, 1)}***@${domain}`;
     return `${user.substring(0, 2)}***${user.substring(user.length - 1)}@${domain}`;
 };
 
 const maskPhone = (phone: string) => {
-    if (phone.length <= 4) return '****';
+    if (!phone || phone.length <= 4) return '****';
     return `******${phone.substring(phone.length - 4)}`;
 };
 
 const maskNic = (nic: string) => {
-    if (nic.length <= 4) return '****';
+    if (!nic || nic.length <= 4) return '****';
     return `${nic.substring(0, 4)}***${nic.substring(nic.length - 4)}`;
 };
 
@@ -74,6 +75,7 @@ export default function PaymentPage() {
     const [amount, setAmount] = useState('15000');
     const [selectedBank, setSelectedBank] = useState<string | null>(null);
     const [branch, setBranch] = useState('');
+    const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
 
     const { data: banks, isLoading: isLoadingBanks } = useQuery<Bank[]>({
         queryKey: ['banks'],
@@ -84,7 +86,7 @@ export default function PaymentPage() {
             }
             return response.json();
         },
-        staleTime: Infinity, // Bank list is unlikely to change often
+        staleTime: Infinity,
     });
     
     useEffect(() => {
@@ -107,7 +109,7 @@ export default function PaymentPage() {
                         setUserError(err.message);
                     })
                     .finally(() => setIsLoadingUser(false));
-            }, 500); // Debounce API call
+            }, 500);
             return () => clearTimeout(handler);
         } else {
              setTempUser(null);
@@ -121,9 +123,15 @@ export default function PaymentPage() {
             toast({ variant: 'destructive', title: 'Invalid Reference', description: 'Please enter a valid reference number to continue.' });
             return;
         }
-        if (currentStep === 3 && !selectedBank) {
-             toast({ variant: 'destructive', title: 'Bank Not Selected', description: 'Please select the bank you made the payment to.' });
-            return;
+        if (currentStep === 3) {
+            if (!selectedBank) {
+                 toast({ variant: 'destructive', title: 'Bank Not Selected', description: 'Please select the bank you made the payment to.' });
+                return;
+            }
+            if (!paymentSlip) {
+                toast({ variant: 'destructive', title: 'Payment Slip Required', description: 'Please upload your payment slip.' });
+                return;
+            }
         }
         setCurrentStep(prev => prev + 1);
     }
@@ -131,11 +139,59 @@ export default function PaymentPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!tempUser || !paymentReason || !amount || !selectedBank || !paymentSlip) {
+            toast({ variant: 'destructive', title: 'Missing Information', description: 'Cannot submit, some details are missing.' });
+            return;
+        }
         setIsSubmitting(true);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setIsSubmitting(false);
-        setCurrentStep(prev => prev + 1);
-        toast({ title: "Payment Slip Submitted!", description: "Your payment is being verified." });
+
+        const mapReasonToApiValue = (reason: string) => {
+            if (reason === 'Course Fee') return 'course';
+            return reason.toLowerCase().replace(' ', '_');
+        }
+
+        try {
+            const formDataToSend = new FormData();
+            formDataToSend.append("unique_number", tempUser.id);
+            formDataToSend.append("payment_reson", mapReasonToApiValue(paymentReason));
+            formDataToSend.append("number_type", "ref_number");
+            formDataToSend.append("paid_amount", amount);
+            formDataToSend.append("payment_reference", tempUser.id);
+            formDataToSend.append("bank", selectedBank);
+            formDataToSend.append("branch", branch);
+            formDataToSend.append("slip_path", paymentSlip);
+
+            const response = await fetch(
+                "https://qa-api.pharmacollege.lk/payment-portal-requests",
+                {
+                    method: "POST",
+                    body: formDataToSend,
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: `Request failed with status ${response.status}`}));
+                throw new Error(errorData.message || 'Submission failed');
+            }
+
+            toast({ title: "Payment Slip Submitted!", description: "Your payment is being verified." });
+            setCurrentStep(prev => prev + 1);
+
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Submission Failed",
+                description: error instanceof Error ? error.message : "An unknown error occurred.",
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setPaymentSlip(e.target.files[0]);
+        }
     };
 
     const renderStepContent = () => {
@@ -239,7 +295,7 @@ export default function PaymentPage() {
                         </div>
                         <div className="space-y-2 pt-4 border-t">
                             <Label htmlFor="payment-slip">Upload Payment Slip</Label>
-                            <Input id="payment-slip" type="file" />
+                            <Input id="payment-slip" type="file" onChange={handleFileChange} accept="image/*,application/pdf"/>
                         </div>
                     </div>
                 );
@@ -276,13 +332,13 @@ export default function PaymentPage() {
                                         <div className="flex flex-col items-center gap-2">
                                             <div
                                                 className={cn(
-                                                    'h-10 w-10 rounded-full flex items-center justify-center transition-colors border-2',
+                                                    'h-8 w-8 rounded-full flex items-center justify-center transition-colors border-2',
                                                     currentStep > step.id ? 'bg-primary border-primary text-white' : '',
                                                     currentStep === step.id ? 'bg-primary border-primary text-primary-foreground' : '',
                                                     currentStep < step.id ? 'bg-card text-muted-foreground border-border' : ''
                                                 )}
                                             >
-                                                {currentStep > step.id ? <Check className="h-5 w-5" /> : <step.icon className="h-5 w-5" />}
+                                                {currentStep > step.id ? <Check className="h-5 w-5" /> : <span className="font-bold text-sm">{step.id}</span>}
                                             </div>
                                             <p className={cn(
                                                 'text-xs text-center font-medium',
