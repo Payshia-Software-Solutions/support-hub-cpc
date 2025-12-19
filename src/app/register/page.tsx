@@ -300,12 +300,12 @@ export default function RegisterPage() {
                         disabled={isLoadingCities}
                     >
                         {isLoadingCities ? "Loading cities..." : (
-                            city ? cities.find(c => c.name_en === city)?.name_en : "Select a city..."
+                            city ? cities.find(c => c.name_en.toLowerCase() === city.toLowerCase())?.name_en : "Select a city..."
                         )}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" side="bottom">
                     <Command>
                         <CommandInput placeholder="Search city..." />
                         <CommandEmpty>No city found.</CommandEmpty>
@@ -322,7 +322,7 @@ export default function RegisterPage() {
                                     <Check
                                         className={cn(
                                             "mr-2 h-4 w-4",
-                                            city === c.name_en ? "opacity-100" : "opacity-0"
+                                            city.toLowerCase() === c.name_en.toLowerCase() ? "opacity-100" : "opacity-0"
                                         )}
                                     />
                                     {c.name_en}
@@ -393,7 +393,7 @@ export default function RegisterPage() {
                     {currentStep === 1 && (
                         <div className="space-y-4 animate-in fade-in-50">
                             <div className="space-y-2">
-                                <Label>Civil Status</Label>
+                                <Label>Title</Label>
                                 <Select value={civilStatus} onValueChange={setCivilStatus} required>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select Title" />
