@@ -18,6 +18,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useQuery } from '@tanstack/react-query';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const STEPS = [
@@ -163,7 +164,7 @@ export default function PaymentPage() {
             formDataToSend.append("reference", tempUser.id);
             formDataToSend.append("bank", selectedBank);
             formDataToSend.append("branch", branch);
-            formDataToSend.append("slip", paymentSlip);
+            formDataToSend.append("slip", paymentSlip); // File upload
 
             const response = await fetch(
                 "https://qa-api.pharmacollege.lk/payment-portal-requests",
@@ -217,30 +218,32 @@ export default function PaymentPage() {
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" side="bottom">
                     <Command>
                         <CommandInput placeholder="Search bank..." />
                         <CommandEmpty>No bank found.</CommandEmpty>
-                        <CommandGroup>
-                            {banks?.map((bank) => (
-                                <CommandItem
-                                    key={bank.id}
-                                    value={bank.bank_name}
-                                    onSelect={() => {
-                                        setSelectedBank(bank.id)
-                                        setOpen(false)
-                                    }}
-                                >
-                                    <CheckIcon
-                                        className={cn(
-                                            "mr-2 h-4 w-4",
-                                            selectedBank === bank.id ? "opacity-100" : "opacity-0"
-                                        )}
-                                    />
-                                    {bank.bank_name}
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
+                        <ScrollArea className="max-h-60">
+                            <CommandGroup>
+                                {banks?.map((bank) => (
+                                    <CommandItem
+                                        key={bank.id}
+                                        value={bank.bank_name}
+                                        onSelect={() => {
+                                            setSelectedBank(bank.id)
+                                            setOpen(false)
+                                        }}
+                                    >
+                                        <CheckIcon
+                                            className={cn(
+                                                "mr-2 h-4 w-4",
+                                                selectedBank === bank.id ? "opacity-100" : "opacity-0"
+                                            )}
+                                        />
+                                        {bank.bank_name}
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </ScrollArea>
                     </Command>
                 </PopoverContent>
             </Popover>
