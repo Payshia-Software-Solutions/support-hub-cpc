@@ -43,6 +43,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const isMobile = useIsMobile();
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
 
   // Step 1 State
   const [civilStatus, setCivilStatus] = useState('');
@@ -194,17 +195,19 @@ export default function RegisterPage() {
         body: JSON.stringify(payload),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred during registration.' }));
-        // Use the detailed error message from the API if available
-        throw new Error(errorData.details || errorData.error || errorData.message || `Request failed with status ${response.status}`);
+        throw new Error(data.details || data.error || data.message || `Request failed with status ${response.status}`);
       }
 
       toast({
         title: "Registration Successful!",
-        description: "Your application has been submitted for review. You will be redirected to the login page.",
+        description: "Your application has been submitted for review.",
       });
-      router.push('/login');
+
+      setRegistrationId(data.user_id);
+      setCurrentStep(STEPS.length + 1); // Move to success step
 
     } catch (error) {
       toast({
@@ -265,159 +268,170 @@ export default function RegisterPage() {
                 <Image src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png" alt="Ceylon Pharma College Logo" width={64} height={64} className="w-16 h-16" />
             </div>
           <CardTitle className="text-2xl font-headline">Student Registration</CardTitle>
-          <div className="flex items-start justify-center pt-8 pb-4">
-            <div className="flex w-full max-w-md items-center justify-between">
-                {STEPS.map((step, index) => (
-                    <React.Fragment key={step.id}>
-                        <div className="flex flex-col items-center gap-2">
-                            <div
-                                className={cn(
-                                    'h-8 w-8 rounded-full flex items-center justify-center transition-colors border-2',
-                                    currentStep > step.id ? 'bg-primary border-primary text-white' : '',
-                                    currentStep === step.id ? 'bg-primary border-primary text-primary-foreground' : '',
-                                    currentStep < step.id ? 'bg-card text-muted-foreground border-border' : ''
-                                )}
-                            >
-                                {currentStep > step.id ? <Check className="h-5 w-5" /> : <span className="font-bold text-sm">{step.id}</span>}
-                            </div>
-                            <p className={cn(
-                                'text-xs text-center font-medium',
-                                currentStep >= step.id ? 'text-primary' : 'text-muted-foreground'
-                            )}>
-                                {step.title}
-                            </p>
-                        </div>
-                        {index < STEPS.length - 1 && (
-                            <div className={cn(
-                                'flex-1 h-0.5 mb-6 transition-colors',
-                                currentStep > index + 1 ? 'bg-primary' : 'bg-border'
-                            )} />
-                        )}
-                    </React.Fragment>
-                ))}
-           </div>
-           </div>
+          {currentStep <= STEPS.length && (
+            <div className="flex items-start justify-center pt-8 pb-4">
+              <div className="flex w-full max-w-md items-center justify-between">
+                  {STEPS.map((step, index) => (
+                      <React.Fragment key={step.id}>
+                          <div className="flex flex-col items-center gap-2">
+                              <div
+                                  className={cn(
+                                      'h-8 w-8 rounded-full flex items-center justify-center transition-colors border-2',
+                                      currentStep > step.id ? 'bg-primary border-primary text-white' : '',
+                                      currentStep === step.id ? 'bg-primary border-primary text-primary-foreground' : '',
+                                      currentStep < step.id ? 'bg-card text-muted-foreground border-border' : ''
+                                  )}
+                              >
+                                  {currentStep > step.id ? <Check className="h-5 w-5" /> : <span className="font-bold text-sm">{step.id}</span>}
+                              </div>
+                              <p className={cn(
+                                  'text-xs text-center font-medium',
+                                  currentStep >= step.id ? 'text-primary' : 'text-muted-foreground'
+                              )}>
+                                  {step.title}
+                              </p>
+                          </div>
+                          {index < STEPS.length - 1 && (
+                              <div className={cn(
+                                  'flex-1 h-0.5 mb-6 transition-colors',
+                                  currentStep > index + 1 ? 'bg-primary' : 'bg-border'
+                              )} />
+                          )}
+                      </React.Fragment>
+                  ))}
+             </div>
+            </div>
+           )}
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {currentStep === 1 && (
-                <div className="space-y-4 animate-in fade-in-50">
-                    <div className="space-y-2">
-                        <Label>Civil Status</Label>
-                        <Select value={civilStatus} onValueChange={setCivilStatus} required>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select Civil Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Single">Single</SelectItem>
-                                <SelectItem value="Married">Married</SelectItem>
-                                <SelectItem value="Divorced">Divorced</SelectItem>
-                                <SelectItem value="Widowed">Widowed</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2"><Label>First Name</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required /></div>
-                    <div className="space-y-2"><Label>Last Name</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} required /></div>
-                    <div className="space-y-2"><Label>Name with Initials</Label><Input value={nameWithInitials} onChange={(e) => setNameWithInitials(e.target.value)} required /></div>
-                    <div className="space-y-2"><Label>Name on Certificate</Label><Input value={nameOnCertificate} onChange={(e) => setNameOnCertificate(e.target.value)} required /></div>
-                </div>
-            )}
-            {currentStep === 2 && (
-                <div className="space-y-4 animate-in fade-in-50">
-                    <div className="space-y-2"><Label>Street Address</Label><Textarea value={address} onChange={(e) => setAddress(e.target.value)} required /></div>
-                    <div className="space-y-2"><Label>City</Label><Input value={city} onChange={(e) => setCity(e.target.value)} required /></div>
-                </div>
-            )}
-             {currentStep === 3 && (
-                <div className="space-y-4 animate-in fade-in-50">
-                    <div className="space-y-2">
-                        <Label>NIC Number</Label>
-                        <Input value={nic} onChange={handleNicChange} required />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                        <Label>Gender</Label>
-                        <Select value={gender} onValueChange={setGender} required>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Select your gender" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectItem value="Male">Male</SelectItem>
-                            <SelectItem value="Female">Female</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Date of Birth</Label>
-                            <DatePickerField />
-                        </div>
+            {currentStep > STEPS.length ? (
+                <div className="text-center p-8 flex flex-col items-center gap-4 animate-in fade-in-50">
+                    <Check className="w-16 h-16 bg-green-100 text-green-600 p-2 rounded-full"/>
+                    <h2 className="text-2xl font-bold">Registration Submitted!</h2>
+                    <p className="text-muted-foreground">Your application has been received. Your reference ID is below. Please keep it for your records.</p>
+                    <div className="p-3 border-2 border-dashed rounded-lg bg-muted">
+                        <p className="font-mono text-2xl font-bold text-primary tracking-widest">{registrationId}</p>
                     </div>
                 </div>
-            )}
-            {currentStep === 4 && (
-                 <div className="space-y-4 animate-in fade-in-50">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                            <Label>Phone Number</Label>
-                            <Input type="tel" value={phone1} onChange={(e) => setPhone1(e.target.value)} required />
+            ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {currentStep === 1 && (
+                        <div className="space-y-4 animate-in fade-in-50">
+                            <div className="space-y-2">
+                                <Label>Civil Status</Label>
+                                <Select value={civilStatus} onValueChange={setCivilStatus} required>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Civil Status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Single">Single</SelectItem>
+                                        <SelectItem value="Married">Married</SelectItem>
+                                        <SelectItem value="Divorced">Divorced</SelectItem>
+                                        <SelectItem value="Widowed">Widowed</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2"><Label>First Name</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required /></div>
+                            <div className="space-y-2"><Label>Last Name</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} required /></div>
+                            <div className="space-y-2"><Label>Name with Initials</Label><Input value={nameWithInitials} onChange={(e) => setNameWithInitials(e.target.value)} required /></div>
+                            <div className="space-y-2"><Label>Name on Certificate</Label><Input value={nameOnCertificate} onChange={(e) => setNameOnCertificate(e.target.value)} required /></div>
                         </div>
-                        <div className="space-y-2">
-                            <Label>Email Address</Label>
-                            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    )}
+                    {currentStep === 2 && (
+                        <div className="space-y-4 animate-in fade-in-50">
+                            <div className="space-y-2"><Label>Street Address</Label><Textarea value={address} onChange={(e) => setAddress(e.target.value)} required /></div>
+                            <div className="space-y-2"><Label>City</Label><Input value={city} onChange={(e) => setCity(e.target.value)} required /></div>
                         </div>
-                         <div className="space-y-2">
-                            <Label>WhatsApp Number</Label>
-                            <Input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+                    )}
+                     {currentStep === 3 && (
+                        <div className="space-y-4 animate-in fade-in-50">
+                            <div className="space-y-2">
+                                <Label>NIC Number</Label>
+                                <Input value={nic} onChange={handleNicChange} required />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                <Label>Gender</Label>
+                                <Select value={gender} onValueChange={setGender} required>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Select your gender" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                    <SelectItem value="Male">Male</SelectItem>
+                                    <SelectItem value="Female">Female</SelectItem>
+                                    <SelectItem value="Other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Date of Birth</Label>
+                                    <DatePickerField />
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                 </div>
+                    )}
+                    {currentStep === 4 && (
+                         <div className="space-y-4 animate-in fade-in-50">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Phone Number</Label>
+                                    <Input type="tel" value={phone1} onChange={(e) => setPhone1(e.target.value)} required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Email Address</Label>
+                                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label>WhatsApp Number</Label>
+                                    <Input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+                                </div>
+                            </div>
+                         </div>
+                    )}
+                    {currentStep === 5 && (
+                        <div className="space-y-4 animate-in fade-in-50">
+                            <div className="space-y-2">
+                                <Label className="font-semibold">Select a Course:</Label>
+                                 <RadioGroup value={selectedCourse} onValueChange={setSelectedCourse} className="space-y-2">
+                                    {courses.map(course => (
+                                        <Label key={course.id} htmlFor={course.id} className="flex items-start gap-4 p-4 border rounded-md cursor-pointer hover:bg-accent/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                                            <RadioGroupItem value={course.id} id={course.id} />
+                                            <div className="text-left">
+                                                <p className="font-medium text-card-foreground">{course.name}</p>
+                                                <p className="text-sm text-muted-foreground">{course.code} | Duration: {course.duration}</p>
+                                                <p className="text-sm text-muted-foreground">Course Fee: {course.fee}</p>
+                                            </div>
+                                        </Label>
+                                    ))}
+                                </RadioGroup>
+                            </div>
+                        </div>
+                    )}
+                </form>
             )}
-            {currentStep === 5 && (
-                <div className="space-y-4 animate-in fade-in-50">
-                    <div className="space-y-2">
-                        <Label className="font-semibold">Select a Course:</Label>
-                         <RadioGroup value={selectedCourse} onValueChange={setSelectedCourse} className="space-y-2">
-                            {courses.map(course => (
-                                <Label key={course.id} htmlFor={course.id} className="flex items-start gap-4 p-4 border rounded-md cursor-pointer hover:bg-accent/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                                    <RadioGroupItem value={course.id} id={course.id} />
-                                    <div className="text-left">
-                                        <p className="font-medium text-card-foreground">{course.name}</p>
-                                        <p className="text-sm text-muted-foreground">{course.code} | Duration: {course.duration}</p>
-                                        <p className="text-sm text-muted-foreground">Course Fee: {course.fee}</p>
-                                    </div>
-                                </Label>
-                            ))}
-                        </RadioGroup>
-                    </div>
-                </div>
-            )}
-            <CardFooter className="flex items-center gap-2 pt-8 px-0">
-                {currentStep > 1 && (
-                    <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isRegistering}>
-                        <ArrowLeft className="mr-2 h-4 w-4"/> Back
-                    </Button>
-                )}
-                {currentStep < STEPS.length ? (
-                    <Button type="button" onClick={handleNextStep} className="flex-grow">
-                        Next <ArrowRight className="ml-2 h-4 w-4"/>
-                    </Button>
-                ) : (
-                    <Button type="submit" form="registration-form" disabled={isRegistering} onClick={handleSubmit} className="flex-grow">
-                        {isRegistering ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                        {isRegistering ? 'Submitting...' : 'Complete Registration'}
-                    </Button>
-                )}
-            </CardFooter>
-          </form>
         </CardContent>
-        <CardFooter className="text-center text-sm text-muted-foreground">
-            <p className="w-full">
-                Already have an account?{' '}
-                <Link href="/login" className="text-primary font-semibold hover:underline">
-                    Log In
-                </Link>
-            </p>
+        <CardFooter className="flex items-center gap-2 pt-8">
+            {currentStep <= STEPS.length ? (
+                <>
+                    {currentStep > 1 && (
+                        <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isRegistering}>
+                            <ArrowLeft className="mr-2 h-4 w-4"/> Back
+                        </Button>
+                    )}
+                    {currentStep < STEPS.length ? (
+                        <Button type="button" onClick={handleNextStep} className="flex-grow">
+                            Next <ArrowRight className="ml-2 h-4 w-4"/>
+                        </Button>
+                    ) : (
+                        <Button type="submit" form="registration-form" disabled={isRegistering} onClick={handleSubmit} className="flex-grow">
+                            {isRegistering ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                            {isRegistering ? 'Submitting...' : 'Complete Registration'}
+                        </Button>
+                    )}
+                </>
+            ) : (
+                <Link href="/login" className="w-full"><Button className="w-full">Proceed to Login</Button></Link>
+            )}
         </CardFooter>
       </Card>
     </div>
