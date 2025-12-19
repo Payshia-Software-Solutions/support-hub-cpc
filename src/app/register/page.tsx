@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -12,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, ArrowRight, User, MapPin, BookOpen, Upload, ChevronsUpDown, Check } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, User, MapPin, BadgeCheck, Phone, BookOpen, Upload, ChevronsUpDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -27,8 +26,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const STEPS = [
   { id: 1, title: 'Personal Info', icon: User },
-  { id: 2, title: 'Contact Info', icon: MapPin },
-  { id: 3, title: 'Course & Payment', icon: BookOpen },
+  { id: 2, title: 'Address', icon: MapPin },
+  { id: 3, title: 'Identity', icon: BadgeCheck },
+  { id: 4, title: 'Contact', icon: Phone },
+  { id: 5, title: 'Course', icon: BookOpen },
 ];
 
 interface City {
@@ -47,17 +48,21 @@ export default function RegisterPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  
+  // Step 2 State
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+
+  // Step 3 State
   const [nic, setNic] = useState('');
   const [gender, setGender] = useState('');
   const [dob, setDob] = useState<Date | undefined>();
 
-  // Step 2 State
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
+  // Step 4 State
   const [phone1, setPhone1] = useState('');
   const [phone2, setPhone2] = useState('');
   
-  // Step 3 State
+  // Step 5 State
   const [course, setCourse] = useState('');
   const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
 
@@ -92,7 +97,7 @@ export default function RegisterPage() {
   const handleNicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newNic = e.target.value;
     setNic(newNic);
-    if (newNic.length >= 10) { // Only parse if it's a potentially valid length
+    if (newNic.length >= 10) { 
         const result = parseNIC(newNic);
         if (result.error) {
             setDob(undefined);
@@ -175,76 +180,55 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className={cn("flex min-h-screen items-center justify-center p-4", "auth-background")}>
-      <Card className="w-full max-w-lg shadow-2xl">
+    <div className={cn("flex min-h-screen items-center justify-center p-4", "bg-background")}>
+      <Card className="w-full max-w-2xl shadow-2xl">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-                <Image src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png" alt="SOS App Logo" width={64} height={64} className="w-16 h-16" />
+                <Image src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png" alt="Ceylon Pharma College Logo" width={64} height={64} className="w-16 h-16" />
             </div>
-          <CardTitle className="text-2xl font-headline">Create an Account</CardTitle>
-          <div className="flex items-center justify-between pt-4">
-            {STEPS.map((step, index) => (
-                <React.Fragment key={step.id}>
-                    <div className="flex flex-col items-center gap-2">
-                        <div
-                            className={cn(
-                                'h-10 w-10 rounded-full flex items-center justify-center transition-colors',
-                                currentStep > step.id ? 'bg-green-500 text-white' : '',
-                                currentStep === step.id ? 'bg-primary text-primary-foreground' : '',
-                                currentStep < step.id ? 'bg-muted border' : ''
-                            )}
-                        >
-                            <step.icon className="h-5 w-5" />
+          <CardTitle className="text-2xl font-headline">Student Registration</CardTitle>
+          <div className="flex items-start justify-center pt-8 pb-4">
+            <div className="flex w-full max-w-md items-center justify-between">
+                {STEPS.map((step, index) => (
+                    <React.Fragment key={step.id}>
+                        <div className="flex flex-col items-center gap-2">
+                            <div
+                                className={cn(
+                                    'h-8 w-8 rounded-full flex items-center justify-center transition-colors border-2',
+                                    currentStep > step.id ? 'bg-primary border-primary text-white' : '',
+                                    currentStep === step.id ? 'bg-primary border-primary text-primary-foreground' : '',
+                                    currentStep < step.id ? 'bg-card text-muted-foreground border-border' : ''
+                                )}
+                            >
+                                {currentStep > step.id ? <Check className="h-5 w-5" /> : <span className="font-bold text-sm">{step.id}</span>}
+                            </div>
+                            <p className={cn(
+                                'text-xs text-center font-medium',
+                                currentStep >= step.id ? 'text-primary' : 'text-muted-foreground'
+                            )}>
+                                {step.title}
+                            </p>
                         </div>
-                        <p className={cn(
-                            'text-xs text-center',
-                            currentStep === step.id ? 'font-semibold text-primary' : 'text-muted-foreground'
-                        )}>
-                            {step.title}
-                        </p>
-                    </div>
-                    {index < STEPS.length - 1 && (
-                        <div className={cn(
-                            'flex-1 h-1 mb-6 rounded-full transition-colors',
-                             currentStep > index + 1 ? 'bg-green-500' : 'bg-muted'
-                        )} />
-                    )}
-                </React.Fragment>
-            ))}
+                        {index < STEPS.length - 1 && (
+                            <div className={cn(
+                                'flex-1 h-0.5 mb-6 transition-colors',
+                                currentStep > index + 1 ? 'bg-primary' : 'bg-border'
+                            )} />
+                        )}
+                    </React.Fragment>
+                ))}
+           </div>
            </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {currentStep === 1 && (
                 <div className="space-y-4 animate-in fade-in-50">
-                     <div className="grid grid-cols-2 gap-4">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label>First Name</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required /></div>
                         <div className="space-y-2"><Label>Last Name</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} required /></div>
                      </div>
-                     <div className="space-y-2"><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-                     <div className="space-y-2">
-                        <Label>NIC Number</Label>
-                        <Input value={nic} onChange={handleNicChange} required />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                        <Label>Gender</Label>
-                        <Select value={gender} onValueChange={setGender} required>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Select your gender" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectItem value="Male">Male</SelectItem>
-                            <SelectItem value="Female">Female</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Date of Birth</Label>
-                            <DatePickerField />
-                        </div>
-                    </div>
+                     <div className="space-y-2"><Label>Email Address</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
                 </div>
             )}
             {currentStep === 2 && (
@@ -292,11 +276,42 @@ export default function RegisterPage() {
                             </PopoverContent>
                         </Popover>
                     </div>
-                     <div className="space-y-2"><Label>Primary Phone Number</Label><Input type="tel" value={phone1} onChange={(e) => setPhone1(e.target.value)} required /></div>
-                    <div className="space-y-2"><Label>Secondary Phone (Optional)</Label><Input type="tel" value={phone2} onChange={(e) => setPhone2(e.target.value)} /></div>
                 </div>
             )}
-            {currentStep === 3 && (
+             {currentStep === 3 && (
+                <div className="space-y-4 animate-in fade-in-50">
+                    <div className="space-y-2">
+                        <Label>NIC Number</Label>
+                        <Input value={nic} onChange={handleNicChange} required />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                        <Label>Gender</Label>
+                        <Select value={gender} onValueChange={setGender} required>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Select your gender" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="Male">Male</SelectItem>
+                            <SelectItem value="Female">Female</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Date of Birth</Label>
+                            <DatePickerField />
+                        </div>
+                    </div>
+                </div>
+            )}
+            {currentStep === 4 && (
+                 <div className="space-y-4 animate-in fade-in-50">
+                     <div className="space-y-2"><Label>Primary Phone Number</Label><Input type="tel" value={phone1} onChange={(e) => setPhone1(e.target.value)} required /></div>
+                    <div className="space-y-2"><Label>Secondary Phone (Optional)</Label><Input type="tel" value={phone2} onChange={(e) => setPhone2(e.target.value)} /></div>
+                 </div>
+            )}
+            {currentStep === 5 && (
                 <div className="space-y-4 animate-in fade-in-50">
                     <div className="space-y-2"><Label>Select Course</Label><Input value={course} onChange={(e) => setCourse(e.target.value)} placeholder="e.g. Certificate Course in Pharmacy Practice" required /></div>
                     <div className="space-y-2">
@@ -308,15 +323,15 @@ export default function RegisterPage() {
                     </div>
                 </div>
             )}
-            <CardFooter className="flex items-center gap-2 pt-4 px-0">
+            <CardFooter className="flex items-center gap-2 pt-8 px-0">
                 {currentStep > 1 && (
-                    <Button type="button" variant="outline" size="icon" onClick={handlePrevStep} disabled={isRegistering}>
-                        <ArrowLeft className="h-4 w-4"/>
+                    <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isRegistering}>
+                        <ArrowLeft className="mr-2 h-4 w-4"/> Back
                     </Button>
                 )}
                 {currentStep < STEPS.length ? (
                     <Button type="button" onClick={handleNextStep} className="flex-grow">
-                        Next Step <ArrowRight className="ml-2 h-4 w-4"/>
+                        Next <ArrowRight className="ml-2 h-4 w-4"/>
                     </Button>
                 ) : (
                     <Button type="submit" form="registration-form" disabled={isRegistering} onClick={handleSubmit} className="flex-grow">
