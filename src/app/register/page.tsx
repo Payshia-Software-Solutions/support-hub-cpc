@@ -321,13 +321,13 @@ export default function RegisterPage() {
                                 <Label>Civil Status</Label>
                                 <Select value={civilStatus} onValueChange={setCivilStatus} required>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select Civil Status" />
+                                        <SelectValue placeholder="Select Title" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Single">Single</SelectItem>
-                                        <SelectItem value="Married">Married</SelectItem>
-                                        <SelectItem value="Divorced">Divorced</SelectItem>
-                                        <SelectItem value="Widowed">Widowed</SelectItem>
+                                        <SelectItem value="Mr">Mr.</SelectItem>
+                                        <SelectItem value="Mrs">Mrs.</SelectItem>
+                                        <SelectItem value="Miss">Miss</SelectItem>
+                                        <SelectItem value="Rev">Rev.</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -434,7 +434,7 @@ export default function RegisterPage() {
             ) : (
                  <div className="w-full flex flex-col sm:flex-row gap-2">
                     <Button onClick={() => router.push(`/payment?registrationId=${registrationId}`)} className="flex-1">
-                        Proceed to payment
+                        Proceed to Payment
                     </Button>
                     <Button asChild variant="outline" className="flex-1">
                         <Link href="/login">Go to Login</Link>
