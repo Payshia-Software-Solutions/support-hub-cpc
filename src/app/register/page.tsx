@@ -331,8 +331,10 @@ export default function RegisterPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-2"><Label>First Name</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required /></div>
-                            <div className="space-y-2"><Label>Last Name</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} required /></div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2"><Label>First Name</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required /></div>
+                                <div className="space-y-2"><Label>Last Name</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} required /></div>
+                            </div>
                             <div className="space-y-2"><Label>Name with Initials</Label><Input value={nameWithInitials} onChange={(e) => setNameWithInitials(e.target.value)} required /></div>
                             <div className="space-y-2"><Label>Name on Certificate</Label><Input value={nameOnCertificate} onChange={(e) => setNameOnCertificate(e.target.value)} required /></div>
                         </div>
@@ -432,7 +434,7 @@ export default function RegisterPage() {
             ) : (
                  <div className="w-full flex flex-col sm:flex-row gap-2">
                     <Button onClick={() => router.push(`/payment?registrationId=${registrationId}`)} className="flex-1">
-                        Proceed to Payment
+                        Proceed to payment
                     </Button>
                     <Button asChild variant="outline" className="flex-1">
                         <Link href="/login">Go to Login</Link>
