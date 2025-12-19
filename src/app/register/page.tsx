@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, ArrowRight, User, MapPin, BadgeCheck, Phone, BookOpen, Upload, Check } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, User, MapPin, BadgeCheck, Phone, BookOpen, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -67,12 +67,60 @@ export default function RegisterPage() {
   
   // Step 5 State
   const [selectedCourse, setSelectedCourse] = useState('');
-  const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
 
   const [isRegistering, setIsRegistering] = useState(false);
   
+  const validateStep = (step: number) => {
+    const showValidationError = (message: string) => {
+        toast({ variant: "destructive", title: "Missing Information", description: message });
+    };
+
+    switch (step) {
+        case 1:
+            if (!civilStatus || !firstName || !lastName || !nameWithInitials || !nameOnCertificate) {
+                showValidationError("Please fill all personal information fields.");
+                return false;
+            }
+            break;
+        case 2:
+            if (!address || !city) {
+                showValidationError("Please provide your full address and city.");
+                return false;
+            }
+            break;
+        case 3:
+            if (!nic || !gender || !dob) {
+                showValidationError("Please provide your NIC, gender, and date of birth.");
+                return false;
+            }
+            break;
+        case 4:
+            if (!phone1 || !email) {
+                showValidationError("Please provide your primary phone number and email address.");
+                return false;
+            }
+            // Basic email validation
+            if (!/\S+@\S+\.\S+/.test(email)) {
+                showValidationError("Please enter a valid email address.");
+                return false;
+            }
+            break;
+        case 5:
+             if (!selectedCourse) {
+                showValidationError("Please select a course to enroll in.");
+                return false;
+            }
+            break;
+        default:
+            return true;
+    }
+    return true;
+  };
+
   const handleNextStep = () => {
-    setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
+    if (validateStep(currentStep)) {
+        setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
+    }
   };
   
   const handlePrevStep = () => {
@@ -106,8 +154,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (currentStep !== STEPS.length) {
-      toast({ variant: "destructive", title: "Incomplete Form", description: "Please complete all steps before submitting." });
+    if (!validateStep(STEPS.length)) {
       return;
     }
 
