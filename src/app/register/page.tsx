@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -21,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { parseNIC } from '@/lib/nic-parser';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 
 const STEPS = [
@@ -30,6 +30,13 @@ const STEPS = [
   { id: 4, title: 'Contact', icon: Phone },
   { id: 5, title: 'Course', icon: BookOpen },
 ];
+
+const courses = [
+    { id: 'CS0001', name: 'Certificate Course in Pharmacy Practice', code: 'CS0001', duration: '6 months', fee: 'LKR 15000.00' },
+    { id: 'CS0002', name: 'Advanced Course in Pharmacy Practice', code: 'CS0002', duration: '6 months', fee: 'LKR 18000.00' },
+    { id: 'CS0003', name: 'Workshop in Pharmacy Practice', code: 'CS0003', duration: '1 Day', fee: 'LKR 2500.00' },
+    { id: 'CS0004', name: 'Professional Pharmacy Practice', code: 'CS0004', duration: '6 Months', fee: 'LKR 25000.00' },
+]
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -58,7 +65,7 @@ export default function RegisterPage() {
   const [whatsapp, setWhatsapp] = useState('');
   
   // Step 5 State
-  const [course, setCourse] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState('');
   const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
 
   const [isRegistering, setIsRegistering] = useState(false);
@@ -274,8 +281,22 @@ export default function RegisterPage() {
             )}
             {currentStep === 5 && (
                 <div className="space-y-4 animate-in fade-in-50">
-                    <div className="space-y-2"><Label>Select Course</Label><Input value={course} onChange={(e) => setCourse(e.target.value)} placeholder="e.g. Certificate Course in Pharmacy Practice" required /></div>
                     <div className="space-y-2">
+                        <Label className="font-semibold">Select a Course:</Label>
+                         <RadioGroup value={selectedCourse} onValueChange={setSelectedCourse} className="space-y-2">
+                            {courses.map(course => (
+                                <Label key={course.id} htmlFor={course.id} className="flex items-start gap-4 p-4 border rounded-md cursor-pointer hover:bg-accent/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                                    <RadioGroupItem value={course.id} id={course.id} />
+                                    <div className="text-left">
+                                        <p className="font-medium text-card-foreground">{course.name}</p>
+                                        <p className="text-sm text-muted-foreground">{course.code} | Duration: {course.duration}</p>
+                                        <p className="text-sm text-muted-foreground">Course Fee: {course.fee}</p>
+                                    </div>
+                                </Label>
+                            ))}
+                        </RadioGroup>
+                    </div>
+                     <div className="space-y-2 pt-4">
                         <Label>Payment Slip</Label>
                         <div className="flex items-center gap-2 p-2 border rounded-lg">
                             <Upload className="h-5 w-5 text-muted-foreground"/>
