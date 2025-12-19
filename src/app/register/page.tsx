@@ -45,9 +45,11 @@ export default function RegisterPage() {
   const isMobile = useIsMobile();
 
   // Step 1 State
+  const [civilStatus, setCivilStatus] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
+  const [nameWithInitials, setNameWithInitials] = useState('');
+  const [nameOnCertificate, setNameOnCertificate] = useState('');
   
   // Step 2 State
   const [address, setAddress] = useState('');
@@ -224,11 +226,24 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {currentStep === 1 && (
                 <div className="space-y-4 animate-in fade-in-50">
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label>First Name</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required /></div>
-                        <div className="space-y-2"><Label>Last Name</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} required /></div>
-                     </div>
-                     <div className="space-y-2"><Label>Email Address</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+                    <div className="space-y-2">
+                        <Label>Civil Status</Label>
+                        <Select value={civilStatus} onValueChange={setCivilStatus} required>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Civil Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Single">Single</SelectItem>
+                                <SelectItem value="Married">Married</SelectItem>
+                                <SelectItem value="Divorced">Divorced</SelectItem>
+                                <SelectItem value="Widowed">Widowed</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2"><Label>First Name</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required /></div>
+                    <div className="space-y-2"><Label>Last Name</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} required /></div>
+                    <div className="space-y-2"><Label>Name with Initials</Label><Input value={nameWithInitials} onChange={(e) => setNameWithInitials(e.target.value)} required /></div>
+                    <div className="space-y-2"><Label>Name on Certificate</Label><Input value={nameOnCertificate} onChange={(e) => setNameOnCertificate(e.target.value)} required /></div>
                 </div>
             )}
             {currentStep === 2 && (
