@@ -68,7 +68,7 @@ const maskNic = (nic: string) => {
 const ViewSlipDialog = ({ slipPath, isOpen, onOpenChange }: { slipPath: string | null; isOpen: boolean; onOpenChange: (open: boolean) => void }) => {
     if (!isOpen || !slipPath) return null;
     const fullSlipUrl = `${CONTENT_PROVIDER_URL}${slipPath}`;
-    const isImage = /\.(jpg|jpeg|png|gif)$/i.test(slipPath);
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(slipPath);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -211,7 +211,7 @@ export default function PaymentPage() {
             formDataToSend.append("reference", tempUser.id);
             formDataToSend.append("bank", selectedBank);
             formDataToSend.append("branch", branch);
-            formDataToSend.append("slip", paymentSlip);
+            formDataToSend.append("slip", paymentSlip); // File upload
 
             const response = await fetch(
                 "https://qa-api.pharmacollege.lk/payment-portal-requests",
@@ -461,28 +461,40 @@ export default function PaymentPage() {
                         {renderStepContent()}
                     </form>
                 </CardContent>
-                <CardFooter className="flex items-center gap-2 pt-8">
+                <CardFooter className="flex-col items-stretch gap-4 pt-8">
                      {currentStep <= STEPS.length ? (
                         <>
-                            {currentStep > 1 && (
-                                <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isSubmitting}>
-                                    <ArrowLeft className="mr-2 h-4 w-4"/> Back
-                                </Button>
-                            )}
-                            {currentStep < STEPS.length && (
-                                <Button type="button" onClick={handleNextStep} className="flex-grow" disabled={currentStep === 1 && !tempUser}>
-                                    Continue <ArrowRight className="ml-2 h-4 w-4"/>
-                                </Button>
-                            )}
-                            {currentStep === STEPS.length && (
-                                <Button type="submit" form="payment-form" disabled={isSubmitting} onClick={handleSubmit} className="flex-grow">
-                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                    {isSubmitting ? 'Submitting...' : 'Submit Payment Slip'}
-                                </Button>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {currentStep > 1 && (
+                                    <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isSubmitting}>
+                                        <ArrowLeft className="mr-2 h-4 w-4"/> Back
+                                    </Button>
+                                )}
+                                {currentStep < STEPS.length && (
+                                    <Button type="button" onClick={handleNextStep} className="flex-grow" disabled={currentStep === 1 && !tempUser}>
+                                        Continue <ArrowRight className="ml-2 h-4 w-4"/>
+                                    </Button>
+                                )}
+                                {currentStep === STEPS.length && (
+                                    <Button type="submit" form="payment-form" disabled={isSubmitting} onClick={handleSubmit} className="flex-grow">
+                                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                                        {isSubmitting ? 'Submitting...' : 'Submit Payment Slip'}
+                                    </Button>
+                                )}
+                            </div>
+                            <div className="text-center text-sm text-muted-foreground w-full">
+                                <p>
+                                    Already have an account?{' '}
+                                    <Link href="/login" className="text-primary font-semibold hover:underline">
+                                        Log In
+                                    </Link>
+                                </p>
+                            </div>
                         </>
                     ) : (
-                         <Link href="/login" className="w-full"><Button className="w-full">Finish & Go to Login</Button></Link>
+                         <div className="w-full flex flex-col sm:flex-row gap-2">
+                            <Link href="/login" className="w-full"><Button className="w-full">Finish & Go to Login</Button></Link>
+                        </div>
                     )}
                 </CardFooter>
             </Card>

@@ -59,7 +59,7 @@ const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'ht
 function ViewSlipDialog({ slipPath, isOpen, onOpenChange }: { slipPath: string, isOpen: boolean, onOpenChange: (open: boolean) => void }) {
     if (!isOpen) return null;
     const fullSlipUrl = `${CONTENT_PROVIDER_URL}${slipPath}`;
-    const isImage = /\.(jpg|jpeg|png|gif)$/i.test(slipPath);
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(slipPath);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -439,7 +439,7 @@ function SlipSection({ request }: { request: PaymentRequest }) {
     const [isZoomed, setIsZoomed] = useState(false);
     const [rotation, setRotation] = useState(0);
     const fullSlipUrl = `${CONTENT_PROVIDER_URL}${request.slip_path}`;
-    const isImage = /\.(jpg|jpeg|png|gif)$/i.test(request.slip_path);
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(request.slip_path);
     
     const transformStyle = `scale(${isZoomed ? 2 : 1}) rotate(${rotation}deg)`;
 
@@ -586,4 +586,73 @@ export function PaymentRequestDialog({ isOpen, onOpenChange, request, courses, o
             </DialogContent>
         </Dialog>
     );
+}
+
+function ManageEnrollmentsDialog({ isOpen, onOpenChange, studentNumber, allCourses, currentEnrollments, onEnrollmentsChange }: {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    studentNumber: string;
+    allCourses: Course[];
+    currentEnrollments: StudentEnrollmentInfo[];
+    onEnrollmentsChange: () => void;
+}) {
+    const queryClient = useQueryClient();
+    const [selectedCourseToAdd, setSelectedCourseToAdd] = useState('');
+
+    const addMutation = useMutation({
+        mutationFn: addStudentEnrollment,
+        onSuccess: () => {
+            toast({ title: 'Enrollment Added' });
+            onEnrollmentsChange();
+            setSelectedCourseToAdd('');
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Failed to add', description: err.message }),
+    });
+
+    const removeMutation = useMutation({
+        mutationFn: removeStudentEnrollment,
+        onSuccess: () => {
+            toast({ title: 'Enrollment Removed' });
+            onEnrollmentsChange();
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Failed to remove', description: err.message }),
+    });
+    
+    const unenrollledCourses = allCourses.filter(c => !currentEnrollments.some(e => e.course_code === c.courseCode));
+    const isLoading = addMutation.isPending || removeMutation.isPending;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Manage Enrollments for {studentNumber}</DialogTitle>
+                </DialogHeader>
+                 <div className="space-y-4 py-4">
+                     <div>
+                        <h4 className="font-semibold mb-2">Current Enrollments</h4>
+                        <div className="space-y-2">
+                            {currentEnrollments.map(e => (
+                                <div key={e.student_course_id} className="flex items-center justify-between p-2 border rounded-md">
+                                    <p className="text-sm">{allCourses.find(c => c.courseCode === e.course_code)?.name || e.course_code}</p>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeMutation.mutate(e.student_course_id)} disabled={isLoading}><Trash2 className="h-4 w-4"/></Button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                     <div className="pt-4 border-t">
+                        <h4 className="font-semibold mb-2">Add New Enrollment</h4>
+                         <div className="flex gap-2">
+                             <Select value={selectedCourseToAdd} onValueChange={setSelectedCourseToAdd}>
+                                <SelectTrigger><SelectValue placeholder="Select a course to add..."/></SelectTrigger>
+                                <SelectContent>
+                                    {unenrollledCourses.map(c => <SelectItem key={c.id} value={c.courseCode}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Button onClick={() => addMutation.mutate({ student_id: currentEnrollments[0].student_id, course_code: selectedCourseToAdd })} disabled={!selectedCourseToAdd || isLoading}><PlusCircle className="mr-2 h-4 w-4"/>Add</Button>
+                        </div>
+                    </div>
+                 </div>
+            </DialogContent>
+        </Dialog>
+    )
 }
