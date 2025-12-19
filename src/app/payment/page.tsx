@@ -73,6 +73,7 @@ export default function PaymentPage() {
     const [paymentReason, setPaymentReason] = useState('Course Fee');
     const [amount, setAmount] = useState('15000');
     const [selectedBank, setSelectedBank] = useState<string | null>(null);
+    const [branch, setBranch] = useState('');
 
     const { data: banks, isLoading: isLoadingBanks } = useQuery<Bank[]>({
         queryKey: ['banks'],
@@ -232,6 +233,10 @@ export default function PaymentPage() {
                                 </SelectContent>
                             </Select>
                         </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="branch">Branch (Optional)</Label>
+                            <Input id="branch" value={branch} onChange={e => setBranch(e.target.value)} placeholder="e.g. Colombo 07"/>
+                        </div>
                         <div className="space-y-2 pt-4 border-t">
                             <Label htmlFor="payment-slip">Upload Payment Slip</Label>
                             <Input id="payment-slip" type="file" />
@@ -241,7 +246,7 @@ export default function PaymentPage() {
             case 4:
                 return (
                     <div className="text-center p-4">
-                        <p className="text-muted-foreground">You have selected <span className="font-semibold text-primary">{banks?.find(b => b.id === selectedBank)?.bank_name || 'the selected bank'}</span>. Click submit to finalize your payment submission.</p>
+                        <p className="text-muted-foreground">You have selected <span className="font-semibold text-primary">{banks?.find(b => b.id === selectedBank)?.bank_name || 'the selected bank'}</span>{branch && ` (${branch} branch)`}. Click submit to finalize your payment submission.</p>
                     </div>
                 );
             case 5:
