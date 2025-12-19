@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from "@/hooks/use-toast";
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Loader2, ArrowLeft, ArrowRight, Banknote, ShieldCheck, FileText, Check, User, AlertTriangle, Search, Check as CheckIcon, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -155,14 +156,14 @@ export default function PaymentPage() {
 
         try {
             const formDataToSend = new FormData();
-            formDataToSend.append("unique_number", tempUser.id);
-            formDataToSend.append("payment_reson", mapReasonToApiValue(paymentReason));
+            formDataToSend.append("studentNumber", tempUser.id);
+            formDataToSend.append("paymentReason", mapReasonToApiValue(paymentReason));
             formDataToSend.append("number_type", "ref_number");
-            formDataToSend.append("paid_amount", amount);
-            formDataToSend.append("payment_reference", tempUser.id);
+            formDataToSend.append("amount", amount);
+            formDataToSend.append("reference", tempUser.id);
             formDataToSend.append("bank", selectedBank);
             formDataToSend.append("branch", branch);
-            formDataToSend.append("slip_path", paymentSlip);
+            formDataToSend.append("slip", paymentSlip);
 
             const response = await fetch(
                 "https://qa-api.pharmacollege.lk/payment-portal-requests",
