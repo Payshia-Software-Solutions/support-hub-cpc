@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -19,6 +18,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { getPaymentRequestsByReference } from '@/lib/api';
+import type { PaymentRequest } from '@/lib/types';
+import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 
 
 const STEPS = [
@@ -72,11 +75,14 @@ export default function PaymentPage() {
     const [isLoadingUser, setIsLoadingUser] = useState(false);
     const [userError, setUserError] = useState<string | null>(null);
 
-    const paymentReason = 'Course Fee'; // Hardcoded
+    const [paymentReason, setPaymentReason] = useState('Course Fee'); // Hardcoded
     const [amount, setAmount] = useState('15000');
     const [selectedBank, setSelectedBank] = useState<string | null>(null);
     const [branch, setBranch] = useState('');
     const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
+    
+    const [previousPayments, setPreviousPayments] = useState<PaymentRequest[]>([]);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
     const { data: banks, isLoading: isLoadingBanks } = useQuery<Bank[]>({
         queryKey: ['banks'],
@@ -94,9 +100,12 @@ export default function PaymentPage() {
         if (registrationId.trim()) {
             const handler = setTimeout(() => {
                 setIsLoadingUser(true);
+                setIsLoadingHistory(true);
                 setUserError(null);
                 setTempUser(null);
-                fetch(`https://qa-api.pharmacollege.lk/temp-users/${registrationId.trim()}`)
+                setPreviousPayments([]);
+
+                const fetchUserData = fetch(`https://qa-api.pharmacollege.lk/temp-users/${registrationId.trim()}`)
                     .then(res => {
                         if (!res.ok) {
                             throw new Error('Student not found for this reference number.');
@@ -105,16 +114,28 @@ export default function PaymentPage() {
                     })
                     .then((data: TempUser) => {
                         setTempUser(data);
-                    })
+                    });
+
+                const fetchHistoryData = getPaymentRequestsByReference(registrationId.trim())
+                    .then(data => {
+                        setPreviousPayments(data);
+                    });
+                
+                Promise.all([fetchUserData, fetchHistoryData])
                     .catch(err => {
                         setUserError(err.message);
                     })
-                    .finally(() => setIsLoadingUser(false));
+                    .finally(() => {
+                        setIsLoadingUser(false);
+                        setIsLoadingHistory(false);
+                    });
+
             }, 500);
             return () => clearTimeout(handler);
         } else {
              setTempUser(null);
              setUserError(null);
+             setPreviousPayments([]);
         }
     }, [registrationId]);
 
@@ -164,7 +185,7 @@ export default function PaymentPage() {
             formDataToSend.append("reference", tempUser.id);
             formDataToSend.append("bank", selectedBank);
             formDataToSend.append("branch", branch);
-            formDataToSend.append("slip", paymentSlip); // File upload
+            formDataToSend.append("slip", paymentSlip);
 
             const response = await fetch(
                 "https://qa-api.pharmacollege.lk/payment-portal-requests",
@@ -222,7 +243,7 @@ export default function PaymentPage() {
                     <Command>
                         <CommandInput placeholder="Search bank..." />
                         <CommandEmpty>No bank found.</CommandEmpty>
-                        <ScrollArea className="max-h-60">
+                         <ScrollArea className="max-h-60">
                             <CommandGroup>
                                 {banks?.map((bank) => (
                                     <CommandItem
@@ -276,7 +297,8 @@ export default function PaymentPage() {
                             </Alert>
                         )}
                         {tempUser && !isLoadingUser && (
-                            <div className="p-4 border rounded-lg space-y-4 bg-green-50/50">
+                           <>
+                             <div className="p-4 border rounded-lg space-y-4 bg-green-50/50">
                                 <h3 className="font-semibold text-lg">Student Information</h3>
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between"><span className="text-muted-foreground">Reference Number</span><span className="font-medium">{tempUser.id}</span></div>
@@ -292,6 +314,29 @@ export default function PaymentPage() {
                                     </AlertDescription>
                                 </Alert>
                             </div>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-base">Submission History</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {isLoadingHistory ? <Skeleton className="h-20 w-full"/> : (
+                                        previousPayments.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {previousPayments.map(p => (
+                                                    <div key={p.id} className="text-sm p-2 border rounded-md flex justify-between items-center">
+                                                        <div>
+                                                            <p><strong>Amount:</strong> LKR {p.paid_amount}</p>
+                                                            <p className="text-xs text-muted-foreground">Submitted: {format(new Date(p.created_at), 'Pp')}</p>
+                                                        </div>
+                                                        <Badge variant={p.payment_status === 'Pending' ? 'destructive' : p.payment_status === 'Approved' ? 'default' : 'secondary'}>{p.payment_status}</Badge>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : <p className="text-sm text-muted-foreground text-center">No previous payments found.</p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                           </>
                         )}
                     </div>
                 );
@@ -413,3 +458,4 @@ export default function PaymentPage() {
         </div>
     );
 }
+
