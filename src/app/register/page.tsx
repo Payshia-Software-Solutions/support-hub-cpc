@@ -54,7 +54,8 @@ export default function RegisterPage() {
 
   // Step 4 State
   const [phone1, setPhone1] = useState('');
-  const [phone2, setPhone2] = useState('');
+  const [email, setEmail] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
   
   // Step 5 State
   const [course, setCourse] = useState('');
@@ -255,8 +256,20 @@ export default function RegisterPage() {
             )}
             {currentStep === 4 && (
                  <div className="space-y-4 animate-in fade-in-50">
-                     <div className="space-y-2"><Label>Primary Phone Number</Label><Input type="tel" value={phone1} onChange={(e) => setPhone1(e.target.value)} required /></div>
-                    <div className="space-y-2"><Label>Secondary Phone (Optional)</Label><Input type="tel" value={phone2} onChange={(e) => setPhone2(e.target.value)} /></div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label>Phone Number</Label>
+                            <Input type="tel" value={phone1} onChange={(e) => setPhone1(e.target.value)} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Email Address</Label>
+                            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                        </div>
+                         <div className="space-y-2">
+                            <Label>WhatsApp Number</Label>
+                            <Input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+                        </div>
+                    </div>
                  </div>
             )}
             {currentStep === 5 && (
