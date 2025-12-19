@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { useQuery } from '@tanstack/react-query';
 
 const STEPS = [
   { id: 1, title: 'Student Info', icon: User },
@@ -31,6 +32,12 @@ interface TempUser {
     email_address: string;
     phone_number: string;
     nic_number: string;
+}
+
+interface Bank {
+    id: string;
+    bank_code: string;
+    bank_name: string;
 }
 
 const maskEmail = (email: string) => {
@@ -66,6 +73,18 @@ export default function PaymentPage() {
     const [paymentReason, setPaymentReason] = useState('Course Fee');
     const [amount, setAmount] = useState('15000');
     const [selectedBank, setSelectedBank] = useState<string | null>(null);
+
+    const { data: banks, isLoading: isLoadingBanks } = useQuery<Bank[]>({
+        queryKey: ['banks'],
+        queryFn: async () => {
+            const response = await fetch('https://qa-api.pharmacollege.lk/banks');
+            if (!response.ok) {
+                throw new Error('Failed to fetch banks');
+            }
+            return response.json();
+        },
+        staleTime: Infinity, // Bank list is unlikely to change often
+    });
     
     useEffect(() => {
         if (registrationId.trim()) {
@@ -99,6 +118,10 @@ export default function PaymentPage() {
     const handleNextStep = () => {
         if (currentStep === 1 && !tempUser) {
             toast({ variant: 'destructive', title: 'Invalid Reference', description: 'Please enter a valid reference number to continue.' });
+            return;
+        }
+        if (currentStep === 3 && !selectedBank) {
+             toast({ variant: 'destructive', title: 'Bank Not Selected', description: 'Please select the bank you made the payment to.' });
             return;
         }
         setCurrentStep(prev => prev + 1);
@@ -196,22 +219,19 @@ export default function PaymentPage() {
                 return (
                      <div className="space-y-4">
                         <p className="text-sm text-center text-muted-foreground">Select the bank you made the payment to and upload the payment slip.</p>
-                        <RadioGroup value={selectedBank || ''} onValueChange={setSelectedBank} className="space-y-2">
-                            <Label htmlFor="boc" className="flex items-center gap-4 p-4 border rounded-md cursor-pointer hover:bg-accent/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                                <RadioGroupItem value="boc" id="boc" />
-                                <div>
-                                    <p className="font-medium">Bank of Ceylon</p>
-                                    <p className="text-xs text-muted-foreground">Acc: 12345678</p>
-                                </div>
-                            </Label>
-                             <Label htmlFor="sampath" className="flex items-center gap-4 p-4 border rounded-md cursor-pointer hover:bg-accent/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                                <RadioGroupItem value="sampath" id="sampath" />
-                                <div>
-                                    <p className="font-medium">Sampath Bank</p>
-                                    <p className="text-xs text-muted-foreground">Acc: 87654321</p>
-                                </div>
-                            </Label>
-                        </RadioGroup>
+                        <div className="space-y-2">
+                            <Label htmlFor="bank-select">Bank Name</Label>
+                            <Select value={selectedBank || ''} onValueChange={setSelectedBank} disabled={isLoadingBanks}>
+                                <SelectTrigger id="bank-select">
+                                    <SelectValue placeholder={isLoadingBanks ? 'Loading banks...' : 'Select a bank...'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {banks?.map(bank => (
+                                        <SelectItem key={bank.id} value={bank.id}>{bank.bank_name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <div className="space-y-2 pt-4 border-t">
                             <Label htmlFor="payment-slip">Upload Payment Slip</Label>
                             <Input id="payment-slip" type="file" />
@@ -221,7 +241,7 @@ export default function PaymentPage() {
             case 4:
                 return (
                     <div className="text-center p-4">
-                        <p className="text-muted-foreground">You have selected <span className="font-semibold text-primary">{selectedBank?.toUpperCase()}</span>. Click submit to finalize your payment submission.</p>
+                        <p className="text-muted-foreground">You have selected <span className="font-semibold text-primary">{banks?.find(b => b.id === selectedBank)?.bank_name || 'the selected bank'}</span>. Click submit to finalize your payment submission.</p>
                     </div>
                 );
             case 5:
