@@ -16,9 +16,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 const STEPS = [
-  { id: 1, title: 'Reference', icon: User },
+  { id: 1, title: 'Student Info', icon: User },
   { id: 2, title: 'Payment', icon: Banknote },
   { id: 3, title: 'Bank Details', icon: ShieldCheck },
   { id: 4, title: 'Review', icon: FileText },
@@ -56,12 +57,14 @@ export default function PaymentPage() {
     
     const [currentStep, setCurrentStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedBank, setSelectedBank] = useState<string | null>(null);
     
     const [registrationId, setRegistrationId] = useState(registrationIdQuery || '');
     const [tempUser, setTempUser] = useState<TempUser | null>(null);
     const [isLoadingUser, setIsLoadingUser] = useState(false);
     const [userError, setUserError] = useState<string | null>(null);
+
+    const [paymentReason, setPaymentReason] = useState('Course Fee');
+    const [amount, setAmount] = useState('15000');
     
     useEffect(() => {
         if (registrationId.trim()) {
@@ -118,7 +121,7 @@ export default function PaymentPage() {
                         <div className="space-y-2">
                             <Label htmlFor="ref-number">Reference Number</Label>
                             <Input id="ref-number" value={registrationId} onChange={e => setRegistrationId(e.target.value)} />
-                            <p className="text-xs text-muted-foreground">Please enter your student details</p>
+                            <p className="text-xs text-muted-foreground">Please enter your registration reference number.</p>
                         </div>
                         {isLoadingUser && (
                             <div className="p-4 border rounded-lg space-y-4">
@@ -157,25 +160,36 @@ export default function PaymentPage() {
                 );
             case 2:
                 return (
-                    <div className="space-y-4">
-                         <div className="space-y-2">
-                            <Label>Payment Type</Label>
-                            <RadioGroup defaultValue="registration" className="grid grid-cols-2 gap-4">
+                    <Card className="border-0 shadow-none">
+                        <CardHeader className="px-0">
+                            <div className="flex items-center gap-2">
+                                <Banknote className="w-6 h-6 text-primary" />
                                 <div>
-                                    <RadioGroupItem value="registration" id="r1" className="peer sr-only" />
-                                    <Label htmlFor="r1" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                        Registration Fee
-                                    </Label>
+                                    <CardTitle>Payment Details</CardTitle>
+                                    <CardDescription>Select payment type and amount.</CardDescription>
                                 </div>
-                                <div>
-                                    <RadioGroupItem value="course" id="r2" className="peer sr-only" />
-                                    <Label htmlFor="r2" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                        Course Fee
-                                    </Label>
-                                </div>
-                            </RadioGroup>
-                        </div>
-                    </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="px-0 space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="payment-reason">Payment Reason</Label>
+                                <Select value={paymentReason} onValueChange={setPaymentReason}>
+                                    <SelectTrigger id="payment-reason">
+                                        <SelectValue placeholder="Select a reason" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Course Fee">Course Fee</SelectItem>
+                                        <SelectItem value="Registration Fee">Registration Fee</SelectItem>
+                                        <SelectItem value="Other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="amount">Amount</Label>
+                                <Input id="amount" value={amount} onChange={e => setAmount(e.target.value)} placeholder="LKR 15000" />
+                            </div>
+                        </CardContent>
+                    </Card>
                 );
             case 3:
                 return (
@@ -223,11 +237,45 @@ export default function PaymentPage() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center p-4 bg-gray-100">
+        <div className="flex min-h-screen items-center justify-center p-4 bg-gray-100/50 dark:bg-gray-900/50 auth-background">
             <Card className="w-full max-w-lg shadow-2xl">
                 <CardHeader className="text-center">
-                    <CardTitle className="text-2xl font-headline">Student Payment Portal</CardTitle>
-                    <CardDescription>Follow the steps below to confirm your payment.</CardDescription>
+                     <Image src="https://content-provider.pharmacollege.lk/app-icon/android-chrome-192x192.png" alt="Ceylon Pharma College Logo" width={64} height={64} className="w-16 h-16 mx-auto mb-4" />
+                    <CardTitle className="text-2xl font-headline">External Student Payment Portal</CardTitle>
+                    {currentStep <= STEPS.length && (
+                        <div className="flex items-start justify-center pt-8 pb-4">
+                            <div className="flex w-full max-w-md items-center justify-between">
+                                {STEPS.map((step, index) => (
+                                    <React.Fragment key={step.id}>
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div
+                                                className={cn(
+                                                    'h-10 w-10 rounded-full flex items-center justify-center transition-colors border-2',
+                                                    currentStep > step.id ? 'bg-primary border-primary text-white' : '',
+                                                    currentStep === step.id ? 'bg-primary border-primary text-primary-foreground' : '',
+                                                    currentStep < step.id ? 'bg-card text-muted-foreground border-border' : ''
+                                                )}
+                                            >
+                                                {currentStep > step.id ? <Check className="h-5 w-5" /> : <step.icon className="h-5 w-5" />}
+                                            </div>
+                                            <p className={cn(
+                                                'text-xs text-center font-medium',
+                                                currentStep >= step.id ? 'text-primary' : 'text-muted-foreground'
+                                            )}>
+                                                {step.title}
+                                            </p>
+                                        </div>
+                                        {index < STEPS.length - 1 && (
+                                            <div className={cn(
+                                                'flex-1 h-0.5 mb-6 transition-colors',
+                                                currentStep > index + 1 ? 'bg-primary' : 'bg-border'
+                                            )} />
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit}>
@@ -262,5 +310,3 @@ export default function PaymentPage() {
         </div>
     );
 }
-
-    
