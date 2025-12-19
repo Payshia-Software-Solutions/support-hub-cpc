@@ -493,18 +493,20 @@ export default function RegisterPage() {
                             <div className="space-y-2">
                                 <Label className="font-semibold">Select a Course:</Label>
                                 {isLoadingCourses ? <Loader2 className="animate-spin" /> : (
-                                    <RadioGroup value={selectedCourse} onValueChange={setSelectedCourse} className="space-y-2">
-                                        {courses.map(course => (
-                                            <Label key={course.id} htmlFor={course.id} className="flex items-start gap-4 p-4 border rounded-md cursor-pointer hover:bg-accent/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                                                <RadioGroupItem value={course.id} id={course.id} />
-                                                <div className="text-left">
-                                                    <p className="font-medium text-card-foreground">{course.course_name}</p>
-                                                    <p className="text-sm text-muted-foreground">{course.course_code} | Duration: {course.course_duration}</p>
-                                                    {course.course_fee && <p className="text-sm text-muted-foreground">Course Fee: LKR {parseFloat(course.course_fee).toLocaleString()}</p>}
-                                                </div>
-                                            </Label>
-                                        ))}
-                                    </RadioGroup>
+                                    <ScrollArea className="h-72 pr-3">
+                                        <RadioGroup value={selectedCourse} onValueChange={setSelectedCourse} className="space-y-2">
+                                            {courses.map(course => (
+                                                <Label key={course.id} htmlFor={course.id} className="flex items-start gap-4 p-4 border rounded-md cursor-pointer hover:bg-accent/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                                                    <RadioGroupItem value={course.id} id={course.id} />
+                                                    <div className="text-left">
+                                                        <p className="font-medium text-card-foreground">{course.course_name}</p>
+                                                        <p className="text-sm text-muted-foreground">{course.course_code} | Duration: {course.course_duration}</p>
+                                                        {course.course_fee && <p className="text-sm text-muted-foreground">Course Fee: LKR {parseFloat(course.course_fee).toLocaleString()}</p>}
+                                                    </div>
+                                                </Label>
+                                            ))}
+                                        </RadioGroup>
+                                    </ScrollArea>
                                 )}
                             </div>
                         </div>
