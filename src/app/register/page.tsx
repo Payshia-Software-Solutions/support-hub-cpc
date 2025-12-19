@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, ArrowRight, User, MapPin, BadgeCheck, Phone, BookOpen, Upload } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, User, MapPin, BadgeCheck, Phone, BookOpen, Upload, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
