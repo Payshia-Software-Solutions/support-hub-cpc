@@ -34,12 +34,13 @@ const STEPS = [
   { id: 5, title: 'Course', icon: BookOpen },
 ];
 
-const courses = [
-    { id: 'CS0001', name: 'Certificate Course in Pharmacy Practice', code: 'CS0001', duration: '6 months', fee: 'LKR 15000.00' },
-    { id: 'CS0002', name: 'Advanced Course in Pharmacy Practice', code: 'CS0002', duration: '6 months', fee: 'LKR 18000.00' },
-    { id: 'CS0003', name: 'Workshop in Pharmacy Practice', code: 'CS0003', duration: '1 Day', fee: 'LKR 2500.00' },
-    { id: 'CS0004', name: 'Professional Pharmacy Practice', code: 'CS0004', duration: '6 Months', fee: 'LKR 25000.00' },
-]
+interface ApiCourse {
+    id: string;
+    course_name: string;
+    course_code: string;
+    course_duration: string | null;
+    course_fee: string | null;
+}
 
 interface City {
     id: string;
@@ -78,6 +79,8 @@ export default function RegisterPage() {
   const [whatsapp, setWhatsapp] = useState('');
   
   // Step 5 State
+  const [courses, setCourses] = useState<ApiCourse[]>([]);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState('');
 
   const [isRegistering, setIsRegistering] = useState(false);
@@ -96,7 +99,21 @@ export default function RegisterPage() {
                 setIsLoadingCities(false);
             }
         }
+        async function fetchCourses() {
+            try {
+                const response = await fetch('https://qa-api.pharmacollege.lk/parent-main-course');
+                if (!response.ok) throw new Error('Failed to fetch courses');
+                const data = await response.json();
+                setCourses(data);
+            } catch (error) {
+                console.error("Failed to load courses:", error);
+                toast({ variant: 'destructive', title: 'Could not load courses'});
+            } finally {
+                setIsLoadingCourses(false);
+            }
+        }
         fetchCities();
+        fetchCourses();
     }, []);
 
   const validateStep = (step: number) => {
@@ -475,18 +492,20 @@ export default function RegisterPage() {
                         <div className="space-y-4 animate-in fade-in-50">
                             <div className="space-y-2">
                                 <Label className="font-semibold">Select a Course:</Label>
-                                 <RadioGroup value={selectedCourse} onValueChange={setSelectedCourse} className="space-y-2">
-                                    {courses.map(course => (
-                                        <Label key={course.id} htmlFor={course.id} className="flex items-start gap-4 p-4 border rounded-md cursor-pointer hover:bg-accent/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                                            <RadioGroupItem value={course.id} id={course.id} />
-                                            <div className="text-left">
-                                                <p className="font-medium text-card-foreground">{course.name}</p>
-                                                <p className="text-sm text-muted-foreground">{course.code} | Duration: {course.duration}</p>
-                                                <p className="text-sm text-muted-foreground">Course Fee: {course.fee}</p>
-                                            </div>
-                                        </Label>
-                                    ))}
-                                </RadioGroup>
+                                {isLoadingCourses ? <Loader2 className="animate-spin" /> : (
+                                    <RadioGroup value={selectedCourse} onValueChange={setSelectedCourse} className="space-y-2">
+                                        {courses.map(course => (
+                                            <Label key={course.id} htmlFor={course.id} className="flex items-start gap-4 p-4 border rounded-md cursor-pointer hover:bg-accent/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                                                <RadioGroupItem value={course.id} id={course.id} />
+                                                <div className="text-left">
+                                                    <p className="font-medium text-card-foreground">{course.course_name}</p>
+                                                    <p className="text-sm text-muted-foreground">{course.course_code} | Duration: {course.course_duration}</p>
+                                                    {course.course_fee && <p className="text-sm text-muted-foreground">Course Fee: LKR {parseFloat(course.course_fee).toLocaleString()}</p>}
+                                                </div>
+                                            </Label>
+                                        ))}
+                                    </RadioGroup>
+                                )}
                             </div>
                         </div>
                     )}
