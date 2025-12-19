@@ -327,7 +327,7 @@ export default function RegisterPage() {
                     <Command>
                         <CommandInput placeholder="Search city..." />
                         <CommandEmpty>No city found.</CommandEmpty>
-                        <ScrollArea className="max-h-60">
+                         <ScrollArea className="max-h-60">
                           <CommandGroup>
                               {cities.map((c) => (
                                   <CommandItem
@@ -514,24 +514,34 @@ export default function RegisterPage() {
                 </form>
             )}
         </CardContent>
-        <CardFooter className="flex items-center gap-2 pt-8">
+        <CardFooter className="flex-col items-stretch gap-4 pt-8">
             {currentStep <= STEPS.length ? (
                 <>
-                    {currentStep > 1 && (
-                        <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isRegistering}>
-                            <ArrowLeft className="mr-2 h-4 w-4"/> Back
-                        </Button>
-                    )}
-                    {currentStep < STEPS.length ? (
-                        <Button type="button" onClick={handleNextStep} className="flex-grow">
-                            Next <ArrowRight className="ml-2 h-4 w-4"/>
-                        </Button>
-                    ) : (
-                        <Button type="submit" form="registration-form" disabled={isRegistering} onClick={handleSubmit} className="flex-grow">
-                            {isRegistering ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                            {isRegistering ? 'Submitting...' : 'Complete Registration'}
-                        </Button>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {currentStep > 1 && (
+                            <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isRegistering}>
+                                <ArrowLeft className="mr-2 h-4 w-4"/> Back
+                            </Button>
+                        )}
+                        {currentStep < STEPS.length ? (
+                            <Button type="button" onClick={handleNextStep} className="flex-grow">
+                                Next <ArrowRight className="ml-2 h-4 w-4"/>
+                            </Button>
+                        ) : (
+                            <Button type="submit" form="registration-form" disabled={isRegistering} onClick={handleSubmit} className="flex-grow">
+                                {isRegistering ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                                {isRegistering ? 'Submitting...' : 'Complete Registration'}
+                            </Button>
+                        )}
+                    </div>
+                     <div className="text-center text-sm text-muted-foreground w-full">
+                        <p>
+                            Already have an account?{' '}
+                            <Link href="/login" className="text-primary font-semibold hover:underline">
+                                Log In
+                            </Link>
+                        </p>
+                    </div>
                 </>
             ) : (
                  <div className="w-full flex flex-col sm:flex-row gap-2">
