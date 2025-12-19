@@ -65,6 +65,7 @@ export default function PaymentPage() {
 
     const [paymentReason, setPaymentReason] = useState('Course Fee');
     const [amount, setAmount] = useState('15000');
+    const [selectedBank, setSelectedBank] = useState<string | null>(null);
     
     useEffect(() => {
         if (registrationId.trim()) {
