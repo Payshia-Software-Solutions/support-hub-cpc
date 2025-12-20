@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -11,19 +10,17 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, ArrowRight, User, MapPin, BadgeCheck, Phone, BookOpen, Check, ChevronsUpDown } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, User, MapPin, BadgeCheck, Phone, BookOpen, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from "@/components/ui/calendar";
 import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { parseNIC } from '@/lib/nic-parser';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const STEPS = [
@@ -34,19 +31,12 @@ const STEPS = [
   { id: 5, title: 'Course', icon: BookOpen },
 ];
 
-interface ApiCourse {
-    id: string;
-    course_name: string;
-    course_code: string;
-    course_duration: string | null;
-    course_fee: string | null;
-}
-
-interface City {
-    id: string;
-    district_id: string;
-    name_en: string;
-}
+const courses = [
+    { id: 'CS0001', name: 'Certificate Course in Pharmacy Practice', code: 'CS0001', duration: '6 months', fee: 'LKR 15000.00' },
+    { id: 'CS0002', name: 'Advanced Course in Pharmacy Practice', code: 'CS0002', duration: '6 months', fee: 'LKR 18000.00' },
+    { id: 'CS0003', name: 'Workshop in Pharmacy Practice', code: 'CS0003', duration: '1 Day', fee: 'LKR 2500.00' },
+    { id: 'CS0004', name: 'Professional Pharmacy Practice', code: 'CS0004', duration: '6 Months', fee: 'LKR 25000.00' },
+]
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -64,9 +54,6 @@ export default function RegisterPage() {
   // Step 2 State
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
-  const [cities, setCities] = useState<City[]>([]);
-  const [isLoadingCities, setIsLoadingCities] = useState(true);
-
 
   // Step 3 State
   const [nic, setNic] = useState('');
@@ -79,43 +66,10 @@ export default function RegisterPage() {
   const [whatsapp, setWhatsapp] = useState('');
   
   // Step 5 State
-  const [courses, setCourses] = useState<ApiCourse[]>([]);
-  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState('');
 
   const [isRegistering, setIsRegistering] = useState(false);
   
-    useEffect(() => {
-        async function fetchCities() {
-            try {
-                const response = await fetch('https://qa-api.pharmacollege.lk/cities');
-                if (!response.ok) throw new Error('Failed to fetch cities');
-                const data = await response.json();
-                setCities(Object.values(data));
-            } catch (error) {
-                console.error("Failed to load cities:", error);
-                toast({ variant: 'destructive', title: 'Could not load cities', description: 'Please check your connection and try again.'});
-            } finally {
-                setIsLoadingCities(false);
-            }
-        }
-        async function fetchCourses() {
-            try {
-                const response = await fetch('https://qa-api.pharmacollege.lk/parent-main-course');
-                if (!response.ok) throw new Error('Failed to fetch courses');
-                const data = await response.json();
-                setCourses(data);
-            } catch (error) {
-                console.error("Failed to load courses:", error);
-                toast({ variant: 'destructive', title: 'Could not load courses'});
-            } finally {
-                setIsLoadingCourses(false);
-            }
-        }
-        fetchCities();
-        fetchCourses();
-    }, []);
-
   const validateStep = (step: number) => {
     const showValidationError = (message: string) => {
         toast({ variant: "destructive", title: "Missing Information", description: message });
@@ -304,56 +258,6 @@ export default function RegisterPage() {
         </Popover>
     )
   }
-  
-    const CitySelector = () => {
-        const [open, setOpen] = useState(false);
-        return (
-            <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                    <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={open}
-                        className="w-full justify-between"
-                        disabled={isLoadingCities}
-                    >
-                        {isLoadingCities ? "Loading cities..." : (
-                            city ? cities.find(c => c.name_en.toLowerCase() === city.toLowerCase())?.name_en : "Select a city..."
-                        )}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" side="bottom">
-                    <Command>
-                        <CommandInput placeholder="Search city..." />
-                        <CommandEmpty>No city found.</CommandEmpty>
-                         <ScrollArea className="max-h-60">
-                          <CommandGroup>
-                              {cities.map((c) => (
-                                  <CommandItem
-                                      key={c.id}
-                                      value={c.name_en}
-                                      onSelect={(currentValue) => {
-                                          setCity(currentValue === city ? "" : currentValue)
-                                          setOpen(false)
-                                      }}
-                                  >
-                                      <Check
-                                          className={cn(
-                                              "mr-2 h-4 w-4",
-                                              city.toLowerCase() === c.name_en.toLowerCase() ? "opacity-100" : "opacity-0"
-                                          )}
-                                      />
-                                      {c.name_en}
-                                  </CommandItem>
-                              ))}
-                          </CommandGroup>
-                        </ScrollArea>
-                    </Command>
-                </PopoverContent>
-            </Popover>
-        )
-    }
 
   return (
     <div className={cn("flex min-h-screen items-center justify-center p-4", "bg-background")}>
@@ -413,23 +317,21 @@ export default function RegisterPage() {
                     {currentStep === 1 && (
                         <div className="space-y-4 animate-in fade-in-50">
                             <div className="space-y-2">
-                                <Label>Title</Label>
+                                <Label>Civil Status</Label>
                                 <Select value={civilStatus} onValueChange={setCivilStatus} required>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select Title" />
+                                        <SelectValue placeholder="Select Civil Status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Mr">Mr.</SelectItem>
-                                        <SelectItem value="Mrs">Mrs.</SelectItem>
-                                        <SelectItem value="Miss">Miss</SelectItem>
-                                        <SelectItem value="Rev">Rev.</SelectItem>
+                                        <SelectItem value="Single">Single</SelectItem>
+                                        <SelectItem value="Married">Married</SelectItem>
+                                        <SelectItem value="Divorced">Divorced</SelectItem>
+                                        <SelectItem value="Widowed">Widowed</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2"><Label>First Name</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required /></div>
-                                <div className="space-y-2"><Label>Last Name</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} required /></div>
-                            </div>
+                            <div className="space-y-2"><Label>First Name</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required /></div>
+                            <div className="space-y-2"><Label>Last Name</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} required /></div>
                             <div className="space-y-2"><Label>Name with Initials</Label><Input value={nameWithInitials} onChange={(e) => setNameWithInitials(e.target.value)} required /></div>
                             <div className="space-y-2"><Label>Name on Certificate</Label><Input value={nameOnCertificate} onChange={(e) => setNameOnCertificate(e.target.value)} required /></div>
                         </div>
@@ -437,10 +339,7 @@ export default function RegisterPage() {
                     {currentStep === 2 && (
                         <div className="space-y-4 animate-in fade-in-50">
                             <div className="space-y-2"><Label>Street Address</Label><Textarea value={address} onChange={(e) => setAddress(e.target.value)} required /></div>
-                            <div className="space-y-2">
-                                <Label>City</Label>
-                                <CitySelector />
-                            </div>
+                            <div className="space-y-2"><Label>City</Label><Input value={city} onChange={(e) => setCity(e.target.value)} required /></div>
                         </div>
                     )}
                      {currentStep === 3 && (
@@ -492,56 +391,42 @@ export default function RegisterPage() {
                         <div className="space-y-4 animate-in fade-in-50">
                             <div className="space-y-2">
                                 <Label className="font-semibold">Select a Course:</Label>
-                                {isLoadingCourses ? <Loader2 className="animate-spin" /> : (
-                                    <ScrollArea className="h-72 pr-3">
-                                        <RadioGroup value={selectedCourse} onValueChange={setSelectedCourse} className="space-y-2">
-                                            {courses.map(course => (
-                                                <Label key={course.id} htmlFor={course.id} className="flex items-start gap-4 p-4 border rounded-md cursor-pointer hover:bg-accent/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                                                    <RadioGroupItem value={course.id} id={course.id} />
-                                                    <div className="text-left">
-                                                        <p className="font-medium text-card-foreground">{course.course_name}</p>
-                                                        <p className="text-sm text-muted-foreground">{course.course_code} | Duration: {course.course_duration}</p>
-                                                        {course.course_fee && <p className="text-sm text-muted-foreground">Course Fee: LKR {parseFloat(course.course_fee).toLocaleString()}</p>}
-                                                    </div>
-                                                </Label>
-                                            ))}
-                                        </RadioGroup>
-                                    </ScrollArea>
-                                )}
+                                 <RadioGroup value={selectedCourse} onValueChange={setSelectedCourse} className="space-y-2">
+                                    {courses.map(course => (
+                                        <Label key={course.id} htmlFor={course.id} className="flex items-start gap-4 p-4 border rounded-md cursor-pointer hover:bg-accent/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                                            <RadioGroupItem value={course.id} id={course.id} />
+                                            <div className="text-left">
+                                                <p className="font-medium text-card-foreground">{course.name}</p>
+                                                <p className="text-sm text-muted-foreground">{course.code} | Duration: {course.duration}</p>
+                                                <p className="text-sm text-muted-foreground">Course Fee: {course.fee}</p>
+                                            </div>
+                                        </Label>
+                                    ))}
+                                </RadioGroup>
                             </div>
                         </div>
                     )}
                 </form>
             )}
         </CardContent>
-        <CardFooter className="flex-col items-stretch gap-4 pt-8">
+        <CardFooter className="flex items-center gap-2 pt-8">
             {currentStep <= STEPS.length ? (
                 <>
-                    <div className="flex items-center gap-2">
-                        {currentStep > 1 && (
-                            <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isRegistering}>
-                                <ArrowLeft className="mr-2 h-4 w-4"/> Back
-                            </Button>
-                        )}
-                        {currentStep < STEPS.length ? (
-                            <Button type="button" onClick={handleNextStep} className="flex-grow">
-                                Next <ArrowRight className="ml-2 h-4 w-4"/>
-                            </Button>
-                        ) : (
-                            <Button type="submit" form="registration-form" disabled={isRegistering} onClick={handleSubmit} className="flex-grow">
-                                {isRegistering ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                {isRegistering ? 'Submitting...' : 'Complete Registration'}
-                            </Button>
-                        )}
-                    </div>
-                     <div className="text-center text-sm text-muted-foreground w-full">
-                        <p>
-                            Already have an account?{' '}
-                            <Link href="/login" className="text-primary font-semibold hover:underline">
-                                Log In
-                            </Link>
-                        </p>
-                    </div>
+                    {currentStep > 1 && (
+                        <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isRegistering}>
+                            <ArrowLeft className="mr-2 h-4 w-4"/> Back
+                        </Button>
+                    )}
+                    {currentStep < STEPS.length ? (
+                        <Button type="button" onClick={handleNextStep} className="flex-grow">
+                            Next <ArrowRight className="ml-2 h-4 w-4"/>
+                        </Button>
+                    ) : (
+                        <Button type="submit" form="registration-form" disabled={isRegistering} onClick={handleSubmit} className="flex-grow">
+                            {isRegistering ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                            {isRegistering ? 'Submitting...' : 'Complete Registration'}
+                        </Button>
+                    )}
                 </>
             ) : (
                  <div className="w-full flex flex-col sm:flex-row gap-2">
