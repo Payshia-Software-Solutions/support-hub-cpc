@@ -68,6 +68,14 @@ export default function CeylonPharmacyPage() {
     const { user } = useAuth();
     const router = useRouter();
     const [courseCode, setCourseCode] = useState<string | null>(null);
+    const [currentTime, setCurrentTime] = useState('');
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Colombo', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     useEffect(() => {
         const storedCourseCode = localStorage.getItem('selected_course');
@@ -113,8 +121,18 @@ export default function CeylonPharmacyPage() {
   return (
     <div className="p-4 md:p-8 space-y-8 pb-20">
       <header>
-        <h1 className="text-3xl font-headline font-semibold">Ceylon Pharmacy Challenge</h1>
-        <p className="text-muted-foreground">Treat patients by completing dispensing tasks before time runs out.</p>
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <div>
+                 <h1 className="text-3xl font-headline font-semibold">Ceylon Pharmacy Challenge</h1>
+                 <p className="text-muted-foreground">Treat patients by completing dispensing tasks before time runs out.</p>
+            </div>
+            {currentTime && (
+                <Card className="p-2 px-4 shadow-sm">
+                    <p className="text-sm text-muted-foreground font-medium">Sri Lanka Time</p>
+                    <p className="text-xl font-bold font-mono text-primary">{currentTime}</p>
+                </Card>
+            )}
+        </div>
       </header>
       
        <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
