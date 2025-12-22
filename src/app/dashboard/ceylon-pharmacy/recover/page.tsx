@@ -65,10 +65,11 @@ export default function RecoverPatientPage() {
     const { lostPatients, recoveredCount, recoveryLives } = useMemo(() => {
         if (!allPatients) return { lostPatients: [], recoveredCount: 0, recoveryLives: MAX_RECOVERIES };
 
+        const nowInColombo = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Colombo' }));
         const lost: GamePatient[] = allPatients.filter(p => {
              if (p.start_data && p.start_data.patient_status !== 'Recovered') {
                  const startTime = new Date(p.start_data.time).getTime();
-                 const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                 const elapsed = Math.floor((nowInColombo.getTime() - startTime) / 1000);
                  return elapsed > 3600;
              }
              return false;

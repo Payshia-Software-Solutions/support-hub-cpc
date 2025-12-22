@@ -21,7 +21,8 @@ const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
     
     const calculateTimeLeft = () => {
         if (!startTime) return initialTime;
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const nowInColombo = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Colombo' }));
+        const elapsed = Math.floor((nowInColombo.getTime() - startTime) / 1000);
         return Math.max(0, initialTime - elapsed);
     };
     
@@ -36,17 +37,19 @@ const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
     return (
         <Card className="shadow-lg hover:shadow-xl hover:border-primary/50 transition-all duration-200 h-full flex flex-col">
             <CardHeader className="flex-grow">
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-2">
                     <CardTitle className="text-lg">{patient.Pres_Name}</CardTitle>
                     {isRecovered ? (
                          <Badge variant="default" className="bg-green-600">Recovered</Badge>
                     ) : isLost ? (
                         <Badge variant="destructive">Lost</Badge>
-                    ) : (
+                    ) : patient.start_data ? (
                          <Badge variant="secondary">
                             <Clock className="mr-1.5 h-3.5 w-3.5" />
                             {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
                         </Badge>
+                    ) : (
+                        <Badge variant="outline">Not Started</Badge>
                     )}
                 </div>
                 <CardDescription>Age: {patient.Pres_Age}</CardDescription>
@@ -68,6 +71,14 @@ export default function CeylonPharmacyPage() {
     const { user } = useAuth();
     const router = useRouter();
     const [courseCode, setCourseCode] = useState<string | null>(null);
+    const [currentTime, setCurrentTime] = useState('');
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Colombo', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     useEffect(() => {
         const storedCourseCode = localStorage.getItem('selected_course');
@@ -89,14 +100,14 @@ export default function CeylonPharmacyPage() {
         
         let recovered = 0;
         let lost = 0;
+        const nowInColombo = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Colombo' }));
         
         patients.forEach(p => {
             if (p.start_data?.patient_status === 'Recovered') {
                 recovered++;
-            }
-            if (p.start_data && p.start_data.patient_status !== 'Recovered') {
+            } else if (p.start_data) {
                  const startTime = new Date(p.start_data.time).getTime();
-                 const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                 const elapsed = Math.floor((nowInColombo.getTime() - startTime) / 1000);
                  if (elapsed > 3600) {
                     lost++;
                  }
@@ -113,8 +124,18 @@ export default function CeylonPharmacyPage() {
   return (
     <div className="p-4 md:p-8 space-y-8 pb-20">
       <header>
-        <h1 className="text-3xl font-headline font-semibold">Ceylon Pharmacy Challenge</h1>
-        <p className="text-muted-foreground">Treat patients by completing dispensing tasks before time runs out.</p>
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <div>
+                 <h1 className="text-3xl font-headline font-semibold">Ceylon Pharmacy Challenge</h1>
+                 <p className="text-muted-foreground">Treat patients by completing dispensing tasks before time runs out.</p>
+            </div>
+            {currentTime && (
+                <Card className="p-2 px-4 shadow-sm">
+                    <p className="text-sm text-muted-foreground font-medium">Sri Lanka Time</p>
+                    <p className="text-xl font-bold font-mono text-primary">{currentTime}</p>
+                </Card>
+            )}
+        </div>
       </header>
       
        <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -161,7 +182,6 @@ export default function CeylonPharmacyPage() {
                 {[...Array(3)].map((_, i) => (
                     <Card key={i} className="animate-pulse">
                         <CardHeader><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2 mt-2" /></CardHeader>
-                        <CardContent><Skeleton className="h-10 w-full" /></CardContent>
                         <CardFooter><Skeleton className="h-10 w-full" /></CardFooter>
                     </Card>
                 ))}
