@@ -21,7 +21,8 @@ const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
     
     const calculateTimeLeft = () => {
         if (!startTime) return initialTime;
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const nowInColombo = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Colombo' }));
+        const elapsed = Math.floor((nowInColombo.getTime() - startTime) / 1000);
         return Math.max(0, initialTime - elapsed);
     };
     
@@ -36,17 +37,19 @@ const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
     return (
         <Card className="shadow-lg hover:shadow-xl hover:border-primary/50 transition-all duration-200 h-full flex flex-col">
             <CardHeader className="flex-grow">
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-2">
                     <CardTitle className="text-lg">{patient.Pres_Name}</CardTitle>
                     {isRecovered ? (
                          <Badge variant="default" className="bg-green-600">Recovered</Badge>
                     ) : isLost ? (
                         <Badge variant="destructive">Lost</Badge>
-                    ) : (
+                    ) : patient.start_data ? (
                          <Badge variant="secondary">
                             <Clock className="mr-1.5 h-3.5 w-3.5" />
                             {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
                         </Badge>
+                    ) : (
+                        <Badge variant="outline">Not Started</Badge>
                     )}
                 </div>
                 <CardDescription>Age: {patient.Pres_Age}</CardDescription>
@@ -97,14 +100,14 @@ export default function CeylonPharmacyPage() {
         
         let recovered = 0;
         let lost = 0;
+        const nowInColombo = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Colombo' }));
         
         patients.forEach(p => {
             if (p.start_data?.patient_status === 'Recovered') {
                 recovered++;
-            }
-            if (p.start_data && p.start_data.patient_status !== 'Recovered') {
+            } else if (p.start_data) {
                  const startTime = new Date(p.start_data.time).getTime();
-                 const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                 const elapsed = Math.floor((nowInColombo.getTime() - startTime) / 1000);
                  if (elapsed > 3600) {
                     lost++;
                  }
@@ -179,7 +182,6 @@ export default function CeylonPharmacyPage() {
                 {[...Array(3)].map((_, i) => (
                     <Card key={i} className="animate-pulse">
                         <CardHeader><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2 mt-2" /></CardHeader>
-                        <CardContent><Skeleton className="h-10 w-full" /></CardContent>
                         <CardFooter><Skeleton className="h-10 w-full" /></CardFooter>
                     </Card>
                 ))}

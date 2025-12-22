@@ -41,7 +41,8 @@ const CountdownTimer = ({ initialTime, startTime, onTimeEnd, isPaused, patientSt
 }) => {
     const calculateTimeLeft = useCallback(() => {
         if (!startTime) return initialTime;
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const nowInColombo = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Colombo' }));
+        const elapsed = Math.floor((nowInColombo.getTime() - startTime) / 1000);
         return Math.max(0, initialTime - elapsed);
     }, [startTime, initialTime]);
 
@@ -224,7 +225,8 @@ export default function CeylonPharmacyPatientPage() {
         if (!patient?.start_data) return 'pending';
         if (patient.start_data.patient_status === 'Recovered') return 'recovered';
         
-        const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+        const nowInColombo = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Colombo' }));
+        const elapsed = startTime ? Math.floor((nowInColombo.getTime() - startTime) / 1000) : 0;
         if (elapsed > 3600) return 'dead'; // 1 hour = 3600 seconds
         
         return 'active';
