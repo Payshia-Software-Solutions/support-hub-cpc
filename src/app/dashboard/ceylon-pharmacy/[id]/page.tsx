@@ -156,6 +156,14 @@ export default function CeylonPharmacyPatientPage() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const [courseCode, setCourseCode] = useState<string | null>(null);
+    const [currentTime, setCurrentTime] = useState('');
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Colombo', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     useEffect(() => {
         const storedCourseCode = localStorage.getItem('selected_course');
@@ -337,7 +345,10 @@ export default function CeylonPharmacyPatientPage() {
                             <div className="border-t border-b border-gray-300 py-2 mb-4 text-sm">
                                 <p><span className="font-semibold">Name:</span> {patient.Pres_Name}</p>
                                 <p><span className="font-semibold">Age:</span> {patient.Pres_Age}</p>
-                                <p><span className="font-semibold">Date:</span> {patient.pres_date}</p>
+                                <div className="flex justify-between">
+                                  <p><span className="font-semibold">Date:</span> {patient.pres_date}</p>
+                                  <p><span className="font-semibold">Time:</span> {currentTime}</p>
+                                </div>
                             </div>
                              <div className="min-h-[150px] mb-4">
                                 <div className="flex items-start">
@@ -467,5 +478,3 @@ export default function CeylonPharmacyPatientPage() {
         </div>
     )
 }
-
-    
