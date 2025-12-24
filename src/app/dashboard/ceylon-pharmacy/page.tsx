@@ -53,7 +53,9 @@ const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
                         <Badge variant="outline">Not Started</Badge>
                     )}
                 </div>
-                <CardDescription>Age: {patient.Pres_Age}</CardDescription>
+                <CardDescription>
+                    {patient.prescription_id} | Age: {patient.Pres_Age}
+                </CardDescription>
             </CardHeader>
             <CardFooter>
                  <Button asChild className="w-full" disabled={isLost}>
@@ -126,8 +128,10 @@ export default function CeylonPharmacyPage() {
     const filteredPatients = useMemo(() => {
         if (!patients) return [];
         if (!searchTerm) return patients;
+        const lowercasedSearch = searchTerm.toLowerCase();
         return patients.filter(patient =>
-            patient.Pres_Name.toLowerCase().includes(searchTerm.toLowerCase())
+            patient.Pres_Name.toLowerCase().includes(lowercasedSearch) ||
+            patient.prescription_id.toLowerCase().includes(lowercasedSearch)
         );
     }, [patients, searchTerm]);
 
@@ -191,7 +195,7 @@ export default function CeylonPharmacyPage() {
             <div className="relative w-full sm:max-w-xs">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Search patient name..."
+                    placeholder="Search patient or PRE code..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
