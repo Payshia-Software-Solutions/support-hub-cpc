@@ -130,8 +130,8 @@ export default function CeylonPharmacyPage() {
         if (!searchTerm) return patients;
         const lowercasedSearch = searchTerm.toLowerCase();
         return patients.filter(patient =>
-            patient.Pres_Name.toLowerCase().includes(lowercasedSearch) ||
-            patient.prescription_id.toLowerCase().includes(lowercasedSearch)
+            (patient.Pres_Name?.toLowerCase() || '').includes(lowercasedSearch) ||
+            (patient.prescription_id?.toLowerCase() || '').includes(lowercasedSearch)
         );
     }, [patients, searchTerm]);
 
