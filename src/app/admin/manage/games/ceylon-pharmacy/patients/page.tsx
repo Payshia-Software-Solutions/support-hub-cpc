@@ -6,17 +6,19 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, User, PlusCircle, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ArrowRight, User, PlusCircle, AlertTriangle, Search } from "lucide-react";
 import Link from 'next/link';
 import { getCeylonPharmacyPrescriptions } from '@/lib/actions/games';
 import type { GamePatient } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { Input } from '@/components/ui/input';
 
 export default function ManagePatientsPage() {
     const router = useRouter();
     const { user } = useAuth();
+    const [searchTerm, setSearchTerm] = useState('');
 
     // Fetch all patients using the API. We assume admin gets all patients.
     // For the API to work, we might need a specific admin endpoint or use a known admin user.
@@ -31,6 +33,17 @@ export default function ManagePatientsPage() {
         if (!patients) return [];
         return [...patients].sort((a, b) => parseInt(b.prescription_id, 10) - parseInt(a.prescription_id, 10));
     }, [patients]);
+
+    const filteredPatients = useMemo(() => {
+        if (!sortedPatients) return [];
+        const lowercasedSearch = searchTerm.toLowerCase();
+        if (!lowercasedSearch) return sortedPatients;
+
+        return sortedPatients.filter(patient =>
+            (patient.Pres_Name?.toLowerCase() || '').includes(lowercasedSearch) ||
+            (patient.prescription_id?.toLowerCase() || '').includes(lowercasedSearch)
+        );
+    }, [sortedPatients, searchTerm]);
 
 
     return (
@@ -52,10 +65,23 @@ export default function ManagePatientsPage() {
             
             <Card className="shadow-lg">
                 <CardHeader>
-                    <CardTitle>Patient List</CardTitle>
-                    <CardDescription>
-                        {isLoading ? 'Loading patients...' : `${sortedPatients?.length || 0} patients configured for the game.`}
-                    </CardDescription>
+                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                        <div>
+                            <CardTitle>Patient List</CardTitle>
+                            <CardDescription>
+                                {isLoading ? 'Loading patients...' : `${filteredPatients?.length || 0} patients found.`}
+                            </CardDescription>
+                        </div>
+                        <div className="relative w-full md:max-w-xs">
+                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                           <Input 
+                                placeholder="Search by name or PRE code..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10"
+                           />
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {isLoading && [...Array(3)].map((_, i) => (
@@ -76,7 +102,7 @@ export default function ManagePatientsPage() {
                             <p className="text-sm">{error.message}</p>
                         </div>
                     )}
-                    {!isLoading && !isError && sortedPatients?.map(patient => {
+                    {!isLoading && !isError && filteredPatients?.map(patient => {
                         const patientName = patient.Pres_Name || 'Unknown Patient';
                         const fallbackInitial = patientName.charAt(0) || 'P';
                         return (
@@ -97,6 +123,11 @@ export default function ManagePatientsPage() {
                             </Link>
                         );
                     })}
+                     {!isLoading && !isError && filteredPatients?.length === 0 && (
+                        <div className="md:col-span-3 text-center py-10 text-muted-foreground">
+                            <p>No patients found for your search term.</p>
+                        </div>
+                     )}
                 </CardContent>
             </Card>
         </div>
