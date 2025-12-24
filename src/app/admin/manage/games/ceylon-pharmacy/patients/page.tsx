@@ -89,7 +89,7 @@ export default function ManagePatientsPage() {
                                         </Avatar>
                                         <div className="flex-1">
                                             <p className="font-semibold text-card-foreground group-hover:text-primary">{patientName}</p>
-                                            <p className="text-sm text-muted-foreground">{patient.Pres_Age}</p>
+                                            <p className="text-sm text-muted-foreground">{patient.prescription_id} | Age: {patient.Pres_Age}</p>
                                         </div>
                                         <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform"/>
                                     </CardContent>
