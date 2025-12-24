@@ -300,14 +300,14 @@ export default function CeylonPharmacyPatientPage() {
     
     const dispensingSubtasks = prescriptionDetails?.map(detail => ({
         id: detail.cover_id,
-        name: detail.content.split(' ')[0] || 'Unknown Drug',
+        name: detail.content,
         href: `/dashboard/ceylon-pharmacy/${patient.prescription_id}/dispense?drug=${detail.cover_id}`,
         completed: taskStatuses?.dispensing[detail.cover_id] || false,
     })) || [];
     
     const counselingSubtasks = prescriptionDetails?.map(detail => ({
         id: detail.cover_id,
-        name: detail.content.split(' ')[0] || 'Unknown Drug',
+        name: detail.content,
         href: `/dashboard/ceylon-pharmacy/${patient.prescription_id}/counsel?drug=${detail.cover_id}`,
         completed: taskStatuses?.counselling[detail.cover_id] || false,
     })) || [];
