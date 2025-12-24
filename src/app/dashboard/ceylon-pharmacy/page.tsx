@@ -6,13 +6,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, HeartPulse, Users, Clock, ArrowRight } from 'lucide-react';
+import { AlertTriangle, CheckCircle, HeartPulse, Users, Clock, ArrowRight, Search } from 'lucide-react';
 import { getCeylonPharmacyPrescriptions } from '@/lib/actions/games';
 import type { GamePatient } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { Input } from '@/components/ui/input';
 
 
 const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
@@ -52,7 +53,9 @@ const PatientStatusCard = ({ patient }: { patient: GamePatient }) => {
                         <Badge variant="outline">Not Started</Badge>
                     )}
                 </div>
-                <CardDescription>Age: {patient.Pres_Age}</CardDescription>
+                <CardDescription>
+                    {patient.prescription_id} | Age: {patient.Pres_Age}
+                </CardDescription>
             </CardHeader>
             <CardFooter>
                  <Button asChild className="w-full" disabled={isLost}>
@@ -72,6 +75,7 @@ export default function CeylonPharmacyPage() {
     const router = useRouter();
     const [courseCode, setCourseCode] = useState<string | null>(null);
     const [currentTime, setCurrentTime] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -121,6 +125,16 @@ export default function CeylonPharmacyPage() {
         };
     }, [patients]);
     
+    const filteredPatients = useMemo(() => {
+        if (!patients) return [];
+        if (!searchTerm) return patients;
+        const lowercasedSearch = searchTerm.toLowerCase();
+        return patients.filter(patient =>
+            patient.Pres_Name.toLowerCase().includes(lowercasedSearch) ||
+            patient.prescription_id.toLowerCase().includes(lowercasedSearch)
+        );
+    }, [patients, searchTerm]);
+
   return (
     <div className="p-4 md:p-8 space-y-8 pb-20">
       <header>
@@ -176,7 +190,19 @@ export default function CeylonPharmacyPage() {
        </section>
 
       <section>
-        <h2 className="text-xl font-semibold mb-4">Waiting Room</h2>
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
+            <h2 className="text-xl font-semibold">Waiting Room</h2>
+            <div className="relative w-full sm:max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Search patient or PRE code..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                />
+            </div>
+        </div>
+
         {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(3)].map((_, i) => (
@@ -192,11 +218,14 @@ export default function CeylonPharmacyPage() {
             </div>
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {patients && patients.map(patient => (
-                    <PatientStatusCard key={patient.id} patient={patient} />
-                ))}
-                {(!patients || patients.length === 0) && (
-                    <p className="md:col-span-3 text-center text-muted-foreground py-10">No patients are currently waiting for this course.</p>
+                {filteredPatients && filteredPatients.length > 0 ? (
+                    filteredPatients.map(patient => (
+                        <PatientStatusCard key={patient.id} patient={patient} />
+                    ))
+                ) : (
+                    <p className="md:col-span-3 text-center text-muted-foreground py-10">
+                        {searchTerm ? "No patients match your search." : "No patients are currently waiting for this course."}
+                    </p>
                 )}
             </div>
         )}
