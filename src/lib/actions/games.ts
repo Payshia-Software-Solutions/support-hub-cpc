@@ -123,6 +123,16 @@ export const getCeylonPharmacyPrescriptions = async (studentId: string, courseCo
     return [];
 };
 
+export const deleteGamePatient = async (prescriptionId: string): Promise<void> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-patients/${prescriptionId}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete patient' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+};
+
 export const getPatient = async (studentId: string, courseCode: string, patientId: string): Promise<GamePatient> => {
     const response = await fetch(`${QA_API_BASE_URL}/care-center-courses/student/${studentId}/course/${courseCode}`);
     if (!response.ok) {
@@ -636,6 +646,7 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
 
 
