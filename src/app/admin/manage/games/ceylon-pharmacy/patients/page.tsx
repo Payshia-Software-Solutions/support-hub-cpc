@@ -3,30 +3,54 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, User, PlusCircle, AlertTriangle, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, User, PlusCircle, AlertTriangle, Search, Trash2, Loader2 } from "lucide-react";
 import Link from 'next/link';
-import { getCeylonPharmacyPrescriptions } from '@/lib/actions/games';
+import { getCeylonPharmacyPrescriptions, deleteGamePatient } from '@/lib/actions/games';
 import type { GamePatient } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function ManagePatientsPage() {
     const router = useRouter();
     const { user } = useAuth();
+    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
+    const [patientToDelete, setPatientToDelete] = useState<GamePatient | null>(null);
 
-    // Fetch all patients using the API. We assume admin gets all patients.
-    // For the API to work, we might need a specific admin endpoint or use a known admin user.
-    // Here, we'll use a placeholder 'admin' username for the query key, assuming the API grants access.
     const { data: patients, isLoading, isError, error } = useQuery<GamePatient[]>({
         queryKey: ['allCeylonPharmacyPatients'],
-        queryFn: () => getCeylonPharmacyPrescriptions('admin-user', 'CPCC20'), // Using a generic user for fetching all
+        queryFn: () => getCeylonPharmacyPrescriptions('admin-user', 'CPCC20'),
         enabled: !!user,
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteGamePatient,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['allCeylonPharmacyPatients'] });
+            toast({ title: "Patient Deleted", description: "The patient record has been successfully removed." });
+        },
+        onError: (err: Error) => {
+            toast({ variant: 'destructive', title: 'Deletion Failed', description: err.message });
+        },
+        onSettled: () => {
+            setPatientToDelete(null);
+        }
     });
     
     const sortedPatients = useMemo(() => {
@@ -48,6 +72,24 @@ export default function ManagePatientsPage() {
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
+            <AlertDialog open={!!patientToDelete} onOpenChange={() => setPatientToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the patient "{patientToDelete?.Pres_Name}". This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteMutation.mutate(patientToDelete!.prescription_id)} disabled={deleteMutation.isPending}>
+                            {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                  <div>
                     <Button variant="ghost" onClick={() => router.push('/admin/manage/games/ceylon-pharmacy')} className="-ml-4">
@@ -106,21 +148,28 @@ export default function ManagePatientsPage() {
                         const patientName = patient.Pres_Name || 'Unknown Patient';
                         const fallbackInitial = patientName.charAt(0) || 'P';
                         return (
-                            <Link key={patient.prescription_id} href={`/admin/manage/games/ceylon-pharmacy/patients/${patient.prescription_id}`} className="group block">
-                                <Card className="hover:shadow-md hover:border-primary transition-all">
-                                    <CardContent className="p-4 flex items-center gap-4">
-                                        <Avatar className="h-12 w-12 text-lg">
-                                            <AvatarImage src={`https://placehold.co/100x100.png?text=${fallbackInitial}`} alt={patientName} />
-                                            <AvatarFallback>{fallbackInitial}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1">
-                                            <p className="font-semibold text-card-foreground group-hover:text-primary">{patientName}</p>
-                                            <p className="text-sm text-muted-foreground">{patient.prescription_id} | Age: {patient.Pres_Age}</p>
-                                        </div>
-                                        <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform"/>
-                                    </CardContent>
-                                </Card>
-                            </Link>
+                            <Card key={patient.prescription_id} className="hover:shadow-md hover:border-primary/50 transition-all">
+                                <div className="p-4 flex items-center gap-4">
+                                    <Avatar className="h-12 w-12 text-lg">
+                                        <AvatarImage src={`https://placehold.co/100x100.png?text=${fallbackInitial}`} alt={patientName} />
+                                        <AvatarFallback>{fallbackInitial}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                        <p className="font-semibold text-card-foreground">{patientName}</p>
+                                        <p className="text-sm text-muted-foreground">{patient.prescription_id} | Age: {patient.Pres_Age}</p>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                                            <Link href={`/admin/manage/games/ceylon-pharmacy/patients/${patient.prescription_id}`} onClick={(e) => e.stopPropagation()}>
+                                                <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                                            </Link>
+                                        </Button>
+                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); setPatientToDelete(patient); }}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </Card>
                         );
                     })}
                      {!isLoading && !isError && filteredPatients?.length === 0 && (
