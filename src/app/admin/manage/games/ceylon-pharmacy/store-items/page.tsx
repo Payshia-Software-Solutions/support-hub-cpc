@@ -1,12 +1,11 @@
 
-
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Search } from "lucide-react";
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,12 +57,20 @@ export default function ManageStoreItemsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState<MasterProduct | null>(null);
     const [itemToDelete, setItemToDelete] = useState<MasterProduct | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const { data: items = [], isLoading, isError, error } = useQuery<MasterProduct[]>({
         queryKey: ['masterProducts'],
         queryFn: getMasterProducts,
     });
     
+    const filteredItems = useMemo(() => {
+        if (!items) return [];
+        return items.filter(item =>
+            item.DisplayName.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [items, searchTerm]);
+
     const createMutation = useMutation({
         mutationFn: createMasterProduct,
         onSuccess: (newItemData, variables) => {
@@ -200,7 +207,18 @@ export default function ManageStoreItemsPage() {
 
             <Card className="shadow-lg">
                 <CardHeader>
-                    <CardTitle>General Store Item List</CardTitle>
+                    <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                        <CardTitle>General Store Item List</CardTitle>
+                        <div className="relative w-full md:max-w-xs">
+                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                           <Input 
+                                placeholder="Search items..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10"
+                           />
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                     {isLoading && [...Array(5)].map((_, i) => (
@@ -209,7 +227,7 @@ export default function ManageStoreItemsPage() {
                             <div className="flex gap-1"><Skeleton className="h-8 w-8"/><Skeleton className="h-8 w-8"/></div>
                         </div>
                     ))}
-                    {!isLoading && items.map(item => (
+                    {!isLoading && filteredItems.map(item => (
                         <div key={item.product_id} className="flex items-center justify-between p-3 border rounded-lg">
                             <div>
                                 <p className="font-semibold">{item.DisplayName}</p>
@@ -221,7 +239,7 @@ export default function ManageStoreItemsPage() {
                             </div>
                         </div>
                     ))}
-                     {!isLoading && items.length === 0 && <p className="text-center text-muted-foreground py-8">No items found.</p>}
+                     {!isLoading && filteredItems.length === 0 && <p className="text-center text-muted-foreground py-8">No items found.</p>}
                 </CardContent>
             </Card>
         </div>
