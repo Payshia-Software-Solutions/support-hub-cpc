@@ -53,7 +53,7 @@ const InstructionSelectionDialog = ({
             }
             seen.add(lowercased);
             return true;
-        }).sort((a,b) => a.instruction.localeCompare(b.instruction));
+        }).sort((a,b) => parseInt(a.id, 10) - parseInt(b.id, 10)); // Sort by ID numerically
     }, [allInstructions]);
 
     const filteredInstructions = useMemo(() => {
