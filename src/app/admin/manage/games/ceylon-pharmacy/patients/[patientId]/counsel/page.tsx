@@ -89,13 +89,17 @@ const InstructionSelectionDialog = ({
                             <p>Loading instructions...</p>
                         ) : (
                             filteredInstructions.map(inst => (
-                                <div key={inst.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted/50">
+                                <div key={inst.id} className="flex items-start gap-2 p-2 rounded-md hover:bg-muted/50">
                                     <Checkbox
                                         id={`dialog-inst-${inst.id}`}
                                         checked={currentSelectedIds.includes(inst.id)}
                                         onCheckedChange={() => handleToggle(inst.id)}
+                                        className="mt-1"
                                     />
-                                    <Label htmlFor={`dialog-inst-${inst.id}`} className="text-sm font-normal w-full cursor-pointer">{inst.instruction}</Label>
+                                    <Label htmlFor={`dialog-inst-${inst.id}`} className="text-sm font-normal w-full cursor-pointer">
+                                        <span className="font-mono text-xs text-muted-foreground mr-2">[ID: {inst.id}]</span>
+                                        {inst.instruction}
+                                    </Label>
                                 </div>
                             ))
                         )}
