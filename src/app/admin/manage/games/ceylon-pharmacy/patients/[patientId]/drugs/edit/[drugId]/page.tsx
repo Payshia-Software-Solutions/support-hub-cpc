@@ -282,7 +282,11 @@ export default function EditDrugPage() {
                             <SelectionDialog triggerText="Select Drug" title="Correct Drug" options={selectionData!.drug_name} onSelect={(val) => form.setValue(`correctDrugName`, val)} icon={Pill} value={form.watch(`correctDrugName`)} />
                             {form.formState.errors?.correctDrugName && <p className="text-xs text-destructive">Required</p>}
                             </div>
-                            <div className="space-y-2"><Label>Quantity*</Label><Input {...form.register(`quantity`)} />{form.formState.errors?.quantity && <p className="text-xs text-destructive">Required</p>}</div>
+                            <div className="space-y-2">
+                                <Label>Quantity*</Label>
+                                <SelectionDialog triggerText="Select Quantity" title="Quantity" options={selectionData!.drug_qty} onSelect={(val) => form.setValue("quantity", val, { shouldValidate: true })} icon={Hash} value={form.watch('quantity')} />
+                                {form.formState.errors?.quantity && <p className="text-xs text-destructive">{form.formState.errors.quantity.message}</p>}
+                            </div>
                         </div>
                     </CardContent>
 
