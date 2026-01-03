@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, 
 import Link from "next/link";
 import { useMemo } from 'react';
 import { cn } from "@/lib/utils";
-import { CeylonPharmacyIcon, DPadIcon, HunterProIcon, LuckyWheelIcon, PharmaHunterIcon, PharmaReaderIcon, WinPharmaIcon, WordPalletIcon } from "@/components/icons/module-icons";
+import { CeylonPharmacyIcon, DPadIcon, HunterProIcon, LuckyWheelIcon, MediMindIcon, PharmaHunterIcon, PharmaReaderIcon, WinPharmaIcon, WordPalletIcon } from "@/components/icons/module-icons";
 
 type ManagementTask = {
     title: string;
@@ -105,6 +106,13 @@ const managementTasks: ManagementTask[] = [
     description: "Handle registrations for convocation ceremonies.",
     icon: <GraduationCap className="w-8 h-8 text-white" />,
     href: "/admin/manage/convocation",
+    category: "Certificates & Convocation"
+  },
+  {
+    title: "Convocation Ceremonies",
+    description: "Manage convocation event details.",
+    icon: <GraduationCap className="w-8 h-8 text-white" />,
+    href: "/admin/manage/convocation-ceremonies",
     category: "Certificates & Convocation"
   },
   {
@@ -209,42 +217,42 @@ const managementTasks: ManagementTask[] = [
   {
     title: "Ceylon Pharmacy",
     description: "Manage Ceylon Pharmacy game settings.",
-    icon: <CeylonPharmacyIcon className="w-8 h-8 text-white" />,
+    icon: <CeylonPharmacyIcon className="w-8 h-8 text-white"/>,
     href: "/admin/manage/games/ceylon-pharmacy",
     category: "Games Management"
   },
   {
     title: "Pharma Hunter",
     description: "Manage Pharma Hunter game settings.",
-    icon: <PharmaHunterIcon className="w-8 h-8 text-white" />,
+    icon: <PharmaHunterIcon className="w-8 h-8 text-white"/>,
     href: "/admin/manage/games/pharma-hunter",
     category: "Games Management"
   },
    {
     title: "Pharma Hunter Pro",
     description: "Manage Pharma Hunter Pro game settings.",
-    icon: <HunterProIcon className="w-8 h-8 text-white" />,
+    icon: <HunterProIcon className="w-8 h-8 text-white"/>,
     href: "/admin/manage/games/pharma-hunter-pro",
     category: "Games Management"
   },
   {
     title: "WinPharma",
     description: "Manage WinPharma game settings.",
-    icon: <WinPharmaIcon className="w-8 h-8 text-white" />,
+    icon: <WinPharmaIcon className="w-8 h-8 text-white"/>,
     href: "/admin/manage/games/winpharma",
     category: "Games Management"
   },
   {
     title: "Pharma Reader",
     description: "Manage Pharma Reader game settings.",
-    icon: <PharmaReaderIcon className="w-8 h-8 text-white" />,
+    icon: <PharmaReaderIcon className="w-8 h-8 text-white"/>,
     href: "/admin/manage/games/pharma-reader",
     category: "Games Management"
   },
   {
     title: "Word Pallet",
     description: "Manage Word Pallet game settings.",
-    icon: <WordPalletIcon className="w-8 h-8 text-white" />,
+    icon: <WordPalletIcon className="w-8 h-8 text-white"/>,
     href: "/admin/manage/games/word-pallet",
     category: "Games Management"
   },

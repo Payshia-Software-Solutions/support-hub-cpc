@@ -196,7 +196,7 @@ export default function EditDrugPage() {
             name: data.patientName,
             drug_name: data.correctDrugName,
             drug_type: data.dosageForm,
-            drug_qty: data.quantity,
+            drug_qty: String(data.quantity),
             morning_qty: data.morningQty,
             afternoon_qty: data.afternoonQty,
             evening_qty: data.eveningQty,
@@ -225,8 +225,6 @@ export default function EditDrugPage() {
             </div>
         )
     }
-
-    const dailyQtyOptions = ['-', '1', '2', '3', '1/2', '4', '5', '1 1/2', '1 Drop', '10ml', '15ml', '1/4', '10U', '2 1/2', '2.5ml', '15U', '1puff', '2puff', '20ml', '30U'];
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -292,10 +290,10 @@ export default function EditDrugPage() {
 
                     <Separator className="my-4" />
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="space-y-2"><Label>Morning Qty*</Label><SelectionDialog triggerText="Qty" title="Morning Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`morningQty`, val)} icon={Hash} value={form.watch(`morningQty`)} /></div>
-                        <div className="space-y-2"><Label>Afternoon Qty*</Label><SelectionDialog triggerText="Qty" title="Afternoon Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`afternoonQty`, val)} icon={Hash} value={form.watch(`afternoonQty`)} /></div>
-                        <div className="space-y-2"><Label>Evening Qty*</Label><SelectionDialog triggerText="Qty" title="Evening Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`eveningQty`, val)} icon={Hash} value={form.watch(`eveningQty`)} /></div>
-                        <div className="space-y-2"><Label>Night Qty*</Label><SelectionDialog triggerText="Qty" title="Night Quantity" options={dailyQtyOptions} onSelect={(val) => form.setValue(`nightQty`, val)} icon={Hash} value={form.watch(`nightQty`)} /></div>
+                        <div className="space-y-2"><Label>Morning Qty*</Label><SelectionDialog triggerText="Qty" title="Morning Quantity" options={selectionData?.morning_qty || []} onSelect={(val) => form.setValue(`morningQty`, val)} icon={Hash} value={form.watch(`morningQty`)} /></div>
+                        <div className="space-y-2"><Label>Afternoon Qty*</Label><SelectionDialog triggerText="Qty" title="Afternoon Quantity" options={selectionData?.afternoon_qty || []} onSelect={(val) => form.setValue(`afternoonQty`, val)} icon={Hash} value={form.watch(`afternoonQty`)} /></div>
+                        <div className="space-y-2"><Label>Evening Qty*</Label><SelectionDialog triggerText="Qty" title="Evening Quantity" options={selectionData?.evening_qty || []} onSelect={(val) => form.setValue(`eveningQty`, val)} icon={Hash} value={form.watch(`eveningQty`)} /></div>
+                        <div className="space-y-2"><Label>Night Qty*</Label><SelectionDialog triggerText="Qty" title="Night Quantity" options={selectionData?.night_qty || []} onSelect={(val) => form.setValue(`nightQty`, val)} icon={Hash} value={form.watch(`nightQty`)} /></div>
                     </div>
                     
                     <Separator className="my-4" />

@@ -1,6 +1,6 @@
 
 
-import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload } from '../types';
+import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -22,7 +22,7 @@ export const updateCertificateName = async (payload: UpdateCertificateNamePayloa
     return response.json();
 }
 
-// Convocation
+// Convocation Registrations
 export const getConvocationRegistrations = async (): Promise<ConvocationRegistration[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations`);
     if (!response.ok) {
@@ -31,6 +31,53 @@ export const getConvocationRegistrations = async (): Promise<ConvocationRegistra
     }
     return response.json();
 }
+
+// Convocation Ceremonies
+export const getConvocationCeremonies = async (): Promise<ConvocationCeremony[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-events`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch convocation ceremonies' }));
+        throw new Error(errorData.message || 'Request failed');
+    }
+    return response.json();
+};
+
+export const createConvocationCeremony = async (data: Omit<ConvocationCeremony, 'id'>): Promise<ConvocationCeremony> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create ceremony' }));
+        throw new Error(errorData.message || 'Request failed');
+    }
+    return response.json();
+};
+
+export const updateConvocationCeremony = async (id: string, data: Partial<Omit<ConvocationCeremony, 'id'>>): Promise<ConvocationCeremony> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-events/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update ceremony' }));
+        throw new Error(errorData.message || 'Request failed');
+    }
+    return response.json();
+};
+
+export const deleteConvocationCeremony = async (id: string): Promise<void> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-events/${id}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete ceremony' }));
+        throw new Error(errorData.message || 'Request failed');
+    }
+};
+
 
 // Certificate Orders
 export const getCertificateOrders = async (): Promise<CertificateOrder[]> => {
