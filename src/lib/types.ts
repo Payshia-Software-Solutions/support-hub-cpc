@@ -1,4 +1,5 @@
 
+
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -941,4 +942,12 @@ export interface PrescriptionSubmissionPayload {
   notes: string;
   patient_description: string;
   address: string;
+}
+
+export interface ConvocationCeremony {
+  id: string;
+  event_name: string;
+  event_date: string;
+  location: string;
+  is_active: '0' | '1';
 }
