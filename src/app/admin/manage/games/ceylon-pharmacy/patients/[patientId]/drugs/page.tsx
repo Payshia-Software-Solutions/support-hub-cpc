@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Loader2, AlertTriangle, PlusCircle, Edit, Trash2, Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { getPrescriptionDetails, updatePrescriptionContent } from '@/lib/actions/games';
+import { getPrescriptionDetails, updatePrescriptionContent, deletePrescriptionContent } from '@/lib/actions/games';
 import type { PrescriptionDetail } from '@/lib/types';
 import Link from 'next/link';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -118,14 +118,10 @@ export default function ManageDrugsPage() {
 
 
   const deleteMutation = useMutation({
-    mutationFn: async (coverId: string) => {
-        // Placeholder for delete logic. In a real app, you would call an API endpoint.
-        console.log("Deleting drug with coverId:", coverId);
-        await new Promise(resolve => setTimeout(resolve, 500)); 
-    },
-    onSuccess: (data, coverId) => {
+    mutationFn: deletePrescriptionContent,
+    onSuccess: (data, variables) => {
       queryClient.setQueryData<PrescriptionDetail[]>(['prescriptionDetails', patientId], (oldData) => 
-          oldData ? oldData.filter(d => d.cover_id !== coverId) : []
+          oldData ? oldData.filter(d => d.cover_id !== variables.coverId) : []
       );
       toast({ title: 'Drug Removed', description: 'The drug has been removed from the prescription.' });
     },
@@ -137,9 +133,7 @@ export default function ManageDrugsPage() {
 
   const handleDeleteConfirm = () => {
     if (drugToDelete) {
-        // This is a mock deletion since there's no backend endpoint for it yet.
-        // It optimistically updates the UI.
-        deleteMutation.mutate(drugToDelete.cover_id);
+        deleteMutation.mutate({ presCode: drugToDelete.pres_code, coverId: drugToDelete.cover_id });
     }
   };
 

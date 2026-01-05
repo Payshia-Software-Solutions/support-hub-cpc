@@ -171,6 +171,16 @@ export const getPrescriptionDetails = async (prescriptionId: string): Promise<Pr
     return data.map(item => ({ ...item, pres_code: prescriptionId }));
 }
 
+export const deletePrescriptionContent = async (payload: { presCode: string; coverId: string; }): Promise<void> => {
+    const response = await fetch(`${QA_API_BASE_URL}/care-content/${payload.presCode}/${payload.coverId}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete drug.' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+};
+
 export const getDispensingAnswers = async (prescriptionId: string, coverId: string): Promise<DispensingAnswer | null> => {
     if (!prescriptionId || !coverId) {
         throw new Error("Prescription ID and Cover ID are required.");
@@ -646,6 +656,7 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     
 
     
+
 
 
 
