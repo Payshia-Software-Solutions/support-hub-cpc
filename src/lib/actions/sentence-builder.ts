@@ -1,0 +1,86 @@
+
+"use server";
+
+import type { GameLevel, Sentence } from '../types';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
+
+async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  try {
+    const headers: HeadersInit = options.headers || {};
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: `Request failed with status ${response.status}` }));
+      throw new Error(errorData.message || `An unknown error occurred.`);
+    }
+
+    if (response.status === 204) {
+      return null as T;
+    }
+    
+    return response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+        throw new Error(error.message);
+    }
+    throw new Error('An unknown error occurred.');
+  }
+}
+
+// --- Level Management ---
+export const getLevels = async (): Promise<GameLevel[]> => {
+    return apiFetch('/sentence-builder-levels/');
+};
+
+export const createLevel = async (data: { level_number: number; pattern: string }): Promise<GameLevel> => {
+    return apiFetch('/sentence-builder-levels/', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+};
+
+export const updateLevel = async ({ id, ...data }: Partial<GameLevel>): Promise<GameLevel> => {
+    return apiFetch(`/sentence-builder-levels/${id}/`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
+};
+
+export const deleteLevel = async (id: number): Promise<void> => {
+    await apiFetch<null>(`/sentence-builder-levels/${id}/`, {
+        method: 'DELETE',
+    });
+};
+
+// --- Sentence Management ---
+export const getSentencesByLevel = async (levelId: number): Promise<Sentence[]> => {
+    return apiFetch(`/sentence-builder-sentences/?level_id=${levelId}`);
+};
+
+export const createSentence = async (data: Omit<Sentence, 'id' | 'words'>): Promise<Sentence> => {
+    return apiFetch('/sentence-builder-sentences/', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+};
+
+export const updateSentence = async ({ id, ...data }: Partial<Sentence>): Promise<Sentence> => {
+    return apiFetch(`/sentence-builder-sentences/${id}/`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
+};
+
+export const deleteSentence = async (id: number): Promise<void> => {
+    await apiFetch<null>(`/sentence-builder-sentences/${id}/`, {
+        method: 'DELETE',
+    });
+};
