@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
-import { getLevels, getSentencesByLevel, createSentence, updateSentence, deleteSentence } from '@/lib/actions/sentence-builder';
+import { getLevelById, getSentencesByLevel, createSentence, updateSentence, deleteSentence } from '@/lib/actions/sentence-builder';
 import type { Sentence, GameLevel } from '@/lib/types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -69,12 +69,7 @@ export default function ManageSentencesPage() {
     
     const { data: level, isLoading: isLoadingLevel } = useQuery<GameLevel>({
         queryKey: ['sentenceBuilderLevel', levelId],
-        queryFn: async () => {
-            const allLevels = await getLevels();
-            const foundLevel = allLevels.find(l => l.id === levelId);
-            if (!foundLevel) throw new Error("Level not found");
-            return foundLevel;
-        },
+        queryFn: () => getLevelById(levelId),
         enabled: !!levelId,
     });
 

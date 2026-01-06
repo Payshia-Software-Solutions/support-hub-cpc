@@ -40,6 +40,10 @@ export const getLevels = async (): Promise<GameLevel[]> => {
     return apiFetch('/sentence-builder-levels/');
 };
 
+export const getLevelById = async (id: number): Promise<GameLevel> => {
+    return apiFetch(`/sentence-builder-levels/${id}/`);
+};
+
 export const createLevel = async (data: { level_number: number; pattern: string }): Promise<GameLevel> => {
     return apiFetch('/sentence-builder-levels/', {
         method: 'POST',
