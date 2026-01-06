@@ -66,7 +66,7 @@ export const deleteLevel = async (id: number): Promise<void> => {
 
 // --- Sentence Management ---
 export const getSentencesByLevel = async (levelId: number): Promise<Sentence[]> => {
-    return apiFetch(`/sentence-builder-sentences/?level_id=${levelId}`);
+    return apiFetch(`/sentence-builder-sentences/level/${levelId}/`);
 };
 
 export const createSentence = async (data: Omit<Sentence, 'id' | 'words'>): Promise<Sentence> => {
