@@ -770,7 +770,6 @@ export interface BnfWordIndexEntry {
 export interface Sentence {
   id: number;
   level_id: number;
-  words: string[];
   correct_sentence: string;
   hint: string;
   translation: string;
@@ -782,4 +781,3 @@ export interface GameLevel {
   pattern: string;
   sentences: Sentence[];
 }
-
