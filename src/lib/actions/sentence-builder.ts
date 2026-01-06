@@ -1,7 +1,7 @@
 
 "use server";
 
-import type { GameLevel, Sentence } from '../types';
+import type { GameLevel, Sentence, StudentAnswerPayload } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -101,5 +101,14 @@ export const updateSentence = async ({ id, ...data }: Partial<Sentence>): Promis
 export const deleteSentence = async (id: number): Promise<void> => {
     await apiFetch<null>(`/sentence-builder-sentences/${id}/`, {
         method: 'DELETE',
+    });
+};
+
+
+// --- Student Answer Management ---
+export const saveStudentAnswer = async (payload: StudentAnswerPayload): Promise<any> => {
+    return apiFetch('/sentence-builder-student-answers', {
+        method: 'POST',
+        body: JSON.stringify(payload),
     });
 };

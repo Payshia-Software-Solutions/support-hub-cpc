@@ -10,12 +10,13 @@ import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Check, Lightbulb, RefreshCw, Sparkles, Trophy, ChevronRight, Volume2, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getLevels as getGameLevels, getSentencesByLevel } from '@/lib/actions/sentence-builder';
-import { type GameLevel, type Sentence } from '@/lib/types';
+import { getLevels as getGameLevels, getSentencesByLevel, saveStudentAnswer } from '@/lib/actions/sentence-builder';
+import { type GameLevel, type Sentence, type StudentAnswerPayload } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { generateAudio } from '@/ai/flows/text-to-speech-flow';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Word {
   text: string;
@@ -24,6 +25,7 @@ interface Word {
 
 export default function SentenceBuilderPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [view, setView] = useState<'levels' | 'game'>('levels');
   const [levelIndex, setLevelIndex] = useState(0);
   const [sentenceIndex, setSentenceIndex] = useState(0);
@@ -61,6 +63,18 @@ export default function SentenceBuilderPage() {
     const builtWordIds = new Set(builtSentence.map(w => w.id));
     return jumbledWords.filter(w => !builtWordIds.has(w.id));
   }, [jumbledWords, builtSentence]);
+  
+  const saveAnswerMutation = useMutation({
+    mutationFn: saveStudentAnswer,
+    onError: (error: Error) => {
+      toast({
+        variant: 'destructive',
+        title: 'Submission Error',
+        description: `Could not save your answer: ${error.message}`,
+      });
+    },
+  });
+
 
   const handleSelectLevel = (index: number) => {
     setLevelIndex(index);
@@ -84,13 +98,25 @@ export default function SentenceBuilderPage() {
   };
   
   const handleCheckAnswer = async () => {
-    if (!currentSentence) return;
+    if (!currentSentence || !user?.username) return;
     const userAnswer = builtSentence.map(w => w.text).join(' ');
-    if (userAnswer === currentSentence.correct_sentence) {
-      setIsCorrect(true);
-      const points = showHint ? 1 : 2;
-      setScore(prev => prev + points);
-      toast({ title: "Correct!", description: `+${points} point(s)!` });
+    const isAnswerCorrect = userAnswer === currentSentence.correct_sentence;
+    const scoreAwarded = isAnswerCorrect ? 10 : -1;
+    
+    setIsCorrect(isAnswerCorrect);
+    setScore(prev => prev + scoreAwarded);
+
+    const submissionPayload: StudentAnswerPayload = {
+        student_number: user.username,
+        sentence_id: currentSentence.id,
+        submitted_answer: userAnswer,
+        is_correct: isAnswerCorrect,
+        score_awarded: scoreAwarded
+    };
+    saveAnswerMutation.mutate(submissionPayload);
+
+    if (isAnswerCorrect) {
+      toast({ title: "Correct!", description: `+10 points!` });
 
       const isLastSentenceInLevel = currentSentences && sentenceIndex === currentSentences.length - 1;
       
@@ -109,8 +135,7 @@ export default function SentenceBuilderPage() {
           setCompletedLevels(prev => new Set(prev).add(currentLevel.level_number));
       }
     } else {
-      setIsCorrect(false);
-      toast({ variant: 'destructive', title: "Not quite!", description: "Try again or use a hint." });
+      toast({ variant: 'destructive', title: "Not quite!", description: "Try again. You lost 1 point." });
     }
   };
   
@@ -303,8 +328,8 @@ export default function SentenceBuilderPage() {
                         {isLevelComplete ? 'Finish Level' : 'Next Sentence'} <Sparkles className="ml-2 h-4 w-4" />
                         </Button>
                     ) : (
-                        <Button onClick={handleCheckAnswer}>
-                        <Check className="mr-2 h-4 w-4" />
+                        <Button onClick={handleCheckAnswer} disabled={saveAnswerMutation.isPending}>
+                        {saveAnswerMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4" />}
                         Check Answer
                         </Button>
                     )}

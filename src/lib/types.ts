@@ -1,5 +1,6 @@
 
 
+
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -780,4 +781,12 @@ export interface GameLevel {
   level_number: number;
   pattern: string;
   sentences: Sentence[];
+}
+
+export interface StudentAnswerPayload {
+  student_number: string;
+  sentence_id: number;
+  submitted_answer: string;
+  is_correct: boolean;
+  score_awarded: number;
 }
