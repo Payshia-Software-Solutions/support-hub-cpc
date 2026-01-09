@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   MessageSquare, 
   Ticket, 
@@ -43,6 +43,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getStudentEnrollments } from "@/lib/actions/users";
 import type { StudentEnrollmentInfo } from "@/lib/types";
 import { useMemo, useState, useEffect } from "react";
+import { toast } from '@/hooks/use-toast';
 
 const baseNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -55,7 +56,7 @@ const baseNavItems = [
   { href: "/dashboard/more", label: "More", icon: MoreHorizontal },
 ];
 
-const sentenceBuilderItem = { href: "/dashboard/games/sentence-builder", label: "Sentence Builder", icon: BookText };
+const sentenceBuilderItem = { href: "/dashboard/games/sentence-builder", label: "Sentence Builder", icon: BookText, requiredCourse: "CPCC28" };
 
 const adminNavItem = { href: "/admin/dashboard", label: "Admin Panel", icon: Shield };
 
@@ -64,6 +65,7 @@ export function SidebarNav() {
   const { user, logout } = useAuth();
   const isMobile = useIsMobile();
   const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const storedCourseCode = localStorage.getItem('selected_course');
@@ -74,18 +76,31 @@ export function SidebarNav() {
   
   const navItems = useMemo(() => {
     let items = [...baseNavItems];
-    if (selectedCourseCode === 'CPCC28') {
-      const moreIndex = items.findIndex(item => item.href === '/dashboard/more');
-      if (moreIndex !== -1) {
-        items.splice(moreIndex, 0, sentenceBuilderItem);
-      } else {
-        items.push(sentenceBuilderItem);
-      }
+    
+    // Always add Sentence Builder to the list
+    const moreIndex = items.findIndex(item => item.href === '/dashboard/more');
+    if (moreIndex !== -1) {
+      items.splice(moreIndex, 0, sentenceBuilderItem);
+    } else {
+      items.push(sentenceBuilderItem);
     }
+
     return items;
-  }, [selectedCourseCode]);
+  }, []);
 
   const currentNavItems = user?.role === 'staff' ? [...navItems, adminNavItem] : navItems;
+
+  const handleLinkClick = (e: React.MouseEvent, item: (typeof navItems)[0]) => {
+      if ('requiredCourse' in item && item.requiredCourse && selectedCourseCode !== item.requiredCourse) {
+            e.preventDefault();
+            toast({
+                variant: "destructive",
+                title: "Course Requirement Not Met",
+                description: `This game is only available for the ${item.requiredCourse} course.`,
+            });
+      }
+  };
+
 
   if (isMobile) {
     return null;
@@ -111,6 +126,7 @@ export function SidebarNav() {
                 isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href)}
                 tooltip={{ children: item.label, side: "right" }}
                 className="justify-start"
+                 onClick={(e: React.MouseEvent) => handleLinkClick(e, item)}
               >
                 <Link href={item.href}>
                   <item.icon className="h-5 w-5" />

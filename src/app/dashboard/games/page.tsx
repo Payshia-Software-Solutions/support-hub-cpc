@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -10,6 +10,9 @@ import type { StudentEnrollmentInfo } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ArrowRight, Gamepad2, BookText } from 'lucide-react';
 import { CeylonPharmacyIcon, DPadIcon, MediMindIcon } from '@/components/icons/module-icons';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
+import { toast } from '@/hooks/use-toast';
 
 type Game = {
     title: string;
@@ -52,39 +55,57 @@ const allGames: Game[] = [
     },
 ];
 
-const GameCard = ({ game }: { game: Game }) => (
-    <Link href={game.href} className="group block">
-        <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
-            <CardContent className="p-4 flex items-center gap-4">
-                <div className={`p-3 rounded-lg bg-gradient-to-br ${game.colorClass}`}>
-                    {game.icon}
-                </div>
-                <div className="flex-1">
-                    <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{game.title}</h3>
-                    <p className="text-sm text-muted-foreground">{game.description}</p>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
-            </CardContent>
-        </Card>
-    </Link>
-);
+const GameCard = ({ game, selectedCourseCode }: { game: Game, selectedCourseCode: string | null }) => {
+    const router = useRouter();
+
+    const handleClick = (e: React.MouseEvent) => {
+        if (game.requiredCourse && selectedCourseCode !== game.requiredCourse) {
+            e.preventDefault();
+            toast({
+                variant: "destructive",
+                title: "Course Requirement Not Met",
+                description: `This game is only available for the ${game.requiredCourse} course.`,
+            });
+        } else {
+            router.push(game.href);
+        }
+    };
+
+    return (
+        <a href={game.href} onClick={handleClick} className="group block cursor-pointer">
+            <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
+                <CardContent className="p-4 flex items-center gap-4">
+                    <div className={`p-3 rounded-lg bg-gradient-to-br ${game.colorClass}`}>
+                        {game.icon}
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{game.title}</h3>
+                        <p className="text-sm text-muted-foreground">{game.description}</p>
+                    </div>
+                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
+                </CardContent>
+            </Card>
+        </a>
+    );
+};
+
 
 export default function AllGamesPage() {
     const { user } = useAuth();
+    const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
+
+     useEffect(() => {
+        const storedCourseCode = localStorage.getItem('selected_course');
+        if (storedCourseCode) {
+            setSelectedCourseCode(storedCourseCode);
+        }
+    }, []);
     
     const { data: enrollments, isLoading } = useQuery<StudentEnrollmentInfo[]>({
         queryKey: ['studentEnrollmentsForGames', user?.username],
         queryFn: () => getStudentEnrollments(user!.username!),
         enabled: !!user?.username,
     });
-
-    const availableGames = useMemo(() => {
-        if (!enrollments) return [];
-        return allGames.filter(game => {
-            if (!game.requiredCourse) return true; // No specific course required
-            return enrollments.some(e => e.course_code === game.requiredCourse);
-        });
-    }, [enrollments]);
 
     return (
         <div className="p-4 md:p-8 space-y-8 pb-20">
@@ -107,11 +128,9 @@ export default function AllGamesPage() {
                         <Skeleton className="h-24 w-full" />
                     </>
                 ) : (
-                    availableGames.map(game => <GameCard key={game.href} game={game} />)
+                    allGames.map(game => <GameCard key={game.href} game={game} selectedCourseCode={selectedCourseCode} />)
                 )}
             </div>
         </div>
     );
 }
-
-    

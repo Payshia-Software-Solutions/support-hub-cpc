@@ -20,6 +20,7 @@ import { getStudentEnrollments } from "@/lib/actions/users";
 import Image from "next/image";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
+import { toast } from '@/hooks/use-toast';
 
 
 // --- Sub Components ---
@@ -73,22 +74,39 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
     );
 };
 
-const QuickActionCard = ({ title, description, href, icon, colorClass }: { title: string, description: string, href: string, icon: React.ReactElement, colorClass: string }) => (
-    <Link href={href} className="group block">
-        <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
-            <CardContent className="p-4 flex items-center gap-4">
-                <div className={`p-3 rounded-lg bg-gradient-to-br ${colorClass}`}>
-                    {icon}
-                </div>
-                <div className="flex-1">
-                    <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{title}</h3>
-                    <p className="text-sm text-muted-foreground">{description}</p>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
-            </CardContent>
-        </Card>
-    </Link>
-);
+const QuickActionCard = ({ title, description, href, icon, colorClass, requiredCourse, selectedCourseCode }: { title: string, description: string, href: string, icon: React.ReactElement, colorClass: string, requiredCourse?: string, selectedCourseCode: string | null }) => {
+    const router = useRouter();
+
+    const handleClick = (e: React.MouseEvent) => {
+        if (requiredCourse && selectedCourseCode !== requiredCourse) {
+            e.preventDefault();
+            toast({
+                variant: "destructive",
+                title: "Course Requirement Not Met",
+                description: `This is only available for the ${requiredCourse} course.`,
+            });
+        } else {
+            router.push(href);
+        }
+    };
+    
+    return (
+        <a href={href} onClick={handleClick} className="group block cursor-pointer">
+            <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
+                <CardContent className="p-4 flex items-center gap-4">
+                    <div className={`p-3 rounded-lg bg-gradient-to-br ${colorClass}`}>
+                        {icon}
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{title}</h3>
+                        <p className="text-sm text-muted-foreground">{description}</p>
+                    </div>
+                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
+                </CardContent>
+            </Card>
+        </a>
+    );
+};
 
 
 // --- Main Page Component ---
@@ -196,19 +214,19 @@ export default function StudentDashboardPage() {
              <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-400">
                  <h2 className="text-2xl font-semibold font-headline mb-4">Games & Challenges</h2>
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                     <QuickActionCard title="Ceylon Pharmacy" description="Patient simulation game." href="/dashboard/ceylon-pharmacy" icon={<CeylonPharmacyIcon className="w-8 h-8 text-white"/>} colorClass="from-cyan-400 to-sky-500" />
-                     <QuickActionCard title="D-Pad Challenge" description="Dispensing accuracy test." href="/dashboard/d-pad" icon={<DPadIcon className="w-8 h-8 text-white"/>} colorClass="from-rose-400 to-red-500" />
-                     {selectedCourseCode === 'CPCC28' && <QuickActionCard title="Sentence Builder" description="English language practice." href="/dashboard/games/sentence-builder" icon={<BookText className="w-8 h-8 text-white"/>} colorClass="from-amber-400 to-orange-500" />}
-                     <QuickActionCard title="MediMind" description="Test your pharmacology knowledge." href="/dashboard/medimind" icon={<MediMindIcon className="w-8 h-8 text-white"/>} colorClass="from-purple-400 to-violet-500" />
+                     <QuickActionCard title="Ceylon Pharmacy" description="Patient simulation game." href="/dashboard/ceylon-pharmacy" icon={<CeylonPharmacyIcon className="w-8 h-8 text-white"/>} colorClass="from-cyan-400 to-sky-500" selectedCourseCode={selectedCourseCode}/>
+                     <QuickActionCard title="D-Pad Challenge" description="Dispensing accuracy test." href="/dashboard/d-pad" icon={<DPadIcon className="w-8 h-8 text-white"/>} colorClass="from-rose-400 to-red-500" selectedCourseCode={selectedCourseCode}/>
+                     <QuickActionCard title="Sentence Builder" description="English language practice." href="/dashboard/games/sentence-builder" icon={<BookText className="w-8 h-8 text-white"/>} colorClass="from-amber-400 to-orange-500" requiredCourse="CPCC28" selectedCourseCode={selectedCourseCode} />
+                     <QuickActionCard title="MediMind" description="Test your pharmacology knowledge." href="/dashboard/medimind" icon={<MediMindIcon className="w-8 h-8 text-white"/>} colorClass="from-purple-400 to-violet-500" selectedCourseCode={selectedCourseCode}/>
                  </div>
             </section>
 
             <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-150">
                 <h2 className="text-2xl font-semibold font-headline mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <QuickActionCard title="Create Ticket" description="Open a new support request for any issue." href="/dashboard/create-ticket" icon={<PlusCircle className="w-8 h-8 text-white" />} colorClass="from-blue-400 to-indigo-500" />
-                     <QuickActionCard title="Order Certificate" description="Request official certificates for completed courses." href="/dashboard/certificate-order" icon={<Award className="w-8 h-8 text-white" />} colorClass="from-green-400 to-teal-500" />
-                     <QuickActionCard title="BNF" description="Access the British National Formulary." href="/dashboard/bnf" icon={<BookOpen className="w-8 h-8 text-white" />} colorClass="from-red-400 to-rose-500" />
+                     <QuickActionCard title="Create Ticket" description="Open a new support request for any issue." href="/dashboard/create-ticket" icon={<PlusCircle className="w-8 h-8 text-white" />} colorClass="from-blue-400 to-indigo-500" selectedCourseCode={selectedCourseCode}/>
+                     <QuickActionCard title="Order Certificate" description="Request official certificates for completed courses." href="/dashboard/certificate-order" icon={<Award className="w-8 h-8 text-white" />} colorClass="from-green-400 to-teal-500" selectedCourseCode={selectedCourseCode}/>
+                     <QuickActionCard title="BNF" description="Access the British National Formulary." href="/dashboard/bnf" icon={<BookOpen className="w-8 h-8 text-white" />} colorClass="from-red-400 to-rose-500" selectedCourseCode={selectedCourseCode}/>
                 </div>
             </section>
             
