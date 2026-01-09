@@ -18,7 +18,8 @@ import {
   CreditCard,
   MoreHorizontal,
   BookOpen,
-  Gamepad2
+  Gamepad2,
+  BookText
 } from "lucide-react";
 import {
   Sidebar,
@@ -38,8 +39,12 @@ import { ThemeSwitcher } from "../ui/ThemeSwitcher";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Image from "next/image";
 import { MediMindIcon } from "../icons/module-icons";
+import { useQuery } from "@tanstack/react-query";
+import { getStudentEnrollments } from "@/lib/actions/users";
+import type { StudentEnrollmentInfo } from "@/lib/types";
+import { useMemo } from "react";
 
-const navItems = [
+const baseNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
   { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
@@ -50,6 +55,8 @@ const navItems = [
   { href: "/dashboard/more", label: "More", icon: MoreHorizontal },
 ];
 
+const sentenceBuilderItem = { href: "/dashboard/games/sentence-builder", label: "Sentence Builder", icon: BookText };
+
 const adminNavItem = { href: "/admin/dashboard", label: "Admin Panel", icon: Shield };
 
 export function SidebarNav() {
@@ -57,6 +64,30 @@ export function SidebarNav() {
   const { user, logout } = useAuth();
   const isMobile = useIsMobile();
   
+  const { data: enrollments } = useQuery<StudentEnrollmentInfo[]>({
+    queryKey: ['studentEnrollments', user?.username],
+    queryFn: () => getStudentEnrollments(user!.username!),
+    enabled: !!user?.username,
+  });
+
+  const isEnrolledInCPCC28 = useMemo(() => {
+    return enrollments?.some(e => e.course_code === 'CPCC28') || false;
+  }, [enrollments]);
+
+  const navItems = useMemo(() => {
+    let items = [...baseNavItems];
+    if (isEnrolledInCPCC28) {
+      // Insert Sentence Builder before "More"
+      const moreIndex = items.findIndex(item => item.href === '/dashboard/more');
+      if (moreIndex !== -1) {
+        items.splice(moreIndex, 0, sentenceBuilderItem);
+      } else {
+        items.push(sentenceBuilderItem);
+      }
+    }
+    return items;
+  }, [isEnrolledInCPCC28]);
+
   const currentNavItems = user?.role === 'staff' ? [...navItems, adminNavItem] : navItems;
 
   if (isMobile) {
@@ -129,3 +160,5 @@ export function SidebarNav() {
     </Sidebar>
   );
 }
+
+    

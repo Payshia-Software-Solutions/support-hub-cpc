@@ -14,16 +14,32 @@ import {
   Moon,
   Sun,
   BookOpen,
+  BookText,
+  Gamepad2
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { MediMindIcon } from "@/components/icons/module-icons";
+import { useQuery } from "@tanstack/react-query";
+import { getStudentEnrollments } from "@/lib/actions/users";
+import { useMemo } from "react";
+import { StudentEnrollmentInfo } from "@/lib/types";
 
 export default function MorePage() {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+
+  const { data: enrollments } = useQuery<StudentEnrollmentInfo[]>({
+    queryKey: ['studentEnrollments', user?.username],
+    queryFn: () => getStudentEnrollments(user!.username!),
+    enabled: !!user?.username,
+  });
+
+  const isEnrolledInCPCC28 = useMemo(() => {
+    return enrollments?.some(e => e.course_code === 'CPCC28') || false;
+  }, [enrollments]);
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -32,7 +48,12 @@ export default function MorePage() {
     { href: "/dashboard/certificate-order", label: "Certificate Order", icon: Award },
     { href: "/dashboard/bnf", label: "BNF", icon: BookOpen },
     { href: "/dashboard/medimind", label: "MediMind", icon: MediMindIcon },
+    { href: "/dashboard/games", label: "All Games", icon: Gamepad2 }
   ];
+
+  if (isEnrolledInCPCC28) {
+    navItems.push({ href: "/dashboard/games/sentence-builder", label: "Sentence Builder", icon: BookText });
+  }
 
   const adminNavItem = { href: "/admin/dashboard", label: "Admin Panel", icon: Shield };
 
@@ -108,3 +129,5 @@ export default function MorePage() {
     </div>
   );
 }
+
+    

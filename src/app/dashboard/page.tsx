@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { getTickets } from "@/lib/actions/tickets";
-import type { Ticket, Course } from "@/lib/types";
+import type { Ticket, Course, StudentEnrollmentInfo } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,6 +16,7 @@ import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, Award
 import { UnreadBadge } from "@/components/dashboard/UnreadBadge";
 import { CeylonPharmacyIcon, DPadIcon, HunterProIcon, LuckyWheelIcon, MediMindIcon, PharmaHunterIcon, PharmaReaderIcon, WinPharmaIcon, WordPalletIcon } from "@/components/icons/module-icons";
 import { getCourses } from "@/lib/actions/courses";
+import { getStudentEnrollments } from "@/lib/actions/users";
 import Image from "next/image";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
@@ -101,9 +102,6 @@ export default function StudentDashboardPage() {
         if (storedCourseCode) {
             setSelectedCourseCode(storedCourseCode);
         } else {
-            // If no course is selected in localStorage, redirect to the selection page.
-            // This is a safeguard in case the user lands here directly without logging in
-            // or if they have multiple courses and haven't chosen one.
             router.replace('/dashboard/select-course');
         }
     }, [router]);
@@ -120,6 +118,16 @@ export default function StudentDashboardPage() {
         staleTime: Infinity,
     });
     
+    const { data: enrollments, isLoading: isLoadingEnrollments } = useQuery<StudentEnrollmentInfo[]>({
+        queryKey: ['studentEnrollments', user?.username],
+        queryFn: () => getStudentEnrollments(user!.username!),
+        enabled: !!user?.username,
+    });
+
+    const isEnrolledInCPCC28 = useMemo(() => {
+        return enrollments?.some(e => e.course_code === 'CPCC28') || false;
+    }, [enrollments]);
+
     const selectedCourse = useMemo(() => {
         if (!selectedCourseCode || !allCourses) return null;
         return allCourses.find(c => c.courseCode === selectedCourseCode);
@@ -132,7 +140,6 @@ export default function StudentDashboardPage() {
         .slice(0, 5);
     }, [tickets]);
 
-    // If we're still waiting for the course code from local storage, show a loader.
     if (!selectedCourseCode && !isLoadingCourses) {
         return (
              <div className="flex h-screen items-center justify-center">
@@ -160,7 +167,7 @@ export default function StudentDashboardPage() {
 
              <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-100">
                 <h2 className="text-2xl font-semibold font-headline mb-4">My Course</h2>
-                {isLoadingCourses ? (
+                {isLoadingCourses || isLoadingEnrollments ? (
                     <Skeleton className="h-32 w-full" />
                 ) : selectedCourse ? (
                     <Card className="shadow-lg bg-gradient-to-r from-primary/10 to-background">
@@ -195,7 +202,7 @@ export default function StudentDashboardPage() {
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                      <QuickActionCard title="Ceylon Pharmacy" description="Patient simulation game." href="/dashboard/ceylon-pharmacy" icon={<CeylonPharmacyIcon className="w-8 h-8 text-white"/>} colorClass="from-cyan-400 to-sky-500" />
                      <QuickActionCard title="D-Pad Challenge" description="Dispensing accuracy test." href="/dashboard/d-pad" icon={<DPadIcon className="w-8 h-8 text-white"/>} colorClass="from-rose-400 to-red-500" />
-                     <QuickActionCard title="Sentence Builder" description="English language practice." href="/dashboard/games/sentence-builder" icon={<BookText className="w-8 h-8 text-white"/>} colorClass="from-amber-400 to-orange-500" />
+                     {isEnrolledInCPCC28 && <QuickActionCard title="Sentence Builder" description="English language practice." href="/dashboard/games/sentence-builder" icon={<BookText className="w-8 h-8 text-white"/>} colorClass="from-amber-400 to-orange-500" />}
                      <QuickActionCard title="MediMind" description="Test your pharmacology knowledge." href="/dashboard/medimind" icon={<MediMindIcon className="w-8 h-8 text-white"/>} colorClass="from-purple-400 to-violet-500" />
                  </div>
             </section>
@@ -270,3 +277,5 @@ export default function StudentDashboardPage() {
         </div>
     );
 }
+
+    
