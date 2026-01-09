@@ -27,8 +27,15 @@ import { getStudentEnrollments } from "@/lib/actions/users";
 import { getCourses } from "@/lib/actions/courses";
 import type { StudentEnrollmentInfo, Course } from "@/lib/types";
 import { useMemo, useState, useEffect } from "react";
-import { toast } from '@/hooks/use-toast';
 import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 export default function MorePage() {
@@ -36,6 +43,7 @@ export default function MorePage() {
   const { theme, setTheme } = useTheme();
   const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
   const router = useRouter();
+  const [dialogContent, setDialogContent] = useState<{ title: string; description: string } | null>(null);
 
   useEffect(() => {
     const storedCourseCode = localStorage.getItem('selected_course');
@@ -65,7 +73,7 @@ export default function MorePage() {
         href: "/dashboard/games/sentence-builder", 
         label: "Sentence Builder", 
         icon: BookText, 
-        requiredCourse: "CPCC28" 
+        requiredCourses: ["CPCC28", "CPCC27"] 
     });
 
 
@@ -80,14 +88,17 @@ export default function MorePage() {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
-  const handleLinkClick = (e: React.MouseEvent, item: (typeof navItems)[0] & { requiredCourse?: string }) => {
-      if (item.requiredCourse && selectedCourseCode !== item.requiredCourse) {
+  const handleLinkClick = (e: React.MouseEvent, item: { href: string; requiredCourses?: string[] }) => {
+      if (item.requiredCourses && (!selectedCourseCode || !item.requiredCourses.includes(selectedCourseCode))) {
             e.preventDefault();
-            const requiredCourseName = allCourses?.find(c => c.courseCode === item.requiredCourse)?.name;
-            toast({
-                variant: "destructive",
+            const requiredCourseNames = allCourses
+                ?.filter(c => item.requiredCourses!.includes(c.courseCode))
+                .map(c => `${c.name} (${c.courseCode})`)
+                .join(' or ');
+            
+            setDialogContent({
                 title: "Course Requirement Not Met",
-                description: `This is only available for the ${requiredCourseName || 'required'} (${item.requiredCourse}) course.`,
+                description: `This game is only available for students enrolled in: ${requiredCourseNames || item.requiredCourses.join(', ')}.`,
             });
       } else {
           router.push(item.href);
@@ -97,6 +108,17 @@ export default function MorePage() {
 
   return (
     <div className="p-4 md:p-8 space-y-6 pb-20">
+      <AlertDialog open={!!dialogContent} onOpenChange={() => setDialogContent(null)}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>{dialogContent?.title}</AlertDialogTitle>
+                  <AlertDialogDescription>{dialogContent?.description}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogAction onClick={() => setDialogContent(null)}>OK</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
       <header>
         <h1 className="text-3xl font-headline font-semibold">More Options</h1>
         <p className="text-muted-foreground">Manage your account and navigate the app.</p>
@@ -121,7 +143,7 @@ export default function MorePage() {
         <CardContent className="p-2">
           <div className="space-y-1">
             {navItems.map((item) => (
-              <a key={item.href} href={item.href} onClick={(e) => handleLinkClick(e, item)} className="block group">
+              <a key={item.href} href={item.href} onClick={(e) => handleLinkClick(e, item)} className="block group cursor-pointer">
                 <div className="flex items-center justify-between p-3 rounded-md hover:bg-muted transition-colors">
                   <div className="flex items-center gap-4">
                     <item.icon className="h-6 w-6 text-primary" />

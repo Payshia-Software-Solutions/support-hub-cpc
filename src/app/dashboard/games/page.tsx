@@ -9,11 +9,18 @@ import { getStudentEnrollments } from '@/lib/actions/users';
 import type { StudentEnrollmentInfo, Course } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ArrowRight, Gamepad2, BookText } from 'lucide-react';
-import { CeylonPharmacyIcon, DPadIcon, MediMindIcon } from '@/components/icons/module-icons';
+import { CeylonPharmacyIcon, DPadIcon, HunterProIcon, LuckyWheelIcon, MediMindIcon, PharmaHunterIcon, PharmaReaderIcon, WinPharmaIcon, WordPalletIcon } from '@/components/icons/module-icons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
-import { toast } from '@/hooks/use-toast';
 import { getCourses } from '@/lib/actions/courses';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type Game = {
     title: string;
@@ -21,7 +28,7 @@ type Game = {
     href: string;
     icon: React.ReactElement;
     colorClass: string;
-    requiredCourse?: string;
+    requiredCourses?: string[];
 };
 
 const allGames: Game[] = [
@@ -29,7 +36,7 @@ const allGames: Game[] = [
         title: "Ceylon Pharmacy",
         description: "Patient simulation game.",
         href: "/dashboard/ceylon-pharmacy",
-        icon: <CeylonPharmacyIcon className="w-8 h-8 text-white" />,
+        icon: <CeylonPharmacyIcon className="w-8 h-8 text-white"/>,
         colorClass: "from-cyan-400 to-sky-500",
     },
     {
@@ -45,7 +52,7 @@ const allGames: Game[] = [
         href: "/dashboard/games/sentence-builder",
         icon: <BookText className="w-8 h-8 text-white" />,
         colorClass: "from-amber-400 to-orange-500",
-        requiredCourse: "CPCC28",
+        requiredCourses: ["CPCC28", "CPCC27"],
     },
     {
         title: "MediMind",
@@ -56,17 +63,25 @@ const allGames: Game[] = [
     },
 ];
 
-const GameCard = ({ game, selectedCourseCode, allCourses }: { game: Game, selectedCourseCode: string | null, allCourses: Course[] | undefined }) => {
+const GameCard = ({ game, selectedCourseCode, allCourses, setDialogContent }: { 
+    game: Game, 
+    selectedCourseCode: string | null, 
+    allCourses: Course[] | undefined,
+    setDialogContent: (content: { title: string; description: string } | null) => void;
+}) => {
     const router = useRouter();
 
     const handleClick = (e: React.MouseEvent) => {
-        if (game.requiredCourse && selectedCourseCode !== game.requiredCourse) {
+        if (game.requiredCourses && (!selectedCourseCode || !game.requiredCourses.includes(selectedCourseCode))) {
             e.preventDefault();
-            const requiredCourseName = allCourses?.find(c => c.courseCode === game.requiredCourse)?.name;
-            toast({
-                variant: "destructive",
+            const requiredCourseNames = allCourses
+                ?.filter(c => game.requiredCourses!.includes(c.courseCode))
+                .map(c => `${c.name} (${c.courseCode})`)
+                .join(' or ');
+            
+            setDialogContent({
                 title: "Course Requirement Not Met",
-                description: `This is only available for the ${requiredCourseName || 'required'} (${game.requiredCourse}) course.`,
+                description: `This game is only available for students enrolled in: ${requiredCourseNames || game.requiredCourses.join(', ')}.`,
             });
         } else {
             router.push(game.href);
@@ -95,6 +110,7 @@ const GameCard = ({ game, selectedCourseCode, allCourses }: { game: Game, select
 export default function AllGamesPage() {
     const { user } = useAuth();
     const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
+    const [dialogContent, setDialogContent] = useState<{ title: string; description: string } | null>(null);
 
      useEffect(() => {
         const storedCourseCode = localStorage.getItem('selected_course');
@@ -119,6 +135,17 @@ export default function AllGamesPage() {
 
     return (
         <div className="p-4 md:p-8 space-y-8 pb-20">
+             <AlertDialog open={!!dialogContent} onOpenChange={() => setDialogContent(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{dialogContent?.title}</AlertDialogTitle>
+                        <AlertDialogDescription>{dialogContent?.description}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => setDialogContent(null)}>OK</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             <header className="flex items-center gap-4">
                  <div className="bg-primary/10 p-3 rounded-full">
                    <Gamepad2 className="w-8 h-8 text-primary" />
@@ -138,7 +165,7 @@ export default function AllGamesPage() {
                         <Skeleton className="h-24 w-full" />
                     </>
                 ) : (
-                    allGames.map(game => <GameCard key={game.href} game={game} selectedCourseCode={selectedCourseCode} allCourses={allCourses} />)
+                    allGames.map(game => <GameCard key={game.href} game={game} selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />)
                 )}
             </div>
         </div>

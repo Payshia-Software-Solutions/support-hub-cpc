@@ -45,6 +45,14 @@ import { getCourses } from "@/lib/actions/courses";
 import type { StudentEnrollmentInfo, Course } from "@/lib/types";
 import { useMemo, useState, useEffect } from "react";
 import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const baseNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -57,7 +65,7 @@ const baseNavItems = [
   { href: "/dashboard/more", label: "More", icon: MoreHorizontal },
 ];
 
-const sentenceBuilderItem = { href: "/dashboard/games/sentence-builder", label: "Sentence Builder", icon: BookText, requiredCourse: "CPCC28" };
+const sentenceBuilderItem = { href: "/dashboard/games/sentence-builder", label: "Sentence Builder", icon: BookText, requiredCourses: ["CPCC28", "CPCC27"] };
 
 const adminNavItem = { href: "/admin/dashboard", label: "Admin Panel", icon: Shield };
 
@@ -67,6 +75,7 @@ export function SidebarNav() {
   const isMobile = useIsMobile();
   const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
   const router = useRouter();
+  const [dialogContent, setDialogContent] = useState<{ title: string; description: string } | null>(null);
 
   useEffect(() => {
     const storedCourseCode = localStorage.getItem('selected_course');
@@ -97,14 +106,17 @@ export function SidebarNav() {
 
   const currentNavItems = user?.role === 'staff' ? [...navItems, adminNavItem] : navItems;
 
-  const handleLinkClick = (e: React.MouseEvent, item: (typeof navItems)[0] & { requiredCourse?: string }) => {
-      if (item.requiredCourse && selectedCourseCode !== item.requiredCourse) {
+  const handleLinkClick = (e: React.MouseEvent, item: { href: string; requiredCourses?: string[] }) => {
+      if (item.requiredCourses && (!selectedCourseCode || !item.requiredCourses.includes(selectedCourseCode))) {
             e.preventDefault();
-            const requiredCourseName = allCourses?.find(c => c.courseCode === item.requiredCourse)?.name;
-            toast({
-                variant: "destructive",
+             const requiredCourseNames = allCourses
+                ?.filter(c => item.requiredCourses!.includes(c.courseCode))
+                .map(c => `${c.name} (${c.courseCode})`)
+                .join(' or ');
+            
+            setDialogContent({
                 title: "Course Requirement Not Met",
-                description: `This is only available for the ${requiredCourseName || 'required'} (${item.requiredCourse}) course.`,
+                description: `This game is only available for students enrolled in: ${requiredCourseNames || item.requiredCourses.join(', ')}.`,
             });
       }
   };
@@ -115,6 +127,18 @@ export function SidebarNav() {
   }
 
   return (
+    <>
+    <AlertDialog open={!!dialogContent} onOpenChange={() => setDialogContent(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>{dialogContent?.title}</AlertDialogTitle>
+                <AlertDialogDescription>{dialogContent?.description}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setDialogContent(null)}>OK</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     <Sidebar collapsible="icon" className="border-r">
       <SidebarHeader className="p-4 flex items-center gap-2 justify-between">
         <div className="flex items-center gap-2">
@@ -179,5 +203,6 @@ export function SidebarNav() {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
+    </>
   );
 }
