@@ -6,13 +6,14 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { getStudentEnrollments } from '@/lib/actions/users';
-import type { StudentEnrollmentInfo } from '@/lib/types';
+import type { StudentEnrollmentInfo, Course } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ArrowRight, Gamepad2, BookText } from 'lucide-react';
 import { CeylonPharmacyIcon, DPadIcon, MediMindIcon } from '@/components/icons/module-icons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
+import { getCourses } from '@/lib/actions/courses';
 
 type Game = {
     title: string;
@@ -55,16 +56,17 @@ const allGames: Game[] = [
     },
 ];
 
-const GameCard = ({ game, selectedCourseCode }: { game: Game, selectedCourseCode: string | null }) => {
+const GameCard = ({ game, selectedCourseCode, allCourses }: { game: Game, selectedCourseCode: string | null, allCourses: Course[] | undefined }) => {
     const router = useRouter();
 
     const handleClick = (e: React.MouseEvent) => {
         if (game.requiredCourse && selectedCourseCode !== game.requiredCourse) {
             e.preventDefault();
+            const requiredCourseName = allCourses?.find(c => c.courseCode === game.requiredCourse)?.name;
             toast({
                 variant: "destructive",
                 title: "Course Requirement Not Met",
-                description: `This game is only available for the ${game.requiredCourse} course.`,
+                description: `This is only available for the ${requiredCourseName || 'required'} (${game.requiredCourse}) course.`,
             });
         } else {
             router.push(game.href);
@@ -101,11 +103,19 @@ export default function AllGamesPage() {
         }
     }, []);
     
-    const { data: enrollments, isLoading } = useQuery<StudentEnrollmentInfo[]>({
+    const { data: allCourses, isLoading: isLoadingCourses } = useQuery<Course[]>({
+        queryKey: ['allCourses'],
+        queryFn: getCourses,
+        staleTime: Infinity,
+    });
+    
+    const { data: enrollments, isLoading: isLoadingEnrollments } = useQuery<StudentEnrollmentInfo[]>({
         queryKey: ['studentEnrollmentsForGames', user?.username],
         queryFn: () => getStudentEnrollments(user!.username!),
         enabled: !!user?.username,
     });
+
+    const isLoading = isLoadingEnrollments || isLoadingCourses;
 
     return (
         <div className="p-4 md:p-8 space-y-8 pb-20">
@@ -128,7 +138,7 @@ export default function AllGamesPage() {
                         <Skeleton className="h-24 w-full" />
                     </>
                 ) : (
-                    allGames.map(game => <GameCard key={game.href} game={game} selectedCourseCode={selectedCourseCode} />)
+                    allGames.map(game => <GameCard key={game.href} game={game} selectedCourseCode={selectedCourseCode} allCourses={allCourses} />)
                 )}
             </div>
         </div>

@@ -24,7 +24,8 @@ import { Button } from "@/components/ui/button";
 import { MediMindIcon } from "@/components/icons/module-icons";
 import { useQuery } from "@tanstack/react-query";
 import { getStudentEnrollments } from "@/lib/actions/users";
-import type { StudentEnrollmentInfo } from "@/lib/types";
+import { getCourses } from "@/lib/actions/courses";
+import type { StudentEnrollmentInfo, Course } from "@/lib/types";
 import { useMemo, useState, useEffect } from "react";
 import { toast } from '@/hooks/use-toast';
 import { useRouter } from "next/navigation";
@@ -42,6 +43,12 @@ export default function MorePage() {
         setSelectedCourseCode(storedCourseCode);
     }
   }, []);
+  
+   const { data: allCourses } = useQuery<Course[]>({
+    queryKey: ['allCourses'],
+    queryFn: getCourses,
+    staleTime: Infinity,
+  });
 
   const navItems = useMemo(() => {
     const baseItems = [
@@ -73,13 +80,14 @@ export default function MorePage() {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
-  const handleLinkClick = (e: React.MouseEvent, item: (typeof navItems)[0]) => {
+  const handleLinkClick = (e: React.MouseEvent, item: (typeof navItems)[0] & { requiredCourse?: string }) => {
       if (item.requiredCourse && selectedCourseCode !== item.requiredCourse) {
             e.preventDefault();
+            const requiredCourseName = allCourses?.find(c => c.courseCode === item.requiredCourse)?.name;
             toast({
                 variant: "destructive",
                 title: "Course Requirement Not Met",
-                description: `This game is only available for the ${item.requiredCourse} course.`,
+                description: `This is only available for the ${requiredCourseName || 'required'} (${item.requiredCourse}) course.`,
             });
       } else {
           router.push(item.href);
