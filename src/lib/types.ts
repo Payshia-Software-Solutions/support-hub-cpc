@@ -1,6 +1,5 @@
 
 
-
 export interface ApiStaffMember {
   id: string;
   fname: string;
@@ -789,4 +788,14 @@ export interface StudentAnswerPayload {
   submitted_answer: string;
   is_correct: boolean;
   score_awarded: number;
+}
+
+export interface StudentAnswer {
+    id: string;
+    student_number: string;
+    sentence_id: string;
+    submitted_answer: string;
+    is_correct: '1' | '0';
+    score_awarded: string;
+    submitted_at: string;
 }

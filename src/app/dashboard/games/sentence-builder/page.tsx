@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -10,8 +11,8 @@ import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Check, Lightbulb, RefreshCw, Sparkles, Trophy, ChevronRight, Volume2, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getLevels as getGameLevels, getSentencesByLevel, saveStudentAnswer } from '@/lib/actions/sentence-builder';
-import { type GameLevel, type Sentence, type StudentAnswerPayload } from '@/lib/types';
+import { getLevels as getGameLevels, getSentencesByLevel, saveStudentAnswer, getStudentSubmissions } from '@/lib/actions/sentence-builder';
+import { type GameLevel, type Sentence, type StudentAnswerPayload, type StudentAnswer } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { generateAudio } from '@/ai/flows/text-to-speech-flow';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -33,7 +34,6 @@ export default function SentenceBuilderPage() {
   const [score, setScore] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-  const [completedLevels, setCompletedLevels] = useState<Set<number>>(new Set());
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -43,12 +43,55 @@ export default function SentenceBuilderPage() {
     queryFn: getGameLevels
   });
 
+  const { data: studentSubmissions, isLoading: isLoadingSubmissions } = useQuery<StudentAnswer[]>({
+    queryKey: ['studentSubmissions', user?.username],
+    queryFn: () => getStudentSubmissions(user!.username!),
+    enabled: !!user,
+  });
+
   const currentLevel = gameLevels?.[levelIndex];
+  
   const { data: currentSentences, isLoading: isLoadingSentences } = useQuery<Sentence[]>({
       queryKey: ['sentencesForLevel', currentLevel?.id],
       queryFn: () => getSentencesByLevel(currentLevel!.id),
       enabled: !!currentLevel,
   });
+  
+  const { correctlyAnsweredIds, completedLevels } = useMemo(() => {
+    if (!studentSubmissions) return { correctlyAnsweredIds: new Set(), completedLevels: new Set() };
+
+    const correctIds = new Set<string>();
+    const submissionsBySentence: Record<string, StudentAnswer> = {};
+
+    for (const sub of studentSubmissions) {
+      if (sub.is_correct === '1') {
+        // Only add if it's the latest correct submission for that sentence
+        if (!submissionsBySentence[sub.sentence_id] || new Date(sub.submitted_at) > new Date(submissionsBySentence[sub.sentence_id].submitted_at)) {
+            submissionsBySentence[sub.sentence_id] = sub;
+        }
+      }
+    }
+    
+    Object.keys(submissionsBySentence).forEach(id => correctIds.add(id));
+
+    const levelsMap = new Map(gameLevels?.map(l => [l.id, l.sentences?.map(s => String(s.id)) || []]));
+    const completed = new Set<number>();
+    levelsMap.forEach((sentenceIds, levelId) => {
+        if (sentenceIds.every(sid => correctIds.has(sid))) {
+            const levelNum = gameLevels?.find(l => l.id === levelId)?.level_number;
+            if(levelNum) completed.add(levelNum);
+        }
+    });
+
+    return { correctlyAnsweredIds: correctIds, completedLevels: completed };
+  }, [studentSubmissions, gameLevels]);
+
+  useEffect(() => {
+    if (studentSubmissions) {
+      const totalScore = studentSubmissions.reduce((acc, sub) => acc + parseInt(sub.score_awarded, 10), 0);
+      setScore(totalScore);
+    }
+  }, [studentSubmissions]);
 
   const currentSentence = currentSentences?.[sentenceIndex];
   
@@ -77,8 +120,14 @@ export default function SentenceBuilderPage() {
 
 
   const handleSelectLevel = (index: number) => {
+    const selectedLevel = gameLevels?.[index];
+    if (!selectedLevel) return;
+
+    const sentencesInLevel = selectedLevel.sentences || [];
+    const firstUnansweredIndex = sentencesInLevel.findIndex(s => !correctlyAnsweredIds.has(String(s.id)));
+    
     setLevelIndex(index);
-    setSentenceIndex(0);
+    setSentenceIndex(firstUnansweredIndex >= 0 ? firstUnansweredIndex : 0);
     setBuiltSentence([]);
     setIsCorrect(null);
     setShowHint(false);
@@ -117,8 +166,7 @@ export default function SentenceBuilderPage() {
 
     if (isAnswerCorrect) {
       toast({ title: "Correct!", description: `+10 points!` });
-
-      const isLastSentenceInLevel = currentSentences && sentenceIndex === currentSentences.length - 1;
+      correctlyAnsweredIds.add(String(currentSentence.id)); // Optimistically update
       
       setIsAudioLoading(true);
       try {
@@ -130,10 +178,6 @@ export default function SentenceBuilderPage() {
       } finally {
         setIsAudioLoading(false);
       }
-
-      if (isLastSentenceInLevel && currentLevel) {
-          setCompletedLevels(prev => new Set(prev).add(currentLevel.level_number));
-      }
     } else {
       toast({ variant: 'destructive', title: "Not quite!", description: "Try again. You lost 1 point." });
     }
@@ -144,8 +188,11 @@ export default function SentenceBuilderPage() {
     setShowHint(false);
     setBuiltSentence([]);
     setAudioSrc(null);
-    if (currentSentences && sentenceIndex < currentSentences.length - 1) {
-      setSentenceIndex(prev => prev + 1);
+    
+    const nextUnansweredIndex = currentSentences?.findIndex((s, i) => i > sentenceIndex && !correctlyAnsweredIds.has(String(s.id)));
+
+    if (nextUnansweredIndex !== undefined && nextUnansweredIndex > -1) {
+      setSentenceIndex(nextUnansweredIndex);
     } else if (currentLevel) {
       toast({ title: `Level ${currentLevel.level_number} Complete!`, description: `Great job! Select another level to continue.` });
       handleBackToLevels();
@@ -167,7 +214,7 @@ export default function SentenceBuilderPage() {
       audioRef.current?.play();
   };
 
-  if (isLoadingLevels) {
+  if (isLoadingLevels || isLoadingSubmissions) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
 
@@ -299,7 +346,7 @@ export default function SentenceBuilderPage() {
 
                         {showHint && (
                             <Alert className="bg-blue-100 border-blue-300 text-blue-800">
-                            <Lightbulb className="h-4 w-4 !text-blue-800" />
+                            <Lightbulb className="mr-2 h-4 w-4 !text-blue-800" />
                             <AlertTitle>Hint</AlertTitle>
                             <AlertDescription>
                                 <p>{currentSentence.hint}</p>
