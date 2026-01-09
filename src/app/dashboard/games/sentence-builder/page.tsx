@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -65,7 +64,6 @@ export default function SentenceBuilderPage() {
 
     for (const sub of studentSubmissions) {
       if (sub.is_correct === '1') {
-        // Only add if it's the latest correct submission for that sentence
         if (!submissionsBySentence[sub.sentence_id] || new Date(sub.submitted_at) > new Date(submissionsBySentence[sub.sentence_id].submitted_at)) {
             submissionsBySentence[sub.sentence_id] = sub;
         }
@@ -118,7 +116,6 @@ export default function SentenceBuilderPage() {
     },
   });
 
-
   const handleSelectLevel = (index: number) => {
     const selectedLevel = gameLevels?.[index];
     if (!selectedLevel) return;
@@ -166,18 +163,7 @@ export default function SentenceBuilderPage() {
 
     if (isAnswerCorrect) {
       toast({ title: "Correct!", description: `+10 points!` });
-      correctlyAnsweredIds.add(String(currentSentence.id)); // Optimistically update
-      
-      setIsAudioLoading(true);
-      try {
-        const audioData = await generateAudio(currentSentence.correct_sentence);
-        setAudioSrc(audioData.media);
-      } catch (error) {
-          console.error("Failed to generate audio:", error);
-          toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the sentence.' });
-      } finally {
-        setIsAudioLoading(false);
-      }
+      correctlyAnsweredIds.add(String(currentSentence.id));
     } else {
       toast({ variant: 'destructive', title: "Not quite!", description: "Try again. You lost 1 point." });
     }
@@ -210,9 +196,29 @@ export default function SentenceBuilderPage() {
   
   const isLevelComplete = currentSentences && sentenceIndex === currentSentences.length - 1 && isCorrect;
 
-  const playAudio = () => {
-      audioRef.current?.play();
+  const playAudio = async () => {
+    if (audioSrc) {
+        audioRef.current?.play();
+        return;
+    }
+    if (!currentSentence) return;
+    setIsAudioLoading(true);
+    try {
+        const audioData = await generateAudio(currentSentence.correct_sentence);
+        setAudioSrc(audioData.media);
+    } catch (error) {
+        console.error("Failed to generate audio:", error);
+        toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the sentence.' });
+    } finally {
+        setIsAudioLoading(false);
+    }
   };
+
+  useEffect(() => {
+    if (audioSrc && audioRef.current) {
+        audioRef.current.play();
+    }
+  }, [audioSrc]);
 
   if (isLoadingLevels || isLoadingSubmissions) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -313,7 +319,7 @@ export default function SentenceBuilderPage() {
                                 <Check className="h-4 w-4 !text-green-800" />
                                 <AlertTitle className="flex justify-between items-center">
                                     <span>Correct!</span>
-                                    <Button size="sm" variant="ghost" className="h-auto p-1.5" onClick={playAudio} disabled={isAudioLoading || !audioSrc}>
+                                    <Button size="sm" variant="ghost" className="h-auto p-1.5" onClick={playAudio} disabled={isAudioLoading}>
                                         {isAudioLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Volume2 className="h-5 w-5"/>}
                                     </Button>
                                 </AlertTitle>
@@ -384,7 +390,6 @@ export default function SentenceBuilderPage() {
             </CardFooter>
         </Card>
     )};
-
 
   return (
      <div className="p-4 md:p-8 space-y-6 pb-20">
