@@ -42,7 +42,7 @@ import { MediMindIcon } from "../icons/module-icons";
 import { useQuery } from "@tanstack/react-query";
 import { getStudentEnrollments } from "@/lib/actions/users";
 import type { StudentEnrollmentInfo } from "@/lib/types";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 const baseNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -63,21 +63,18 @@ export function SidebarNav() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const isMobile = useIsMobile();
+  const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedCourseCode = localStorage.getItem('selected_course');
+    if (storedCourseCode) {
+        setSelectedCourseCode(storedCourseCode);
+    }
+  }, []);
   
-  const { data: enrollments } = useQuery<StudentEnrollmentInfo[]>({
-    queryKey: ['studentEnrollments', user?.username],
-    queryFn: () => getStudentEnrollments(user!.username!),
-    enabled: !!user?.username,
-  });
-
-  const isEnrolledInCPCC28 = useMemo(() => {
-    return enrollments?.some(e => e.course_code === 'CPCC28') || false;
-  }, [enrollments]);
-
   const navItems = useMemo(() => {
     let items = [...baseNavItems];
-    if (isEnrolledInCPCC28) {
-      // Insert Sentence Builder before "More"
+    if (selectedCourseCode === 'CPCC28') {
       const moreIndex = items.findIndex(item => item.href === '/dashboard/more');
       if (moreIndex !== -1) {
         items.splice(moreIndex, 0, sentenceBuilderItem);
@@ -86,7 +83,7 @@ export function SidebarNav() {
       }
     }
     return items;
-  }, [isEnrolledInCPCC28]);
+  }, [selectedCourseCode]);
 
   const currentNavItems = user?.role === 'staff' ? [...navItems, adminNavItem] : navItems;
 
@@ -160,5 +157,3 @@ export function SidebarNav() {
     </Sidebar>
   );
 }
-
-    

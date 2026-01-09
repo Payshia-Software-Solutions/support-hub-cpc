@@ -124,10 +124,6 @@ export default function StudentDashboardPage() {
         enabled: !!user?.username,
     });
 
-    const isEnrolledInCPCC28 = useMemo(() => {
-        return enrollments?.some(e => e.course_code === 'CPCC28') || false;
-    }, [enrollments]);
-
     const selectedCourse = useMemo(() => {
         if (!selectedCourseCode || !allCourses) return null;
         return allCourses.find(c => c.courseCode === selectedCourseCode);
@@ -202,7 +198,7 @@ export default function StudentDashboardPage() {
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                      <QuickActionCard title="Ceylon Pharmacy" description="Patient simulation game." href="/dashboard/ceylon-pharmacy" icon={<CeylonPharmacyIcon className="w-8 h-8 text-white"/>} colorClass="from-cyan-400 to-sky-500" />
                      <QuickActionCard title="D-Pad Challenge" description="Dispensing accuracy test." href="/dashboard/d-pad" icon={<DPadIcon className="w-8 h-8 text-white"/>} colorClass="from-rose-400 to-red-500" />
-                     {isEnrolledInCPCC28 && <QuickActionCard title="Sentence Builder" description="English language practice." href="/dashboard/games/sentence-builder" icon={<BookText className="w-8 h-8 text-white"/>} colorClass="from-amber-400 to-orange-500" />}
+                     {selectedCourseCode === 'CPCC28' && <QuickActionCard title="Sentence Builder" description="English language practice." href="/dashboard/games/sentence-builder" icon={<BookText className="w-8 h-8 text-white"/>} colorClass="from-amber-400 to-orange-500" />}
                      <QuickActionCard title="MediMind" description="Test your pharmacology knowledge." href="/dashboard/medimind" icon={<MediMindIcon className="w-8 h-8 text-white"/>} colorClass="from-purple-400 to-violet-500" />
                  </div>
             </section>
@@ -277,5 +273,3 @@ export default function StudentDashboardPage() {
         </div>
     );
 }
-
-    

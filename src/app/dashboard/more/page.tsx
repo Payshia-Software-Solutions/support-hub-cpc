@@ -24,43 +24,43 @@ import { Button } from "@/components/ui/button";
 import { MediMindIcon } from "@/components/icons/module-icons";
 import { useQuery } from "@tanstack/react-query";
 import { getStudentEnrollments } from "@/lib/actions/users";
-import { useMemo } from "react";
-import { StudentEnrollmentInfo } from "@/lib/types";
+import type { StudentEnrollmentInfo } from "@/lib/types";
+import { useMemo, useState, useEffect } from "react";
 
 export default function MorePage() {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
 
-  const { data: enrollments } = useQuery<StudentEnrollmentInfo[]>({
-    queryKey: ['studentEnrollments', user?.username],
-    queryFn: () => getStudentEnrollments(user!.username!),
-    enabled: !!user?.username,
-  });
+  useEffect(() => {
+    const storedCourseCode = localStorage.getItem('selected_course');
+    if (storedCourseCode) {
+        setSelectedCourseCode(storedCourseCode);
+    }
+  }, []);
 
-  const isEnrolledInCPCC28 = useMemo(() => {
-    return enrollments?.some(e => e.course_code === 'CPCC28') || false;
-  }, [enrollments]);
+  const navItems = useMemo(() => {
+    const baseItems = [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
+      { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
+      { href: "/dashboard/certificate-order", label: "Certificate Order", icon: Award },
+      { href: "/dashboard/bnf", label: "BNF", icon: BookOpen },
+      { href: "/dashboard/medimind", label: "MediMind", icon: MediMindIcon },
+      { href: "/dashboard/games", label: "All Games", icon: Gamepad2 }
+    ];
 
-  const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
-    { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
-    { href: "/dashboard/certificate-order", label: "Certificate Order", icon: Award },
-    { href: "/dashboard/bnf", label: "BNF", icon: BookOpen },
-    { href: "/dashboard/medimind", label: "MediMind", icon: MediMindIcon },
-    { href: "/dashboard/games", label: "All Games", icon: Gamepad2 }
-  ];
+    if (selectedCourseCode === 'CPCC28') {
+      baseItems.push({ href: "/dashboard/games/sentence-builder", label: "Sentence Builder", icon: BookText });
+    }
 
-  if (isEnrolledInCPCC28) {
-    navItems.push({ href: "/dashboard/games/sentence-builder", label: "Sentence Builder", icon: BookText });
-  }
+    if (user?.role === 'staff') {
+      baseItems.push({ href: "/admin/dashboard", label: "Admin Panel", icon: Shield });
+    }
+    
+    return baseItems;
+  }, [user?.role, selectedCourseCode]);
 
-  const adminNavItem = { href: "/admin/dashboard", label: "Admin Panel", icon: Shield };
-
-  if (user?.role === 'staff') {
-    navItems.push(adminNavItem);
-  }
-  
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
@@ -129,5 +129,3 @@ export default function MorePage() {
     </div>
   );
 }
-
-    
