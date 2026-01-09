@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { getTickets } from "@/lib/actions/tickets";
-import type { Ticket, Course } from "@/lib/types";
+import type { Ticket, Course, StudentEnrollmentInfo } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,9 +16,20 @@ import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, Award
 import { UnreadBadge } from "@/components/dashboard/UnreadBadge";
 import { CeylonPharmacyIcon, DPadIcon, HunterProIcon, LuckyWheelIcon, MediMindIcon, PharmaHunterIcon, PharmaReaderIcon, WinPharmaIcon, WordPalletIcon } from "@/components/icons/module-icons";
 import { getCourses } from "@/lib/actions/courses";
+import { getStudentEnrollments } from "@/lib/actions/users";
 import Image from "next/image";
-import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 // --- Sub Components ---
@@ -72,22 +83,53 @@ const TicketStats = ({ tickets, isLoading }: { tickets: Ticket[], isLoading: boo
     );
 };
 
-const QuickActionCard = ({ title, description, href, icon, colorClass }: { title: string, description: string, href: string, icon: React.ReactElement, colorClass: string }) => (
-    <Link href={href} className="group block">
-        <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
-            <CardContent className="p-4 flex items-center gap-4">
-                <div className={`p-3 rounded-lg bg-gradient-to-br ${colorClass}`}>
-                    {icon}
-                </div>
-                <div className="flex-1">
-                    <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{title}</h3>
-                    <p className="text-sm text-muted-foreground">{description}</p>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
-            </CardContent>
-        </Card>
-    </Link>
-);
+const QuickActionCard = ({ title, description, href, icon, colorClass, requiredCourses, selectedCourseCode, allCourses, setDialogContent }: { 
+    title: string; 
+    description: string; 
+    href: string; 
+    icon: React.ReactElement; 
+    colorClass: string; 
+    requiredCourses?: string[];
+    selectedCourseCode: string | null; 
+    allCourses: Course[] | undefined;
+    setDialogContent: (content: { title: string; description: string } | null) => void;
+}) => {
+    const router = useRouter();
+
+    const handleClick = (e: React.MouseEvent) => {
+        if (requiredCourses && (!selectedCourseCode || !requiredCourses.includes(selectedCourseCode))) {
+            e.preventDefault();
+            const requiredCourseNames = allCourses
+                ?.filter(c => requiredCourses.includes(c.courseCode))
+                .map(c => `${c.name} (${c.courseCode})`)
+                .join(' or ');
+            
+            setDialogContent({
+                title: "Course Requirement Not Met",
+                description: `This game is only available for students enrolled in: ${requiredCourseNames || requiredCourses.join(', ')}.`,
+            });
+        } else {
+            router.push(href);
+        }
+    };
+    
+    return (
+        <a href={href} onClick={handleClick} className="group block cursor-pointer">
+            <Card className="shadow-lg hover:shadow-xl transition-all duration-200 h-full border-0">
+                <CardContent className="p-4 flex items-center gap-4">
+                    <div className={`p-3 rounded-lg bg-gradient-to-br ${colorClass}`}>
+                        {icon}
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{title}</h3>
+                        <p className="text-sm text-muted-foreground">{description}</p>
+                    </div>
+                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
+                </CardContent>
+            </Card>
+        </a>
+    );
+};
 
 
 // --- Main Page Component ---
@@ -95,15 +137,13 @@ export default function StudentDashboardPage() {
     const { user } = useAuth();
     const router = useRouter();
     const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
+    const [dialogContent, setDialogContent] = useState<{ title: string; description: string } | null>(null);
     
     useEffect(() => {
         const storedCourseCode = localStorage.getItem('selected_course');
         if (storedCourseCode) {
             setSelectedCourseCode(storedCourseCode);
         } else {
-            // If no course is selected in localStorage, redirect to the selection page.
-            // This is a safeguard in case the user lands here directly without logging in
-            // or if they have multiple courses and haven't chosen one.
             router.replace('/dashboard/select-course');
         }
     }, [router]);
@@ -120,6 +160,12 @@ export default function StudentDashboardPage() {
         staleTime: Infinity,
     });
     
+    const { data: enrollments, isLoading: isLoadingEnrollments } = useQuery<StudentEnrollmentInfo[]>({
+        queryKey: ['studentEnrollments', user?.username],
+        queryFn: () => getStudentEnrollments(user!.username!),
+        enabled: !!user?.username,
+    });
+
     const selectedCourse = useMemo(() => {
         if (!selectedCourseCode || !allCourses) return null;
         return allCourses.find(c => c.courseCode === selectedCourseCode);
@@ -132,7 +178,6 @@ export default function StudentDashboardPage() {
         .slice(0, 5);
     }, [tickets]);
 
-    // If we're still waiting for the course code from local storage, show a loader.
     if (!selectedCourseCode && !isLoadingCourses) {
         return (
              <div className="flex h-screen items-center justify-center">
@@ -143,6 +188,17 @@ export default function StudentDashboardPage() {
 
     return (
         <div className="space-y-8 p-4 md:p-8 bg-background pb-20">
+             <AlertDialog open={!!dialogContent} onOpenChange={() => setDialogContent(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{dialogContent?.title}</AlertDialogTitle>
+                        <AlertDialogDescription>{dialogContent?.description}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => setDialogContent(null)}>OK</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* --- Profile Header --- */}
             <Card className="shadow-lg overflow-hidden animate-in fade-in-50">
@@ -160,7 +216,7 @@ export default function StudentDashboardPage() {
 
              <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-100">
                 <h2 className="text-2xl font-semibold font-headline mb-4">My Course</h2>
-                {isLoadingCourses ? (
+                {isLoadingCourses || isLoadingEnrollments ? (
                     <Skeleton className="h-32 w-full" />
                 ) : selectedCourse ? (
                     <Card className="shadow-lg bg-gradient-to-r from-primary/10 to-background">
@@ -193,19 +249,19 @@ export default function StudentDashboardPage() {
              <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-400">
                  <h2 className="text-2xl font-semibold font-headline mb-4">Games & Challenges</h2>
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                     <QuickActionCard title="Ceylon Pharmacy" description="Patient simulation game." href="/dashboard/ceylon-pharmacy" icon={<CeylonPharmacyIcon className="w-8 h-8 text-white"/>} colorClass="from-cyan-400 to-sky-500" />
-                     <QuickActionCard title="D-Pad Challenge" description="Dispensing accuracy test." href="/dashboard/d-pad" icon={<DPadIcon className="w-8 h-8 text-white"/>} colorClass="from-rose-400 to-red-500" />
-                     <QuickActionCard title="Sentence Builder" description="English language practice." href="/dashboard/games/sentence-builder" icon={<BookText className="w-8 h-8 text-white"/>} colorClass="from-amber-400 to-orange-500" />
-                     <QuickActionCard title="MediMind" description="Test your pharmacology knowledge." href="/dashboard/medimind" icon={<MediMindIcon className="w-8 h-8 text-white"/>} colorClass="from-purple-400 to-violet-500" />
+                     <QuickActionCard title="Ceylon Pharmacy" description="Patient simulation game." href="/dashboard/ceylon-pharmacy" icon={<CeylonPharmacyIcon className="w-8 h-8 text-white"/>} colorClass="from-cyan-400 to-sky-500" selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
+                     <QuickActionCard title="D-Pad Challenge" description="Dispensing accuracy test." href="/dashboard/d-pad" icon={<DPadIcon className="w-8 h-8 text-white"/>} colorClass="from-rose-400 to-red-500" selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
+                     <QuickActionCard title="Sentence Builder" description="English language practice." href="/dashboard/games/sentence-builder" icon={<BookText className="w-8 h-8 text-white"/>} colorClass="from-amber-400 to-orange-500" requiredCourses={['CPCC28', 'CPCC27']} selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
+                     <QuickActionCard title="MediMind" description="Test your pharmacology knowledge." href="/dashboard/medimind" icon={<MediMindIcon className="w-8 h-8 text-white"/>} colorClass="from-purple-400 to-violet-500" selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
                  </div>
             </section>
 
             <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-150">
                 <h2 className="text-2xl font-semibold font-headline mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <QuickActionCard title="Create Ticket" description="Open a new support request for any issue." href="/dashboard/create-ticket" icon={<PlusCircle className="w-8 h-8 text-white" />} colorClass="from-blue-400 to-indigo-500" />
-                     <QuickActionCard title="Order Certificate" description="Request official certificates for completed courses." href="/dashboard/certificate-order" icon={<Award className="w-8 h-8 text-white" />} colorClass="from-green-400 to-teal-500" />
-                     <QuickActionCard title="BNF" description="Access the British National Formulary." href="/dashboard/bnf" icon={<BookOpen className="w-8 h-8 text-white" />} colorClass="from-red-400 to-rose-500" />
+                     <QuickActionCard title="Create Ticket" description="Open a new support request for any issue." href="/dashboard/create-ticket" icon={<PlusCircle className="w-8 h-8 text-white" />} colorClass="from-blue-400 to-indigo-500" selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
+                     <QuickActionCard title="Order Certificate" description="Request official certificates for completed courses." href="/dashboard/certificate-order" icon={<Award className="w-8 h-8 text-white" />} colorClass="from-green-400 to-teal-500" selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
+                     <QuickActionCard title="BNF" description="Access the British National Formulary." href="/dashboard/bnf" icon={<BookOpen className="w-8 h-8 text-white" />} colorClass="from-red-400 to-rose-500" selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
                 </div>
             </section>
             

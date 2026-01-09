@@ -14,38 +14,111 @@ import {
   Moon,
   Sun,
   BookOpen,
+  BookText,
+  Gamepad2
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { MediMindIcon } from "@/components/icons/module-icons";
+import { useQuery } from "@tanstack/react-query";
+import { getStudentEnrollments } from "@/lib/actions/users";
+import { getCourses } from "@/lib/actions/courses";
+import type { StudentEnrollmentInfo, Course } from "@/lib/types";
+import { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 export default function MorePage() {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
+  const router = useRouter();
+  const [dialogContent, setDialogContent] = useState<{ title: string; description: string } | null>(null);
 
-  const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
-    { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
-    { href: "/dashboard/certificate-order", label: "Certificate Order", icon: Award },
-    { href: "/dashboard/bnf", label: "BNF", icon: BookOpen },
-    { href: "/dashboard/medimind", label: "MediMind", icon: MediMindIcon },
-  ];
-
-  const adminNavItem = { href: "/admin/dashboard", label: "Admin Panel", icon: Shield };
-
-  if (user?.role === 'staff') {
-    navItems.push(adminNavItem);
-  }
+  useEffect(() => {
+    const storedCourseCode = localStorage.getItem('selected_course');
+    if (storedCourseCode) {
+        setSelectedCourseCode(storedCourseCode);
+    }
+  }, []);
   
+   const { data: allCourses } = useQuery<Course[]>({
+    queryKey: ['allCourses'],
+    queryFn: getCourses,
+    staleTime: Infinity,
+  });
+
+  const navItems = useMemo(() => {
+    const baseItems = [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
+      { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
+      { href: "/dashboard/certificate-order", label: "Certificate Order", icon: Award },
+      { href: "/dashboard/bnf", label: "BNF", icon: BookOpen },
+      { href: "/dashboard/medimind", label: "MediMind", icon: MediMindIcon },
+      { href: "/dashboard/games", label: "All Games", icon: Gamepad2 }
+    ];
+
+    baseItems.push({ 
+        href: "/dashboard/games/sentence-builder", 
+        label: "Sentence Builder", 
+        icon: BookText, 
+        requiredCourses: ["CPCC28", "CPCC27"] 
+    });
+
+
+    if (user?.role === 'staff') {
+      baseItems.push({ href: "/admin/dashboard", label: "Admin Panel", icon: Shield });
+    }
+    
+    return baseItems;
+  }, [user?.role]);
+
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
+  const handleLinkClick = (e: React.MouseEvent, item: { href: string; requiredCourses?: string[] }) => {
+      if (item.requiredCourses && (!selectedCourseCode || !item.requiredCourses.includes(selectedCourseCode))) {
+            e.preventDefault();
+            const requiredCourseNames = allCourses
+                ?.filter(c => item.requiredCourses!.includes(c.courseCode))
+                .map(c => `${c.name} (${c.courseCode})`)
+                .join(' or ');
+            
+            setDialogContent({
+                title: "Course Requirement Not Met",
+                description: `This game is only available for students enrolled in: ${requiredCourseNames || item.requiredCourses.join(', ')}.`,
+            });
+      } else {
+          router.push(item.href);
+      }
+  };
+
+
   return (
     <div className="p-4 md:p-8 space-y-6 pb-20">
+      <AlertDialog open={!!dialogContent} onOpenChange={() => setDialogContent(null)}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>{dialogContent?.title}</AlertDialogTitle>
+                  <AlertDialogDescription>{dialogContent?.description}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogAction onClick={() => setDialogContent(null)}>OK</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
       <header>
         <h1 className="text-3xl font-headline font-semibold">More Options</h1>
         <p className="text-muted-foreground">Manage your account and navigate the app.</p>
@@ -70,7 +143,7 @@ export default function MorePage() {
         <CardContent className="p-2">
           <div className="space-y-1">
             {navItems.map((item) => (
-              <Link key={item.href} href={item.href} className="block group">
+              <a key={item.href} href={item.href} onClick={(e) => handleLinkClick(e, item)} className="block group cursor-pointer">
                 <div className="flex items-center justify-between p-3 rounded-md hover:bg-muted transition-colors">
                   <div className="flex items-center gap-4">
                     <item.icon className="h-6 w-6 text-primary" />
@@ -78,7 +151,7 @@ export default function MorePage() {
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
                 </div>
-              </Link>
+              </a>
             ))}
           </div>
         </CardContent>
