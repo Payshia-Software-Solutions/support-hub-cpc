@@ -50,6 +50,7 @@ import {
   AlertDialogAction,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
@@ -158,7 +159,7 @@ export function SidebarNav() {
                 isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href)}
                 tooltip={{ children: item.label, side: "right" }}
                 className="justify-start"
-                 onClick={(e: React.MouseEvent) => handleLinkClick(e, item)}
+                 onClick={(e: React.MouseEvent) => handleLinkClick(e, item as any)}
               >
                 <Link href={item.href}>
                   <item.icon className="h-5 w-5" />
