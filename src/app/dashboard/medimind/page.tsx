@@ -25,11 +25,12 @@ export default function MediMindPage() {
   const [correctlyAnsweredIds, setCorrectlyAnsweredIds] = useState<Set<string>>(new Set());
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
-  const [score, setScore] = useState(0);
+  const [coins, setCoins] = useState(0);
   const [levelScore, setLevelScore] = useState(0);
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [firstAttempt, setFirstAttempt] = useState(true);
 
   const questionSet = mediMindGameData.question_set;
 
@@ -40,6 +41,7 @@ export default function MediMindPage() {
     setIsAnswerCorrect(null);
     setLevelScore(0);
     setView('game');
+    setFirstAttempt(true);
   };
   
   const startRandomModule = () => {
@@ -84,13 +86,19 @@ export default function MediMindPage() {
     if (selectedAnswer === correctAnswer) {
       setIsAnswerCorrect(true);
       const points = 10;
-      setScore(prev => prev + points);
+      setCoins(prev => prev + points);
       setLevelScore(prev => prev + points);
       setCorrectlyAnsweredIds(prev => new Set(prev).add(currentQuestion.id));
-      toast({ title: "Correct!", description: `+${points} points!` });
+      toast({ title: "Correct!", description: `+${points} coins!` });
     } else {
       setIsAnswerCorrect(false);
-      toast({ variant: 'destructive', title: "Not quite!", description: "That's not the right answer." });
+      if (firstAttempt) {
+        setCoins(prev => prev - 2);
+        toast({ variant: 'destructive', title: "Not quite!", description: "Try again. You lost 2 coins." });
+        setFirstAttempt(false);
+      } else {
+        toast({ variant: 'destructive', title: "Still not right!", description: "Take another look at the options." });
+      }
     }
   };
   
@@ -98,6 +106,7 @@ export default function MediMindPage() {
     setSelectedAnswer(null);
     setIsAnswerCorrect(null);
     setAudioSrc(null);
+    setFirstAttempt(true);
 
     const isModuleComplete = (correctlyAnsweredIds.size === questionSet.length);
 
@@ -131,8 +140,8 @@ export default function MediMindPage() {
                         <CardDescription>You have completed all available medicine modules.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-lg">Your final score is:</p>
-                        <p className="text-6xl font-bold my-2">{score}</p>
+                        <p className="text-lg">Your final coin balance is:</p>
+                        <p className="text-6xl font-bold my-2">{coins}</p>
                     </CardContent>
                     <CardFooter className="justify-center">
                         <Button onClick={() => router.push('/dashboard')}>
@@ -161,7 +170,7 @@ export default function MediMindPage() {
                             <CardDescription>Question {correctlyAnsweredIds.size + 1} of {questionSet.length}</CardDescription>
                         </div>
                         <div className="text-right">
-                            <p className="text-sm font-bold text-primary mt-1">Score: {score}</p>
+                            <p className="text-sm font-bold text-primary mt-1">Coins: {coins}</p>
                         </div>
                     </div>
                     <Progress value={progress} className="mt-4" />
@@ -175,12 +184,8 @@ export default function MediMindPage() {
                         <Alert variant="default" className="bg-green-100 border-green-300 text-green-800">
                             <Check className="h-4 w-4 !text-green-800" />
                             <AlertTitle className="flex justify-between items-center">
-                                <span>Correct!</span>
-                                <Button size="sm" variant="ghost" className="h-auto p-1.5" onClick={playAudio} disabled={isAudioLoading}>
-                                    {isAudioLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Volume2 className="h-5 w-5"/>}
-                                </Button>
+                                <span>Correct! You earned 10 coins.</span>
                             </AlertTitle>
-                            <AlertDescription>The right answer was <span className="font-semibold">{activeModule.answers[currentQuestion.id]}</span></AlertDescription>
                         </Alert>
                     )}
 
@@ -188,7 +193,7 @@ export default function MediMindPage() {
                         <Alert variant="destructive">
                             <X className="h-4 w-4" />
                             <AlertTitle>Incorrect!</AlertTitle>
-                            <AlertDescription>The correct answer is <span className="font-semibold">{activeModule.answers[currentQuestion.id]}</span>.</AlertDescription>
+                            <AlertDescription>That's not the right answer. Feel free to try again.</AlertDescription>
                         </Alert>
                     )}
 
@@ -198,7 +203,7 @@ export default function MediMindPage() {
                                 key={answer}
                                 variant={selectedAnswer === answer ? 'default' : 'outline'}
                                 onClick={() => setSelectedAnswer(answer)}
-                                disabled={isAnswerCorrect !== null}
+                                disabled={isAnswerCorrect === true}
                                 className="h-auto py-3 text-sm"
                             >
                                 {answer}
@@ -207,10 +212,10 @@ export default function MediMindPage() {
                     </div>
                 </CardContent>
                 <CardFooter className="flex-col sm:flex-row justify-between gap-2">
-                    <Button variant="outline" onClick={handleSkipModule} disabled={isAnswerCorrect !== null}>
+                    <Button variant="outline" onClick={handleSkipModule} disabled={isAnswerCorrect === true}>
                         <SkipForward className="mr-2 h-4 w-4" /> Skip Medicine
                     </Button>
-                    {isAnswerCorrect !== null ? (
+                    {isAnswerCorrect === true ? (
                         <Button onClick={handleNextQuestion}>
                             {correctlyAnsweredIds.size === questionSet.length ? 'Finish Module' : 'Next Question'} <Sparkles className="ml-2 h-4 w-4" />
                         </Button>
@@ -235,7 +240,7 @@ export default function MediMindPage() {
         <CardContent>
             <p className="text-lg">You earned</p>
             <p className="text-6xl font-bold my-2">{levelScore}</p>
-            <p className="text-lg">points in this module.</p>
+            <p className="text-lg">coins in this module.</p>
         </CardContent>
         <CardFooter className="justify-center">
             <Button onClick={handleFinish}>
@@ -263,8 +268,8 @@ export default function MediMindPage() {
                     <CardDescription>You have completed all available medicine modules.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-lg">Your final score is:</p>
-                    <p className="text-6xl font-bold my-2">{score}</p>
+                    <p className="text-lg">Your final coin balance is:</p>
+                    <p className="text-6xl font-bold my-2">{coins}</p>
                 </CardContent>
                 <CardFooter className="justify-center">
                     <Button onClick={() => router.push('/dashboard')}>
