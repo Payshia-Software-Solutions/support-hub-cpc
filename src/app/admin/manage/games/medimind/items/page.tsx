@@ -3,7 +3,6 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,14 +14,40 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, AlertTriangle, Search, Image as ImageIcon, Pill } from "lucide-react";
 import Image from 'next/image';
 
-import { getMediMindItems, createMediMindItem, updateMediMindItem, deleteMediMindItem } from '@/lib/actions/games';
 import type { MediMindItem } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
+
+
+const dummyMediMindItems: MediMindItem[] = [
+    {
+        id: '1',
+        name: 'Paracetamol 500mg',
+        description: 'A common pain reliever and fever reducer.',
+        image_path: 'paracetamol.jpg',
+        created_at: new Date().toISOString(),
+        created_by: 'Admin'
+    },
+    {
+        id: '2',
+        name: 'Amoxicillin 250mg',
+        description: 'An antibiotic used to treat a number of bacterial infections.',
+        image_path: 'amoxicillin.jpg',
+        created_at: new Date().toISOString(),
+        created_by: 'Admin'
+    },
+    {
+        id: '3',
+        name: 'Loratadine 10mg',
+        description: 'An antihistamine used to treat allergies.',
+        image_path: 'loratadine.jpg',
+        created_at: new Date().toISOString(),
+        created_by: 'Admin'
+    }
+];
 
 
 const itemFormSchema = z.object({
@@ -33,9 +58,7 @@ const itemFormSchema = z.object({
 
 type ItemFormValues = z.infer<typeof itemFormSchema>;
 
-const ItemForm = ({ item, onClose }: { item?: MediMindItem | null; onClose: () => void; }) => {
-    const queryClient = useQueryClient();
-    const { user } = useAuth();
+const ItemForm = ({ item, onSave, onClose, isSaving }: { item?: MediMindItem | null; onSave: (data: ItemFormValues) => void; onClose: () => void; isSaving: boolean }) => {
     
     const form = useForm<ItemFormValues>({
         resolver: zodResolver(itemFormSchema),
@@ -46,40 +69,8 @@ const ItemForm = ({ item, onClose }: { item?: MediMindItem | null; onClose: () =
         }
     });
 
-    const mutation = useMutation({
-        mutationFn: (formData: FormData) => {
-            if (item) {
-                return updateMediMindItem(item.id, formData);
-            }
-            return createMediMindItem(formData);
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['mediMindItems'] });
-            toast({ title: 'Success', description: `Item ${item ? 'updated' : 'created'}.` });
-            onClose();
-        },
-        onError: (error: Error) => {
-            toast({ variant: 'destructive', title: 'Save Error', description: error.message });
-        }
-    });
-
     const onSubmit = (data: ItemFormValues) => {
-        if (!user?.username) {
-            toast({ variant: 'destructive', title: 'Authentication Error' });
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('name', data.name);
-        formData.append('description', data.description || '');
-        if (data.image?.[0]) {
-            formData.append('image', data.image[0]);
-        }
-        if (!item) {
-             formData.append('created_by', user.username);
-        }
-
-        mutation.mutate(formData);
+        onSave(data);
     };
 
     return (
@@ -105,9 +96,9 @@ const ItemForm = ({ item, onClose }: { item?: MediMindItem | null; onClose: () =
                 )}
             </div>
             <DialogFooter>
-                <DialogClose asChild><Button type="button" variant="outline" disabled={mutation.isPending}>Cancel</Button></DialogClose>
-                <Button type="submit" disabled={mutation.isPending}>
-                    {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <DialogClose asChild><Button type="button" variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
+                <Button type="submit" disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {item ? 'Save Changes' : 'Create Item'}
                 </Button>
             </DialogFooter>
@@ -118,31 +109,18 @@ const ItemForm = ({ item, onClose }: { item?: MediMindItem | null; onClose: () =
 
 export default function ManageItemsPage() {
     const router = useRouter();
-    const queryClient = useQueryClient();
+    const [items, setItems] = useState<MediMindItem[]>(dummyMediMindItems);
     const [searchTerm, setSearchTerm] = useState('');
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<MediMindItem | null>(null);
     const [itemToDelete, setItemToDelete] = useState<MediMindItem | null>(null);
-
-    const { data: items, isLoading, isError, error } = useQuery<MediMindItem[]>({
-        queryKey: ['mediMindItems'],
-        queryFn: getMediMindItems,
-    });
+    const [isSaving, setIsSaving] = useState(false);
+    const { user } = useAuth();
     
-    const deleteMutation = useMutation({
-        mutationFn: deleteMediMindItem,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['mediMindItems'] });
-            toast({ title: 'Success', description: 'Item deleted.' });
-        },
-        onError: (error: Error) => toast({ variant: 'destructive', title: 'Delete Error', description: error.message }),
-        onSettled: () => setItemToDelete(null),
-    });
-
     const filteredItems = useMemo(() => {
-        if (!items) return [];
         return items.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [items, searchTerm]);
+
 
     const handleCreate = () => {
         setSelectedItem(null);
@@ -154,6 +132,44 @@ export default function ManageItemsPage() {
         setIsFormOpen(true);
     };
 
+    const handleSave = (data: ItemFormValues) => {
+        setIsSaving(true);
+        setTimeout(() => { // Simulate async operation
+            if (selectedItem) {
+                // Update existing item
+                setItems(prevItems => prevItems.map(item =>
+                    item.id === selectedItem.id ? { ...item, ...data, image_path: data.image?.[0]?.name || item.image_path } : item
+                ));
+                toast({ title: "Item Updated" });
+            } else {
+                // Add new item
+                const newItem: MediMindItem = {
+                    id: String(Date.now()),
+                    name: data.name,
+                    description: data.description || '',
+                    image_path: data.image?.[0]?.name || 'no-image.png',
+                    created_at: new Date().toISOString(),
+                    created_by: user?.username || 'admin',
+                };
+                setItems(prevItems => [newItem, ...prevItems]);
+                toast({ title: "Item Created" });
+            }
+            setIsSaving(false);
+            setIsFormOpen(false);
+        }, 1000);
+    };
+
+    const handleDelete = () => {
+        if (!itemToDelete) return;
+        setIsSaving(true);
+        setTimeout(() => {
+            setItems(prev => prev.filter(item => item.id !== itemToDelete.id));
+            toast({ title: 'Item Deleted' });
+            setItemToDelete(null);
+            setIsSaving(false);
+        }, 500);
+    }
+
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -162,7 +178,7 @@ export default function ManageItemsPage() {
                         <DialogTitle>{selectedItem ? 'Edit' : 'Create'} Medicine Item</DialogTitle>
                         <DialogDescription>Fill in the details for the medicine.</DialogDescription>
                     </DialogHeader>
-                    <ItemForm item={selectedItem} onClose={() => setIsFormOpen(false)} />
+                    <ItemForm item={selectedItem} onClose={() => setIsFormOpen(false)} onSave={handleSave} isSaving={isSaving} />
                 </DialogContent>
             </Dialog>
 
@@ -174,8 +190,8 @@ export default function ManageItemsPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteMutation.mutate(itemToDelete!.id)}>
-                            {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Delete
+                        <AlertDialogAction onClick={handleDelete} disabled={isSaving}>
+                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -210,43 +226,36 @@ export default function ManageItemsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {isLoading && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
-                        </div>
-                    )}
-                    {isError && <div className="text-destructive text-center py-8">Error: {(error as Error).message}</div>}
-                    {!isLoading && !isError && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {filteredItems.length > 0 ? filteredItems.map(item => (
-                                <Card key={item.id} className="flex flex-col">
-                                    <div className="relative w-full h-32 bg-muted rounded-t-lg overflow-hidden">
-                                        <Image src={`https://content-provider.pharmacollege.lk/medimind/${item.image_path}`} alt={item.name} layout="fill" objectFit="cover" />
-                                    </div>
-                                    <CardHeader>
-                                        <CardTitle className="text-base">{item.name}</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="flex-grow">
-                                        <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
-                                    </CardContent>
-                                    <CardFooter className="p-2 border-t mt-auto">
-                                        <div className="flex justify-end w-full gap-1">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(item)}><Edit className="h-4 w-4"/></Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setItemToDelete(item)}><Trash2 className="h-4 w-4"/></Button>
-                                        </div>
-                                    </CardFooter>
-                                </Card>
-                            )) : (
-                                <div className="col-span-full text-center py-10 text-muted-foreground">
-                                    <Pill className="mx-auto h-12 w-12" />
-                                    <h3 className="mt-4 text-lg font-semibold">No Items Found</h3>
-                                    <p>Click "Add New Item" to create the first one.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredItems.length > 0 ? filteredItems.map(item => (
+                            <Card key={item.id} className="flex flex-col">
+                                <div className="relative w-full h-32 bg-muted rounded-t-lg overflow-hidden">
+                                    <Image src={`https://content-provider.pharmacollege.lk/medimind/${item.image_path}`} alt={item.name} layout="fill" objectFit="cover" onError={(e) => e.currentTarget.src = 'https://placehold.co/800x450.png'} />
                                 </div>
-                            )}
-                        </div>
-                    )}
+                                <CardHeader>
+                                    <CardTitle className="text-base">{item.name}</CardTitle>
+                                </CardHeader>
+                                <CardContent className="flex-grow">
+                                    <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                                </CardContent>
+                                <CardFooter className="p-2 border-t mt-auto">
+                                    <div className="flex justify-end w-full gap-1">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(item)}><Edit className="h-4 w-4"/></Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setItemToDelete(item)}><Trash2 className="h-4 w-4"/></Button>
+                                    </div>
+                                </CardFooter>
+                            </Card>
+                        )) : (
+                            <div className="col-span-full text-center py-10 text-muted-foreground">
+                                <Pill className="mx-auto h-12 w-12" />
+                                <h3 className="mt-4 text-lg font-semibold">No Items Found</h3>
+                                <p>Click "Add New Item" to create the first one.</p>
+                            </div>
+                        )}
+                    </div>
                 </CardContent>
             </Card>
         </div>
     );
 }
+
