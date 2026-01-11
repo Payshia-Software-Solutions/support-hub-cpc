@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -14,7 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Layers } from "lucide-react";
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Layers, ArrowRight } from "lucide-react";
+import Link from 'next/link';
 
 // --- Mock Data ---
 interface GameLevel {
@@ -168,6 +169,11 @@ export default function ManageLevelsPage() {
                             </div>
                             <div className="flex gap-1">
                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(level)}><Edit className="h-4 w-4" /></Button>
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link href={`/admin/manage/games/medimind/levels/${level.id}`}>
+                                        Manage Items <ArrowRight className="ml-2 h-4 w-4"/>
+                                    </Link>
+                                </Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setLevelToDelete(level)}><Trash2 className="h-4 w-4" /></Button>
                             </div>
                         </div>
