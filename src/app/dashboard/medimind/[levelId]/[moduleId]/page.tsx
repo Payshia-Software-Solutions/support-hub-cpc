@@ -49,11 +49,11 @@ export default function MediMindGamePage() {
       toast({ title: "Correct!", description: `+${points} coins!` });
     } else {
         setIsAnswerCorrect(false);
+        setCoins(prev => prev - 2);
         if (firstAttempt) {
-            setCoins(prev => prev - 2);
             toast({ variant: 'destructive', title: "Not quite!", description: "You lost 2 coins. Try again!" });
         } else {
-            toast({ variant: 'destructive', title: "Still not right!" });
+            toast({ variant: 'destructive', title: "Still not right!", description: "You lost another 2 coins." });
         }
         setFirstAttempt(false);
     }
@@ -107,7 +107,7 @@ export default function MediMindGamePage() {
         <div className="space-y-6">
             <Card className="shadow-lg overflow-hidden">
                 <div className="relative aspect-video bg-muted">
-                    <Image src={`https://picsum.photos/seed/${activeModule.name}/800/450`} alt={activeModule.name} layout="fill" objectFit="cover" />
+                    <Image src={`https://picsum.photos/seed/${activeModule.id}/800/450`} alt={activeModule.name} layout="fill" objectFit="cover" />
                 </div>
             </Card>
             <Card className="shadow-lg">
@@ -130,14 +130,15 @@ export default function MediMindGamePage() {
                     {isAnswerCorrect === true && (
                         <Alert variant="default" className="bg-green-100 border-green-300 text-green-800">
                             <Check className="h-4 w-4 !text-green-800" />
-                            <AlertTitle>Correct! You earned 10 coins.</AlertTitle>
+                            <AlertTitle>Correct!</AlertTitle>
+                            <AlertDescription>The correct answer was <span className="font-semibold">{selectedAnswer}</span>. You earned 10 coins.</AlertDescription>
                         </Alert>
                     )}
                     {isAnswerCorrect === false && (
                         <Alert variant="destructive">
                             <X className="h-4 w-4" />
                             <AlertTitle>Incorrect! Try again.</AlertTitle>
-                            <AlertDescription>That wasn't the right answer. Select another option or try again.</AlertDescription>
+                            <AlertDescription>That wasn't the right answer. Select another option.</AlertDescription>
                         </Alert>
                     )}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
