@@ -799,3 +799,14 @@ export interface StudentAnswer {
     score_awarded: string;
     submitted_at: string;
 }
+
+// MediMind Game Types
+export interface MediMindItem {
+  id: string;
+  name: string;
+  description: string;
+  image_path: string;
+  created_at: string;
+  created_by: string;
+}
+```
