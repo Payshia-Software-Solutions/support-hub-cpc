@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,25 +14,40 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, HelpCircle, Search } from "lucide-react";
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, FileQuestion, Search } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 // --- Mock Data Structure ---
-interface AnswerOption {
+interface GameQuestion {
   id: string;
   text: string;
 }
 
+interface AnswerOption {
+  id: string;
+  questionId: string;
+  text: string;
+}
+
+const dummyQuestions: GameQuestion[] = [
+  { id: 'q1', text: 'What is its primary Drug Class?' },
+  { id: 'q2', text: 'What is its primary Indication (use)?' },
+  { id: 'q3', text: 'What is its Mechanism of Action?' },
+  { id: 'q4', text: 'What is a Common Side Effect?' },
+  { id: 'q5', text: 'What is a common Dosage Form?' },
+];
+
 const dummyAnswers: AnswerOption[] = [
-  { id: 'a1', text: 'Analgesic' },
-  { id: 'a2', text: 'Antibiotic' },
-  { id: 'a3', text: 'Antihypertensive' },
-  { id: 'a4', text: 'Pain and fever' },
-  { id: 'a5', text: 'Bacterial infection' },
-  { id: 'a6', text: 'Tablet' },
-  { id: 'a7', text: 'Capsule' },
-  { id: 'a8', text: 'Inhibits COX enzymes' },
-  { id: 'a9', text: 'Inhibits bacterial cell wall synthesis' },
-  { id: 'a10', text: 'Liver damage (in overdose)' },
+  { id: 'a1', questionId: 'q1', text: 'Analgesic' },
+  { id: 'a2', questionId: 'q1', text: 'Antibiotic' },
+  { id: 'a3', questionId: 'q1', text: 'Antihypertensive' },
+  { id: 'a4', questionId: 'q2', text: 'Pain and fever' },
+  { id: 'a5', questionId: 'q2', text: 'Bacterial infection' },
+  { id: 'a6', questionId: 'q5', text: 'Tablet' },
+  { id: 'a7', questionId: 'q5', text: 'Capsule' },
+  { id: 'a8', questionId: 'q3', text: 'Inhibits COX enzymes' },
+  { id: 'a9', questionId: 'q3', text: 'Inhibits bacterial cell wall synthesis' },
+  { id: 'a10', questionId: 'q4', text: 'Liver damage (in overdose)' },
 ];
 
 // --- Form Schema ---
@@ -76,21 +91,28 @@ export default function ManageAnswersPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedAnswer, setSelectedAnswer] = useState<AnswerOption | null>(null);
+    const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
     const [answerToDelete, setAnswerToDelete] = useState<AnswerOption | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    const filteredAnswers = useMemo(() => {
-        return answers.filter(answer => answer.text.toLowerCase().includes(searchTerm.toLowerCase()))
-                      .sort((a,b) => a.text.localeCompare(b.text));
+    const answersByQuestion = useMemo(() => {
+        return dummyQuestions.map(question => ({
+            ...question,
+            answers: answers.filter(answer => answer.questionId === question.id)
+                            .filter(answer => answer.text.toLowerCase().includes(searchTerm.toLowerCase()))
+                            .sort((a,b) => a.text.localeCompare(b.text))
+        }));
     }, [answers, searchTerm]);
 
-    const handleCreate = () => {
+    const handleCreate = (questionId: string) => {
         setSelectedAnswer(null);
+        setActiveQuestionId(questionId);
         setIsFormOpen(true);
     };
 
     const handleEdit = (answer: AnswerOption) => {
         setSelectedAnswer(answer);
+        setActiveQuestionId(answer.questionId);
         setIsFormOpen(true);
     };
 
@@ -100,8 +122,8 @@ export default function ManageAnswersPage() {
             if (selectedAnswer) {
                 setAnswers(prev => prev.map(a => a.id === selectedAnswer.id ? { ...a, ...data } : a));
                 toast({ title: "Answer Updated" });
-            } else {
-                const newAnswer: AnswerOption = { id: `a${Date.now()}`, ...data };
+            } else if (activeQuestionId) {
+                const newAnswer: AnswerOption = { id: `a${Date.now()}`, questionId: activeQuestionId, ...data };
                 setAnswers(prev => [newAnswer, ...prev]);
                 toast({ title: "Answer Created" });
             }
@@ -126,8 +148,10 @@ export default function ManageAnswersPage() {
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{selectedAnswer ? 'Edit' : 'Create'} Answer Option</DialogTitle>
-                        <DialogDescription>Enter the text for a possible answer.</DialogDescription>
+                        <DialogTitle>{selectedAnswer ? 'Edit' : 'Create'} Answer</DialogTitle>
+                        <DialogDescription>
+                            {selectedAnswer ? `Editing an answer for "${dummyQuestions.find(q => q.id === activeQuestionId)?.text}"` : `Adding a new answer for "${dummyQuestions.find(q => q.id === activeQuestionId)?.text}"`}
+                        </DialogDescription>
                     </DialogHeader>
                     <AnswerForm answer={selectedAnswer} onClose={() => setIsFormOpen(false)} onSave={handleSave} isSaving={isSaving} />
                 </DialogContent>
@@ -148,27 +172,22 @@ export default function ManageAnswersPage() {
                 </AlertDialogContent>
             </AlertDialog>
 
-            <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-                <div>
-                    <Button variant="ghost" onClick={() => router.push('/admin/manage/games/medimind')} className="-ml-4">
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to MediMind Setup
-                    </Button>
-                    <h1 className="text-3xl font-headline font-semibold mt-2">Manage Answer Options</h1>
-                    <p className="text-muted-foreground">Manage the pool of possible answers for all questions.</p>
-                </div>
-                 <Button onClick={handleCreate}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Answer
+            <header>
+                <Button variant="ghost" onClick={() => router.push('/admin/manage/games/medimind')} className="-ml-4">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to MediMind Setup
                 </Button>
+                <h1 className="text-3xl font-headline font-semibold mt-2">Manage Answer Options</h1>
+                <p className="text-muted-foreground">Manage the pool of possible answers for each question type.</p>
             </header>
             
             <Card className="shadow-lg">
                 <CardHeader>
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-                        <CardTitle>Answer Pool</CardTitle>
+                        <CardTitle>Answer Pool by Question</CardTitle>
                         <div className="relative w-full md:max-w-xs">
                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                            <Input 
-                                placeholder="Search answers..."
+                                placeholder="Search all answers..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10"
@@ -176,24 +195,43 @@ export default function ManageAnswersPage() {
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                     {filteredAnswers.length > 0 ? filteredAnswers.map(answer => (
-                        <div key={answer.id} className="flex items-center justify-between p-3 border rounded-lg">
-                            <p className="font-medium text-sm">{answer.text}</p>
-                            <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(answer)}><Edit className="h-4 w-4" /></Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setAnswerToDelete(answer)}><Trash2 className="h-4 w-4" /></Button>
-                            </div>
-                        </div>
-                    )) : (
-                        <div className="text-center py-10 text-muted-foreground">
-                            <HelpCircle className="mx-auto h-12 w-12" />
-                            <h3 className="mt-4 text-lg font-semibold">No Answers Found</h3>
-                            <p>Click "Add New Answer" to create the first one.</p>
-                        </div>
-                    )}
+                <CardContent>
+                    <Accordion type="multiple" className="w-full space-y-2">
+                        {answersByQuestion.map(questionGroup => (
+                            <AccordionItem key={questionGroup.id} value={questionGroup.id} className="border rounded-lg">
+                                <AccordionTrigger className="p-4 hover:no-underline">
+                                    <div className="flex items-center justify-between w-full">
+                                        <div className="text-left">
+                                            <h3 className="font-semibold">{questionGroup.text}</h3>
+                                            <p className="text-sm text-muted-foreground">{questionGroup.answers.length} answer(s)</p>
+                                        </div>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="p-4 pt-0">
+                                    <div className="space-y-2">
+                                        {questionGroup.answers.map(answer => (
+                                            <div key={answer.id} className="flex items-center justify-between p-2 pl-3 border rounded-md bg-muted/50">
+                                                <p className="text-sm font-medium">{answer.text}</p>
+                                                <div className="flex items-center">
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(answer)}><Edit className="h-4 w-4" /></Button>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setAnswerToDelete(answer)}><Trash2 className="h-4 w-4" /></Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                         {questionGroup.answers.length === 0 && searchTerm && (
+                                            <p className="text-center text-sm text-muted-foreground py-4">No answers match your search in this category.</p>
+                                        )}
+                                    </div>
+                                    <Button size="sm" variant="outline" className="mt-4" onClick={() => handleCreate(questionGroup.id)}>
+                                        <PlusCircle className="mr-2 h-4 w-4" /> Add Answer
+                                    </Button>
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
                 </CardContent>
             </Card>
         </div>
     );
 }
+
