@@ -7,20 +7,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Check, Lightbulb, RefreshCw, Sparkles, Trophy, ChevronRight, Volume2, Loader2, BrainCircuit, X, CheckCircle, BookCopy, SkipForward } from 'lucide-react';
+import { ArrowLeft, Check, Lightbulb, RefreshCw, Sparkles, Trophy, ChevronRight, Volume2, Loader2, BrainCircuit, X, CheckCircle, Layers, Pill } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { mediMindGameData, MedicineModule } from '@/lib/medimind-data';
+import { mediMindGameData, MedicineModule, GameLevel, GameQuestion, AnswerSet } from '@/lib/medimind-data';
 import { cn } from '@/lib/utils';
-import { MediMindIcon } from '@/components/icons/module-icons';
 import Image from 'next/image';
 
-type View = 'loading' | 'game' | 'results' | 'all_completed';
+type View = 'levels' | 'modules' | 'game' | 'results' | 'all_completed';
 
 export default function MediMindPage() {
   const router = useRouter();
-  const [view, setView] = useState<View>('loading');
+  const [view, setView] = useState<View>('levels');
   const [modules, setModules] = useState<MedicineModule[]>(mediMindGameData.medicine_data);
+  const [levels, setLevels] = useState<GameLevel[]>(mediMindGameData.levels);
+  const [activeLevel, setActiveLevel] = useState<GameLevel | null>(null);
   const [activeModule, setActiveModule] = useState<MedicineModule | null>(null);
   const [correctlyAnsweredIds, setCorrectlyAnsweredIds] = useState<Set<string>>(new Set());
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -32,7 +33,10 @@ export default function MediMindPage() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [firstAttempt, setFirstAttempt] = useState(true);
 
-  const questionSet = mediMindGameData.question_set;
+  const startLevel = (level: GameLevel) => {
+    setActiveLevel(level);
+    setView('modules');
+  };
 
   const startModule = (module: MedicineModule) => {
     setActiveModule(module);
@@ -40,95 +44,120 @@ export default function MediMindPage() {
     setSelectedAnswer(null);
     setIsAnswerCorrect(null);
     setLevelScore(0);
-    setView('game');
     setFirstAttempt(true);
+    setView('game');
   };
-  
-  const startRandomModule = () => {
-    const openModules = modules.filter(m => m.status === 'open');
-    if (openModules.length > 0) {
-      const randomIndex = Math.floor(Math.random() * openModules.length);
-      startModule(openModules[randomIndex]);
-    } else {
-      setView('all_completed');
-    }
-  };
-
-  useEffect(() => {
-    startRandomModule();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleSkipModule = () => {
-    const openModules = modules.filter(m => m.status === 'open' && m.name !== activeModule?.name);
-    if (openModules.length > 0) {
-      const randomIndex = Math.floor(Math.random() * openModules.length);
-      const nextModule = openModules[randomIndex];
-      startModule(nextModule);
-      toast({ title: "Module Skipped", description: `Now trying: ${nextModule.name}` });
-    } else {
-      toast({ title: "No more modules to skip to!", description: "You've attempted all available modules." });
-    }
-  };
-
-  const currentQuestion = useMemo(() => {
-    if (!activeModule) return null;
-    return questionSet.find(q => !correctlyAnsweredIds.has(q.id)) || null;
-  }, [activeModule, correctlyAnsweredIds, questionSet]);
-
-  const answerOptions = currentQuestion ? mediMindGameData.answer_sets[currentQuestion.id] : [];
 
   const handleCheckAnswer = async () => {
     if (!selectedAnswer || !activeModule || !currentQuestion) return;
-
     const correctAnswer = activeModule.answers[currentQuestion.id];
-
-    if (selectedAnswer === correctAnswer) {
-      setIsAnswerCorrect(true);
+    const isCorrect = selectedAnswer === correctAnswer;
+    setIsAnswerCorrect(isCorrect);
+    if (isCorrect) {
       const points = 10;
       setCoins(prev => prev + points);
       setLevelScore(prev => prev + points);
       setCorrectlyAnsweredIds(prev => new Set(prev).add(currentQuestion.id));
       toast({ title: "Correct!", description: `+${points} coins!` });
     } else {
-      setIsAnswerCorrect(false);
-      if (firstAttempt) {
-        setCoins(prev => prev - 2);
-        toast({ variant: 'destructive', title: "Not quite!", description: "Try again. You lost 2 coins." });
+        if (firstAttempt) {
+            setCoins(prev => prev - 2);
+            toast({ variant: 'destructive', title: "Not quite!", description: "You lost 2 coins." });
+        } else {
+            toast({ variant: 'destructive', title: "Still not right!" });
+        }
         setFirstAttempt(false);
-      } else {
-        toast({ variant: 'destructive', title: "Still not right!", description: "Take another look at the options." });
-      }
     }
   };
-  
+
   const handleNextQuestion = () => {
     setSelectedAnswer(null);
     setIsAnswerCorrect(null);
     setAudioSrc(null);
     setFirstAttempt(true);
-
-    const isModuleComplete = (correctlyAnsweredIds.size === questionSet.length);
-
+    const isModuleComplete = (correctlyAnsweredIds.size === activeLevel?.questions.length);
     if (isModuleComplete) {
-      const updatedModules = modules.map(m =>
-        m.name === activeModule?.name ? { ...m, status: 'completed' } : m
-      );
-      setModules(updatedModules);
       setView('results');
     }
   };
-
-  const handleFinish = () => {
-    startRandomModule();
-  };
   
-  const progress = activeModule ? (correctlyAnsweredIds.size / questionSet.length) * 100 : 0;
+  const handleFinishModule = () => {
+    const updatedModules = modules.map(m =>
+        m.name === activeModule?.name ? { ...m, status: 'completed' } : m
+      );
+    setModules(updatedModules);
+    setActiveModule(null);
+    setView('modules');
+  }
+
+  const currentQuestion = useMemo(() => {
+    if (!activeModule || !activeLevel) return null;
+    return activeLevel.questions.find(q => !correctlyAnsweredIds.has(q.id)) || null;
+  }, [activeModule, activeLevel, correctlyAnsweredIds]);
+
+  const answerOptions = currentQuestion ? mediMindGameData.answer_sets[currentQuestion.id] : [];
+  
+  const progress = activeModule && activeLevel ? (correctlyAnsweredIds.size / activeLevel.questions.length) * 100 : 0;
   
   const playAudio = () => {
       audioRef.current?.play();
   };
 
+  const renderLevelSelection = () => (
+    <Card className="shadow-lg">
+      <CardHeader>
+        <CardTitle className="text-2xl font-headline">Select a Level</CardTitle>
+        <CardDescription>Choose a level to start the MediMind challenge.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {levels.map((level) => (
+          <button key={level.id} onClick={() => startLevel(level)} className="group block h-full text-left">
+            <Card className="shadow-md hover:shadow-lg hover:border-primary transition-all h-full">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Layers className="h-6 w-6 text-primary" />
+                  <CardTitle className="text-base group-hover:text-primary">{level.title}</CardTitle>
+                </div>
+              </CardHeader>
+            </Card>
+          </button>
+        ))}
+      </CardContent>
+    </Card>
+  );
+  
+  const renderModuleSelection = () => {
+    if (!activeLevel) return null;
+    const levelModules = activeLevel.items.map(itemName => modules.find(m => m.name === itemName)).filter(Boolean) as MedicineModule[];
+
+    return (
+      <Card className="shadow-lg">
+        <CardHeader>
+           <Button variant="ghost" onClick={() => setView('levels')} className="-ml-4 h-auto p-1 mb-2">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Levels
+          </Button>
+          <CardTitle className="text-2xl font-headline">{activeLevel.title}</CardTitle>
+          <CardDescription>Select a medicine to begin the quiz.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {levelModules.map((module) => (
+            <button key={module.name} onClick={() => startModule(module)} className="group block h-full text-left" disabled={module.status === 'completed'}>
+              <Card className={cn("shadow-md h-full", module.status === 'completed' ? "bg-muted/50 opacity-70" : "hover:shadow-lg hover:border-primary/50 transition-all")}>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Pill className="h-5 w-5 text-primary" />
+                    <span className="font-semibold text-card-foreground">{module.name}</span>
+                  </div>
+                  {module.status === 'completed' ? <CheckCircle className="h-5 w-5 text-green-500"/> : <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />}
+                </CardContent>
+              </Card>
+            </button>
+          ))}
+        </CardContent>
+      </Card>
+    );
+  };
+  
   const renderGameView = () => {
       if (!activeModule || !currentQuestion) {
         if(view === 'all_completed') {
@@ -166,8 +195,11 @@ export default function MediMindPage() {
                 <CardHeader>
                     <div className="flex justify-between items-start">
                         <div>
+                            <Button variant="ghost" onClick={() => setView('modules')} className="-ml-4 h-auto p-1 mb-2">
+                                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Modules
+                            </Button>
                             <CardTitle className="text-2xl font-headline">{activeModule.name}</CardTitle>
-                            <CardDescription>Question {correctlyAnsweredIds.size + 1} of {questionSet.length}</CardDescription>
+                            <CardDescription>Question {correctlyAnsweredIds.size + 1} of {activeLevel?.questions.length || '?'}</CardDescription>
                         </div>
                         <div className="text-right">
                             <p className="text-sm font-bold text-primary mt-1">Coins: {coins}</p>
@@ -183,9 +215,7 @@ export default function MediMindPage() {
                     {isAnswerCorrect === true && (
                         <Alert variant="default" className="bg-green-100 border-green-300 text-green-800">
                             <Check className="h-4 w-4 !text-green-800" />
-                            <AlertTitle className="flex justify-between items-center">
-                                <span>Correct! You earned 10 coins.</span>
-                            </AlertTitle>
+                            <AlertTitle>Correct! You earned 10 coins.</AlertTitle>
                         </Alert>
                     )}
 
@@ -193,7 +223,7 @@ export default function MediMindPage() {
                         <Alert variant="destructive">
                             <X className="h-4 w-4" />
                             <AlertTitle>Incorrect!</AlertTitle>
-                            <AlertDescription>That's not the right answer. Feel free to try again.</AlertDescription>
+                            <AlertDescription>The correct answer is <span className="font-semibold">{activeModule.answers[currentQuestion.id]}</span>.</AlertDescription>
                         </Alert>
                     )}
 
@@ -203,7 +233,7 @@ export default function MediMindPage() {
                                 key={answer}
                                 variant={selectedAnswer === answer ? 'default' : 'outline'}
                                 onClick={() => setSelectedAnswer(answer)}
-                                disabled={isAnswerCorrect === true}
+                                disabled={isAnswerCorrect !== null}
                                 className="h-auto py-3 text-sm"
                             >
                                 {answer}
@@ -211,13 +241,10 @@ export default function MediMindPage() {
                         ))}
                     </div>
                 </CardContent>
-                <CardFooter className="flex-col sm:flex-row justify-between gap-2">
-                    <Button variant="outline" onClick={handleSkipModule} disabled={isAnswerCorrect === true}>
-                        <SkipForward className="mr-2 h-4 w-4" /> Skip Medicine
-                    </Button>
-                    {isAnswerCorrect === true ? (
+                <CardFooter className="flex-col sm:flex-row justify-end gap-2">
+                    {isAnswerCorrect !== null ? (
                         <Button onClick={handleNextQuestion}>
-                            {correctlyAnsweredIds.size === questionSet.length ? 'Finish Module' : 'Next Question'} <Sparkles className="ml-2 h-4 w-4" />
+                            {correctlyAnsweredIds.size === activeLevel?.questions.length ? 'Finish Module' : 'Next Question'} <Sparkles className="ml-2 h-4 w-4" />
                         </Button>
                     ) : (
                         <Button onClick={handleCheckAnswer} disabled={!selectedAnswer}>
@@ -243,8 +270,8 @@ export default function MediMindPage() {
             <p className="text-lg">coins in this module.</p>
         </CardContent>
         <CardFooter className="justify-center">
-            <Button onClick={handleFinish}>
-                Next Module <ChevronRight className="ml-2 h-4 w-4" />
+            <Button onClick={handleFinishModule}>
+                Back to Modules <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
         </CardFooter>
     </Card>
@@ -257,15 +284,16 @@ export default function MediMindPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
             </Button>
         </header>
+        {view === 'levels' && renderLevelSelection()}
+        {view === 'modules' && renderModuleSelection()}
         {view === 'game' && renderGameView()}
         {view === 'results' && renderResultsView()}
-        {view === 'loading' && <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />}
         {view === 'all_completed' && (
             <Card className="shadow-lg text-center">
                 <CardHeader>
                     <Trophy className="h-24 w-24 text-amber-400 mx-auto mb-4" />
                     <CardTitle className="text-3xl font-bold text-primary">Congratulations!</CardTitle>
-                    <CardDescription>You have completed all available medicine modules.</CardDescription>
+                    <CardDescription>You have completed all available medicine modules in all levels.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <p className="text-lg">Your final coin balance is:</p>
