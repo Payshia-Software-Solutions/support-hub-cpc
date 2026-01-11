@@ -39,17 +39,19 @@ export default function MediMindGamePage() {
     if (!selectedAnswer || !activeModule || !currentQuestion) return;
     const correctAnswer = activeModule.answers[currentQuestion.id];
     const isCorrect = selectedAnswer === correctAnswer;
-    setIsAnswerCorrect(isCorrect);
+    
     if (isCorrect) {
+      setIsAnswerCorrect(true);
       const points = 10;
       setCoins(prev => prev + points);
       setLevelScore(prev => prev + points);
       setCorrectlyAnsweredIds(prev => new Set(prev).add(currentQuestion.id));
       toast({ title: "Correct!", description: `+${points} coins!` });
     } else {
+        setIsAnswerCorrect(false);
         if (firstAttempt) {
             setCoins(prev => prev - 2);
-            toast({ variant: 'destructive', title: "Not quite!", description: "You lost 2 coins. The correct answer is shown below." });
+            toast({ variant: 'destructive', title: "Not quite!", description: "You lost 2 coins. Try again!" });
         } else {
             toast({ variant: 'destructive', title: "Still not right!" });
         }
@@ -134,17 +136,17 @@ export default function MediMindGamePage() {
                     {isAnswerCorrect === false && (
                         <Alert variant="destructive">
                             <X className="h-4 w-4" />
-                            <AlertTitle>Incorrect!</AlertTitle>
-                            <AlertDescription>The correct answer is <span className="font-semibold">{activeModule.answers[currentQuestion.id]}</span>.</AlertDescription>
+                            <AlertTitle>Incorrect! Try again.</AlertTitle>
+                            <AlertDescription>That wasn't the right answer. Select another option or try again.</AlertDescription>
                         </Alert>
                     )}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {answerOptions.map(answer => (
                             <Button
                                 key={answer}
-                                variant={selectedAnswer === answer ? 'default' : 'outline'}
+                                variant={selectedAnswer === answer && isAnswerCorrect === null ? 'default' : selectedAnswer === answer && isAnswerCorrect === false ? 'destructive' : 'outline'}
                                 onClick={() => setSelectedAnswer(answer)}
-                                disabled={isAnswerCorrect !== null}
+                                disabled={isAnswerCorrect === true}
                                 className="h-auto py-3 text-sm"
                             >
                                 {answer}
@@ -153,7 +155,7 @@ export default function MediMindGamePage() {
                     </div>
                 </CardContent>
                 <CardFooter className="flex-col sm:flex-row justify-end gap-2">
-                    {isAnswerCorrect !== null ? (
+                    {isAnswerCorrect === true ? (
                         <Button onClick={handleNextQuestion}>
                             Next Question <Sparkles className="ml-2 h-4 w-4" />
                         </Button>
