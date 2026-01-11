@@ -263,6 +263,13 @@ const managementTasks: ManagementTask[] = [
     href: "/admin/manage/games/sentence-builder",
     category: "Games Management"
   },
+  {
+    title: "MediMind",
+    description: "Configure all aspects of the MediMind game.",
+    icon: <MediMindIcon className="w-8 h-8 text-white"/>,
+    href: "/admin/manage/games/medimind",
+    category: "Games Management"
+  },
 ];
 
 const categoryColors: Record<ManagementTask['category'], string> = {
