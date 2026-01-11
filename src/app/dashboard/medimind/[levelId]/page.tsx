@@ -21,7 +21,7 @@ export default function MediMindModulesPage() {
     // Dummy logic: let's say a few are completed for demonstration
     const completed = new Set<string>();
     if (levelId === '1') {
-        completed.add('Paracetamol');
+        completed.add('1'); // ID of Paracetamol
     }
     return completed;
   }, [levelId]);
@@ -36,7 +36,7 @@ export default function MediMindModulesPage() {
   }
 
   const levelModules = activeLevel.items
-    .map(itemName => mediMindGameData.medicine_data.find(m => m.name === itemName))
+    .map(itemId => mediMindGameData.medicine_data.find(m => m.id === itemId))
     .filter(Boolean);
 
   return (
@@ -51,9 +51,9 @@ export default function MediMindModulesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {levelModules.map((module) => {
           if (!module) return null;
-          const isCompleted = completedModules.has(module.name);
+          const isCompleted = completedModules.has(module.id);
           return (
-            <button key={module.name} onClick={() => router.push(`/dashboard/medimind/${levelId}/${encodeURIComponent(module.name)}`)} className="group block h-full text-left" disabled={isCompleted}>
+            <button key={module.id} onClick={() => router.push(`/dashboard/medimind/${levelId}/${module.id}`)} className="group block h-full text-left" disabled={isCompleted}>
               <Card className={cn("shadow-md h-full", isCompleted ? "bg-muted/50 opacity-70" : "hover:shadow-lg hover:border-primary/50 transition-all")}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">

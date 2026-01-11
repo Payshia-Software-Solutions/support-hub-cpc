@@ -16,7 +16,7 @@ export default function MediMindGamePage() {
   const router = useRouter();
   const params = useParams();
   const levelId = params.levelId as string;
-  const moduleId = decodeURIComponent(params.moduleId as string);
+  const moduleId = params.moduleId as string;
 
   const [correctlyAnsweredIds, setCorrectlyAnsweredIds] = useState<Set<string>>(new Set());
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -26,7 +26,7 @@ export default function MediMindGamePage() {
   const [firstAttempt, setFirstAttempt] = useState(true);
 
   const activeLevel = mediMindGameData.levels.find(l => l.id === levelId);
-  const activeModule = mediMindGameData.medicine_data.find(m => m.name === moduleId);
+  const activeModule = mediMindGameData.medicine_data.find(m => m.id === moduleId);
 
   const currentQuestion = useMemo(() => {
     if (!activeModule || !activeLevel) return null;
