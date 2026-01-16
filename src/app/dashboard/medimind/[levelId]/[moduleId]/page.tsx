@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -50,12 +49,7 @@ export default function MediMindGamePage() {
     } else {
         setIsAnswerCorrect(false);
         setCoins(prev => prev - 2);
-        if (firstAttempt) {
-            toast({ variant: 'destructive', title: "Not quite!", description: "You lost 2 coins. Try again!" });
-        } else {
-            toast({ variant: 'destructive', title: "Still not right!", description: "You lost another 2 coins." });
-        }
-        setFirstAttempt(false);
+        toast({ variant: 'destructive', title: "Not quite!", description: "You lost 2 coins. Try again!" });
     }
   };
 
@@ -130,8 +124,8 @@ export default function MediMindGamePage() {
                     {isAnswerCorrect === true && (
                         <Alert variant="default" className="bg-green-100 border-green-300 text-green-800">
                             <Check className="h-4 w-4 !text-green-800" />
-                            <AlertTitle>Correct!</AlertTitle>
-                            <AlertDescription>The correct answer was <span className="font-semibold">{selectedAnswer}</span>. You earned 10 coins.</AlertDescription>
+                            <AlertTitle>Correct! You earned 10 coins.</AlertTitle>
+                            <AlertDescription>The correct answer was <span className="font-semibold">{selectedAnswer}</span>.</AlertDescription>
                         </Alert>
                     )}
                     {isAnswerCorrect === false && (
