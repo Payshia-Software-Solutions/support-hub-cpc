@@ -159,7 +159,7 @@ export default function ManagePackagesPage() {
         formData.append('graduation_cloth', data.graduation_cloth ? '1' : '0');
         formData.append('photo_package', data.photo_package ? '1' : '0');
         formData.append('is_active', '1');
-        formData.append('convocation_id', ceremonyId);
+        formData.append('convocation_id', ceremonyId); // Correctly adding the convocation_id
 
         if (data.cover_image && data.cover_image.length > 0) {
             formData.append('cover_image', data.cover_image[0]);
