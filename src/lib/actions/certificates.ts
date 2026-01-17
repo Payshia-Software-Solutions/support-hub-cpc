@@ -1,5 +1,6 @@
 
-import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony } from '../types';
+
+import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -53,6 +54,16 @@ export const getConvocationCeremonies = async (): Promise<ConvocationCeremony[]>
     }
     return response.json();
 };
+
+export const getCeremonyById = async (id: string): Promise<ConvocationCeremony> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocations/${id}`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to fetch ceremony with id ${id}`}));
+        throw new Error(errorData.message || 'Failed to fetch ceremony details');
+    }
+    return response.json();
+};
+
 
 export const createConvocationCeremony = async (data: CeremonyFormData): Promise<ConvocationCeremony> => {
     const payload = {
@@ -110,6 +121,50 @@ export const deleteConvocationCeremony = async (id: string): Promise<void> => {
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to delete ceremony' }));
         throw new Error(errorData.message || 'Request failed');
+    }
+};
+
+// Convocation Packages
+export const getPackagesByCeremony = async (ceremonyId: string): Promise<ConvocationPackage[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-packages/by-event/${ceremonyId}`);
+    if (response.status === 404) return [];
+    if (!response.ok) throw new Error('Failed to fetch packages');
+    return response.json();
+};
+
+export const createPackage = async (data: Omit<ConvocationPackage, 'id'>): Promise<ConvocationPackage> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-packages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to create package' }));
+        throw new Error(error.message);
+    }
+    return response.json();
+};
+
+export const updatePackage = async (packageId: string, data: Partial<Omit<ConvocationPackage, 'id'>>): Promise<ConvocationPackage> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-packages/${packageId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to update package' }));
+        throw new Error(error.message);
+    }
+    return response.json();
+};
+
+export const deletePackage = async (packageId: string): Promise<void> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-packages/${packageId}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to delete package' }));
+        throw new Error(error.message);
     }
 };
 

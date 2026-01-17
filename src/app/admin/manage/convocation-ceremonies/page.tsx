@@ -18,10 +18,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { PlusCircle, Edit, Trash2, Loader2, AlertTriangle, GraduationCap } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, AlertTriangle, GraduationCap, Package } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 
 const ceremonyFormSchema = z.object({
@@ -241,7 +242,12 @@ export default function ManageConvocationCeremoniesPage() {
                                                         {c.accept_booking === '1' ? 'Open' : 'Closed'}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-right">
+                                                <TableCell className="text-right space-x-1">
+                                                     <Button asChild variant="outline" size="sm">
+                                                        <Link href={`/admin/manage/convocation-ceremonies/${c.id}`}>
+                                                            <Package className="mr-2 h-4 w-4" /> Packages
+                                                        </Link>
+                                                    </Button>
                                                     <Button variant="ghost" size="icon" onClick={() => handleEdit(c)}><Edit className="h-4 w-4"/></Button>
                                                     <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setCeremonyToDelete(c)}><Trash2 className="h-4 w-4"/></Button>
                                                 </TableCell>

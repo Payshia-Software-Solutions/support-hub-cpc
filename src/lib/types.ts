@@ -1,4 +1,5 @@
 
+
 import type { BnfChapter, BnfPage } from './bnf-data';
 
 export interface ApiStaffMember {
@@ -797,4 +798,16 @@ export interface ConvocationCeremony {
     accept_booking: string;
 }
 
+export interface ConvocationPackage {
+    id: string;
+    event_id: string;
+    package_name: string;
+    price: string;
+    parent_seat_count: string;
+    garland: '0' | '1';
+    graduation_cloth: '0' | '1';
+    photo_package: '0' | '1';
+    is_active: '0' | '1';
+}
     
+
