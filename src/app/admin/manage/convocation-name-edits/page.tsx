@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getConvocationRegistrations, updateCertificateName, sendCertificateNameSms } from '@/lib/api';
+import { getConvocationRegistrations, updateCertificateName, sendCertificateNameSms } from '@/lib/actions/certificates';
 import type { ConvocationRegistration, UpdateCertificateNamePayload, SendSmsPayload } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -103,7 +103,7 @@ export default function ConvocationNameEditsPage() {
 
     const { data: records, isLoading, isError, error } = useQuery<ConvocationRegistration[]>({
         queryKey: ['convocationRegistrations'],
-        queryFn: getConvocationRegistrations,
+        queryFn: () => getConvocationRegistrations(),
         staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     });
 

@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getConvocationRegistrations } from '@/lib/api';
+import { getConvocationRegistrations } from '@/lib/actions/certificates';
 import type { ConvocationRegistration } from '@/lib/types';
 import { format, isValid } from 'date-fns';
 import Image from 'next/image';
@@ -64,8 +64,8 @@ export default function ConvocationListPage() {
     const [currentPage, setCurrentPage] = useState(1);
 
     const { data: registrations, isLoading, isError, error } = useQuery<ConvocationRegistration[]>({
-        queryKey: ['allConvocations'],
-        queryFn: getConvocationRegistrations,
+        queryKey: ['convocationRegistrations', ceremonyIdFilter],
+        queryFn: () => getConvocationRegistrations(ceremonyIdFilter || undefined),
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 
@@ -81,9 +81,7 @@ export default function ConvocationListPage() {
             
             const matchesStatus = statusFilter === 'all' || reg.payment_status.toLowerCase() === statusFilter.toLowerCase();
             
-            const matchesCeremony = !ceremonyIdFilter || reg.event_id === ceremonyIdFilter;
-            
-            return matchesSearch && matchesStatus && matchesCeremony;
+            return matchesSearch && matchesStatus;
         }).sort((a,b) => {
             const dateA = new Date(a.registered_at);
             const dateB = new Date(b.registered_at);
@@ -91,7 +89,7 @@ export default function ConvocationListPage() {
             if (!isValid(dateB)) return -1;
             return dateB.getTime() - dateA.getTime();
         });
-    }, [registrations, searchTerm, statusFilter, ceremonyIdFilter]);
+    }, [registrations, searchTerm, statusFilter]);
 
     const totalPages = Math.ceil(filteredRegistrations.length / ITEMS_PER_PAGE);
     const paginatedRegistrations = useMemo(() => {
