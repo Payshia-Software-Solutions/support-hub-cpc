@@ -33,6 +33,7 @@ const packageFormSchema = z.object({
     garland: z.boolean().default(false),
     graduation_cloth: z.boolean().default(false),
     photo_package: z.boolean().default(false),
+    cover_image: z.any().optional(),
 });
 
 type PackageFormValues = z.infer<typeof packageFormSchema>;
@@ -47,6 +48,7 @@ const PackageForm = ({ pkg, onSave, onClose, isSaving }: { pkg: ConvocationPacka
             garland: pkg?.garland === '1',
             graduation_cloth: pkg?.graduation_cloth === '1',
             photo_package: pkg?.photo_package === '1',
+            cover_image: null,
         },
     });
 
@@ -68,6 +70,15 @@ const PackageForm = ({ pkg, onSave, onClose, isSaving }: { pkg: ConvocationPacka
                     <Input id="parent_seat_count" type="number" {...form.register('parent_seat_count')} />
                     {form.formState.errors.parent_seat_count && <p className="text-sm text-destructive">{form.formState.errors.parent_seat_count.message}</p>}
                 </div>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="cover_image">Cover Image</Label>
+                <Input id="cover_image" type="file" {...form.register('cover_image')} accept="image/*"/>
+                {pkg?.cover_image && (
+                    <p className="text-xs text-muted-foreground">
+                        Current image: {pkg.cover_image}. Uploading a new file will replace it.
+                    </p>
+                )}
             </div>
             <div className="space-y-3 pt-4">
                 <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm"><Label htmlFor="garland">Garland Included</Label><Switch id="garland" checked={form.watch('garland')} onCheckedChange={(checked) => form.setValue('garland', checked)} /></div>
@@ -108,21 +119,11 @@ export default function ManagePackagesPage() {
     });
 
     const mutation = useMutation({
-        mutationFn: (data: { values: PackageFormValues, pkg: ConvocationPackage | null }) => {
-            const payload = {
-                package_name: data.values.package_name,
-                price: String(data.values.price),
-                parent_seat_count: String(data.values.parent_seat_count),
-                garland: data.values.garland ? '1' : '0',
-                graduation_cloth: data.values.graduation_cloth ? '1' : '0',
-                photo_package: data.values.photo_package ? '1' : '0',
-                is_active: '1',
-                convocation_id: ceremonyId,
-            };
+        mutationFn: (data: { formData: FormData, pkg: ConvocationPackage | null }) => {
             if (data.pkg) {
-                return updatePackage(data.pkg.package_id, payload);
+                return updatePackage(data.pkg.package_id, data.formData);
             }
-            return createPackage(payload);
+            return createPackage(data.formData);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['packages', ceremonyId] });
@@ -148,7 +149,21 @@ export default function ManagePackagesPage() {
     };
 
     const handleSave = (data: PackageFormValues) => {
-        mutation.mutate({ values: data, pkg: selectedPackage });
+        const formData = new FormData();
+        formData.append('package_name', data.package_name);
+        formData.append('price', String(data.price));
+        formData.append('parent_seat_count', String(data.parent_seat_count));
+        formData.append('garland', data.garland ? '1' : '0');
+        formData.append('graduation_cloth', data.graduation_cloth ? '1' : '0');
+        formData.append('photo_package', data.photo_package ? '1' : '0');
+        formData.append('is_active', '1');
+        formData.append('convocation_id', ceremonyId);
+
+        if (data.cover_image && data.cover_image.length > 0) {
+            formData.append('cover_image', data.cover_image[0]);
+        }
+        
+        mutation.mutate({ formData, pkg: selectedPackage });
     };
 
     return (

@@ -132,11 +132,10 @@ export const getPackagesByCeremony = async (ceremonyId: string): Promise<Convoca
     return allPackages.filter(pkg => pkg.convocation_id === ceremonyId);
 };
 
-export const createPackage = async (data: any): Promise<ConvocationPackage> => {
+export const createPackage = async (data: FormData): Promise<ConvocationPackage> => {
     const response = await fetch(`${QA_API_BASE_URL}/packages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: data,
     });
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Failed to create package' }));
@@ -145,11 +144,11 @@ export const createPackage = async (data: any): Promise<ConvocationPackage> => {
     return response.json();
 };
 
-export const updatePackage = async (packageId: string, data: any): Promise<ConvocationPackage> => {
+export const updatePackage = async (packageId: string, data: FormData): Promise<ConvocationPackage> => {
+    // Note: API seems to use POST for updates with FormData
     const response = await fetch(`${QA_API_BASE_URL}/packages/${packageId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        method: 'POST',
+        body: data,
     });
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Failed to update package' }));
