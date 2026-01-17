@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getConvocationRegistrations } from '@/lib/api';
 import type { ConvocationRegistration } from '@/lib/types';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import Image from 'next/image';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -76,7 +76,13 @@ export default function ConvocationListPage() {
             const matchesStatus = statusFilter === 'all' || reg.payment_status.toLowerCase() === statusFilter.toLowerCase();
             
             return matchesSearch && matchesStatus;
-        }).sort((a,b) => new Date(b.registered_at).getTime() - new Date(a.registered_at).getTime());
+        }).sort((a,b) => {
+            const dateA = new Date(a.registered_at);
+            const dateB = new Date(b.registered_at);
+            if (!isValid(dateA)) return 1;
+            if (!isValid(dateB)) return -1;
+            return dateB.getTime() - dateA.getTime();
+        });
     }, [registrations, searchTerm, statusFilter]);
 
     const totalPages = Math.ceil(filteredRegistrations.length / ITEMS_PER_PAGE);
@@ -169,7 +175,7 @@ export default function ConvocationListPage() {
                                             </TableCell>
                                             <TableCell>{reg.reference_number}</TableCell>
                                             <TableCell>Session {reg.session} / #{reg.ceremony_number}</TableCell>
-                                            <TableCell>{format(new Date(reg.registered_at), 'yyyy-MM-dd')}</TableCell>
+                                            <TableCell>{reg.registered_at && isValid(new Date(reg.registered_at)) ? format(new Date(reg.registered_at), 'yyyy-MM-dd') : 'N/A'}</TableCell>
                                             <TableCell><Badge variant={getStatusVariant(reg.payment_status)}>{reg.payment_status}</Badge></TableCell>
                                             <TableCell className="text-right">
                                                <ViewSlipDialog slipPath={reg.image_path} studentName={reg.name_on_certificate} />
