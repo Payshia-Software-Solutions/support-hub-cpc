@@ -1,11 +1,13 @@
+
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getConvocationRegistrations } from '@/lib/api';
 import type { ConvocationRegistration } from '@/lib/types';
 import { format, isValid } from 'date-fns';
 import Image from 'next/image';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Search, FileText } from 'lucide-react';
+import { AlertTriangle, Search, FileText, ArrowLeft } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 25;
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
@@ -53,6 +55,10 @@ const ViewSlipDialog = ({ slipPath, studentName }: { slipPath: string | null; st
 
 
 export default function ConvocationListPage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const ceremonyIdFilter = searchParams.get('ceremonyId');
+
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
@@ -75,7 +81,9 @@ export default function ConvocationListPage() {
             
             const matchesStatus = statusFilter === 'all' || reg.payment_status.toLowerCase() === statusFilter.toLowerCase();
             
-            return matchesSearch && matchesStatus;
+            const matchesCeremony = !ceremonyIdFilter || reg.event_id === ceremonyIdFilter;
+            
+            return matchesSearch && matchesStatus && matchesCeremony;
         }).sort((a,b) => {
             const dateA = new Date(a.registered_at);
             const dateB = new Date(b.registered_at);
@@ -83,7 +91,7 @@ export default function ConvocationListPage() {
             if (!isValid(dateB)) return -1;
             return dateB.getTime() - dateA.getTime();
         });
-    }, [registrations, searchTerm, statusFilter]);
+    }, [registrations, searchTerm, statusFilter, ceremonyIdFilter]);
 
     const totalPages = Math.ceil(filteredRegistrations.length / ITEMS_PER_PAGE);
     const paginatedRegistrations = useMemo(() => {
@@ -114,8 +122,17 @@ export default function ConvocationListPage() {
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header>
-                <h1 className="text-3xl font-headline font-semibold">Convocation Registrations</h1>
-                <p className="text-muted-foreground">View and manage all student registrations for convocation.</p>
+                {ceremonyIdFilter ? (
+                    <Button variant="ghost" onClick={() => router.push('/admin/manage/convocation-ceremonies')} className="-ml-4">
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Ceremonies
+                    </Button>
+                ) : null}
+                <h1 className="text-3xl font-headline font-semibold mt-2">{ceremonyIdFilter ? "Ceremony Registrations" : "All Convocation Registrations"}</h1>
+                <p className="text-muted-foreground">
+                    {ceremonyIdFilter 
+                        ? `Showing registrations for ceremony ID ${ceremonyIdFilter}.`
+                        : "View and manage all student registrations for convocation."}
+                </p>
             </header>
             
             <Card className="shadow-lg">

@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { PlusCircle, Edit, Trash2, Loader2, AlertTriangle, GraduationCap, Package } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, AlertTriangle, GraduationCap, Package, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -57,7 +57,7 @@ const CeremonyForm = ({ ceremony, onClose }: { ceremony?: ConvocationCeremony | 
     const mutation = useMutation({
         mutationFn: (data: CeremonyFormValues) => {
             if (!user?.username) throw new Error("User not authenticated");
-            const payload = { ...data, created_by: user.username };
+            const payload = { ...data, created_by: user.username, created_at: new Date().toISOString() };
 
             if (ceremony?.id) {
                 return updateConvocationCeremony(ceremony.id, payload);
@@ -243,6 +243,11 @@ export default function ManageConvocationCeremoniesPage() {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right space-x-1">
+                                                     <Button asChild variant="outline" size="sm">
+                                                        <Link href={`/admin/manage/convocation?ceremonyId=${c.id}`}>
+                                                            <Users className="mr-2 h-4 w-4" /> Registrations
+                                                        </Link>
+                                                    </Button>
                                                      <Button asChild variant="outline" size="sm">
                                                         <Link href={`/admin/manage/convocation-ceremonies/${c.id}`}>
                                                             <Package className="mr-2 h-4 w-4" /> Packages
