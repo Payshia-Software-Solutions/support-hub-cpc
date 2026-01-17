@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import Image from 'next/image';
 
 // Shadcn & Lucide imports
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -25,6 +26,7 @@ import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, PackageCheck, GraduationC
 import { getCeremonyById, getPackagesByCeremony, createPackage, updatePackage, deletePackage } from '@/lib/actions/certificates';
 import type { ConvocationCeremony, ConvocationPackage } from '@/lib/types';
 
+const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk/';
 
 const packageFormSchema = z.object({
     package_name: z.string().min(3, "Package name is required."),
@@ -207,10 +209,21 @@ export default function ManagePackagesPage() {
                     {isLoadingPackages ? <Skeleton className="h-48 w-full" /> : (
                         <div className="relative w-full overflow-auto border rounded-lg">
                              <Table>
-                                <TableHeader><TableRow><TableHead>Package Name</TableHead><TableHead>Price</TableHead><TableHead>Seats</TableHead><TableHead className="text-center">Includes</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                                <TableHeader><TableRow><TableHead>Image</TableHead><TableHead>Package Name</TableHead><TableHead>Price</TableHead><TableHead>Seats</TableHead><TableHead className="text-center">Includes</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {packages && packages.length > 0 ? packages.map(pkg => (
                                         <TableRow key={pkg.package_id}>
+                                            <TableCell>
+                                                {pkg.cover_image ? (
+                                                    <div className="relative h-10 w-10 rounded-md overflow-hidden bg-muted">
+                                                        <Image src={`${CONTENT_PROVIDER_URL}${pkg.cover_image}`} alt={pkg.package_name} layout="fill" objectFit="cover" data-ai-hint="package photo" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
+                                                        <PackageCheck className="h-5 w-5 text-muted-foreground" />
+                                                    </div>
+                                                )}
+                                            </TableCell>
                                             <TableCell className="font-medium">{pkg.package_name}</TableCell>
                                             <TableCell>LKR {parseFloat(pkg.price).toFixed(2)}</TableCell>
                                             <TableCell>{pkg.parent_seat_count}</TableCell>
@@ -227,7 +240,7 @@ export default function ManagePackagesPage() {
                                             </TableCell>
                                         </TableRow>
                                     )) : (
-                                        <TableRow><TableCell colSpan={5} className="text-center h-24">No packages created for this ceremony yet.</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={6} className="text-center h-24">No packages created for this ceremony yet.</TableCell></TableRow>
                                     )}
                                 </TableBody>
                             </Table>
