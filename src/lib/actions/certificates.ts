@@ -34,7 +34,7 @@ export const getConvocationRegistrations = async (): Promise<ConvocationRegistra
 
 // Convocation Ceremonies
 export const getConvocationCeremonies = async (): Promise<ConvocationCeremony[]> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-events`);
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-ceremonies`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch convocation ceremonies' }));
         throw new Error(errorData.message || 'Request failed');
@@ -43,7 +43,7 @@ export const getConvocationCeremonies = async (): Promise<ConvocationCeremony[]>
 };
 
 export const createConvocationCeremony = async (data: Omit<ConvocationCeremony, 'id'>): Promise<ConvocationCeremony> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-events`, {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-ceremonies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -56,7 +56,7 @@ export const createConvocationCeremony = async (data: Omit<ConvocationCeremony, 
 };
 
 export const updateConvocationCeremony = async (id: string, data: Partial<Omit<ConvocationCeremony, 'id'>>): Promise<ConvocationCeremony> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-events/${id}`, {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-ceremonies/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -69,7 +69,7 @@ export const updateConvocationCeremony = async (id: string, data: Partial<Omit<C
 };
 
 export const deleteConvocationCeremony = async (id: string): Promise<void> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-events/${id}`, {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-ceremonies/${id}`, {
         method: 'DELETE',
     });
     if (!response.ok) {
