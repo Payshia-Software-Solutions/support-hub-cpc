@@ -809,3 +809,17 @@ export interface MediMindItem {
   created_at: string;
   created_by: string;
 }
+
+export interface ConvocationCeremony {
+    id: string;
+    convocation_name: string;
+    held_on: string;
+    session_count: string;
+    parent_seats: string;
+    student_seats: string;
+    session_2: string;
+    created_by: string;
+    created_at: string;
+}
+
+    
