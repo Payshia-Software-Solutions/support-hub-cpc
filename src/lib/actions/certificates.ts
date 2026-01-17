@@ -1,8 +1,20 @@
 
-
 import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
+
+
+// Helper type for form values passed from the component
+type CeremonyFormData = {
+    convocation_name: string;
+    held_on: string;
+    session_count: number;
+    parent_seats: number;
+    student_seats: number;
+    session_2: number;
+    accept_booking: boolean;
+    created_by: string;
+};
 
 
 export const updateCertificateName = async (payload: UpdateCertificateNamePayload): Promise<any> => {
@@ -24,7 +36,7 @@ export const updateCertificateName = async (payload: UpdateCertificateNamePayloa
 
 // Convocation Registrations
 export const getConvocationRegistrations = async (): Promise<ConvocationRegistration[]> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations`);
+    const response = await fetch(`${QA_API_BASE_URL}/convocations`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch convocation registrations' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
@@ -42,11 +54,23 @@ export const getConvocationCeremonies = async (): Promise<ConvocationCeremony[]>
     return response.json();
 };
 
-export const createConvocationCeremony = async (data: Partial<Omit<ConvocationCeremony, 'id' | 'created_at'>>): Promise<ConvocationCeremony> => {
+export const createConvocationCeremony = async (data: CeremonyFormData): Promise<ConvocationCeremony> => {
+    const payload = {
+        convocation_name: data.convocation_name,
+        held_on: `${data.held_on} 00:00:00`,
+        session_count: String(data.session_count),
+        parent_seats: String(data.parent_seats),
+        student_seats: String(data.student_seats),
+        session_2: String(data.session_2),
+        created_by: data.created_by,
+        created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        accept_booking: data.accept_booking ? '1' : '0',
+    };
+    
     const response = await fetch(`${QA_API_BASE_URL}/convocations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to create ceremony' }));
@@ -55,11 +79,22 @@ export const createConvocationCeremony = async (data: Partial<Omit<ConvocationCe
     return response.json();
 };
 
-export const updateConvocationCeremony = async (id: string, data: Partial<Omit<ConvocationCeremony, 'id' | 'created_at' | 'created_by'>>): Promise<ConvocationCeremony> => {
+export const updateConvocationCeremony = async (id: string, data: CeremonyFormData): Promise<ConvocationCeremony> => {
+     const payload = {
+        convocation_name: data.convocation_name,
+        held_on: `${data.held_on} 00:00:00`,
+        session_count: String(data.session_count),
+        parent_seats: String(data.parent_seats),
+        student_seats: String(data.student_seats),
+        session_2: String(data.session_2),
+        created_by: data.created_by,
+        accept_booking: data.accept_booking ? '1' : '0',
+    };
+    
     const response = await fetch(`${QA_API_BASE_URL}/convocations/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to update ceremony' }));
@@ -243,5 +278,3 @@ export const generateCertificate = async (payload: GenerateCertificatePayload): 
     }
     return response.json();
 };
-
-    

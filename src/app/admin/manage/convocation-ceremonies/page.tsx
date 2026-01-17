@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, parseISO } from 'date-fns';
@@ -20,6 +20,8 @@ import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PlusCircle, Edit, Trash2, Loader2, AlertTriangle, GraduationCap } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 
 const ceremonyFormSchema = z.object({
@@ -29,6 +31,7 @@ const ceremonyFormSchema = z.object({
     parent_seats: z.coerce.number().min(0, "Parent seats cannot be negative."),
     student_seats: z.coerce.number().min(0, "Student seats cannot be negative."),
     session_2: z.coerce.number().min(0, "Session 2 seats cannot be negative."),
+    accept_booking: z.boolean().default(true),
 });
 
 type CeremonyFormValues = z.infer<typeof ceremonyFormSchema>;
@@ -46,21 +49,14 @@ const CeremonyForm = ({ ceremony, onClose }: { ceremony?: ConvocationCeremony | 
             parent_seats: ceremony ? parseInt(ceremony.parent_seats, 10) : 0,
             student_seats: ceremony ? parseInt(ceremony.student_seats, 10) : 0,
             session_2: ceremony ? parseInt(ceremony.session_2, 10) : 0,
+            accept_booking: ceremony ? ceremony.accept_booking === '1' : true,
         },
     });
     
     const mutation = useMutation({
         mutationFn: (data: CeremonyFormValues) => {
             if (!user?.username) throw new Error("User not authenticated");
-            const payload = { 
-                ...data, 
-                held_on: `${data.held_on} 00:00:00`,
-                session_count: String(data.session_count),
-                parent_seats: String(data.parent_seats),
-                student_seats: String(data.student_seats),
-                session_2: String(data.session_2),
-                created_by: user.username,
-             };
+            const payload = { ...data, created_by: user.username };
 
             if (ceremony?.id) {
                 return updateConvocationCeremony(ceremony.id, payload);
@@ -114,6 +110,20 @@ const CeremonyForm = ({ ceremony, onClose }: { ceremony?: ConvocationCeremony | 
                     <Input id="session_2" type="number" {...form.register('session_2')} />
                     {form.formState.errors.session_2 && <p className="text-sm text-destructive">{form.formState.errors.session_2.message}</p>}
                 </div>
+            </div>
+            <div className="md:col-span-2 flex items-center space-x-2 pt-4">
+                <Controller
+                    name="accept_booking"
+                    control={form.control}
+                    render={({ field }) => (
+                        <Switch
+                            id="accept_booking"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                        />
+                    )}
+                />
+                <Label htmlFor="accept_booking" className="cursor-pointer">Accept new bookings for this convocation</Label>
             </div>
             <DialogFooter>
                 <DialogClose asChild><Button type="button" variant="outline" disabled={mutation.isPending}>Cancel</Button></DialogClose>
@@ -214,6 +224,7 @@ export default function ManageConvocationCeremoniesPage() {
                                         <TableHead>Date</TableHead>
                                         <TableHead>Sessions</TableHead>
                                         <TableHead>Student Seats</TableHead>
+                                        <TableHead>Booking Status</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -225,6 +236,11 @@ export default function ManageConvocationCeremoniesPage() {
                                                 <TableCell>{format(new Date(c.held_on), 'PPP')}</TableCell>
                                                 <TableCell>{c.session_count}</TableCell>
                                                 <TableCell>{c.student_seats}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant={c.accept_booking === '1' ? 'default' : 'secondary'}>
+                                                        {c.accept_booking === '1' ? 'Open' : 'Closed'}
+                                                    </Badge>
+                                                </TableCell>
                                                 <TableCell className="text-right">
                                                     <Button variant="ghost" size="icon" onClick={() => handleEdit(c)}><Edit className="h-4 w-4"/></Button>
                                                     <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setCeremonyToDelete(c)}><Trash2 className="h-4 w-4"/></Button>
@@ -233,7 +249,7 @@ export default function ManageConvocationCeremoniesPage() {
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="text-center h-24">No ceremonies found.</TableCell>
+                                            <TableCell colSpan={6} className="text-center h-24">No ceremonies found.</TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
@@ -245,5 +261,3 @@ export default function ManageConvocationCeremoniesPage() {
         </div>
     );
 }
-
-    

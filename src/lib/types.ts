@@ -1,4 +1,5 @@
 
+import type { BnfChapter, BnfPage } from './bnf-data';
 
 export interface ApiStaffMember {
   id: string;
@@ -6,6 +7,7 @@ export interface ApiStaffMember {
   lname: string;
   username: string;
   email: string;
+  created_at: string;
 }
 
 export interface Attachment {
@@ -279,22 +281,7 @@ export interface FilteredConvocationRegistration {
   reference_number: string;
   student_number: string;
   course_id: string;
-  package_id: string;
-  event_id: string | null;
-  payment_status: string;
-  payment_amount: string;
-  registration_status: string;
-  registered_at: string;
-  updated_at: string;
-  hash_value: string;
-  image_path: string;
-  additional_seats: string;
-  session: string;
   ceremony_number: string;
-  certificate_print_status: string;
-  advanced_print_status: string;
-  certificate_id: string;
-  advanced_id: string;
 }
 
 export interface CeylonPharmacyInfo {
@@ -663,6 +650,7 @@ export interface Section {
   created_at: string;
   update_by: string;
   updated_at: string;
+  created_by: string;
 }
 
 export interface CreateSectionPayload {
@@ -678,6 +666,7 @@ export interface UpdateSectionPayload extends Partial<Omit<CreateSectionPayload,
 export interface PageContent {
     pege_entry_id: string;
     book_id: string;
+    chapter_id: string;
     section_id: string;
     page_number: string;
     content_order: string;
@@ -746,21 +735,6 @@ export interface Course {
   courseCode: string;
 }
 
-// BNF Specific Types
-export interface BnfPage {
-  id: number;
-  title: string;
-  indexWords: string;
-  left_content: string;
-  right_content: string;
-}
-
-export interface BnfChapter {
-    id: number;
-    title: string;
-    pages: BnfPage[];
-}
-
 export interface BnfWordIndexEntry {
   keyword: string;
   page_number: string;
@@ -820,6 +794,7 @@ export interface ConvocationCeremony {
     session_2: string;
     created_by: string;
     created_at: string;
+    accept_booking: string;
 }
 
     
