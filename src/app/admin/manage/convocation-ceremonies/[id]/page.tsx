@@ -26,7 +26,7 @@ import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, PackageCheck, GraduationC
 import { getCeremonyById, getPackagesByCeremony, createPackage, updatePackage, deletePackage } from '@/lib/actions/certificates';
 import type { ConvocationCeremony, ConvocationPackage } from '@/lib/types';
 
-const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk/';
+const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk/content-provider/uploads/package-images/';
 
 const packageFormSchema = z.object({
     package_name: z.string().min(3, "Package name is required."),
