@@ -1,6 +1,5 @@
 
-
-import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage } from '../types';
+import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage, ParentCourse } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -134,6 +133,9 @@ export const getPackagesByCeremony = async (ceremonyId: string): Promise<Convoca
     if (response.status === 404) return [];
     if (!response.ok) throw new Error('Failed to fetch packages');
     const allPackages: ConvocationPackage[] = await response.json();
+    if (!ceremonyId) {
+        return allPackages;
+    }
     return allPackages.filter(pkg => pkg.convocation_id === ceremonyId);
 };
 
@@ -337,3 +339,5 @@ export const generateCertificate = async (payload: GenerateCertificatePayload): 
     }
     return response.json();
 };
+
+    

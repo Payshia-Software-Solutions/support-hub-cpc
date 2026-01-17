@@ -3,8 +3,9 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getConvocationRegistrations } from '@/lib/actions/certificates';
-import type { ConvocationRegistration } from '@/lib/types';
+import { getConvocationRegistrations, getPackagesByCeremony } from '@/lib/actions/certificates';
+import { getParentCourses } from '@/lib/actions/courses';
+import type { ConvocationRegistration, ConvocationPackage, ParentCourse } from '@/lib/types';
 import { format, isValid } from 'date-fns';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -31,7 +32,7 @@ const ViewSlipDialog = ({ slipPath, studentName }: { slipPath: string | null; st
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm">View Slip</Button>
+                <Button variant="outline" size="sm">View</Button>
             </DialogTrigger>
             <DialogContent className="max-w-xl">
                 <DialogHeader>
@@ -69,6 +70,18 @@ export default function ConvocationListPage() {
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 
+    const { data: packages, isLoading: isLoadingPackages } = useQuery<ConvocationPackage[]>({
+        queryKey: ['convocationPackages', ceremonyIdFilter],
+        queryFn: () => getPackagesByCeremony(ceremonyIdFilter || ''),
+        enabled: !!ceremonyIdFilter,
+    });
+    
+    const { data: courses, isLoading: isLoadingCourses } = useQuery<ParentCourse[]>({
+        queryKey: ['allParentCourses'],
+        queryFn: getParentCourses,
+    });
+
+
     const filteredRegistrations = useMemo(() => {
         if (!registrations) return [];
         const lowercasedSearch = searchTerm.toLowerCase();
@@ -87,7 +100,7 @@ export default function ConvocationListPage() {
             const dateB = new Date(b.registered_at);
             if (!isValid(dateA)) return 1;
             if (!isValid(dateB)) return -1;
-            return dateB.getTime() - dateA.getTime();
+            return dateB.getTime() - a.getTime();
         });
     }, [registrations, searchTerm, statusFilter]);
 
@@ -116,6 +129,8 @@ export default function ConvocationListPage() {
             </div>
         )
     }
+
+    const isLoadingData = isLoading || isLoadingPackages || isLoadingCourses;
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -162,7 +177,7 @@ export default function ConvocationListPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {isLoading ? (
+                    {isLoadingData ? (
                          <div className="space-y-2">
                            <Skeleton className="h-12 w-full" />
                            <Skeleton className="h-12 w-full" />
@@ -173,32 +188,69 @@ export default function ConvocationListPage() {
                              <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Student</TableHead>
                                         <TableHead>Ref #</TableHead>
+                                        <TableHead>Action</TableHead>
+                                        <TableHead>Ceremony #</TableHead>
+                                        <TableHead>Due</TableHead>
+                                        <TableHead>2nd Payment</TableHead>
+                                        <TableHead>Student #</TableHead>
                                         <TableHead>Session</TableHead>
-                                        <TableHead>Registered At</TableHead>
-                                        <TableHead>Payment Status</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        <TableHead>Courses</TableHead>
+                                        <TableHead>Package</TableHead>
+                                        <TableHead>Additional Seats</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {paginatedRegistrations.length > 0 ? paginatedRegistrations.map((reg) => (
                                         <TableRow key={reg.registration_id}>
-                                            <TableCell className="font-medium">
-                                                <p>{reg.name_on_certificate}</p>
-                                                <p className="text-xs text-muted-foreground">{reg.student_number}</p>
-                                            </TableCell>
                                             <TableCell>{reg.reference_number}</TableCell>
-                                            <TableCell>Session {reg.session} / #{reg.ceremony_number}</TableCell>
-                                            <TableCell>{reg.registered_at && isValid(new Date(reg.registered_at)) ? format(new Date(reg.registered_at), 'yyyy-MM-dd') : 'N/A'}</TableCell>
-                                            <TableCell><Badge variant={getStatusVariant(reg.payment_status)}>{reg.payment_status}</Badge></TableCell>
-                                            <TableCell className="text-right">
-                                               <ViewSlipDialog slipPath={reg.image_path} studentName={reg.name_on_certificate} />
+                                            <TableCell>
+                                                <div className="flex flex-col gap-1 w-20">
+                                                    <ViewSlipDialog slipPath={reg.image_path} studentName={reg.name_on_certificate} />
+                                                    <Button variant="outline" size="sm">Send</Button>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>{reg.ceremony_number}</TableCell>
+                                            <TableCell>{parseFloat(reg.price || '0').toFixed(2)}</TableCell>
+                                            <TableCell>
+                                                 <Button variant="outline" size="sm" disabled className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">No Payment Request</Button>
+                                            </TableCell>
+                                            <TableCell>{reg.student_number}</TableCell>
+                                            <TableCell>
+                                                 <Select defaultValue={reg.session} onValueChange={(value) => console.log('TODO: Update session to', value)}>
+                                                    <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="1">1</SelectItem>
+                                                        <SelectItem value="2">2</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </TableCell>
+                                            <TableCell className="min-w-[200px]">
+                                                {reg.course_id.split(',').map(id => {
+                                                    const courseName = courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`;
+                                                    return <div key={id}>{courseName}</div>
+                                                })}
+                                            </TableCell>
+                                            <TableCell>
+                                                 <Select defaultValue={reg.package_id} onValueChange={(value) => console.log('TODO: Update package to', value)}>
+                                                    <SelectTrigger className="w-48"><SelectValue placeholder="Select Package" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {packages?.filter(p => p.convocation_id === reg.convocation_id).map(p => <SelectItem key={p.package_id} value={p.package_id}>{p.package_name}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Select defaultValue={reg.additional_seats} onValueChange={(value) => console.log('TODO: Update seats to', value)}>
+                                                    <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {[0,1,2,3,4,5].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
                                             </TableCell>
                                         </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-center h-24">No registrations found.</TableCell>
+                                            <TableCell colSpan={10} className="text-center h-24">No registrations found.</TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
@@ -215,3 +267,5 @@ export default function ConvocationListPage() {
         </div>
     );
 }
+
+    
