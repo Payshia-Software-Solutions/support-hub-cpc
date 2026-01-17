@@ -799,8 +799,7 @@ export interface ConvocationCeremony {
 }
 
 export interface ConvocationPackage {
-    id: string;
-    event_id: string;
+    package_id: string;
     package_name: string;
     price: string;
     parent_seat_count: string;
@@ -808,6 +807,201 @@ export interface ConvocationPackage {
     graduation_cloth: '0' | '1';
     photo_package: '0' | '1';
     is_active: '0' | '1';
+    created_at: string;
+    updated_at: string;
+    courses: string;
+    cover_image: string;
+    convocation_id: string;
 }
     
 
+// Ceylon Pharmacy Game Types
+export interface GamePatient {
+  id: string;
+  prescription_id: string;
+  prescription_name: string;
+  prescription_status: string;
+  created_at: string;
+  created_by: string;
+  Pres_Name: string;
+  pres_date: string;
+  Pres_Age: string;
+  Pres_Method: string;
+  doctor_name: string;
+  notes: string;
+  patient_description: string;
+  address: string;
+  start_data: TreatmentStartRecord | null;
+}
+
+export interface PrescriptionDetail {
+  id: string;
+  pres_code: string;
+  cover_id: string;
+  content: string;
+  status: string;
+  pres_name?: string;
+  pres_date?: string;
+}
+
+export interface DispensingAnswer {
+  answer_id: string;
+  pres_id: string;
+  cover_id: string;
+  date: string;
+  name: string;
+  drug_name: string;
+  drug_type: string;
+  drug_qty: string;
+  morning_qty: string;
+  afternoon_qty: string;
+  evening_qty: string;
+  night_qty: string;
+  meal_type: string;
+  using_type: string;
+  additional_description: string;
+  created_by: string;
+  at_a_time: string;
+  hour_qty: string | null;
+}
+
+export interface FormSelectionData {
+    name: string[];
+    drug_name: string[];
+    drug_qty: string[];
+    drug_type: string[];
+    meal_type: string[];
+    using_type: string[];
+    additional_description: string[];
+    at_a_time: string[];
+    hour_qty: string[];
+}
+
+export interface TreatmentStartRecord {
+    id: string;
+    student_id: string;
+    PresCode: string;
+    time: string; // "HH:mm:ss"
+    created_at: string; // "YYYY-MM-DD HH:mm:ss"
+    patient_status: 'Pending' | 'Recovered' | 'Dead';
+}
+
+export interface ValidateAnswerPayload {
+  created_by: string;
+  user_level: string;
+  pres_id: string;
+  cover_id: string;
+  date: string;
+  name: string;
+  drug_name: string;
+  drug_type: string;
+  drug_qty: string;
+  morning_qty: string;
+  afternoon_qty: string;
+  evening_qty: string;
+  night_qty: string;
+  meal_type: string;
+  using_type: string;
+  at_a_time: string;
+  hour_qty: string | null;
+  additional_description: string;
+}
+
+export interface ValidateAnswerResponse {
+    answer_status: 'Correct' | 'In-Correct';
+    incorrect_values: string[];
+}
+
+export interface Instruction {
+    id: string;
+    instruction: string;
+    created_by?: string;
+    content: string; // This seems to hold the instruction ID for shuffled results
+}
+
+export interface SaveCounselingAnswerPayload {
+  LoggedUser: string;
+  PresCode: string;
+  Instruction: string;
+  CoverCode: string;
+  ans_status: 'Correct' | 'Incorrect';
+}
+
+export interface DispensingSubmissionStatus {
+    answer_id: string | null;
+    error?: string;
+}
+
+
+export interface MasterProduct {
+  product_id: string;
+  product_code: string;
+  ProductName: string;
+  DisplayName: string;
+  PrintName: string;
+  SectionID: number;
+  DepartmentID: number;
+  CategoryID: number;
+  BrandId: number;
+  UOMeasurement: string;
+  ReOderLevel: number;
+  LeadDays: number;
+  CostPrice: string;
+  SellingPrice: string;
+  MinimumPrice: string;
+  WholesalePrice: string;
+  ItemType: string;
+  ItemLocation: string;
+  ImagePath: string | null;
+  CreatedBy: string;
+  CreatedAt: string;
+  active_status: string;
+  GenericID: number;
+  Pos_Category: string;
+}
+
+export interface POSCorrectAnswer {
+  id: string;
+  PresCode: string;
+  value: string;
+  created_at: string;
+}
+
+export interface POSSubmissionPayload {
+  student_id: string;
+  PresCode: string;
+  answer: string;
+  created_at: string;
+  ans_status: 'Answer Correct' | 'Answer Incorrect';
+}
+
+export interface POSSubmissionStatus {
+  id: string;
+  student_id: string;
+  PresCode: string;
+  answer: string;
+  created_at: string;
+  ans_status: string;
+}
+
+export interface RecoveryRecord {
+    id: string;
+    student_number: string;
+    patient_id: string;
+    created_at: string;
+}
+
+export interface PrescriptionSubmissionPayload {
+  prescription_name: string;
+  prescription_status: string;
+  created_at: string;
+  created_by: string;
+  Pres_Name: string;
+  pres_date: string;
+  Pres_Age: number;
+  Pres_Method: string;
+  doctor_name: string;
+  notes: string;
+  patient_description: string;
+  address: string;
+}

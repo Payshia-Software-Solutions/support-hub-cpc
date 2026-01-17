@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
@@ -19,12 +19,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, PackageCheck, PackageX, GraduationCap } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, PackageCheck, GraduationCap } from 'lucide-react';
 
 // API and Type imports
 import { getCeremonyById, getPackagesByCeremony, createPackage, updatePackage, deletePackage } from '@/lib/actions/certificates';
 import type { ConvocationCeremony, ConvocationPackage } from '@/lib/types';
-import { useAuth } from '@/contexts/AuthContext';
 
 
 const packageFormSchema = z.object({
@@ -118,10 +117,10 @@ export default function ManagePackagesPage() {
                 graduation_cloth: data.values.graduation_cloth ? '1' : '0',
                 photo_package: data.values.photo_package ? '1' : '0',
                 is_active: '1',
-                event_id: ceremonyId,
+                convocation_id: ceremonyId,
             };
             if (data.pkg) {
-                return updatePackage(data.pkg.id, payload);
+                return updatePackage(data.pkg.package_id, payload);
             }
             return createPackage(payload);
         },
@@ -168,7 +167,7 @@ export default function ManagePackagesPage() {
                     <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action will permanently delete the package "{packageToDelete?.package_name}".</AlertDialogDescription></AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteMutation.mutate(packageToDelete!.id)} disabled={deleteMutation.isPending}>
+                        <AlertDialogAction onClick={() => deleteMutation.mutate(packageToDelete!.package_id)} disabled={deleteMutation.isPending}>
                            {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -196,7 +195,7 @@ export default function ManagePackagesPage() {
                                 <TableHeader><TableRow><TableHead>Package Name</TableHead><TableHead>Price</TableHead><TableHead>Seats</TableHead><TableHead className="text-center">Includes</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {packages && packages.length > 0 ? packages.map(pkg => (
-                                        <TableRow key={pkg.id}>
+                                        <TableRow key={pkg.package_id}>
                                             <TableCell className="font-medium">{pkg.package_name}</TableCell>
                                             <TableCell>LKR {parseFloat(pkg.price).toFixed(2)}</TableCell>
                                             <TableCell>{pkg.parent_seat_count}</TableCell>
@@ -224,4 +223,3 @@ export default function ManagePackagesPage() {
         </div>
     );
 }
-

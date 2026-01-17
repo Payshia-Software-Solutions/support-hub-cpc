@@ -1,5 +1,4 @@
 
-
 import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
@@ -126,14 +125,15 @@ export const deleteConvocationCeremony = async (id: string): Promise<void> => {
 
 // Convocation Packages
 export const getPackagesByCeremony = async (ceremonyId: string): Promise<ConvocationPackage[]> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-packages/by-event/${ceremonyId}`);
+    const response = await fetch(`${QA_API_BASE_URL}/packages`);
     if (response.status === 404) return [];
     if (!response.ok) throw new Error('Failed to fetch packages');
-    return response.json();
+    const allPackages: ConvocationPackage[] = await response.json();
+    return allPackages.filter(pkg => pkg.convocation_id === ceremonyId);
 };
 
-export const createPackage = async (data: Omit<ConvocationPackage, 'id'>): Promise<ConvocationPackage> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-packages`, {
+export const createPackage = async (data: any): Promise<ConvocationPackage> => {
+    const response = await fetch(`${QA_API_BASE_URL}/packages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -145,8 +145,8 @@ export const createPackage = async (data: Omit<ConvocationPackage, 'id'>): Promi
     return response.json();
 };
 
-export const updatePackage = async (packageId: string, data: Partial<Omit<ConvocationPackage, 'id'>>): Promise<ConvocationPackage> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-packages/${packageId}`, {
+export const updatePackage = async (packageId: string, data: any): Promise<ConvocationPackage> => {
+    const response = await fetch(`${QA_API_BASE_URL}/packages/${packageId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -159,7 +159,7 @@ export const updatePackage = async (packageId: string, data: Partial<Omit<Convoc
 };
 
 export const deletePackage = async (packageId: string): Promise<void> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-packages/${packageId}`, {
+    const response = await fetch(`${QA_API_BASE_URL}/packages/${packageId}`, {
         method: 'DELETE',
     });
     if (!response.ok) {
