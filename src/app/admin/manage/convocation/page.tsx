@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getConvocationRegistrations, getPackagesByCeremony } from '@/lib/actions/certificates';
 import { getParentCourses } from '@/lib/actions/courses';
 import type { ConvocationRegistration, ConvocationPackage, ParentCourse } from '@/lib/types';
-import { format, isValid } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 
@@ -85,7 +85,9 @@ export default function ConvocationListPage() {
         queryFn: getParentCourses,
     });
 
-    const handleSort = (column: 'date' | 'student' | 'ref') => {
+    type SortableColumn = 'date' | 'student' | 'ref' | 'ceremony' | 'due' | 'session' | 'course' | 'package' | 'seats';
+
+    const handleSort = (column: SortableColumn) => {
         const isCurrentlySorted = sortOption.startsWith(column);
         const currentDirection = sortOption.split('-')[1];
 
@@ -98,7 +100,7 @@ export default function ConvocationListPage() {
         }
     };
     
-    const SortableHeader = ({ column, label }: { column: 'date' | 'student' | 'ref', label: string }) => {
+    const SortableHeader = ({ column, label }: { column: SortableColumn, label: string }) => {
         const isSorted = sortOption.startsWith(column);
         const isAsc = isSorted && sortOption.endsWith('asc');
 
@@ -135,6 +137,30 @@ export default function ConvocationListPage() {
 
         return filtered.sort((a, b) => {
             switch (sortOption) {
+                case 'student-asc': return a.student_number.localeCompare(b.student_number);
+                case 'student-desc': return b.student_number.localeCompare(a.student_number);
+                case 'ref-asc': return parseInt(a.reference_number, 10) - parseInt(b.reference_number, 10);
+                case 'ref-desc': return parseInt(b.reference_number, 10) - parseInt(a.reference_number, 10);
+                case 'ceremony-asc': return a.ceremony_number.localeCompare(b.ceremony_number);
+                case 'ceremony-desc': return b.ceremony_number.localeCompare(a.ceremony_number);
+                case 'due-asc': return parseFloat(a.payment_amount || '0') - parseFloat(b.payment_amount || '0');
+                case 'due-desc': return parseFloat(b.payment_amount || '0') - parseFloat(a.payment_amount || '0');
+                case 'session-asc': return a.session.localeCompare(b.session);
+                case 'session-desc': return b.session.localeCompare(a.session);
+                case 'course-asc': return a.course_id.localeCompare(b.course_id);
+                case 'course-desc': return b.course_id.localeCompare(a.course_id);
+                case 'package-asc': {
+                    const pkgA = packages?.find(p => p.package_id === a.package_id)?.package_name || '';
+                    const pkgB = packages?.find(p => p.package_id === b.package_id)?.package_name || '';
+                    return pkgA.localeCompare(pkgB);
+                }
+                case 'package-desc': {
+                    const pkgA = packages?.find(p => p.package_id === a.package_id)?.package_name || '';
+                    const pkgB = packages?.find(p => p.package_id === b.package_id)?.package_name || '';
+                    return pkgB.localeCompare(pkgA);
+                }
+                case 'seats-asc': return parseInt(a.additional_seats, 10) - parseInt(b.additional_seats, 10);
+                case 'seats-desc': return parseInt(b.additional_seats, 10) - parseInt(a.additional_seats, 10);
                 case 'date-asc': {
                     const dateA = new Date(a.registered_at);
                     const dateB = new Date(b.registered_at);
@@ -142,18 +168,10 @@ export default function ConvocationListPage() {
                     if (!isValid(dateB)) return -1;
                     return dateA.getTime() - dateB.getTime();
                 }
-                case 'student-asc':
-                    return a.student_number.localeCompare(b.student_number);
-                case 'student-desc':
-                    return b.student_number.localeCompare(a.student_number);
-                case 'ref-asc':
-                    return parseInt(a.reference_number, 10) - parseInt(b.reference_number, 10);
-                case 'ref-desc':
-                    return parseInt(b.reference_number, 10) - parseInt(a.reference_number, 10);
                 case 'date-desc':
                 default: {
-                    const dateA = new Date(a.registered_at);
-                    const dateB = new Date(b.registered_at);
+                    const dateA = parseISO(a.registered_at);
+                    const dateB = parseISO(b.registered_at);
                     if (!isValid(dateA)) return 1;
                     if (!isValid(dateB)) return -1;
                     return dateB.getTime() - dateA.getTime();
@@ -161,7 +179,7 @@ export default function ConvocationListPage() {
             }
         });
 
-    }, [registrations, searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption]);
+    }, [registrations, searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption, packages]);
     
     useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption]);
 
@@ -281,15 +299,15 @@ export default function ConvocationListPage() {
                                     <TableRow>
                                         <TableHead><SortableHeader column="ref" label="Ref #" /></TableHead>
                                         <TableHead>Action</TableHead>
-                                        <TableHead>Ceremony #</TableHead>
-                                        <TableHead>Due</TableHead>
+                                        <TableHead><SortableHeader column="ceremony" label="Ceremony #" /></TableHead>
+                                        <TableHead><SortableHeader column="due" label="Due" /></TableHead>
                                         <TableHead>2nd Payment</TableHead>
                                         <TableHead><SortableHeader column="student" label="Student #" /></TableHead>
-                                        <TableHead>Session</TableHead>
-                                        <TableHead>Courses</TableHead>
-                                        <TableHead>Package</TableHead>
+                                        <TableHead><SortableHeader column="session" label="Session" /></TableHead>
+                                        <TableHead><SortableHeader column="course" label="Courses" /></TableHead>
+                                        <TableHead><SortableHeader column="package" label="Package" /></TableHead>
                                         <TableHead><SortableHeader column="date" label="Registered" /></TableHead>
-                                        <TableHead>Additional Seats</TableHead>
+                                        <TableHead><SortableHeader column="seats" label="Additional Seats" /></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -303,7 +321,7 @@ export default function ConvocationListPage() {
                                                 </div>
                                             </TableCell>
                                             <TableCell>{reg.ceremony_number}</TableCell>
-                                            <TableCell>{parseFloat(reg.price || '0').toFixed(2)}</TableCell>
+                                            <TableCell>{parseFloat(reg.payment_amount || '0').toFixed(2)}</TableCell>
                                             <TableCell>
                                                  <Button variant="outline" size="sm" disabled className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">No Payment Request</Button>
                                             </TableCell>
@@ -360,3 +378,4 @@ export default function ConvocationListPage() {
         </div>
     );
 }
+
