@@ -228,7 +228,7 @@ export default function CreateConvocationBookingPage() {
 
   const handleConfirmAndSubmit = () => {
     if (!studentData?.studentInfo?.username || !selectedCeremonyId || !selectedPackageId || !paymentSlip || selectedEnrollments.length === 0) {
-      setErrorMessage("Missing required information. Please review your selections.");
+      setErrorMessage("Missing required information to submit the order.");
       setStep('error');
       return;
     }
@@ -425,7 +425,7 @@ export default function CreateConvocationBookingPage() {
                                                   src={`https://content-provider.pharmacollege.lk/content-provider/uploads/package-images/${pkg.cover_image}`}
                                                   alt={pkg.package_name}
                                                   layout="fill"
-                                                  objectFit="cover"
+                                                  objectFit="contain"
                                                   className="bg-muted"
                                               />
                                           </div>
