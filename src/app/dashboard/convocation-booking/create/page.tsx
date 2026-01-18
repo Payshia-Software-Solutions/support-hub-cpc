@@ -37,6 +37,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Image from 'next/image';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const PARENT_SEAT_RATE = 500; // As defined in PHP code
 
@@ -272,7 +273,7 @@ export default function CreateConvocationBookingPage() {
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Bookings
               </Button>
               <CardTitle>Step 1: Select Your Course(s)</CardTitle>
-              <CardDescription>Review course eligibility and select courses to include in your convocation booking for {studentData?.studentInfo.full_name}.</CardDescription>
+              <CardDescription>Review course eligibility and select courses to include in your convocation booking.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {deselectedEligible.length > 0 && (
@@ -497,6 +498,21 @@ export default function CreateConvocationBookingPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          
+          {studentData && (
+              <Card className="max-w-4xl mx-auto shadow-md">
+                <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                    <Avatar className="h-16 w-16 text-xl">
+                        <AvatarImage src={user?.avatar} alt={user?.name} />
+                        <AvatarFallback>{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <CardTitle className="text-xl">{studentData.studentInfo.full_name}</CardTitle>
+                        <CardDescription>{studentData.studentInfo.student_id}</CardDescription>
+                    </div>
+                </CardHeader>
+              </Card>
+          )}
 
           <Card className="max-w-4xl mx-auto shadow-lg">
               {renderContent()}
