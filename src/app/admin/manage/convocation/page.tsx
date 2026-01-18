@@ -65,6 +65,7 @@ export default function ConvocationListPage() {
     const [courseFilter, setCourseFilter] = useState('all');
     const [packageFilter, setPackageFilter] = useState('all');
     const [sessionFilter, setSessionFilter] = useState('all');
+    const [sortOption, setSortOption] = useState('date-desc');
     const [currentPage, setCurrentPage] = useState(1);
 
     const { data: registrations, isLoading, isError, error } = useQuery<ConvocationRegistration[]>({
@@ -89,7 +90,7 @@ export default function ConvocationListPage() {
         if (!registrations) return [];
         const lowercasedSearch = searchTerm.toLowerCase();
         
-        return registrations.filter(reg => {
+        const filtered = registrations.filter(reg => {
             const matchesSearch = lowercasedSearch === '' || 
                 reg.student_number.toLowerCase().includes(lowercasedSearch) ||
                 reg.name_on_certificate.toLowerCase().includes(lowercasedSearch) ||
@@ -101,16 +102,39 @@ export default function ConvocationListPage() {
             const matchesSession = sessionFilter === 'all' || reg.session === sessionFilter;
             
             return matchesSearch && matchesStatus && matchesCourse && matchesPackage && matchesSession;
-        }).sort((a,b) => {
-            const dateA = new Date(a.registered_at);
-            const dateB = new Date(b.registered_at);
-            if (!isValid(dateA)) return 1;
-            if (!isValid(dateB)) return -1;
-            return dateB.getTime() - dateA.getTime();
         });
-    }, [registrations, searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter]);
+
+        return filtered.sort((a, b) => {
+            switch (sortOption) {
+                case 'date-asc': {
+                    const dateA = new Date(a.registered_at);
+                    const dateB = new Date(b.registered_at);
+                    if (!isValid(dateA)) return 1;
+                    if (!isValid(dateB)) return -1;
+                    return dateA.getTime() - dateB.getTime();
+                }
+                case 'student-asc':
+                    return a.student_number.localeCompare(b.student_number);
+                case 'student-desc':
+                    return b.student_number.localeCompare(a.student_number);
+                case 'ref-asc':
+                    return parseInt(a.reference_number, 10) - parseInt(b.reference_number, 10);
+                case 'ref-desc':
+                    return parseInt(b.reference_number, 10) - parseInt(a.reference_number, 10);
+                case 'date-desc':
+                default: {
+                    const dateA = new Date(a.registered_at);
+                    const dateB = new Date(b.registered_at);
+                    if (!isValid(dateA)) return 1;
+                    if (!isValid(dateB)) return -1;
+                    return dateB.getTime() - dateA.getTime();
+                }
+            }
+        });
+
+    }, [registrations, searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption]);
     
-    useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter]);
+    useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption]);
 
     const totalPages = Math.ceil(filteredRegistrations.length / ITEMS_PER_PAGE);
     const paginatedRegistrations = useMemo(() => {
@@ -171,7 +195,7 @@ export default function ConvocationListPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input placeholder="Search by name, student #, ref #" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10"/>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                              <Select value={statusFilter} onValueChange={setStatusFilter}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Filter by status" />
@@ -209,6 +233,19 @@ export default function ConvocationListPage() {
                                 <SelectContent>
                                     <SelectItem value="all">All Packages</SelectItem>
                                     {packages?.filter(p => !ceremonyIdFilter || p.convocation_id === ceremonyIdFilter).map(p => <SelectItem key={p.package_id} value={p.package_id}>{p.package_name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                             <Select value={sortOption} onValueChange={setSortOption}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Sort by" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="date-desc">Newest First</SelectItem>
+                                    <SelectItem value="date-asc">Oldest First</SelectItem>
+                                    <SelectItem value="student-asc">Student # (A-Z)</SelectItem>
+                                    <SelectItem value="student-desc">Student # (Z-A)</SelectItem>
+                                    <SelectItem value="ref-asc">Ref # (Asc)</SelectItem>
+                                    <SelectItem value="ref-desc">Ref # (Desc)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
