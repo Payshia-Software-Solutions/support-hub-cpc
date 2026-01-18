@@ -39,6 +39,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 const PARENT_SEAT_RATE = 500; 
@@ -269,10 +270,8 @@ export default function CreateConvocationBookingPage() {
   const totalPrice = useMemo(() => {
     const packagePrice = selectedPackage ? Number(selectedPackage.price) : 0;
     const numAdditionalSeats = Number(additionalSeats);
-
     const safePackagePrice = isNaN(packagePrice) ? 0 : packagePrice;
     const safeSeatPrice = isNaN(numAdditionalSeats) ? 0 : numAdditionalSeats * PARENT_SEAT_RATE;
-
     return safePackagePrice + safeSeatPrice;
   }, [selectedPackage, additionalSeats]);
 
@@ -445,7 +444,18 @@ export default function CreateConvocationBookingPage() {
                           </div>
                           <div className="space-y-3">
                               <Label htmlFor="additional-seats" className="text-base font-semibold flex items-center gap-2"><Users className="w-5 h-5"/>Additional Parent Seats</Label>
-                              <Input id="additional-seats" type="number" min="0" max="8" value={additionalSeats} onChange={e => setAdditionalSeats(e.target.value)} />
+                              <Select value={additionalSeats} onValueChange={setAdditionalSeats}>
+                                  <SelectTrigger id="additional-seats">
+                                      <SelectValue placeholder="Select number of seats" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                      <SelectItem value="0">0</SelectItem>
+                                      <SelectItem value="1">1</SelectItem>
+                                      <SelectItem value="2">2</SelectItem>
+                                      <SelectItem value="3">3</SelectItem>
+                                      <SelectItem value="4">4</SelectItem>
+                                  </SelectContent>
+                              </Select>
                               <p className="text-xs text-muted-foreground">Each additional seat costs LKR {PARENT_SEAT_RATE}.</p>
                           </div>
                         </div>
