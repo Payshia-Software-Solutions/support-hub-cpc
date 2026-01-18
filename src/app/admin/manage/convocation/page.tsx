@@ -293,113 +293,80 @@ export default function ConvocationListPage() {
                            <Skeleton className="h-12 w-full" />
                         </div>
                     ) : (
-                        <>
-                            {/* Desktop Table */}
-                            <div className="relative w-full overflow-auto border rounded-lg hidden md:block">
-                                 <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead><SortableHeader column="ref" label="Ref #" /></TableHead>
-                                            <TableHead>Action</TableHead>
-                                            <TableHead><SortableHeader column="ceremony" label="Ceremony #" /></TableHead>
-                                            <TableHead><SortableHeader column="due" label="Due" /></TableHead>
-                                            <TableHead>2nd Payment</TableHead>
-                                            <TableHead><SortableHeader column="student" label="Student #" /></TableHead>
-                                            <TableHead><SortableHeader column="session" label="Session" /></TableHead>
-                                            <TableHead><SortableHeader column="course" label="Courses" /></TableHead>
-                                            <TableHead><SortableHeader column="package" label="Package" /></TableHead>
-                                            <TableHead><SortableHeader column="date" label="Registered" /></TableHead>
-                                            <TableHead><SortableHeader column="seats" label="Additional Seats" /></TableHead>
+                        <div className="relative w-full overflow-auto border rounded-lg">
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead><SortableHeader column="ref" label="Ref #" /></TableHead>
+                                        <TableHead>Action</TableHead>
+                                        <TableHead><SortableHeader column="ceremony" label="Ceremony #" /></TableHead>
+                                        <TableHead><SortableHeader column="due" label="Due" /></TableHead>
+                                        <TableHead>2nd Payment</TableHead>
+                                        <TableHead><SortableHeader column="student" label="Student #" /></TableHead>
+                                        <TableHead><SortableHeader column="session" label="Session" /></TableHead>
+                                        <TableHead><SortableHeader column="course" label="Courses" /></TableHead>
+                                        <TableHead><SortableHeader column="package" label="Package" /></TableHead>
+                                        <TableHead><SortableHeader column="date" label="Registered" /></TableHead>
+                                        <TableHead><SortableHeader column="seats" label="Additional Seats" /></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {paginatedRegistrations.length > 0 ? paginatedRegistrations.map((reg) => (
+                                        <TableRow key={reg.registration_id}>
+                                            <TableCell>{reg.reference_number}</TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col gap-1 w-20">
+                                                    <ViewSlipDialog slipPath={reg.image_path} studentName={reg.name_on_certificate} />
+                                                    <Button variant="outline" size="sm">Send</Button>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>{reg.ceremony_number}</TableCell>
+                                            <TableCell>{parseFloat(reg.payment_amount || '0').toFixed(2)}</TableCell>
+                                            <TableCell>
+                                                 <Button variant="outline" size="sm" disabled className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">No Payment Request</Button>
+                                            </TableCell>
+                                            <TableCell>{reg.student_number}</TableCell>
+                                            <TableCell>
+                                                 <Select defaultValue={reg.session} onValueChange={(value) => console.log('TODO: Update session to', value)}>
+                                                    <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="1">1</SelectItem>
+                                                        <SelectItem value="2">2</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </TableCell>
+                                            <TableCell className="min-w-[200px]">
+                                                {reg.course_id.split(',').map(id => {
+                                                    const courseName = courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`;
+                                                    return <div key={id}>{courseName}</div>
+                                                })}
+                                            </TableCell>
+                                            <TableCell>
+                                                 <Select defaultValue={reg.package_id} onValueChange={(value) => console.log('TODO: Update package to', value)}>
+                                                    <SelectTrigger className="w-48"><SelectValue placeholder="Select Package" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {packages?.filter(p => p.convocation_id === reg.convocation_id).map(p => <SelectItem key={p.package_id} value={p.package_id}>{p.package_name}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                            </TableCell>
+                                            <TableCell>{format(new Date(reg.registered_at), 'Pp')}</TableCell>
+                                            <TableCell>
+                                                <Select defaultValue={reg.additional_seats} onValueChange={(value) => console.log('TODO: Update seats to', value)}>
+                                                    <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {[0,1,2,3,4,5].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                            </TableCell>
                                         </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {paginatedRegistrations.length > 0 ? paginatedRegistrations.map((reg) => (
-                                            <TableRow key={reg.registration_id}>
-                                                <TableCell>{reg.reference_number}</TableCell>
-                                                <TableCell>
-                                                    <div className="flex flex-col gap-1 w-20">
-                                                        <ViewSlipDialog slipPath={reg.image_path} studentName={reg.name_on_certificate} />
-                                                        <Button variant="outline" size="sm">Send</Button>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>{reg.ceremony_number}</TableCell>
-                                                <TableCell>{parseFloat(reg.payment_amount || '0').toFixed(2)}</TableCell>
-                                                <TableCell>
-                                                     <Button variant="outline" size="sm" disabled className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">No Payment Request</Button>
-                                                </TableCell>
-                                                <TableCell>{reg.student_number}</TableCell>
-                                                <TableCell>
-                                                     <Select defaultValue={reg.session} onValueChange={(value) => console.log('TODO: Update session to', value)}>
-                                                        <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="1">1</SelectItem>
-                                                            <SelectItem value="2">2</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </TableCell>
-                                                <TableCell className="min-w-[200px]">
-                                                    {reg.course_id.split(',').map(id => {
-                                                        const courseName = courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`;
-                                                        return <div key={id}>{courseName}</div>
-                                                    })}
-                                                </TableCell>
-                                                <TableCell>
-                                                     <Select defaultValue={reg.package_id} onValueChange={(value) => console.log('TODO: Update package to', value)}>
-                                                        <SelectTrigger className="w-48"><SelectValue placeholder="Select Package" /></SelectTrigger>
-                                                        <SelectContent>
-                                                            {packages?.filter(p => p.convocation_id === reg.convocation_id).map(p => <SelectItem key={p.package_id} value={p.package_id}>{p.package_name}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </TableCell>
-                                                <TableCell>{format(new Date(reg.registered_at), 'Pp')}</TableCell>
-                                                <TableCell>
-                                                    <Select defaultValue={reg.additional_seats} onValueChange={(value) => console.log('TODO: Update seats to', value)}>
-                                                        <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
-                                                        <SelectContent>
-                                                            {[0,1,2,3,4,5].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </TableCell>
-                                            </TableRow>
-                                        )) : (
-                                            <TableRow>
-                                                <TableCell colSpan={11} className="text-center h-24">No registrations found.</TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </div>
-
-                            {/* Mobile View */}
-                            <div className="md:hidden space-y-4">
-                                {paginatedRegistrations.length > 0 ? paginatedRegistrations.map((reg) => (
-                                    <div key={reg.registration_id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <p className="font-bold">{reg.student_number}</p>
-                                                <p className="text-sm text-muted-foreground">{reg.name_on_certificate}</p>
-                                            </div>
-                                            <Badge variant={getStatusVariant(reg.payment_status)}>{reg.payment_status}</Badge>
-                                        </div>
-                                        <div className="text-sm space-y-2 pt-2 border-t">
-                                            <div className="flex justify-between"><p className="text-muted-foreground">Ref #:</p><p className="font-medium">{reg.reference_number}</p></div>
-                                            <div className="flex justify-between"><p className="text-muted-foreground">Ceremony:</p><p className="font-medium">{reg.ceremony_number}</p></div>
-                                            <div className="flex justify-between"><p className="text-muted-foreground">Session:</p><p className="font-medium">{reg.session}</p></div>
-                                            <div className="flex justify-between"><p className="text-muted-foreground">Due:</p><p className="font-medium">LKR {parseFloat(reg.payment_amount || '0').toFixed(2)}</p></div>
-                                            <div className="flex justify-between text-right"><p className="text-muted-foreground">Package:</p><p className="font-medium text-right">{(packages?.find(p => p.package_id === reg.package_id)?.package_name || 'N/A')}</p></div>
-                                            <div className="flex justify-between text-right"><p className="text-muted-foreground">Courses:</p><p className="font-medium">{reg.course_id.split(',').map(id => courses?.find(c => c.id === id.trim())?.course_name || `ID:${id}`).join(', ')}</p></div>
-                                            <div className="flex justify-between"><p className="text-muted-foreground">Add. Seats:</p><p className="font-medium">{reg.additional_seats}</p></div>
-                                        </div>
-                                        <div className="flex items-center justify-end pt-2 border-t mt-2 gap-2">
-                                            <ViewSlipDialog slipPath={reg.image_path} studentName={reg.name_on_certificate} />
-                                            <Button size="sm" variant="outline">Send</Button>
-                                        </div>
-                                    </div>
-                                )) : (
-                                    <div className="text-center h-24 flex items-center justify-center"><p>No registrations found.</p></div>
-                                )}
-                            </div>
-                        </>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={11} className="text-center h-24">No registrations found.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     )}
                 </CardContent>
                  <CardFooter className="flex items-center justify-center space-x-2 pt-4">
@@ -412,3 +379,4 @@ export default function ConvocationListPage() {
     );
 }
 
+    
