@@ -24,7 +24,7 @@ import { toast } from '@/hooks/use-toast';
 
 const ITEMS_PER_PAGE = 25;
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
-const PARENT_SEAT_RATE = 500;
+const PARENT_SEAT_RATE = 750;
 
 const ViewSlipDialog = ({ slipPath, studentName, trigger }: { slipPath: string | null; studentName: string; trigger: React.ReactNode }) => {
     if (!slipPath) return <Button variant="outline" size="sm" disabled>No Slip</Button>;
@@ -140,12 +140,7 @@ export default function ConvocationListPage() {
             const pkg = packages.find(p => p.package_id === reg.package_id);
             const dueAmount = pkg ? parseFloat(pkg.price) + (parseInt(reg.additional_seats, 10) * PARENT_SEAT_RATE) : 0;
             
-            let status = reg.registration_status;
-            if (reg.registration_status === "paid" && parseFloat(reg.payment_amount) < dueAmount) {
-                status = "Partially Paid";
-            }
-
-            return { ...reg, isDuplicate, dueAmount, calculatedStatus: status };
+            return { ...reg, isDuplicate, dueAmount };
         })
         .filter(reg => {
             const matchesSearch = lowercasedSearch === '' || 
@@ -208,9 +203,13 @@ export default function ConvocationListPage() {
         switch (status.toLowerCase()) {
             case 'pending': return 'bg-yellow-500 text-white';
             case 'partially paid': return 'bg-amber-600 text-white';
-            case 'paid': return 'bg-secondary';
-            case 'confirmed': return 'bg-green-600 text-white';
-            case 'canceled': return 'bg-destructive';
+            case 'paid':
+            case 'approved': 
+                return 'bg-green-600 text-white';
+            case 'confirmed': return 'bg-blue-600 text-white';
+            case 'canceled': 
+            case 'rejected':
+                return 'bg-destructive';
             default: return 'bg-info';
         }
     };
@@ -306,7 +305,8 @@ export default function ConvocationListPage() {
                                         <TableHead>Package Amount</TableHead>
                                         <TableHead>Paid</TableHead>
                                         <TableHead>Slip</TableHead>
-                                        <TableHead>Status</TableHead>
+                                        <TableHead>Duplicate</TableHead>
+                                        <TableHead>Payment Status</TableHead>
                                         <TableHead>Registration Status</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -355,12 +355,13 @@ export default function ConvocationListPage() {
                                                 </a>
                                             </TableCell>
                                             <TableCell>{reg.isDuplicate && <Badge variant="destructive">Duplicate</Badge>}</TableCell>
-                                            <TableCell><Badge className={getStatusBadge(reg.calculatedStatus)}>{reg.calculatedStatus}</Badge></TableCell>
+                                            <TableCell><Badge className={getStatusBadge(reg.payment_status)}>{reg.payment_status}</Badge></TableCell>
+                                            <TableCell><Badge variant="secondary">{reg.registration_status}</Badge></TableCell>
                                         </TableRow>
                                         )
                                     }) : (
                                         <TableRow>
-                                            <TableCell colSpan={15} className="text-center h-24">No registrations found.</TableCell>
+                                            <TableCell colSpan={16} className="text-center h-24">No registrations found.</TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
@@ -377,3 +378,5 @@ export default function ConvocationListPage() {
         </div>
     );
 }
+
+    
