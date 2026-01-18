@@ -182,6 +182,7 @@ export default function StudentDashboardPage() {
         { title: "Order Certificate", description: "Request a hard copy of your certificate.", href: "/dashboard/certificate-order", icon: <Award className="w-8 h-8 text-white" />, colorClass: "from-green-400 to-teal-500" },
         { title: "BNF", description: "Access the British National Formulary.", href: "/dashboard/bnf", icon: <BookOpen className="w-8 h-8 text-white" />, colorClass: "from-red-400 to-rose-500" },
         { title: "Games & Challenges", description: "Test your knowledge and have fun.", href: "/dashboard/games", icon: <Gamepad2 className="w-8 h-8 text-white" />, colorClass: "from-yellow-400 to-amber-500" },
+        { title: "Convocation Booking", description: "Register for the upcoming convocation.", href: "/dashboard/convocation-booking", icon: <GraduationCap className="w-8 h-8 text-white" />, colorClass: "from-purple-400 to-pink-500" },
     ];
 
     if (!selectedCourseCode && !isLoadingCourses) {
@@ -265,10 +266,15 @@ export default function StudentDashboardPage() {
             <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-150">
                 <h2 className="text-2xl font-semibold font-headline mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                     <QuickActionCard title="Create a Ticket", description="Get help from our support staff.", href="/dashboard/create-ticket", icon={<PlusCircle className="w-8 h-8 text-white" />} colorClass="from-blue-400 to-indigo-500" selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
-                     <QuickActionCard title="Order Certificate", description="Request a hard copy of your certificate.", href="/dashboard/certificate-order", icon={<Award className="w-8 h-8 text-white" />} colorClass="from-green-400 to-teal-500" selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
-                     <QuickActionCard title="Convocation Booking" description="Register for the upcoming convocation." href="/dashboard/convocation-booking" icon={<GraduationCap className="w-8 h-8 text-white" />} colorClass="from-purple-400 to-pink-500" selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
-                     <QuickActionCard title="BNF" description="Access the British National Formulary.", href="/dashboard/bnf", icon={<BookOpen className="w-8 h-8 text-white" />} colorClass="from-red-400 to-rose-500" selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
+                   {quickActions.map((action) => (
+                      <QuickActionCard 
+                        key={action.href}
+                        {...action}
+                        selectedCourseCode={selectedCourseCode} 
+                        allCourses={allCourses} 
+                        setDialogContent={setDialogContent} 
+                      />
+                   ))}
                 </div>
             </section>
             
