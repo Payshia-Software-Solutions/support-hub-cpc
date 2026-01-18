@@ -1,5 +1,6 @@
 
 
+
 import type { BnfChapter, BnfPage } from './bnf-data';
 
 export interface ApiStaffMember {
@@ -214,17 +215,7 @@ export interface ConvocationRegistration {
     advanced_print_status: string;
     certificate_id: string;
     advanced_id: string;
-    package_name: string;
-    price: string;
-    parent_seat_count: string;
-    garland: string;
-    graduation_cloth: string;
-    photo_package: string;
-    is_active: string;
-    package_created_at: string;
-    package_updated_at: string;
-    name_on_certificate: string;
-    telephone_1?: string;
+    convocation_id: string;
 }
 
 export interface CertificateOrder {
@@ -748,6 +739,7 @@ export interface Sentence {
   correct_sentence: string;
   hint: string;
   translation: string;
+  words?: string[];
 }
 
 export interface GameLevel {
@@ -814,6 +806,19 @@ export interface ConvocationPackage {
     convocation_id: string;
 }
     
+export interface CreateConvocationRegistrationPayload {
+    student_number: string;
+    course_id: string; // Comma-separated parent course IDs
+    package_id: string;
+    convocation_id: string;
+    payment_amount: string;
+    additional_seats: string;
+    session: '1' | '2';
+    image: File; // The payment slip
+    name_on_certificate: string;
+    telephone_1: string;
+}
+
 
 // Ceylon Pharmacy Game Types
 export interface GamePatient {

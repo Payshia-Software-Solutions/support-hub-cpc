@@ -48,6 +48,19 @@ export const getConvocationRegistrations = async (ceremonyId?: string): Promise<
     return response.json();
 }
 
+export const createConvocationRegistration = async (payload: FormData): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations`, {
+        method: 'POST',
+        body: payload,
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Convocation registration failed. Status: ${response.status}` }));
+        throw new Error(errorData.error || errorData.message || 'Convocation registration failed');
+    }
+    return response.json();
+};
+
+
 // Convocation Ceremonies
 export const getConvocationCeremonies = async (): Promise<ConvocationCeremony[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/convocations`);
