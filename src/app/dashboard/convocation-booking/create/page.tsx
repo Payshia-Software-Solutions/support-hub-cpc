@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getStudentFullInfo } from '@/lib/actions/users';
 import { getConvocationCeremonies, getPackagesByCeremony, createConvocationRegistration } from '@/lib/actions/certificates';
@@ -398,88 +398,96 @@ export default function CreateConvocationBookingPage() {
         );
       
       case 'form':
-              return (
-                  <form onSubmit={handleFormSubmit}>
-                      <CardHeader>
-                        <Button variant="ghost" onClick={() => setStep('course_selection')} className="w-fit h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Course Selection
-                        </Button>
-                        <CardTitle>Step 3: Complete Your Booking</CardTitle>
-                        <CardDescription>Choose a package and provide your payment details.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-8">
-                           {/* Package Selection */}
-                           <div className="space-y-3">
-                              <Label className="text-base font-semibold">Choose Your Package</Label>
-                              {isLoadingPackages ? <Skeleton className="h-24 w-full" /> : (
-                                  <RadioGroup value={selectedPackageId} onValueChange={setSelectedPackageId} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      {packages?.map(pkg => (
-                                          <Label key={pkg.package_id} htmlFor={pkg.package_id} className="block border rounded-lg p-4 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary">
-                                              <RadioGroupItem value={pkg.package_id} id={pkg.package_id} className="sr-only" />
-                                              <div className="flex justify-between items-start">
-                                                  <h4 className="font-bold">{pkg.package_name}</h4>
-                                                  <p className="font-bold text-primary">LKR {parseFloat(pkg.price).toLocaleString()}</p>
-                                              </div>
-                                              <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
-                                                  {pkg.graduation_cloth === '1' && <li>Graduation Cloak</li>}
-                                                  {pkg.garland === '1' && <li>Garland</li>}
-                                                  <li>Student Seat: 1</li>
-                                                  <li>Parent Seats: {pkg.parent_seat_count}</li>
-                                              </ul>
-                                          </Label>
-                                      ))}
-                                  </RadioGroup>
-                              )}
+        return (
+          <form onSubmit={handleFormSubmit}>
+              <CardHeader>
+                <Button variant="ghost" onClick={() => setStep('course_selection')} className="w-fit h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Course Selection
+                </Button>
+                <CardTitle>Step 3: Complete Your Booking</CardTitle>
+                <CardDescription>Choose a package and provide your payment details.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                   {/* Package Selection */}
+                   <div className="space-y-3">
+                      <Label className="text-base font-semibold">Choose Your Package</Label>
+                      {isLoadingPackages ? <Skeleton className="h-24 w-full" /> : (
+                          <RadioGroup value={selectedPackageId} onValueChange={setSelectedPackageId} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {packages?.map(pkg => (
+                                  <Label key={pkg.package_id} htmlFor={pkg.package_id} className="block border rounded-lg p-4 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary">
+                                      <RadioGroupItem value={pkg.package_id} id={pkg.package_id} className="sr-only" />
+                                      <div className="flex justify-between items-start">
+                                          <h4 className="font-bold">{pkg.package_name}</h4>
+                                          <p className="font-bold text-primary">LKR {parseFloat(pkg.price).toLocaleString()}</p>
+                                      </div>
+                                      <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
+                                          {pkg.graduation_cloth === '1' && <li>Graduation Cloak</li>}
+                                          {pkg.garland === '1' && <li>Garland</li>}
+                                          <li>Student Seat: 1</li>
+                                          <li>Parent Seats: {pkg.parent_seat_count}</li>
+                                      </ul>
+                                  </Label>
+                              ))}
+                          </RadioGroup>
+                      )}
+                  </div>
+                  
+                  {selectedPackageId && (
+                     <div className="space-y-8 animate-in fade-in-50">
+                        {/* Session & Seats */}
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                              <Label className="text-base font-semibold">Select Your Session</Label>
+                              <RadioGroup value={selectedSession} onValueChange={(v) => setSelectedSession(v as '1' | '2')} className="flex gap-4">
+                                  <Label htmlFor="session1" className="flex items-center gap-2 border rounded-md p-3 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary flex-1 justify-center"><RadioGroupItem value="1" id="session1" />Session 1</Label>
+                                  <Label htmlFor="session2" className="flex items-center gap-2 border rounded-md p-3 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary flex-1 justify-center"><RadioGroupItem value="2" id="session2" />Session 2</Label>
+                              </RadioGroup>
                           </div>
-                           {/* Session & Seats */}
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div className="space-y-3">
-                                  <Label className="text-base font-semibold">Select Your Session</Label>
-                                  <RadioGroup value={selectedSession} onValueChange={(v) => setSelectedSession(v as '1' | '2')} className="flex gap-4">
-                                      <Label htmlFor="session1" className="flex items-center gap-2 border rounded-md p-3 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary flex-1 justify-center"><RadioGroupItem value="1" id="session1" />Session 1</Label>
-                                      <Label htmlFor="session2" className="flex items-center gap-2 border rounded-md p-3 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary flex-1 justify-center"><RadioGroupItem value="2" id="session2" />Session 2</Label>
-                                  </RadioGroup>
-                              </div>
-                              <div className="space-y-3">
-                                  <Label htmlFor="additional-seats" className="text-base font-semibold flex items-center gap-2"><Users className="w-5 h-5"/>Additional Parent Seats</Label>
-                                  <Input id="additional-seats" type="number" min="0" max="8" value={additionalSeats} onChange={e => setAdditionalSeats(e.target.value)} />
-                                  <p className="text-xs text-muted-foreground">Each additional seat costs LKR {PARENT_SEAT_RATE}.</p>
-                              </div>
+                          <div className="space-y-3">
+                              <Label htmlFor="additional-seats" className="text-base font-semibold flex items-center gap-2"><Users className="w-5 h-5"/>Additional Parent Seats</Label>
+                              <Input id="additional-seats" type="number" min="0" max="8" value={additionalSeats} onChange={e => setAdditionalSeats(e.target.value)} />
+                              <p className="text-xs text-muted-foreground">Each additional seat costs LKR {PARENT_SEAT_RATE}.</p>
                           </div>
-                          {/* Total and Payment */}
-                          <div className="space-y-4 pt-4 border-t">
-                              <div className="text-2xl font-bold flex justify-between">
-                                  <span>Total Amount:</span>
-                                  <span className="text-primary">LKR {totalPrice.toLocaleString()}</span>
-                              </div>
-                               <div className="space-y-2">
-                                  <Label htmlFor="payment-slip" className="text-base font-semibold">Upload Payment Slip</Label>
-                                  <Input id="payment-slip" type="file" required onChange={e => setPaymentSlip(e.target.files ? e.target.files[0] : null)} />
-                              </div>
-                          </div>
-                            <div className="space-y-4 pt-4 border-t">
-                              <Label className="text-base font-semibold">Confirm Details</Label>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                      <Label htmlFor="name-on-cert">Name on Certificate</Label>
-                                      <Input id="name-on-cert" value={nameOnCertificate} onChange={e => setNameOnCertificate(e.target.value)} required />
-                                  </div>
-                                  <div className="space-y-2">
-                                      <Label htmlFor="phone">Contact Number</Label>
-                                      <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} required />
-                                  </div>
-                              </div>
-                          </div>
-                      </CardContent>
-                      <CardFooter>
-                          <Button type="submit" size="lg" className="w-full">
-                              Review Booking <ArrowRight className="ml-2 h-4 w-4" />
-                          </Button>
-                      </CardFooter>
-                  </form>
-              );
+                        </div>
+                        {/* Total and Payment */}
+                        <div className="space-y-4 pt-4 border-t">
+                            <div className="text-2xl font-bold flex justify-between">
+                                <span>Total Amount:</span>
+                                <span className="text-primary">LKR {totalPrice.toLocaleString()}</span>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="payment-slip" className="text-base font-semibold">Upload Payment Slip</Label>
+                                <Input id="payment-slip" type="file" required onChange={e => setPaymentSlip(e.target.files ? e.target.files[0] : null)} />
+                            </div>
+                        </div>
+                        <div className="space-y-4 pt-4 border-t">
+                            <Label className="text-base font-semibold">Confirm Details</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name-on-cert">Name on Certificate</Label>
+                                    <Input id="name-on-cert" value={nameOnCertificate} onChange={e => setNameOnCertificate(e.target.value)} required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone">Contact Number</Label>
+                                    <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} required />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                  )}
 
-          case 'confirmation':
+              </CardContent>
+              <CardFooter>
+                  {selectedPackageId && (
+                    <Button type="submit" size="lg" className="w-full animate-in fade-in-50">
+                        Review Booking <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  )}
+              </CardFooter>
+          </form>
+        );
+
+      case 'confirmation':
                return (
                   <>
                       <CardHeader>
@@ -573,5 +581,3 @@ export default function CreateConvocationBookingPage() {
       </div>
   );
 }
-
-    
