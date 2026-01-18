@@ -1,4 +1,5 @@
 
+
 import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage, ParentCourse } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
@@ -47,6 +48,22 @@ export const getConvocationRegistrations = async (ceremonyId?: string): Promise<
     }
     return response.json();
 }
+
+export const getConvocationRegistrationsByStudent = async (studentNumber: string): Promise<ConvocationRegistration[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/get-records-student-number/${studentNumber}`);
+    if (response.status === 404) {
+        return []; // No bookings found is a valid state
+    }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to fetch bookings for student ${studentNumber}` }));
+        throw new Error(errorData.message || 'Request failed');
+    }
+    const data = await response.json();
+    // The API might return a single object or an array of objects.
+    if (!data) return [];
+    return Array.isArray(data) ? data : [data];
+}
+
 
 export const createConvocationRegistration = async (payload: FormData): Promise<any> => {
     const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations`, {

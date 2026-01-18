@@ -3,7 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getConvocationRegistrations } from '@/lib/actions/certificates';
+import { getConvocationRegistrationsByStudent } from '@/lib/actions/certificates';
 import { getParentCourses } from '@/lib/actions/courses';
 import type { ConvocationRegistration, ParentCourse } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,9 +34,9 @@ export default function ConvocationBookingHistoryPage() {
     const { user } = useAuth();
     const router = useRouter();
 
-    const { data: allBookings, isLoading: isLoadingBookings, isError, error } = useQuery<ConvocationRegistration[]>({
-        queryKey: ['allConvocationBookingsForStudent', user?.username],
-        queryFn: () => getConvocationRegistrations(),
+    const { data: previousBookings, isLoading: isLoadingBookings, isError, error } = useQuery<ConvocationRegistration[]>({
+        queryKey: ['studentConvocationBookings', user?.username],
+        queryFn: () => getConvocationRegistrationsByStudent(user!.username!),
         enabled: !!user?.username,
     });
 
@@ -45,11 +45,6 @@ export default function ConvocationBookingHistoryPage() {
         queryFn: getParentCourses,
         staleTime: Infinity,
     });
-
-    const previousBookings = useMemo(() => {
-        if (!allBookings || !user?.username) return [];
-        return allBookings.filter(booking => booking.student_number === user.username);
-    }, [allBookings, user?.username]);
 
     const courseNameMap = useMemo(() => {
         if (!allCourses) return new Map<string, string>();
