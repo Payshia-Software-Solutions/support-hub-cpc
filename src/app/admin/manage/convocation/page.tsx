@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Search, FileText, ArrowLeft } from 'lucide-react';
+import { AlertTriangle, Search, FileText, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 25;
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
@@ -84,6 +84,35 @@ export default function ConvocationListPage() {
         queryKey: ['allParentCourses'],
         queryFn: getParentCourses,
     });
+
+    const handleSort = (column: 'date' | 'student' | 'ref') => {
+        const isCurrentlySorted = sortOption.startsWith(column);
+        const currentDirection = sortOption.split('-')[1];
+
+        if (isCurrentlySorted) {
+            const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+            setSortOption(`${column}-${newDirection}`);
+        } else {
+            const newDirection = column === 'date' ? 'desc' : 'asc';
+            setSortOption(`${column}-${newDirection}`);
+        }
+    };
+    
+    const SortableHeader = ({ column, label }: { column: 'date' | 'student' | 'ref', label: string }) => {
+        const isSorted = sortOption.startsWith(column);
+        const isAsc = isSorted && sortOption.endsWith('asc');
+
+        return (
+            <Button variant="ghost" onClick={() => handleSort(column)} className="px-2 py-1 h-auto -ml-2">
+                {label}
+                {isSorted ? (
+                    isAsc ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                ) : (
+                    <ChevronsUpDown className="ml-2 h-4 w-4 opacity-30" />
+                )}
+            </Button>
+        );
+    };
 
 
     const filteredRegistrations = useMemo(() => {
@@ -195,7 +224,7 @@ export default function ConvocationListPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input placeholder="Search by name, student #, ref #" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10"/>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                              <Select value={statusFilter} onValueChange={setStatusFilter}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Filter by status" />
@@ -235,19 +264,6 @@ export default function ConvocationListPage() {
                                     {packages?.filter(p => !ceremonyIdFilter || p.convocation_id === ceremonyIdFilter).map(p => <SelectItem key={p.package_id} value={p.package_id}>{p.package_name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
-                             <Select value={sortOption} onValueChange={setSortOption}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Sort by" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="date-desc">Newest First</SelectItem>
-                                    <SelectItem value="date-asc">Oldest First</SelectItem>
-                                    <SelectItem value="student-asc">Student # (A-Z)</SelectItem>
-                                    <SelectItem value="student-desc">Student # (Z-A)</SelectItem>
-                                    <SelectItem value="ref-asc">Ref # (Asc)</SelectItem>
-                                    <SelectItem value="ref-desc">Ref # (Desc)</SelectItem>
-                                </SelectContent>
-                            </Select>
                         </div>
                     </div>
                 </CardHeader>
@@ -263,15 +279,16 @@ export default function ConvocationListPage() {
                              <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Ref #</TableHead>
+                                        <TableHead><SortableHeader column="ref" label="Ref #" /></TableHead>
                                         <TableHead>Action</TableHead>
                                         <TableHead>Ceremony #</TableHead>
                                         <TableHead>Due</TableHead>
                                         <TableHead>2nd Payment</TableHead>
-                                        <TableHead>Student #</TableHead>
+                                        <TableHead><SortableHeader column="student" label="Student #" /></TableHead>
                                         <TableHead>Session</TableHead>
                                         <TableHead>Courses</TableHead>
                                         <TableHead>Package</TableHead>
+                                        <TableHead><SortableHeader column="date" label="Registered" /></TableHead>
                                         <TableHead>Additional Seats</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -314,6 +331,7 @@ export default function ConvocationListPage() {
                                                     </SelectContent>
                                                 </Select>
                                             </TableCell>
+                                            <TableCell>{format(new Date(reg.registered_at), 'Pp')}</TableCell>
                                             <TableCell>
                                                 <Select defaultValue={reg.additional_seats} onValueChange={(value) => console.log('TODO: Update seats to', value)}>
                                                     <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
@@ -325,7 +343,7 @@ export default function ConvocationListPage() {
                                         </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={10} className="text-center h-24">No registrations found.</TableCell>
+                                            <TableCell colSpan={11} className="text-center h-24">No registrations found.</TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
