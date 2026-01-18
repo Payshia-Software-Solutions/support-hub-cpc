@@ -219,7 +219,7 @@ export default function ManagePackagesPage() {
         formData.append('photo_package', data.photo_package ? '1' : '0');
         formData.append('is_active', '1');
         formData.append('convocation_id', ceremonyId);
-        formData.append('courses', (data.courses || []).join(','));
+        formData.append('course_list', (data.courses || []).join(','));
 
         if (data.cover_image && data.cover_image.length > 0) {
             formData.append('cover_image', data.cover_image[0]);
