@@ -335,7 +335,7 @@ export default function ConvocationListPage() {
                                                     </SelectContent>
                                                 </Select>
                                             </TableCell>
-                                            <TableCell className="min-w-[200px]">
+                                            <TableCell>
                                                 {reg.course_id.split(',').map(id => {
                                                     const courseName = courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`;
                                                     return <div key={id}>{courseName}</div>
@@ -343,13 +343,13 @@ export default function ConvocationListPage() {
                                             </TableCell>
                                             <TableCell>
                                                  <Select defaultValue={reg.package_id} onValueChange={(value) => console.log('TODO: Update package to', value)}>
-                                                    <SelectTrigger className="w-48"><SelectValue placeholder="Select Package" /></SelectTrigger>
+                                                    <SelectTrigger><SelectValue placeholder="Select Package" /></SelectTrigger>
                                                     <SelectContent>
                                                         {packages?.filter(p => p.convocation_id === reg.convocation_id).map(p => <SelectItem key={p.package_id} value={p.package_id}>{p.package_name}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
                                             </TableCell>
-                                            <TableCell>{format(new Date(reg.registered_at), 'Pp')}</TableCell>
+                                            <TableCell>{format(new Date(reg.registered_at), 'P')}</TableCell>
                                             <TableCell>
                                                 <Select defaultValue={reg.additional_seats} onValueChange={(value) => console.log('TODO: Update seats to', value)}>
                                                     <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
@@ -378,5 +378,3 @@ export default function ConvocationListPage() {
         </div>
     );
 }
-
-    
