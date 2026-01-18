@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getStudentFullInfo } from '@/lib/actions/users';
 import { getConvocationCeremonies, getPackagesByCeremony, createConvocationRegistration } from '@/lib/actions/certificates';
-import type { FullStudentData, StudentEnrollment } from '@/lib/types';
+import type { FullStudentData, StudentEnrollment, ConvocationCeremony, ConvocationPackage } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle, GraduationCap } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -38,46 +38,19 @@ import Link from 'next/link';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { format } from 'date-fns';
+
 
 const PARENT_SEAT_RATE = 500; // As defined in PHP code
 
-type OrderStep = 'loading' | 'selection' | 'form' | 'confirmation' | 'success' | 'error';
-
-interface City {
-    id: string;
-    district_id: string;
-    name_en: string;
-}
-interface District {
-    id: string;
-    name_en: string;
-}
-
-
-const getCityName = async (cityId: string): Promise<City> => {
-    if (!cityId) return { id: '', district_id: '', name_en: 'N/A' };
-    const response = await fetch(`https://qa-api.pharmacollege.lk/cities/${cityId}`);
-    if (!response.ok) {
-        throw new Error('Failed to fetch city data');
-    }
-    return response.json();
-}
-
-const getDistrictName = async (districtId: string): Promise<District> => {
-    if (!districtId) return { id: '', name_en: 'N/A' };
-    const response = await fetch(`https://qa-api.pharmacollege.lk/districts/${districtId}`);
-    if (!response.ok) {
-        throw new Error('Failed to fetch district data');
-    }
-    return response.json();
-}
+type OrderStep = 'loading' | 'ceremony_selection' | 'course_selection' | 'form' | 'confirmation' | 'success' | 'error';
 
 export default function CreateConvocationBookingPage() {
-  const { user, isImpersonating } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
-  const queryClient = useQueryClient();
 
   const [step, setStep] = useState<OrderStep>('loading');
+  const [selectedCeremonyId, setSelectedCeremonyId] = useState<string>('');
   const [selectedEnrollments, setSelectedEnrollments] = useState<StudentEnrollment[]>([]);
   const [deselectedEligible, setDeselectedEligible] = useState<StudentEnrollment[]>([]);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
@@ -88,88 +61,82 @@ export default function CreateConvocationBookingPage() {
   // Form State
   const [selectedPackageId, setSelectedPackageId] = useState<string>('');
   const [selectedSession, setSelectedSession] = useState<'1' | '2'>('1');
-  const [additionalSeats, setAdditionalSeats] =useState('0');
+  const [additionalSeats, setAdditionalSeats] = useState('0');
   const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
   const [nameOnCertificate, setNameOnCertificate] = useState('');
   const [phone, setPhone] = useState('');
 
   // --- Data Fetching ---
-  const { data: studentData, isLoading: isLoadingStudent, isError, error } = useQuery<FullStudentData>({
+  const { data: studentData, isLoading: isLoadingStudent, isError: isStudentError, error: studentError } = useQuery<FullStudentData>({
     queryKey: ['studentFullInfoForConvocation', user?.username],
     queryFn: () => getStudentFullInfo(user!.username!),
     enabled: !!user?.username,
     retry: 1,
   });
 
-  const { data: activeCeremony, isLoading: isLoadingCeremony } = useQuery<ConvocationCeremony | null>({
-      queryKey: ['activeConvocationCeremony'],
-      queryFn: async () => {
-          const ceremonies = await getConvocationCeremonies();
-          return ceremonies.find(c => c.accept_booking === '1') || null;
-      },
+  const { data: allCeremonies, isLoading: isLoadingCeremonies, isError: isCeremonyError, error: ceremonyError } = useQuery<ConvocationCeremony[]>({
+      queryKey: ['allConvocationCeremonies'],
+      queryFn: getConvocationCeremonies,
   });
 
+  const activeCeremonies = useMemo(() => {
+    return allCeremonies?.filter(c => c.accept_booking === '1') || [];
+  }, [allCeremonies]);
+  
   const { data: packages, isLoading: isLoadingPackages } = useQuery<ConvocationPackage[]>({
-      queryKey: ['convocationPackages', activeCeremony?.id],
-      queryFn: () => getPackagesByCeremony(activeCeremony!.id),
-      enabled: !!activeCeremony,
+      queryKey: ['convocationPackages', selectedCeremonyId],
+      queryFn: () => getPackagesByCeremony(selectedCeremonyId),
+      enabled: !!selectedCeremonyId,
   });
+
 
   const allEnrollments = useMemo(() => {
     if (!studentData) return [];
     return Object.values(studentData.studentEnrollments);
   }, [studentData]);
-
-  const selectedPackage = useMemo(() => {
-      return packages?.find(p => p.package_id === selectedPackageId);
-  }, [packages, selectedPackageId]);
-
-  const totalPrice = useMemo(() => {
-      if (!selectedPackage) return 0;
-      const packagePrice = parseFloat(selectedPackage.price) || 0;
-      const seatPrice = (parseInt(additionalSeats, 10) || 0) * PARENT_SEAT_RATE;
-      return packagePrice + seatPrice;
-  }, [selectedPackage, additionalSeats]);
   
-   useEffect(() => {
-      if(studentData && !nameOnCertificate) {
-          setNameOnCertificate(studentData.studentInfo.name_on_certificate || studentData.studentInfo.full_name);
-      }
-      if(studentData && !phone) {
-          setPhone(studentData.studentInfo.telephone_1);
-      }
-  }, [studentData, nameOnCertificate, phone]);
-  
+  const resetAllState = () => {
+    setStep('loading');
+    setSelectedCeremonyId('');
+    setSelectedEnrollments([]);
+    setDeselectedEligible([]);
+    setErrorMessage('');
+    setReferenceNumber(null);
+  };
+
   useEffect(() => {
-    const isLoading = isLoadingStudent || isLoadingCeremony;
+    resetAllState();
+    const isLoading = isLoadingStudent || isLoadingCeremonies;
     if (isLoading) {
       setStep('loading');
       return;
     }
-    if (isError) {
-      setErrorMessage(error.message);
+    const anyError = isStudentError || isCeremonyError;
+    if (anyError) {
+      setErrorMessage((studentError?.message || ceremonyError?.message) ?? 'Failed to load initial data.');
       setStep('error');
       return;
     }
-    if (!activeCeremony) {
+     if (!allCeremonies || activeCeremonies.length === 0) {
       setErrorMessage('There are no active convocation ceremonies at the moment. Please check back later.');
       setStep('error');
       return;
     }
     if (studentData) {
-        if (allEnrollments.length === 0) {
-             setErrorMessage("You are not enrolled in any courses, so you cannot book for the convocation.");
-             setStep('error');
-             return;
-        }
-
-        const eligibleEnrollments = allEnrollments.filter(e => e.certificate_eligibility);
-        // Pre-select all eligible courses by default
-        setSelectedEnrollments(eligibleEnrollments);
-        setDeselectedEligible([]);
-        setStep('selection');
+      if (allEnrollments.length === 0) {
+         setErrorMessage("You are not enrolled in any courses, so you cannot book for the convocation.");
+         setStep('error');
+         return;
+      }
+      // Set defaults for user info fields
+      setNameOnCertificate(studentData.studentInfo.name_on_certificate || studentData.studentInfo.full_name);
+      setPhone(studentData.studentInfo.telephone_1);
+      
+      setStep('ceremony_selection');
     }
-  }, [isLoadingStudent, isLoadingCeremony, isError, studentData, activeCeremony, allEnrollments, error]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoadingStudent, isLoadingCeremonies, isStudentError, isCeremonyError, studentData, allCeremonies, activeCeremonies, studentError, ceremonyError, allEnrollments]);
+
 
   const createBookingMutation = useMutation({
       mutationFn: (payload: FormData) => createConvocationRegistration(payload),
@@ -181,10 +148,22 @@ export default function CreateConvocationBookingPage() {
       onError: (err: Error) => {
           setErrorMessage(err.message || 'An unknown error occurred.');
           setStep('error');
-      },
+      }
   });
 
-  const handleSelectionSubmit = () => {
+  const handleCeremonySelection = () => {
+    if (!selectedCeremonyId) {
+        toast({ variant: 'destructive', title: 'No Ceremony Selected', description: 'Please select a ceremony to continue.' });
+        return;
+    }
+    // Pre-select eligible courses when moving to the next step
+    const eligibleEnrollments = allEnrollments.filter(e => e.certificate_eligibility);
+    setSelectedEnrollments(eligibleEnrollments);
+    setDeselectedEligible([]);
+    setStep('course_selection');
+  }
+
+  const handleCourseSelectionSubmit = () => {
     if (selectedEnrollments.length === 0) {
       toast({
         variant: 'destructive',
@@ -204,28 +183,28 @@ export default function CreateConvocationBookingPage() {
   const handleFormSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (selectedEnrollments.length === 0) {
-          toast({ variant: 'destructive', title: 'No Courses Selected', description: 'Please select at least one course.' }); return;
+          toast({ variant: 'destructive', title: 'No Courses Selected' }); return;
       }
       if (!selectedPackageId) {
-          toast({ variant: 'destructive', title: 'No Package Selected', description: 'Please choose a package.' }); return;
+          toast({ variant: 'destructive', title: 'No Package Selected' }); return;
       }
       if (!paymentSlip) {
-           toast({ variant: 'destructive', title: 'Payment Slip Required', description: 'Please upload your payment slip.' }); return;
+           toast({ variant: 'destructive', title: 'Payment Slip Required' }); return;
       }
       if (!nameOnCertificate || !phone) {
-           toast({ variant: 'destructive', title: 'Missing Details', description: 'Please fill in your name and phone number.' }); return;
+           toast({ variant: 'destructive', title: 'Missing Details' }); return;
       }
       setStep('confirmation');
   };
 
   const handleConfirmAndSubmit = () => {
-      if (!studentData || !activeCeremony || !selectedPackage || !paymentSlip) return;
+      if (!studentData || !selectedCeremonyId || !selectedPackage || !paymentSlip) return;
 
       const formData = new FormData();
       formData.append('student_number', studentData.studentInfo.username);
       formData.append('course_id', selectedEnrollments.map(e => e.parent_course_id).join(','));
       formData.append('package_id', selectedPackageId);
-      formData.append('convocation_id', activeCeremony.id);
+      formData.append('convocation_id', selectedCeremonyId);
       formData.append('payment_amount', String(totalPrice));
       formData.append('additional_seats', additionalSeats);
       formData.append('session', selectedSession);
@@ -247,13 +226,24 @@ export default function CreateConvocationBookingPage() {
       setSelectedEnrollments(prev => 
           checked ? [...prev, enrollment] : prev.filter(e => e.id !== enrollment.id)
       );
-
       if(enrollment.certificate_eligibility) {
           setDeselectedEligible(prev => 
               !checked ? [...prev, enrollment] : prev.filter(e => e.id !== enrollment.id)
           );
       }
   };
+
+  const selectedPackage = useMemo(() => {
+      return packages?.find(p => p.package_id === selectedPackageId);
+  }, [packages, selectedPackageId]);
+
+  const totalPrice = useMemo(() => {
+      if (!selectedPackage) return 0;
+      const packagePrice = parseFloat(selectedPackage.price) || 0;
+      const seatPrice = (parseInt(additionalSeats, 10) || 0) * PARENT_SEAT_RATE;
+      return packagePrice + seatPrice;
+  }, [selectedPackage, additionalSeats]);
+
 
   const renderContent = () => {
     switch (step) {
@@ -264,16 +254,47 @@ export default function CreateConvocationBookingPage() {
             <p className="ml-4 text-muted-foreground">Loading your data...</p>
           </CardContent>
         );
-
-      case 'selection':
+      
+      case 'ceremony_selection':
         return (
           <>
             <CardHeader>
-              <Button variant="ghost" onClick={() => router.push('/dashboard/convocation-booking')} className="w-fit h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
+               <Button variant="ghost" onClick={() => router.push('/dashboard/convocation-booking')} className="w-fit h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Bookings
               </Button>
-              <CardTitle>Step 1: Select Your Course(s)</CardTitle>
-              <CardDescription>Review course eligibility and select courses to include in your convocation booking.</CardDescription>
+              <CardTitle>Step 1: Choose a Ceremony</CardTitle>
+              <CardDescription>Select the convocation event you wish to register for.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup value={selectedCeremonyId} onValueChange={setSelectedCeremonyId} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {activeCeremonies.map(ceremony => (
+                      <Label key={ceremony.id} htmlFor={ceremony.id} className="block border rounded-lg p-4 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary">
+                          <RadioGroupItem value={ceremony.id} id={ceremony.id} className="sr-only" />
+                          <div className="flex justify-between items-start">
+                              <h4 className="font-bold">{ceremony.convocation_name}</h4>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">Date: {format(new Date(ceremony.held_on), 'PPP')}</p>
+                      </Label>
+                  ))}
+              </RadioGroup>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleCeremonySelection} disabled={!selectedCeremonyId}>
+                    Next <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+            </CardFooter>
+          </>
+        );
+
+      case 'course_selection':
+        return (
+          <>
+            <CardHeader>
+              <Button variant="ghost" onClick={() => setStep('ceremony_selection')} className="w-fit h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Ceremony Selection
+              </Button>
+              <CardTitle>Step 2: Select Your Course(s)</CardTitle>
+              <CardDescription>Review course eligibility and select the certificates to include in your booking.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {deselectedEligible.length > 0 && (
@@ -337,7 +358,7 @@ export default function CreateConvocationBookingPage() {
                 })}
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSelectionSubmit} disabled={selectedEnrollments.length === 0}>
+              <Button onClick={handleCourseSelectionSubmit} disabled={selectedEnrollments.length === 0}>
                 Next <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </CardFooter>
@@ -348,10 +369,10 @@ export default function CreateConvocationBookingPage() {
               return (
                   <form onSubmit={handleFormSubmit}>
                       <CardHeader>
-                        <Button variant="ghost" onClick={() => setStep('selection')} className="w-fit h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
+                        <Button variant="ghost" onClick={() => setStep('course_selection')} className="w-fit h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
                             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Course Selection
                         </Button>
-                        <CardTitle>Step 2: Complete Your Booking</CardTitle>
+                        <CardTitle>Step 3: Complete Your Booking</CardTitle>
                         <CardDescription>Choose a package and provide your payment details.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-8">
@@ -433,7 +454,7 @@ export default function CreateConvocationBookingPage() {
                          <Button variant="ghost" onClick={() => setStep('form')} className="w-fit h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
                               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Edit
                           </Button>
-                        <CardTitle>Step 3: Confirm Your Booking</CardTitle>
+                        <CardTitle>Step 4: Confirm Your Booking</CardTitle>
                         <CardDescription>Please review all details before submitting.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
