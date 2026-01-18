@@ -526,19 +526,52 @@ export default function CreateConvocationBookingPage() {
                                 )}
                             </div>
                             <div className="space-y-3">
-                                <Label htmlFor="additional-seats" className="text-base font-semibold flex items-center gap-2"><Users className="w-5 h-5"/>Additional Parent Seats</Label>
-                                <Select value={additionalSeats} onValueChange={setAdditionalSeats}>
-                                    <SelectTrigger id="additional-seats">
-                                        <SelectValue placeholder="Select number of seats" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="0">0</SelectItem>
-                                        <SelectItem value="1">1</SelectItem>
-                                        <SelectItem value="2">2</SelectItem>
-                                        <SelectItem value="3">3</SelectItem>
-                                        <SelectItem value="4">4</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Label className="text-base font-semibold flex items-center gap-2"><Users className="w-5 h-5"/>Additional Parent Seats</Label>
+                                <RadioGroup
+                                    value={additionalSeats}
+                                    onValueChange={setAdditionalSeats}
+                                    className="flex gap-2"
+                                >
+                                    <div className="flex items-center">
+                                        <RadioGroupItem value="0" id="seats-0" className="sr-only" />
+                                        <Label
+                                            htmlFor="seats-0"
+                                            className={cn(
+                                                "flex w-20 h-20 flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                                additionalSeats === '0' && "border-primary"
+                                            )}
+                                        >
+                                            <span className="text-2xl font-bold">0</span>
+                                            <span className="text-xs">Seats</span>
+                                        </Label>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <RadioGroupItem value="1" id="seats-1" className="sr-only" />
+                                        <Label
+                                            htmlFor="seats-1"
+                                            className={cn(
+                                                "flex w-20 h-20 flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                                additionalSeats === '1' && "border-primary"
+                                            )}
+                                        >
+                                            <span className="text-2xl font-bold">1</span>
+                                            <span className="text-xs">Seat</span>
+                                        </Label>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <RadioGroupItem value="2" id="seats-2" className="sr-only" />
+                                        <Label
+                                            htmlFor="seats-2"
+                                            className={cn(
+                                                "flex w-20 h-20 flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                                additionalSeats === '2' && "border-primary"
+                                            )}
+                                        >
+                                            <span className="text-2xl font-bold">2</span>
+                                            <span className="text-xs">Seats</span>
+                                        </Label>
+                                    </div>
+                                </RadioGroup>
                                 <p className="text-xs text-muted-foreground">Each additional seat costs LKR {PARENT_SEAT_RATE}.</p>
                             </div>
                         </div>
