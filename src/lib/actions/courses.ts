@@ -184,5 +184,3 @@ export const getDeliverySettingsForCourse = async (courseCode: string): Promise<
     if (!response.ok) throw new Error('Failed to fetch delivery settings');
     return response.json();
 }
-
-    
