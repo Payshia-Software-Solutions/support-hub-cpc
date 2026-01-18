@@ -3,10 +3,10 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getConvocationRegistrations, getPackagesByCeremony, getCertificateOrders } from '@/lib/actions/certificates';
+import { getConvocationRegistrations, getPackagesByCeremony } from '@/lib/actions/certificates';
 import { getParentCourses } from '@/lib/actions/courses';
 import { getPaymentRequests } from '@/lib/actions/payments';
-import type { ConvocationRegistration, ConvocationPackage, ParentCourse, CertificateOrder, PaymentRequest } from '@/lib/types';
+import type { ConvocationRegistration, ConvocationPackage, ParentCourse, PaymentRequest } from '@/lib/types';
 import { format, isValid, parseISO } from 'date-fns';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Search, FileText, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Package, Truck } from 'lucide-react';
+import { AlertTriangle, Search, FileText, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const ITEMS_PER_PAGE = 25;
@@ -85,11 +85,6 @@ export default function ConvocationListPage() {
         queryFn: getParentCourses,
     });
     
-    const { data: certificateOrders, isLoading: isLoadingCourier } = useQuery<CertificateOrder[]>({
-        queryKey: ['allCertificateOrders'],
-        queryFn: getCertificateOrders,
-    });
-    
     const { data: paymentRequests, isLoading: isLoadingPayments } = useQuery<PaymentRequest[]>({
         queryKey: ['allPaymentRequests'],
         queryFn: getPaymentRequests,
@@ -125,6 +120,27 @@ export default function ConvocationListPage() {
             </Button>
         );
     };
+
+    const registrationStats = useMemo(() => {
+        if (!registrations) {
+            return {
+                totalBookings: 0,
+                pendingPayments: 0,
+                confirmedPayments: 0,
+                additionalSeats: 0,
+            };
+        }
+
+        const totalBookings = registrations.length;
+        const pendingPayments = registrations.filter(r => r.payment_status.toLowerCase() === 'pending').length;
+        const confirmedPayments = registrations.filter(r => ['paid', 'approved', 'confirmed'].includes(r.payment_status.toLowerCase())).length;
+        const additionalSeats = registrations.reduce((acc, reg) => {
+            const seats = parseInt(reg.additional_seats, 10);
+            return acc + (isNaN(seats) ? 0 : seats);
+        }, 0);
+
+        return { totalBookings, pendingPayments, confirmedPayments, additionalSeats };
+    }, [registrations]);
 
 
     const filteredRegistrations = useMemo(() => {
@@ -226,7 +242,7 @@ export default function ConvocationListPage() {
         )
     }
 
-    const isLoadingData = isLoading || isLoadingPackages || isLoadingCourses || isLoadingCourier || isLoadingPayments;
+    const isLoadingData = isLoading || isLoadingPackages || isLoadingCourses || isLoadingPayments;
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
@@ -244,10 +260,35 @@ export default function ConvocationListPage() {
                 </p>
             </header>
             
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Packages</CardTitle><Package className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{packages?.length || 0}</div></CardContent></Card>
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Bookings</CardTitle><BookUser className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{registrations?.length || 0}</div></CardContent></Card>
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">By Courier</CardTitle><Truck className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{certificateOrders?.length || 0}</div></CardContent></Card>
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+                        <BookUser className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent><div className="text-2xl font-bold">{registrationStats.totalBookings}</div></CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
+                        <Hourglass className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent><div className="text-2xl font-bold">{registrationStats.pendingPayments}</div></CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Confirmed Payments</CardTitle>
+                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent><div className="text-2xl font-bold">{registrationStats.confirmedPayments}</div></CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Additional Seats</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent><div className="text-2xl font-bold">{registrationStats.additionalSeats}</div></CardContent>
+                </Card>
             </section>
             
             <Card className="shadow-lg relative w-full">
@@ -387,5 +428,7 @@ export default function ConvocationListPage() {
         </div>
     );
 }
+
+    
 
     
