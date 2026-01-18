@@ -162,7 +162,10 @@ export default function ConvocationListPage() {
                     case 'student': return reg.student_number;
                     case 'ref': return parseInt(reg.reference_number, 10);
                     case 'ceremony': return reg.ceremony_number;
-                    case 'due': return reg.dueAmount - parseFloat(reg.payment_amount);
+                    case 'due': {
+                        const isPaid = ['paid', 'approved', 'confirmed'].includes(reg.payment_status.toLowerCase());
+                        return isPaid ? reg.dueAmount - parseFloat(reg.payment_amount) : reg.dueAmount;
+                    }
                     case 'session': return reg.session;
                     case 'course': return reg.course_id;
                     case 'package':
@@ -323,7 +326,13 @@ export default function ConvocationListPage() {
                                                 </div>
                                             </TableCell>
                                             <TableCell>{reg.ceremony_number}</TableCell>
-                                            <TableCell>{(reg.dueAmount - parseFloat(reg.payment_amount)).toFixed(2)}</TableCell>
+                                            <TableCell>
+                                                {(() => {
+                                                    const isPaid = ['paid', 'approved', 'confirmed'].includes(reg.payment_status.toLowerCase());
+                                                    const due = isPaid ? reg.dueAmount - parseFloat(reg.payment_amount) : reg.dueAmount;
+                                                    return due.toFixed(2);
+                                                })()}
+                                            </TableCell>
                                             <TableCell>
                                                 <ViewSlipDialog slipPath={lastPaymentRequest?.slip_path || null} studentName={reg.name_on_certificate} trigger={
                                                     <Button variant="outline" size="sm" disabled={!lastPaymentRequest?.slip_path}>
