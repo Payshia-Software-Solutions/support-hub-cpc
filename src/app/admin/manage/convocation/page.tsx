@@ -100,7 +100,7 @@ export default function ConvocationListPage() {
             const dateB = new Date(b.registered_at);
             if (!isValid(dateA)) return 1;
             if (!isValid(dateB)) return -1;
-            return dateB.getTime() - a.getTime();
+            return dateB.getTime() - dateA.getTime();
         });
     }, [registrations, searchTerm, statusFilter]);
 
@@ -267,5 +267,3 @@ export default function ConvocationListPage() {
         </div>
     );
 }
-
-    
