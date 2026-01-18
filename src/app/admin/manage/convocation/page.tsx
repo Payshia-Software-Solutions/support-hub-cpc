@@ -293,8 +293,8 @@ export default function ConvocationListPage() {
                            <Skeleton className="h-12 w-full" />
                         </div>
                     ) : (
-                        <div className="relative w-full overflow-auto border rounded-lg">
-                             <Table>
+                        <div className="relative w-full overflow-auto">
+                            <Table>
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead><SortableHeader column="ref" label="Ref #" /></TableHead>
@@ -323,11 +323,11 @@ export default function ConvocationListPage() {
                                             <TableCell>{reg.ceremony_number}</TableCell>
                                             <TableCell>{parseFloat(reg.payment_amount || '0').toFixed(2)}</TableCell>
                                             <TableCell>
-                                                 <Button variant="outline" size="sm" disabled className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">No Payment Request</Button>
+                                                <Button variant="outline" size="sm" disabled className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">No Payment Request</Button>
                                             </TableCell>
                                             <TableCell>{reg.student_number}</TableCell>
                                             <TableCell>
-                                                 <Select defaultValue={reg.session} onValueChange={(value) => console.log('TODO: Update session to', value)}>
+                                                <Select defaultValue={reg.session} onValueChange={(value) => console.log('TODO: Update session to', value)}>
                                                     <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="1">1</SelectItem>
@@ -335,14 +335,14 @@ export default function ConvocationListPage() {
                                                     </SelectContent>
                                                 </Select>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="max-w-[200px]">
                                                 {reg.course_id.split(',').map(id => {
                                                     const courseName = courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`;
                                                     return <div key={id}>{courseName}</div>
                                                 })}
                                             </TableCell>
-                                            <TableCell>
-                                                 <Select defaultValue={reg.package_id} onValueChange={(value) => console.log('TODO: Update package to', value)}>
+                                            <TableCell className="max-w-[200px]">
+                                                <Select defaultValue={reg.package_id} onValueChange={(value) => console.log('TODO: Update package to', value)}>
                                                     <SelectTrigger><SelectValue placeholder="Select Package" /></SelectTrigger>
                                                     <SelectContent>
                                                         {packages?.filter(p => p.convocation_id === reg.convocation_id).map(p => <SelectItem key={p.package_id} value={p.package_id}>{p.package_name}</SelectItem>)}
