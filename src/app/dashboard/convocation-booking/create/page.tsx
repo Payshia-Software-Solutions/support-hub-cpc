@@ -489,7 +489,7 @@ export default function CreateConvocationBookingPage() {
               </CardContent>
               <CardFooter>
                   {selectedPackageId && (
-                    <Button type="submit" size="lg" className="w-full animate-in fade-in-50">
+                    <Button type="submit" size="lg" className="w-full animate-in fade-in-50" disabled={!paymentSlip}>
                         Review Booking <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   )}
