@@ -41,7 +41,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 
 
-const PARENT_SEAT_RATE = 500; // As defined in PHP code
+const PARENT_SEAT_RATE = 500; 
 
 type OrderStep = 'loading' | 'ceremony_selection' | 'course_selection' | 'form' | 'confirmation' | 'success' | 'error';
 
@@ -238,10 +238,13 @@ export default function CreateConvocationBookingPage() {
   }, [packages, selectedPackageId]);
 
   const totalPrice = useMemo(() => {
-      if (!selectedPackage) return 0;
-      const packagePrice = parseFloat(selectedPackage.price) || 0;
-      const seatPrice = (parseInt(additionalSeats, 10) || 0) * PARENT_SEAT_RATE;
-      return packagePrice + seatPrice;
+    const packagePrice = selectedPackage ? Number(selectedPackage.price) : 0;
+    const numAdditionalSeats = Number(additionalSeats);
+
+    const safePackagePrice = isNaN(packagePrice) ? 0 : packagePrice;
+    const safeSeatPrice = isNaN(numAdditionalSeats) ? 0 : numAdditionalSeats * PARENT_SEAT_RATE;
+
+    return safePackagePrice + safeSeatPrice;
   }, [selectedPackage, additionalSeats]);
 
 
