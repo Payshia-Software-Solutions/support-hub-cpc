@@ -63,7 +63,7 @@ const PackageForm = ({ pkg, onSave, onClose, isSaving }: { pkg: ConvocationPacka
             graduation_cloth: pkg?.graduation_cloth === '1',
             photo_package: pkg?.photo_package === '1',
             cover_image: null,
-            courses: pkg?.courses ? pkg.courses.split(',').map(s => s.trim()) : [],
+            courses: pkg?.course_list ? pkg.course_list.split(',').map(s => s.trim()) : [],
         },
     });
 

@@ -2,6 +2,7 @@
 
 
 
+
 import type { BnfChapter, BnfPage } from './bnf-data';
 
 export interface ApiStaffMember {
@@ -217,6 +218,8 @@ export interface ConvocationRegistration {
     certificate_id: string;
     advanced_id: string;
     convocation_id: string;
+    name_on_certificate: string;
+    telephone_1?: string;
 }
 
 export interface CertificateOrder {
@@ -802,7 +805,7 @@ export interface ConvocationPackage {
     is_active: '0' | '1';
     created_at: string;
     updated_at: string;
-    courses: string;
+    course_list: string;
     cover_image: string;
     convocation_id: string;
 }
