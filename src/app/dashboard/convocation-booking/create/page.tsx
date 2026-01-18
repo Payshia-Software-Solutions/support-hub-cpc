@@ -1,12 +1,13 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getStudentFullInfo } from '@/lib/actions/users';
-import { getConvocationCeremonies, getPackagesByCeremony, createConvocationRegistration } from '@/lib/actions/certificates';
-import type { FullStudentData, StudentEnrollment, ConvocationCeremony, ConvocationPackage } from '@/lib/types';
+import { getConvocationCeremonies, getPackagesByCeremony, createConvocationRegistration, getConvocationSessionCounts } from '@/lib/actions/certificates';
+import type { FullStudentData, StudentEnrollment, ConvocationCeremony, ConvocationPackage, SessionCount } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,6 +91,12 @@ export default function CreateConvocationBookingPage() {
       enabled: !!selectedCeremonyId,
   });
 
+  const { data: sessionCounts, isLoading: isLoadingCounts } = useQuery<SessionCount[]>({
+      queryKey: ['convocationSessionCounts', selectedCeremonyId],
+      queryFn: () => getConvocationSessionCounts(selectedCeremonyId),
+      enabled: !!selectedCeremonyId,
+  });
+
 
   const allEnrollments = useMemo(() => {
     if (!studentData) return [];
@@ -151,6 +158,27 @@ export default function CreateConvocationBookingPage() {
           setStep('error');
       }
   });
+  
+  const selectedCeremony = useMemo(() => {
+    return allCeremonies?.find(c => c.id === selectedCeremonyId);
+  }, [allCeremonies, selectedCeremonyId]);
+
+  const seatsAvailable = useMemo(() => {
+    if (!selectedCeremony || !sessionCounts) {
+      return { session1: undefined, session2: undefined };
+    }
+    const totalSeatsS1 = parseInt(selectedCeremony.student_seats, 10);
+    const totalSeatsS2 = parseInt(selectedCeremony.session_2, 10);
+
+    const registeredS1 = parseInt(sessionCounts.find(s => s.session === '1')?.sessionCounts || '0', 10);
+    const registeredS2 = parseInt(sessionCounts.find(s => s.session === '2')?.sessionCounts || '0', 10);
+    
+    return {
+      session1: totalSeatsS1 - registeredS1,
+      session2: totalSeatsS2 - registeredS2,
+    };
+  }, [selectedCeremony, sessionCounts]);
+
 
   const handleCeremonySelection = () => {
     if (!selectedCeremonyId) {
@@ -411,29 +439,64 @@ export default function CreateConvocationBookingPage() {
                      <div className="space-y-8 animate-in fade-in-50">
                         {/* Session & Seats */}
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-3">
-                              <Label className="text-base font-semibold">Select Your Session</Label>
-                              <RadioGroup value={selectedSession} onValueChange={(v) => setSelectedSession(v as '1' | '2')} className="flex gap-4">
-                                  <Label htmlFor="session1" className="flex items-center gap-2 border rounded-md p-3 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary flex-1 justify-center"><RadioGroupItem value="1" id="session1" />Session 1</Label>
-                                  <Label htmlFor="session2" className="flex items-center gap-2 border rounded-md p-3 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary flex-1 justify-center"><RadioGroupItem value="2" id="session2" />Session 2</Label>
-                              </RadioGroup>
-                          </div>
-                          <div className="space-y-3">
-                              <Label htmlFor="additional-seats" className="text-base font-semibold flex items-center gap-2"><Users className="w-5 h-5"/>Additional Parent Seats</Label>
-                              <Select value={additionalSeats} onValueChange={setAdditionalSeats}>
-                                  <SelectTrigger id="additional-seats">
-                                      <SelectValue placeholder="Select number of seats" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                      <SelectItem value="0">0</SelectItem>
-                                      <SelectItem value="1">1</SelectItem>
-                                      <SelectItem value="2">2</SelectItem>
-                                      <SelectItem value="3">3</SelectItem>
-                                      <SelectItem value="4">4</SelectItem>
-                                  </SelectContent>
-                              </Select>
-                              <p className="text-xs text-muted-foreground">Each additional seat costs LKR {PARENT_SEAT_RATE}.</p>
-                          </div>
+                            <div className="space-y-3">
+                                <Label className="text-base font-semibold">Select Your Session</Label>
+                                {isLoadingCounts ? (
+                                    <div className="flex gap-4">
+                                        <Skeleton className="h-12 flex-1" />
+                                        <Skeleton className="h-12 flex-1" />
+                                    </div>
+                                ) : (
+                                    <RadioGroup value={selectedSession} onValueChange={(v) => setSelectedSession(v as '1' | '2')} className="flex gap-4">
+                                        <Label 
+                                            htmlFor="session1" 
+                                            className={cn(
+                                                "flex flex-col gap-1 border rounded-md p-3 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary flex-1 justify-center text-center",
+                                                seatsAvailable.session1 !== undefined && seatsAvailable.session1 <= 0 && "opacity-50 cursor-not-allowed"
+                                            )}
+                                        >
+                                            <RadioGroupItem value="1" id="session1" className="sr-only" disabled={seatsAvailable.session1 !== undefined && seatsAvailable.session1 <= 0} />
+                                            Session 1
+                                            {seatsAvailable.session1 !== undefined && (
+                                                <span className={cn("text-xs font-bold", seatsAvailable.session1 > 0 ? "text-green-600" : "text-destructive")}>
+                                                    {seatsAvailable.session1 > 0 ? `${seatsAvailable.session1} seats left` : "Full"}
+                                                </span>
+                                            )}
+                                        </Label>
+                                         <Label 
+                                            htmlFor="session2" 
+                                            className={cn(
+                                                "flex flex-col gap-1 border rounded-md p-3 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary flex-1 justify-center text-center",
+                                                seatsAvailable.session2 !== undefined && seatsAvailable.session2 <= 0 && "opacity-50 cursor-not-allowed"
+                                            )}
+                                        >
+                                            <RadioGroupItem value="2" id="session2" className="sr-only" disabled={seatsAvailable.session2 !== undefined && seatsAvailable.session2 <= 0} />
+                                            Session 2
+                                            {seatsAvailable.session2 !== undefined && (
+                                                <span className={cn("text-xs font-bold", seatsAvailable.session2 > 0 ? "text-green-600" : "text-destructive")}>
+                                                    {seatsAvailable.session2 > 0 ? `${seatsAvailable.session2} seats left` : "Full"}
+                                                </span>
+                                            )}
+                                        </Label>
+                                    </RadioGroup>
+                                )}
+                            </div>
+                            <div className="space-y-3">
+                                <Label htmlFor="additional-seats" className="text-base font-semibold flex items-center gap-2"><Users className="w-5 h-5"/>Additional Parent Seats</Label>
+                                <Select value={additionalSeats} onValueChange={setAdditionalSeats}>
+                                    <SelectTrigger id="additional-seats">
+                                        <SelectValue placeholder="Select number of seats" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="0">0</SelectItem>
+                                        <SelectItem value="1">1</SelectItem>
+                                        <SelectItem value="2">2</SelectItem>
+                                        <SelectItem value="3">3</SelectItem>
+                                        <SelectItem value="4">4</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">Each additional seat costs LKR {PARENT_SEAT_RATE}.</p>
+                            </div>
                         </div>
                         {/* Total and Payment */}
                         <div className="space-y-4 pt-4 border-t">
@@ -506,21 +569,27 @@ export default function CreateConvocationBookingPage() {
               );
 
       case 'success':
-          return (
-            <CardContent className="text-center p-8 flex flex-col items-center gap-4">
-                <CheckCircle className="w-16 h-16 text-green-500" />
-                <h2 className="text-2xl font-bold">Booking Submitted!</h2>
-                <div className="space-y-4">
-                    <p className="text-muted-foreground">Your reference number is:</p>
-                    <div className="flex items-center justify-center gap-2">
-                        <p className="text-2xl font-bold font-mono tracking-widest text-primary p-2 border-2 border-dashed rounded-lg">{referenceNumber}</p>
-                        <Button variant="ghost" size="icon" onClick={copyToClipboard}><Copy className="h-5 w-5"/></Button>
-                    </div>
-                    <p className="text-muted-foreground">You will receive a confirmation email shortly.</p>
+        return (
+          <>
+            <CardHeader className="items-center text-center">
+              <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+              <CardTitle>Request Submitted!</CardTitle>
+              <CardDescription>The convocation booking has been successfully placed. You will be notified of its status.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+                <p className="text-sm text-muted-foreground">Your Reference Number is:</p>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                    <p className="text-2xl font-bold font-mono tracking-widest text-primary p-2 border-2 border-dashed rounded-lg">{referenceNumber}</p>
+                    <Button variant="ghost" size="icon" onClick={copyToClipboard}><Copy className="h-5 w-5"/></Button>
                 </div>
-                <Button asChild className="mt-4"><Link href="/dashboard/convocation-booking">View Booking History</Link></Button>
             </CardContent>
-          );
+             <CardFooter className="justify-center">
+              <Button onClick={() => router.push('/dashboard/convocation-booking')}>
+                  <Home className="mr-2 h-4 w-4" /> View Booking History
+              </Button>
+            </CardFooter>
+          </>
+        );
 
             case 'error':
                 return (

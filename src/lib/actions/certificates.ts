@@ -1,6 +1,6 @@
 
 
-import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage, ParentCourse } from '../types';
+import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage, ParentCourse, SessionCount } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -155,6 +155,18 @@ export const deleteConvocationCeremony = async (id: string): Promise<void> => {
         const errorData = await response.json().catch(() => ({ message: 'Failed to delete ceremony' }));
         throw new Error(errorData.message || 'Request failed');
     }
+};
+
+export const getConvocationSessionCounts = async (ceremonyId: string): Promise<SessionCount[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/get-counts-by-sessions/${ceremonyId}`);
+    if (response.status === 404) {
+        return [];
+    }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to fetch session counts for ceremony ${ceremonyId}` }));
+        throw new Error(errorData.message || 'Request failed');
+    }
+    return response.json();
 };
 
 // Convocation Packages

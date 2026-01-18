@@ -1,6 +1,7 @@
 
 
 
+
 import type { BnfChapter, BnfPage } from './bnf-data';
 
 export interface ApiStaffMember {
@@ -817,6 +818,11 @@ export interface CreateConvocationRegistrationPayload {
     image: File; // The payment slip
     name_on_certificate: string;
     telephone_1: string;
+}
+
+export interface SessionCount {
+    session: '1' | '2';
+    sessionCounts: string;
 }
 
 
