@@ -43,7 +43,7 @@ import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
-const PARENT_SEAT_RATE = 500; 
+const PARENT_SEAT_RATE = 750; 
 
 type OrderStep = 'loading' | 'ceremony_selection' | 'course_selection' | 'form' | 'confirmation' | 'success' | 'error';
 
@@ -720,3 +720,4 @@ export default function CreateConvocationBookingPage() {
       </div>
   );
 }
+
