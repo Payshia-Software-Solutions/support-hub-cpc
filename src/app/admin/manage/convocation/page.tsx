@@ -62,6 +62,9 @@ export default function ConvocationListPage() {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [courseFilter, setCourseFilter] = useState('all');
+    const [packageFilter, setPackageFilter] = useState('all');
+    const [sessionFilter, setSessionFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
 
     const { data: registrations, isLoading, isError, error } = useQuery<ConvocationRegistration[]>({
@@ -93,8 +96,11 @@ export default function ConvocationListPage() {
                 reg.reference_number.toLowerCase().includes(lowercasedSearch);
             
             const matchesStatus = statusFilter === 'all' || reg.payment_status.toLowerCase() === statusFilter.toLowerCase();
+            const matchesCourse = courseFilter === 'all' || reg.course_id.split(',').map(s => s.trim()).includes(courseFilter);
+            const matchesPackage = packageFilter === 'all' || reg.package_id === packageFilter;
+            const matchesSession = sessionFilter === 'all' || reg.session === sessionFilter;
             
-            return matchesSearch && matchesStatus;
+            return matchesSearch && matchesStatus && matchesCourse && matchesPackage && matchesSession;
         }).sort((a,b) => {
             const dateA = new Date(a.registered_at);
             const dateB = new Date(b.registered_at);
@@ -102,7 +108,9 @@ export default function ConvocationListPage() {
             if (!isValid(dateB)) return -1;
             return dateB.getTime() - dateA.getTime();
         });
-    }, [registrations, searchTerm, statusFilter]);
+    }, [registrations, searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter]);
+    
+    useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter]);
 
     const totalPages = Math.ceil(filteredRegistrations.length / ITEMS_PER_PAGE);
     const paginatedRegistrations = useMemo(() => {
@@ -157,20 +165,50 @@ export default function ConvocationListPage() {
                                 {isLoading ? "Loading..." : `${filteredRegistrations.length} registrations found.`}
                             </CardDescription>
                         </div>
-                         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                            <div className="relative w-full sm:w-auto flex-grow">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Search by name, student #, ref #" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10"/>
-                            </div>
-                            <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-full sm:w-[180px]">
+                    </div>
+                     <div className="space-y-2 pt-4">
+                        <div className="relative w-full md:max-w-xs">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Search by name, student #, ref #" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10"/>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                             <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <SelectTrigger>
                                     <SelectValue placeholder="Filter by status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Payment Statuses</SelectItem>
+                                    <SelectItem value="all">All Statuses</SelectItem>
                                     <SelectItem value="paid">Paid</SelectItem>
                                     <SelectItem value="pending">Pending</SelectItem>
                                     <SelectItem value="rejected">Rejected</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={sessionFilter} onValueChange={setSessionFilter}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Filter by session" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Sessions</SelectItem>
+                                    <SelectItem value="1">Session 1</SelectItem>
+                                    <SelectItem value="2">Session 2</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={courseFilter} onValueChange={setCourseFilter} disabled={isLoadingCourses}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Filter by course" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Courses</SelectItem>
+                                    {courses?.map(c => <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                             <Select value={packageFilter} onValueChange={setPackageFilter} disabled={isLoadingPackages}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Filter by package" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Packages</SelectItem>
+                                    {packages?.filter(p => !ceremonyIdFilter || p.convocation_id === ceremonyIdFilter).map(p => <SelectItem key={p.package_id} value={p.package_id}>{p.package_name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
