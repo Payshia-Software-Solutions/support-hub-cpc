@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, Award, Library, BookOpen, FileText, Gamepad2, AlertCircle, BookText } from "lucide-react";
+import { ArrowRight, Ticket as TicketIcon, Clock, CheckCircle, PlusCircle, Award, Library, BookOpen, FileText, Gamepad2, AlertCircle, BookText, GraduationCap } from "lucide-react";
 import { UnreadBadge } from "@/components/dashboard/UnreadBadge";
 import { CeylonPharmacyIcon, DPadIcon, HunterProIcon, LuckyWheelIcon, MediMindIcon, PharmaHunterIcon, PharmaReaderIcon, WinPharmaIcon, WordPalletIcon } from "@/components/icons/module-icons";
 import { getCourses } from "@/lib/actions/courses";
@@ -23,7 +23,6 @@ import { useRouter } from "next/navigation";
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -178,6 +177,14 @@ export default function StudentDashboardPage() {
         .slice(0, 5);
     }, [tickets]);
 
+    const quickActions = [
+        { title: "Create a Ticket", description: "Get help from our support staff.", href: "/dashboard/create-ticket", icon: <PlusCircle className="w-8 h-8 text-white" />, colorClass: "from-blue-400 to-indigo-500" },
+        { title: "Order Certificate", description: "Request a hard copy of your certificate.", href: "/dashboard/certificate-order", icon: <Award className="w-8 h-8 text-white" />, colorClass: "from-green-400 to-teal-500" },
+        { title: "BNF", description: "Access the British National Formulary.", href: "/dashboard/bnf", icon: <BookOpen className="w-8 h-8 text-white" />, colorClass: "from-red-400 to-rose-500" },
+        { title: "Games & Challenges", description: "Test your knowledge and have fun.", href: "/dashboard/games", icon: <Gamepad2 className="w-8 h-8 text-white" />, colorClass: "from-yellow-400 to-amber-500" },
+        { title: "Convocation Booking", description: "Register for the upcoming convocation.", href: "/dashboard/convocation-booking", icon: <GraduationCap className="w-8 h-8 text-white" />, colorClass: "from-purple-400 to-pink-500" },
+    ];
+
     if (!selectedCourseCode && !isLoadingCourses) {
         return (
              <div className="flex h-screen items-center justify-center">
@@ -258,10 +265,16 @@ export default function StudentDashboardPage() {
 
             <section className="animate-in fade-in-50 slide-in-from-bottom-4 delay-150">
                 <h2 className="text-2xl font-semibold font-headline mb-4">Quick Actions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <QuickActionCard title="Create Ticket" description="Open a new support request for any issue." href="/dashboard/create-ticket" icon={<PlusCircle className="w-8 h-8 text-white" />} colorClass="from-blue-400 to-indigo-500" selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
-                     <QuickActionCard title="Order Certificate" description="Request official certificates for completed courses." href="/dashboard/certificate-order" icon={<Award className="w-8 h-8 text-white" />} colorClass="from-green-400 to-teal-500" selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
-                     <QuickActionCard title="BNF" description="Access the British National Formulary." href="/dashboard/bnf" icon={<BookOpen className="w-8 h-8 text-white" />} colorClass="from-red-400 to-rose-500" selectedCourseCode={selectedCourseCode} allCourses={allCourses} setDialogContent={setDialogContent} />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                   {quickActions.map((action) => (
+                      <QuickActionCard 
+                        key={action.href}
+                        {...action}
+                        selectedCourseCode={selectedCourseCode} 
+                        allCourses={allCourses} 
+                        setDialogContent={setDialogContent} 
+                      />
+                   ))}
                 </div>
             </section>
             
@@ -326,3 +339,5 @@ export default function StudentDashboardPage() {
         </div>
     );
 }
+
+    

@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
@@ -653,23 +653,46 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
     return response.json();
 };
 
-    
+// --- MediMind API Functions ---
 
-    
+export async function getMediMindItems(): Promise<MediMindItem[]> {
+    const response = await fetch(`${QA_API_BASE_URL}/medimind-items/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch MediMind items');
+    }
+    return response.json();
+}
 
+export async function createMediMindItem(formData: FormData): Promise<MediMindItem> {
+    const response = await fetch(`${QA_API_BASE_URL}/medimind-items/`, {
+        method: 'POST',
+        body: formData,
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create item' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
 
+export async function updateMediMindItem(id: string, formData: FormData): Promise<MediMindItem> {
+    const response = await fetch(`${QA_API_BASE_URL}/medimind-items/${id}/`, {
+        method: 'POST', // Note: API uses POST for updates with FormData
+        body: formData,
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update item' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export async function deleteMediMindItem(id: string): Promise<void> {
+    const response = await fetch(`${QA_API_BASE_URL}/medimind-items/${id}/`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete item' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+}

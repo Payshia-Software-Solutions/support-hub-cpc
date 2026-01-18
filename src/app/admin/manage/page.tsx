@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog, BookOpen, BarChart, Cake, Library, Percent, Briefcase, BookText } from "lucide-react";
+import { ArrowRight, UserPlus, CreditCard, ClipboardList, Truck, GraduationCap, Award, Settings, KeyRound, FileSignature, Banknote, Video, Search, UserCheck, Megaphone, UserCog, BookOpen, BarChart, Cake, Library, Percent, Briefcase, BookText, BrainCircuit } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from 'react';
 import { cn } from "@/lib/utils";
@@ -261,6 +261,13 @@ const managementTasks: ManagementTask[] = [
     description: "Manage Sentence Builder game levels and sentences.",
     icon: <BookText className="w-8 h-8 text-white"/>,
     href: "/admin/manage/games/sentence-builder",
+    category: "Games Management"
+  },
+  {
+    title: "MediMind",
+    description: "Configure all aspects of the MediMind game.",
+    icon: <BrainCircuit className="w-8 h-8 text-white"/>,
+    href: "/admin/manage/games/medimind",
     category: "Games Management"
   },
 ];

@@ -1,8 +1,21 @@
 
 
-import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony } from '../types';
+import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage, ParentCourse, SessionCount } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
+
+
+// Helper type for form values passed from the component
+type CeremonyFormData = {
+    convocation_name: string;
+    held_on: string;
+    session_count: number;
+    parent_seats: number;
+    student_seats: number;
+    session_2: number;
+    accept_booking: boolean;
+    created_by: string;
+};
 
 
 export const updateCertificateName = async (payload: UpdateCertificateNamePayload): Promise<any> => {
@@ -23,8 +36,12 @@ export const updateCertificateName = async (payload: UpdateCertificateNamePayloa
 }
 
 // Convocation Registrations
-export const getConvocationRegistrations = async (): Promise<ConvocationRegistration[]> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations`);
+export const getConvocationRegistrations = async (ceremonyId?: string): Promise<ConvocationRegistration[]> => {
+    const endpoint = ceremonyId 
+        ? `${QA_API_BASE_URL}/convocation-registrations/convocation/${ceremonyId}`
+        : `${QA_API_BASE_URL}/convocation-registrations`;
+
+    const response = await fetch(endpoint);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch convocation registrations' }));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
@@ -32,9 +49,38 @@ export const getConvocationRegistrations = async (): Promise<ConvocationRegistra
     return response.json();
 }
 
+export const getConvocationRegistrationsByStudent = async (studentNumber: string): Promise<ConvocationRegistration[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/get-records-student-number/${studentNumber}`);
+    if (response.status === 404) {
+        return []; // No bookings found is a valid state
+    }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to fetch bookings for student ${studentNumber}` }));
+        throw new Error(errorData.message || 'Request failed');
+    }
+    const data = await response.json();
+    // The API might return a single object or an array of objects.
+    if (!data) return [];
+    return Array.isArray(data) ? data : [data];
+}
+
+
+export const createConvocationRegistration = async (payload: FormData): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations`, {
+        method: 'POST',
+        body: payload,
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Convocation registration failed. Status: ${response.status}` }));
+        throw new Error(errorData.error || errorData.message || 'Convocation registration failed');
+    }
+    return response.json();
+};
+
+
 // Convocation Ceremonies
 export const getConvocationCeremonies = async (): Promise<ConvocationCeremony[]> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-events`);
+    const response = await fetch(`${QA_API_BASE_URL}/convocations`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch convocation ceremonies' }));
         throw new Error(errorData.message || 'Request failed');
@@ -42,11 +88,33 @@ export const getConvocationCeremonies = async (): Promise<ConvocationCeremony[]>
     return response.json();
 };
 
-export const createConvocationCeremony = async (data: Omit<ConvocationCeremony, 'id'>): Promise<ConvocationCeremony> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-events`, {
+export const getCeremonyById = async (id: string): Promise<ConvocationCeremony> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocations/${id}`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to fetch ceremony with id ${id}`}));
+        throw new Error(errorData.message || 'Failed to fetch ceremony details');
+    }
+    return response.json();
+};
+
+
+export const createConvocationCeremony = async (data: CeremonyFormData): Promise<ConvocationCeremony> => {
+    const payload = {
+        convocation_name: data.convocation_name,
+        held_on: `${data.held_on} 00:00:00`,
+        session_count: String(data.session_count),
+        parent_seats: String(data.parent_seats),
+        student_seats: String(data.student_seats),
+        session_2: String(data.session_2),
+        created_by: data.created_by,
+        created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        accept_booking: data.accept_booking ? '1' : '0',
+    };
+    
+    const response = await fetch(`${QA_API_BASE_URL}/convocations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to create ceremony' }));
@@ -55,11 +123,22 @@ export const createConvocationCeremony = async (data: Omit<ConvocationCeremony, 
     return response.json();
 };
 
-export const updateConvocationCeremony = async (id: string, data: Partial<Omit<ConvocationCeremony, 'id'>>): Promise<ConvocationCeremony> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-events/${id}`, {
+export const updateConvocationCeremony = async (id: string, data: CeremonyFormData): Promise<ConvocationCeremony> => {
+     const payload = {
+        convocation_name: data.convocation_name,
+        held_on: `${data.held_on} 00:00:00`,
+        session_count: String(data.session_count),
+        parent_seats: String(data.parent_seats),
+        student_seats: String(data.student_seats),
+        session_2: String(data.session_2),
+        created_by: data.created_by,
+        accept_booking: data.accept_booking ? '1' : '0',
+    };
+    
+    const response = await fetch(`${QA_API_BASE_URL}/convocations/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to update ceremony' }));
@@ -69,12 +148,71 @@ export const updateConvocationCeremony = async (id: string, data: Partial<Omit<C
 };
 
 export const deleteConvocationCeremony = async (id: string): Promise<void> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-events/${id}`, {
+    const response = await fetch(`${QA_API_BASE_URL}/convocations/${id}`, {
         method: 'DELETE',
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to delete ceremony' }));
         throw new Error(errorData.message || 'Request failed');
+    }
+};
+
+export const getConvocationSessionCounts = async (ceremonyId: string): Promise<SessionCount[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/get-counts-by-sessions/${ceremonyId}`);
+    if (response.status === 404) {
+        return [];
+    }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to fetch session counts for ceremony ${ceremonyId}` }));
+        throw new Error(errorData.message || 'Request failed');
+    }
+    return response.json();
+};
+
+// Convocation Packages
+export const getPackagesByCeremony = async (ceremonyId: string): Promise<ConvocationPackage[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/packages`);
+    if (response.status === 404) return [];
+    if (!response.ok) throw new Error('Failed to fetch packages');
+    const allPackages: ConvocationPackage[] = await response.json();
+    if (!ceremonyId) {
+        return allPackages;
+    }
+    return allPackages.filter(pkg => pkg.convocation_id === ceremonyId);
+};
+
+export const createPackage = async (data: FormData): Promise<ConvocationPackage> => {
+    const response = await fetch(`${QA_API_BASE_URL}/packages`, {
+        method: 'POST',
+        body: data,
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to create package' }));
+        throw new Error(error.message);
+    }
+    return response.json();
+};
+
+export const updatePackage = async (packageId: string, data: FormData): Promise<ConvocationPackage> => {
+    // Note: API seems to use POST for updates with FormData
+    const response = await fetch(`${QA_API_BASE_URL}/packages/${packageId}`, {
+        method: 'POST',
+        body: data,
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to update package' }));
+        throw new Error(error.message);
+    }
+    return response.json();
+};
+
+export const deletePackage = async (packageId: string): Promise<void> => {
+    const response = await fetch(`${QA_API_BASE_URL}/packages/${packageId}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to delete package' }));
+        throw new Error(error.message);
     }
 };
 
@@ -243,3 +381,5 @@ export const generateCertificate = async (payload: GenerateCertificatePayload): 
     }
     return response.json();
 };
+
+    

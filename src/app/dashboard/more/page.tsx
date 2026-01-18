@@ -15,7 +15,8 @@ import {
   Sun,
   BookOpen,
   BookText,
-  Gamepad2
+  Gamepad2,
+  GraduationCap
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -64,18 +65,10 @@ export default function MorePage() {
       { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
       { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
       { href: "/dashboard/certificate-order", label: "Certificate Order", icon: Award },
+      { href: "/dashboard/convocation-booking", label: "Convocation Booking", icon: GraduationCap },
       { href: "/dashboard/bnf", label: "BNF", icon: BookOpen },
-      { href: "/dashboard/medimind", label: "MediMind", icon: MediMindIcon },
       { href: "/dashboard/games", label: "All Games", icon: Gamepad2 }
     ];
-
-    baseItems.push({ 
-        href: "/dashboard/games/sentence-builder", 
-        label: "Sentence Builder", 
-        icon: BookText, 
-        requiredCourses: ["CPCC28", "CPCC27"] 
-    });
-
 
     if (user?.role === 'staff') {
       baseItems.push({ href: "/admin/dashboard", label: "Admin Panel", icon: Shield });
@@ -91,7 +84,7 @@ export default function MorePage() {
   const handleLinkClick = (e: React.MouseEvent, item: { href: string; requiredCourses?: string[] }) => {
       if (item.requiredCourses && (!selectedCourseCode || !item.requiredCourses.includes(selectedCourseCode))) {
             e.preventDefault();
-            const requiredCourseNames = allCourses
+             const requiredCourseNames = allCourses
                 ?.filter(c => item.requiredCourses!.includes(c.courseCode))
                 .map(c => `${c.name} (${c.courseCode})`)
                 .join(' or ');
@@ -143,7 +136,7 @@ export default function MorePage() {
         <CardContent className="p-2">
           <div className="space-y-1">
             {navItems.map((item) => (
-              <a key={item.href} href={item.href} onClick={(e) => handleLinkClick(e, item)} className="block group cursor-pointer">
+              <a key={item.href} href={item.href} onClick={(e) => handleLinkClick(e, item as any)} className="block group cursor-pointer">
                 <div className="flex items-center justify-between p-3 rounded-md hover:bg-muted transition-colors">
                   <div className="flex items-center gap-4">
                     <item.icon className="h-6 w-6 text-primary" />
