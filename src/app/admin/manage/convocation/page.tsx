@@ -24,6 +24,7 @@ import { AlertTriangle, Search, FileText, ArrowLeft, ArrowUp, ArrowDown, Chevron
 import { toast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { cn } from '@/lib/utils';
 
 const ITEMS_PER_PAGE = 25;
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
@@ -36,20 +37,18 @@ const InfoBox = ({ label, value }: { label: string, value: React.ReactNode }) =>
     </div>
 );
 
-const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, packages }: { 
+const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, packages, studentData, isLoading: isLoadingStudentData, isError, error }: { 
     registration: ConvocationRegistration | null, 
     open: boolean, 
     onOpenChange: (open: boolean) => void,
     courses?: ParentCourse[],
-    packages?: ConvocationPackage[]
+    packages?: ConvocationPackage[],
+    studentData?: FullStudentData | null,
+    isLoading: boolean,
+    isError: boolean,
+    error: Error | null
 }) => {
     if (!registration) return null;
-
-    const { data: studentData, isLoading, isError, error } = useQuery<FullStudentData>({
-        queryKey: ['studentFullInfoForConvocationDetail', registration.student_number],
-        queryFn: () => getStudentFullInfo(registration.student_number),
-        enabled: open && !!registration.student_number,
-    });
 
     const getCourseNames = (courseIds: string) => {
         if (!courses) return 'Loading...';
@@ -76,7 +75,7 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="pr-4 -mr-4">
-                    {isLoading && (
+                    {isLoadingStudentData && (
                         <div className="space-y-4 p-4">
                             <Skeleton className="h-40 w-full" />
                             <Skeleton className="h-64 w-full" />
@@ -218,6 +217,12 @@ export default function ConvocationListPage() {
     const { data: paymentRequests, isLoading: isLoadingPayments } = useQuery<PaymentRequest[]>({
         queryKey: ['allPaymentRequests'],
         queryFn: getPaymentRequests,
+    });
+
+    const { data: studentData, isLoading: isLoadingStudentData, isError: isErrorStudentData, error: studentDataError } = useQuery<FullStudentData>({
+        queryKey: ['studentFullInfoForConvocationDetail', viewingDetails?.student_number],
+        queryFn: () => getStudentFullInfo(viewingDetails!.student_number),
+        enabled: !!viewingDetails,
     });
 
     type SortableColumn = 'date' | 'student' | 'ref' | 'ceremony' | 'due' | 'session' | 'course' | 'package' | 'seats';
@@ -382,6 +387,10 @@ export default function ConvocationListPage() {
                 onOpenChange={(open) => !open && setViewingDetails(null)}
                 courses={courses}
                 packages={packages}
+                studentData={studentData}
+                isLoading={isLoadingStudentData}
+                isError={isErrorStudentData}
+                error={studentDataError}
             />
 
             <header>
@@ -531,7 +540,7 @@ export default function ConvocationListPage() {
                                                 <Select defaultValue={reg.package_id} onValueChange={(value) => console.log('TODO: Update package to', value)}><SelectTrigger><SelectValue placeholder="Select Package" /></SelectTrigger><SelectContent>{packages?.filter(p => p.convocation_id === reg.convocation_id).map(p => <SelectItem key={p.package_id} value={p.package_id}>{p.package_name}</SelectItem>)}</SelectContent></Select>
                                             </TableCell>
                                              <TableCell>
-                                                <Select defaultValue={reg.additional_seats} onValueChange={(value) => console.log('TODO: Update seats to', value)}><SelectTrigger className="w-20"><SelectValue /></SelectTrigger><SelectContent>{[0,1,2,3,4,5,6,7,8].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}</SelectContent></Select>
+                                                <Select defaultValue={reg.additional_seats} onValueChange={(value) => console.log('TODO: Update seats to', value)}><SelectTrigger className="w-20"><SelectValue /></SelectTrigger><SelectContent>{[0,1,2].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}</SelectContent></Select>
                                             </TableCell>
                                             <TableCell>{parseFloat(reg.payment_amount).toFixed(2)}</TableCell>
                                             <TableCell>
