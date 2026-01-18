@@ -6,25 +6,154 @@ import { useQuery } from '@tanstack/react-query';
 import { getConvocationRegistrations, getPackagesByCeremony } from '@/lib/actions/certificates';
 import { getParentCourses } from '@/lib/actions/courses';
 import { getPaymentRequests } from '@/lib/actions/payments';
-import type { ConvocationRegistration, ConvocationPackage, ParentCourse, PaymentRequest } from '@/lib/types';
+import type { ConvocationRegistration, ConvocationPackage, ParentCourse, PaymentRequest, FullStudentData, StudentEnrollment, ApiPaymentRecord } from '@/lib/types';
 import { format, isValid, parseISO } from 'date-fns';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { getStudentFullInfo } from '@/lib/actions/users';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertTriangle, Search, FileText, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const ITEMS_PER_PAGE = 25;
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
 const PARENT_SEAT_RATE = 750;
+
+const InfoBox = ({ label, value }: { label: string, value: React.ReactNode }) => (
+    <div className="p-3 bg-muted/50 rounded-md">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="font-semibold text-sm">{value || 'N/A'}</p>
+    </div>
+);
+
+const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, packages }: { 
+    registration: ConvocationRegistration | null, 
+    open: boolean, 
+    onOpenChange: (open: boolean) => void,
+    courses?: ParentCourse[],
+    packages?: ConvocationPackage[]
+}) => {
+    if (!registration) return null;
+
+    const { data: studentData, isLoading, isError, error } = useQuery<FullStudentData>({
+        queryKey: ['studentFullInfoForConvocationDetail', registration.student_number],
+        queryFn: () => getStudentFullInfo(registration.student_number),
+        enabled: open && !!registration.student_number,
+    });
+
+    const getCourseNames = (courseIds: string) => {
+        if (!courses) return 'Loading...';
+        return courseIds.split(',').map(id => {
+            const course = courses.find(c => c.id === id.trim());
+            return course?.course_name || `Unknown Course (${id})`;
+        }).join(', ');
+    };
+
+    const getPackageName = (packageId: string) => {
+        if (!packages) return 'Loading...';
+        return packages.find(p => p.package_id === packageId)?.package_name || 'Unknown Package';
+    };
+
+    const paymentRecordsArray = studentData ? Object.values(studentData.studentBalance.paymentRecords).sort((a, b) => new Date(b.paid_date).getTime() - new Date(a.paid_date).getTime()) : [];
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-4xl h-[90vh]">
+                <DialogHeader>
+                    <DialogTitle>Booking Details: #{registration.reference_number}</DialogTitle>
+                    <DialogDescription>
+                        Detailed overview for student {registration.student_number}.
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="pr-4 -mr-4">
+                    {isLoading && (
+                        <div className="space-y-4 p-4">
+                            <Skeleton className="h-40 w-full" />
+                            <Skeleton className="h-64 w-full" />
+                        </div>
+                    )}
+                    {isError && (
+                        <div className="text-destructive p-4">Error loading student details: {(error as Error).message}</div>
+                    )}
+                    {studentData && (
+                        <div className="space-y-6">
+                            <Card>
+                                <CardHeader><CardTitle>Booking Info</CardTitle></CardHeader>
+                                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <InfoBox label="Ref #" value={registration.reference_number} />
+                                    <InfoBox label="Student Number" value={registration.student_number} />
+                                    <InfoBox label="Courses" value={getCourseNames(registration.course_id)} />
+                                    <InfoBox label="Payment Status" value={<Badge>{registration.payment_status}</Badge>} />
+                                    <InfoBox label="Overall Balance" value={`LKR ${studentData.studentBalance.studentBalance.toLocaleString()}`} />
+                                    <InfoBox label="Additional Seats" value={registration.additional_seats} />
+                                    <InfoBox label="Payable Amount" value={`LKR ${parseFloat(registration.payment_amount).toLocaleString()}`} />
+                                    <InfoBox label="Package" value={getPackageName(registration.package_id)} />
+                                </CardContent>
+                            </Card>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                                <Card>
+                                    <CardHeader><CardTitle>Payment Details</CardTitle></CardHeader>
+                                    <CardContent className="space-y-2">
+                                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Due:</span> <span className="font-semibold">LKR {studentData.studentBalance.TotalRegistrationFee.toLocaleString()}</span></div>
+                                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Payments:</span> <span className="font-semibold text-green-600">LKR {studentData.studentBalance.totalPaymentAmount.toLocaleString()}</span></div>
+                                        <div className="flex justify-between text-lg font-bold"><span className="text-muted-foreground">Balance:</span> <span className={cn(studentData.studentBalance.studentBalance > 0 ? 'text-destructive' : 'text-green-600')}>LKR {studentData.studentBalance.studentBalance.toLocaleString()}</span></div>
+                                        <div className="pt-4">
+                                            <a href={`${CONTENT_PROVIDER_URL}${registration.image_path}`} target="_blank" rel="noopener noreferrer">
+                                                <Button className="w-full" variant="outline">View Main Payment Slip</Button>
+                                            </a>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader><CardTitle>Payment Transactions</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-2">
+                                            {paymentRecordsArray.length > 0 ? paymentRecordsArray.map(rec => (
+                                                <div key={rec.id} className="text-xs p-2 border rounded-md flex justify-between items-center">
+                                                    <div>
+                                                        <p className="font-semibold">{rec.receipt_number}</p>
+                                                        <p>{rec.course_code} - {rec.paid_date}</p>
+                                                    </div>
+                                                    <p className="font-bold">LKR {parseFloat(rec.paid_amount).toLocaleString()}</p>
+                                                </div>
+                                            )) : <p className="text-sm text-center text-muted-foreground">No transaction history.</p>}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                            <Card>
+                                <CardHeader><CardTitle>Enrollments</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    {Object.values(studentData.studentEnrollments).map(enrollment => (
+                                        <Accordion key={enrollment.id} type="multiple" className="w-full border rounded-md px-4">
+                                            <AccordionItem value="item-1" className="border-b-0">
+                                                <AccordionTrigger className="py-3">{enrollment.parent_course_name} ({enrollment.course_code})</AccordionTrigger>
+                                                <AccordionContent>
+                                                    <p className="text-sm">Average Grade: {enrollment.assignment_grades.average_grade}%</p>
+                                                    {/* Further details can be added here if needed */}
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        </Accordion>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+                </ScrollArea>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 const ViewSlipDialog = ({ slipPath, studentName, trigger }: { slipPath: string | null; studentName: string; trigger: React.ReactNode }) => {
     if (!slipPath) return <Button variant="outline" size="sm" disabled>No Slip</Button>;
@@ -67,6 +196,7 @@ export default function ConvocationListPage() {
     const [sessionFilter, setSessionFilter] = useState('all');
     const [sortOption, setSortOption] = useState('date-desc');
     const [currentPage, setCurrentPage] = useState(1);
+    const [viewingDetails, setViewingDetails] = useState<ConvocationRegistration | null>(null);
 
     const { data: registrations, isLoading, isError, error } = useQuery<ConvocationRegistration[]>({
         queryKey: ['convocationRegistrations', ceremonyIdFilter],
@@ -177,7 +307,7 @@ export default function ConvocationListPage() {
                 switch(column) {
                     case 'student': return reg.student_number;
                     case 'ref': return parseInt(reg.reference_number, 10);
-                    case 'ceremony': return reg.ceremony_number;
+                    case 'ceremony': return reg.ceremony_number || '';
                     case 'due': {
                         const isPaid = ['paid', 'approved', 'confirmed'].includes(reg.payment_status.toLowerCase());
                         return isPaid ? reg.dueAmount - parseFloat(reg.payment_amount) : reg.dueAmount;
@@ -246,6 +376,14 @@ export default function ConvocationListPage() {
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
+            <RegistrationDetailDialog
+                registration={viewingDetails}
+                open={!!viewingDetails}
+                onOpenChange={(open) => !open && setViewingDetails(null)}
+                courses={courses}
+                packages={packages}
+            />
+
             <header>
                 {ceremonyIdFilter ? (
                     <Button variant="ghost" onClick={() => router.push('/admin/manage/convocation-ceremonies')} className="-ml-4">
@@ -345,8 +483,7 @@ export default function ConvocationListPage() {
                                         <TableHead><SortableHeader column="session" label="Session" /></TableHead>
                                         <TableHead><SortableHeader column="course" label="Courses" /></TableHead>
                                         <TableHead><SortableHeader column="package" label="Package" /></TableHead>
-                                        <TableHead><SortableHeader column="seats" label="Additional Seats" /></TableHead>
-                                        <TableHead>Package Amount</TableHead>
+                                        <TableHead><SortableHeader column="seats" label="Add. Seats" /></TableHead>
                                         <TableHead>Paid</TableHead>
                                         <TableHead>Slip</TableHead>
                                         <TableHead>Duplicate</TableHead>
@@ -362,8 +499,7 @@ export default function ConvocationListPage() {
                                             <TableCell>{reg.reference_number}</TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col gap-1 w-20">
-                                                    <Button variant="outline" size="sm" onClick={() => toast({title: 'Action: View', description: `Viewing details for ${reg.reference_number}`})}>View</Button>
-                                                    <Button variant="outline" size="sm" onClick={() => toast({title: 'Action: Send', description: `Sending ceremony number to ${reg.student_number}`})}>Send</Button>
+                                                    <Button variant="outline" size="sm" onClick={() => setViewingDetails(reg)}>View</Button>
                                                 </div>
                                             </TableCell>
                                             <TableCell>{reg.ceremony_number}</TableCell>
@@ -397,12 +533,9 @@ export default function ConvocationListPage() {
                                              <TableCell>
                                                 <Select defaultValue={reg.additional_seats} onValueChange={(value) => console.log('TODO: Update seats to', value)}><SelectTrigger className="w-20"><SelectValue /></SelectTrigger><SelectContent>{[0,1,2,3,4,5,6,7,8].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}</SelectContent></Select>
                                             </TableCell>
-                                            <TableCell>{reg.dueAmount.toFixed(2)}</TableCell>
                                             <TableCell>{parseFloat(reg.payment_amount).toFixed(2)}</TableCell>
                                             <TableCell>
-                                                <a href={`${CONTENT_PROVIDER_URL}${reg.image_path}`} target="_blank" rel="noopener noreferrer">
-                                                    <Button variant="outline" size="sm">View</Button>
-                                                </a>
+                                                <ViewSlipDialog slipPath={reg.image_path} studentName={reg.name_on_certificate} trigger={<Button variant="outline" size="sm">View</Button>} />
                                             </TableCell>
                                             <TableCell>{reg.isDuplicate && <Badge variant="destructive">Duplicate</Badge>}</TableCell>
                                             <TableCell><Badge className={getStatusBadge(reg.payment_status)}>{reg.payment_status}</Badge></TableCell>
@@ -428,7 +561,3 @@ export default function ConvocationListPage() {
         </div>
     );
 }
-
-    
-
-    
