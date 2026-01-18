@@ -227,7 +227,7 @@ export default function ConvocationListPage() {
                 </p>
             </header>
             
-            <Card className="shadow-lg">
+            <Card className="shadow-lg relative max-w-full">
                 <CardHeader>
                      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
