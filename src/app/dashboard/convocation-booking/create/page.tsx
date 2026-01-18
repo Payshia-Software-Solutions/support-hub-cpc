@@ -140,34 +140,34 @@ export default function CreateConvocationBookingPage() {
   }, [studentData, nameOnCertificate, phone]);
   
   useEffect(() => {
-      const isLoading = isLoadingStudent || isLoadingCeremony;
-      if (isLoading) {
-          setStep('loading');
-          return;
-      }
-      if (isError) {
-          setErrorMessage(error.message);
-          setStep('error');
-          return;
-      }
-      if (!activeCeremony) {
-          setErrorMessage('There are no active convocation ceremonies at the moment. Please check back later.');
-          setStep('error');
-          return;
-      }
-      
-      const eligibleEnrollments = allEnrollments.filter(e => e.certificate_eligibility);
-      if (eligibleEnrollments.length === 0) {
-          setErrorMessage('You have no courses eligible for convocation booking at this time.');
-          setStep('error');
-          return;
-      }
+    const isLoading = isLoadingStudent || isLoadingCeremony;
+    if (isLoading) {
+      setStep('loading');
+      return;
+    }
+    if (isError) {
+      setErrorMessage(error.message);
+      setStep('error');
+      return;
+    }
+    if (!activeCeremony) {
+      setErrorMessage('There are no active convocation ceremonies at the moment. Please check back later.');
+      setStep('error');
+      return;
+    }
+    if (studentData) {
+        if (allEnrollments.length === 0) {
+             setErrorMessage("You are not enrolled in any courses, so you cannot book for the convocation.");
+             setStep('error');
+             return;
+        }
 
-      // Pre-select all eligible courses by default
-      setSelectedEnrollments(eligibleEnrollments);
-      setDeselectedEligible([]);
-
-      setStep('selection');
+        const eligibleEnrollments = allEnrollments.filter(e => e.certificate_eligibility);
+        // Pre-select all eligible courses by default
+        setSelectedEnrollments(eligibleEnrollments);
+        setDeselectedEligible([]);
+        setStep('selection');
+    }
   }, [isLoadingStudent, isLoadingCeremony, isError, studentData, activeCeremony, allEnrollments, error]);
 
   const createBookingMutation = useMutation({
@@ -432,16 +432,21 @@ export default function CreateConvocationBookingPage() {
                          <Button variant="ghost" onClick={() => setStep('form')} className="w-fit h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
                               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Edit
                           </Button>
-                        <CardTitle>Confirm Your Booking</CardTitle>
+                        <CardTitle>Step 3: Confirm Your Booking</CardTitle>
                         <CardDescription>Please review all details before submitting.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                          <p><strong>Courses:</strong> {eligibleEnrollments.filter(e => selectedCourseIds.has(e.parent_course_id)).map(e => e.parent_course_name).join(', ')}</p>
-                          <p><strong>Package:</strong> {selectedPackage?.package_name}</p>
-                          <p><strong>Session:</strong> {selectedSession}</p>
-                          <p><strong>Additional Seats:</strong> {additionalSeats}</p>
-                          <p><strong>Total Price:</strong> LKR {totalPrice.toLocaleString()}</p>
-                          <p><strong>Payment Slip:</strong> {paymentSlip?.name}</p>
+                          <div className="space-y-2">
+                            <h3 className="font-semibold text-foreground">Courses:</h3>
+                            <p className="text-sm text-muted-foreground">{selectedEnrollments.map(e => e.parent_course_name).join(', ')}</p>
+                          </div>
+                          <p className="text-sm"><strong className="text-muted-foreground">Package:</strong> {selectedPackage?.package_name}</p>
+                          <p className="text-sm"><strong className="text-muted-foreground">Session:</strong> {selectedSession}</p>
+                          <p className="text-sm"><strong className="text-muted-foreground">Additional Seats:</strong> {additionalSeats}</p>
+                          <p className="text-lg font-bold"><strong className="text-muted-foreground">Total Price:</strong> LKR {totalPrice.toLocaleString()}</p>
+                          <p className="text-sm"><strong className="text-muted-foreground">Payment Slip:</strong> {paymentSlip?.name}</p>
+                          <p className="text-sm"><strong className="text-muted-foreground">Name on Certificate:</strong> {nameOnCertificate}</p>
+                          <p className="text-sm"><strong className="text-muted-foreground">Contact Phone:</strong> {phone}</p>
                       </CardContent>
                       <CardFooter>
                         <Button size="lg" className="w-full" onClick={handleConfirmAndSubmit} disabled={createBookingMutation.isPending}>
