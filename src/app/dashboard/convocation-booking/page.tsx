@@ -19,13 +19,14 @@ import { ArrowLeft, ArrowRight, Loader2, AlertCircle, CheckCircle, GraduationCap
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const PARENT_SEAT_RATE = 500; // As defined in PHP code
 
 type OrderStep = 'loading' | 'form' | 'confirmation' | 'success' | 'error';
 
 export default function ConvocationBookingPage() {
-    const { user } = useAuth();
+    const { user, isImpersonating } = useAuth();
     const router = useRouter();
     const queryClient = useQueryClient();
 
@@ -43,10 +44,11 @@ export default function ConvocationBookingPage() {
     const [phone, setPhone] = useState('');
 
     // --- Data Fetching ---
-    const { data: studentData, isLoading: isLoadingStudent, isError: isStudentError } = useQuery<FullStudentData>({
+    const { data: studentData, isLoading: isLoadingStudent, isError, error } = useQuery<FullStudentData>({
         queryKey: ['studentFullInfoForConvocation', user?.username],
         queryFn: () => getStudentFullInfo(user!.username!),
-        enabled: !!user?.username,
+        enabled: !!user?.username && (user.role === 'student' || isImpersonating),
+        retry: 1,
     });
 
     const { data: activeCeremony, isLoading: isLoadingCeremony } = useQuery<ConvocationCeremony | null>({
@@ -94,8 +96,8 @@ export default function ConvocationBookingPage() {
             setStep('loading');
             return;
         }
-        if (isStudentError) {
-            setErrorMessage('Could not load your student data. Please try again later.');
+        if (isError) {
+            setErrorMessage(error.message);
             setStep('error');
             return;
         }
@@ -109,8 +111,12 @@ export default function ConvocationBookingPage() {
             setStep('error');
             return;
         }
+
+        // Pre-select all eligible courses by default
+        setSelectedCourseIds(new Set(eligibleEnrollments.map(e => e.parent_course_id)));
+
         setStep('form');
-    }, [isLoadingStudent, isLoadingCeremony, isStudentError, studentData, activeCeremony, eligibleEnrollments]);
+    }, [isLoadingStudent, isLoadingCeremony, isError, studentData, activeCeremony, eligibleEnrollments, error]);
 
     const createBookingMutation = useMutation({
         mutationFn: (payload: FormData) => createConvocationRegistration(payload),
@@ -159,7 +165,7 @@ export default function ConvocationBookingPage() {
         
         createBookingMutation.mutate(formData);
     };
-
+    
     const renderContent = () => {
         switch (step) {
             case 'loading':
@@ -171,6 +177,9 @@ export default function ConvocationBookingPage() {
                         <AlertCircle className="w-12 h-12 text-destructive mb-4" />
                         <h2 className="text-xl font-semibold mb-2">Something Went Wrong</h2>
                         <p className="text-muted-foreground">{errorMessage}</p>
+                         <Button onClick={() => router.push('/dashboard')} className="mt-6">
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                        </Button>
                     </div>
                  );
             
@@ -188,12 +197,12 @@ export default function ConvocationBookingPage() {
                                 <div className="space-y-2">
                                 {eligibleEnrollments.map(e => (
                                     <div key={e.id} className="flex items-center space-x-2 p-3 border rounded-md has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                                        <Checkbox id={e.id} onCheckedChange={checked => {
+                                        <Checkbox id={e.id} checked={selectedCourseIds.has(e.parent_course_id)} onCheckedChange={checked => {
                                             const newSet = new Set(selectedCourseIds);
                                             if(checked) newSet.add(e.parent_course_id);
                                             else newSet.delete(e.parent_course_id);
                                             setSelectedCourseIds(newSet);
-                                        }} defaultChecked={true} />
+                                        }} />
                                         <Label htmlFor={e.id} className="flex-1 cursor-pointer">{e.parent_course_name}</Label>
                                     </div>
                                 ))}
@@ -317,3 +326,5 @@ export default function ConvocationBookingPage() {
         </div>
     );
 }
+
+    
