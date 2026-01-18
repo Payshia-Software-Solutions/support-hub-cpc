@@ -266,6 +266,27 @@ export default function CreateConvocationBookingPage() {
           );
       }
   };
+  
+  const filteredPackages = useMemo(() => {
+    if (!packages || selectedEnrollments.length === 0) {
+        return [];
+    }
+
+    const selectedCourseIds = new Set(selectedEnrollments.map(e => e.parent_course_id));
+
+    return packages.filter(pkg => {
+        if (!pkg.course_list) {
+            // Packages with no course list are available for all
+            return true;
+        }
+        const packageCourseIds = pkg.course_list.split(',').map(id => id.trim());
+        if (packageCourseIds.length === 0) {
+            return true;
+        }
+        return packageCourseIds.some(id => selectedCourseIds.has(id));
+    });
+  }, [packages, selectedEnrollments]);
+
 
   const selectedPackage = useMemo(() => {
       return packages?.find(p => p.package_id === selectedPackageId);
@@ -415,34 +436,46 @@ export default function CreateConvocationBookingPage() {
                    <div className="space-y-3">
                       <Label className="text-base font-semibold">Choose Your Package</Label>
                       {isLoadingPackages ? <Skeleton className="h-24 w-full" /> : (
-                          <RadioGroup value={selectedPackageId} onValueChange={setSelectedPackageId} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {packages?.map(pkg => (
-                                  <Label key={pkg.package_id} htmlFor={pkg.package_id} className="block border rounded-lg p-4 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary overflow-hidden">
-                                      <RadioGroupItem value={pkg.package_id} id={pkg.package_id} className="sr-only" />
-                                      {pkg.cover_image && (
-                                          <div className="relative aspect-video -mt-4 -mx-4 mb-4">
-                                              <Image
-                                                  src={`https://content-provider.pharmacollege.lk/content-provider/uploads/package-images/${pkg.cover_image}`}
-                                                  alt={pkg.package_name}
-                                                  layout="fill"
-                                                  objectFit="contain"
-                                                  className="bg-muted"
-                                              />
-                                          </div>
-                                      )}
-                                      <div className="flex justify-between items-start">
-                                          <h4 className="font-bold">{pkg.package_name}</h4>
-                                          <p className="font-bold text-primary">LKR {parseFloat(pkg.price).toLocaleString()}</p>
-                                      </div>
-                                      <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
-                                          {pkg.graduation_cloth === '1' && <li>Graduation Cloak</li>}
-                                          {pkg.garland === '1' && <li>Garland</li>}
-                                          <li>Student Seat: 1</li>
-                                          <li>Parent Seats: {pkg.parent_seat_count}</li>
-                                      </ul>
-                                  </Label>
-                              ))}
-                          </RadioGroup>
+                           <>
+                                {filteredPackages.length > 0 ? (
+                                  <RadioGroup value={selectedPackageId} onValueChange={setSelectedPackageId} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {filteredPackages.map(pkg => (
+                                          <Label key={pkg.package_id} htmlFor={pkg.package_id} className="block border rounded-lg p-4 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary overflow-hidden">
+                                              <RadioGroupItem value={pkg.package_id} id={pkg.package_id} className="sr-only" />
+                                              {pkg.cover_image && (
+                                                  <div className="relative aspect-video -mt-4 -mx-4 mb-4">
+                                                      <Image
+                                                          src={`https://content-provider.pharmacollege.lk//content-provider/uploads/package-images/${pkg.cover_image}`}
+                                                          alt={pkg.package_name}
+                                                          layout="fill"
+                                                          objectFit="contain"
+                                                          className="bg-muted"
+                                                      />
+                                                  </div>
+                                              )}
+                                              <div className="flex justify-between items-start">
+                                                  <h4 className="font-bold">{pkg.package_name}</h4>
+                                                  <p className="font-bold text-primary">LKR {parseFloat(pkg.price).toLocaleString()}</p>
+                                              </div>
+                                              <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
+                                                  {pkg.graduation_cloth === '1' && <li>Graduation Cloak</li>}
+                                                  {pkg.garland === '1' && <li>Garland</li>}
+                                                  <li>Student Seat: 1</li>
+                                                  <li>Parent Seats: {pkg.parent_seat_count}</li>
+                                              </ul>
+                                          </Label>
+                                      ))}
+                                  </RadioGroup>
+                                ) : (
+                                  <Alert>
+                                    <AlertTriangle className="h-4 w-4" />
+                                    <AlertTitle>No Packages Available</AlertTitle>
+                                    <AlertDescription>
+                                      There are no convocation packages available for the course(s) you selected. Please contact support for assistance.
+                                    </AlertDescription>
+                                  </Alert>
+                                )}
+                            </>
                       )}
                   </div>
                   
