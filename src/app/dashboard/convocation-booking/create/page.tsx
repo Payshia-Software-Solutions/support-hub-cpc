@@ -16,6 +16,10 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle, GraduationCap, Users } from 'lucide-react';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from '@/lib/utils';
@@ -501,15 +505,22 @@ export default function CreateConvocationBookingPage() {
                   </>
               );
 
-          case 'success':
-               return (
-                  <CardContent className="text-center p-8 flex flex-col items-center gap-4">
-                      <CheckCircle className="w-16 h-16 text-green-500" />
-                      <h2 className="text-2xl font-bold">Booking Submitted!</h2>
-                      <p className="text-muted-foreground">Your reference number is <strong className="font-mono text-primary bg-primary/10 px-2 py-1 rounded">{referenceNumber}</strong>. You will receive a confirmation email shortly.</p>
-                      <Button asChild className="mt-4"><Link href="/dashboard/convocation-booking">View Booking History</Link></Button>
-                  </CardContent>
-              );
+      case 'success':
+          return (
+            <CardContent className="text-center p-8 flex flex-col items-center gap-4">
+                <CheckCircle className="w-16 h-16 text-green-500" />
+                <h2 className="text-2xl font-bold">Booking Submitted!</h2>
+                <div className="space-y-4">
+                    <p className="text-muted-foreground">Your reference number is:</p>
+                    <div className="flex items-center justify-center gap-2">
+                        <p className="text-2xl font-bold font-mono tracking-widest text-primary p-2 border-2 border-dashed rounded-lg">{referenceNumber}</p>
+                        <Button variant="ghost" size="icon" onClick={copyToClipboard}><Copy className="h-5 w-5"/></Button>
+                    </div>
+                    <p className="text-muted-foreground">You will receive a confirmation email shortly.</p>
+                </div>
+                <Button asChild className="mt-4"><Link href="/dashboard/convocation-booking">View Booking History</Link></Button>
+            </CardContent>
+          );
 
             case 'error':
                 return (
