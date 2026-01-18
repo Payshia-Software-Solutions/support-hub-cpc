@@ -20,11 +20,16 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, PackageCheck, GraduationCap } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, PackageCheck, GraduationCap, BookOpen, Check } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandInput, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+
 
 // API and Type imports
 import { getCeremonyById, getPackagesByCeremony, createPackage, updatePackage, deletePackage } from '@/lib/actions/certificates';
-import type { ConvocationCeremony, ConvocationPackage } from '@/lib/types';
+import { getParentCourseList } from '@/lib/actions/courses';
+import type { ConvocationCeremony, ConvocationPackage, ParentCourse } from '@/lib/types';
 
 const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk/content-provider/uploads/package-images/';
 
@@ -36,11 +41,18 @@ const packageFormSchema = z.object({
     graduation_cloth: z.boolean().default(false),
     photo_package: z.boolean().default(false),
     cover_image: z.any().optional(),
+    courses: z.array(z.string()).optional(),
 });
 
 type PackageFormValues = z.infer<typeof packageFormSchema>;
 
 const PackageForm = ({ pkg, onSave, onClose, isSaving }: { pkg: ConvocationPackage | null, onSave: (data: PackageFormValues) => void, onClose: () => void, isSaving: boolean }) => {
+    const { data: parentCourses, isLoading: isLoadingCourses } = useQuery<ParentCourse[]>({
+        queryKey: ['parentCourseList'],
+        queryFn: getParentCourseList,
+        staleTime: 1000 * 60 * 15, // Cache for 15 mins
+    });
+    
     const form = useForm<PackageFormValues>({
         resolver: zodResolver(packageFormSchema),
         defaultValues: {
@@ -51,6 +63,7 @@ const PackageForm = ({ pkg, onSave, onClose, isSaving }: { pkg: ConvocationPacka
             graduation_cloth: pkg?.graduation_cloth === '1',
             photo_package: pkg?.photo_package === '1',
             cover_image: null,
+            courses: pkg?.courses ? pkg.courses.split(',').map(s => s.trim()) : [],
         },
     });
 
@@ -72,6 +85,52 @@ const PackageForm = ({ pkg, onSave, onClose, isSaving }: { pkg: ConvocationPacka
                     <Input id="parent_seat_count" type="number" {...form.register('parent_seat_count')} />
                     {form.formState.errors.parent_seat_count && <p className="text-sm text-destructive">{form.formState.errors.parent_seat_count.message}</p>}
                 </div>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="courses">Eligible Courses</Label>
+                 <Controller
+                    name="courses"
+                    control={form.control}
+                    render={({ field }) => (
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full justify-start font-normal">
+                                    <BookOpen className="mr-2 h-4 w-4" />
+                                    {field.value?.length > 0 ? `${field.value.length} course(s) selected` : "Select eligible courses"}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                <Command>
+                                    <CommandInput placeholder="Search courses..." />
+                                    <CommandList>
+                                        <CommandEmpty>No courses found.</CommandEmpty>
+                                        <CommandGroup>
+                                            {isLoadingCourses ? <div className="p-2">Loading...</div> : parentCourses?.map(course => {
+                                                const isSelected = field.value?.includes(course.id);
+                                                return (
+                                                    <CommandItem
+                                                        key={course.id}
+                                                        onSelect={() => {
+                                                            const newValue = isSelected
+                                                                ? field.value?.filter(id => id !== course.id) || []
+                                                                : [...(field.value || []), course.id];
+                                                            field.onChange(newValue);
+                                                        }}
+                                                    >
+                                                        <div className={cn("mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary", isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible")}>
+                                                            <Check className={cn("h-4 w-4")} />
+                                                        </div>
+                                                        <span>{course.course_name} ({course.course_code})</span>
+                                                    </CommandItem>
+                                                )
+                                            })}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                    )}
+                />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="cover_image">Cover Image</Label>
@@ -159,7 +218,8 @@ export default function ManagePackagesPage() {
         formData.append('graduation_cloth', data.graduation_cloth ? '1' : '0');
         formData.append('photo_package', data.photo_package ? '1' : '0');
         formData.append('is_active', '1');
-        formData.append('convocation_id', ceremonyId); // Correctly adding the convocation_id
+        formData.append('convocation_id', ceremonyId);
+        formData.append('courses', (data.courses || []).join(','));
 
         if (data.cover_image && data.cover_image.length > 0) {
             formData.append('cover_image', data.cover_image[0]);
@@ -171,7 +231,7 @@ export default function ManagePackagesPage() {
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent>
+                <DialogContent className="max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>{selectedPackage ? 'Edit' : 'Create'} Package</DialogTitle>
                         <DialogDescription>Define a package for the convocation ceremony.</DialogDescription>
