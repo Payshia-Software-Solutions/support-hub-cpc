@@ -16,10 +16,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle, GraduationCap, Users } from 'lucide-react';
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from '@/lib/utils';
@@ -46,39 +42,10 @@ const PARENT_SEAT_RATE = 500;
 
 type OrderStep = 'loading' | 'ceremony_selection' | 'course_selection' | 'form' | 'confirmation' | 'success' | 'error';
 
-interface City {
-    id: string;
-    district_id: string;
-    name_en: string;
-}
-interface District {
-    id: string;
-    name_en: string;
-}
-
-
-const getCityName = async (cityId: string): Promise<City> => {
-    if (!cityId) return { id: '', district_id: '', name_en: 'N/A' };
-    const response = await fetch(`https://qa-api.pharmacollege.lk/cities/${cityId}`);
-    if (!response.ok) {
-        throw new Error('Failed to fetch city data');
-    }
-    return response.json();
-}
-
-const getDistrictName = async (districtId: string): Promise<District> => {
-    if (!districtId) return { id: '', name_en: 'N/A' };
-    const response = await fetch(`https://qa-api.pharmacollege.lk/districts/${districtId}`);
-    if (!response.ok) {
-        throw new Error('Failed to fetch district data');
-    }
-    return response.json();
-}
 
 export default function CreateConvocationBookingPage() {
   const { user } = useAuth();
   const router = useRouter();
-
   const [step, setStep] = useState<OrderStep>('loading');
   const [selectedCeremonyId, setSelectedCeremonyId] = useState<string>('');
   const [selectedEnrollments, setSelectedEnrollments] = useState<StudentEnrollment[]>([]);
@@ -228,21 +195,25 @@ export default function CreateConvocationBookingPage() {
   };
 
   const handleConfirmAndSubmit = () => {
-      if (!studentData || !selectedCeremonyId || !selectedPackage || !paymentSlip) return;
+    if (!studentData?.studentInfo?.username || !selectedCeremonyId || !selectedPackageId || !paymentSlip || selectedEnrollments.length === 0) {
+      setErrorMessage("Missing required information. Please review your selections.");
+      setStep('error');
+      return;
+    }
 
-      const formData = new FormData();
-      formData.append('student_number', studentData.studentInfo.username);
-      formData.append('course_id', selectedEnrollments.map(e => e.parent_course_id).join(','));
-      formData.append('package_id', selectedPackageId);
-      formData.append('convocation_id', selectedCeremonyId);
-      formData.append('payment_amount', String(totalPrice));
-      formData.append('additional_seats', additionalSeats);
-      formData.append('session', selectedSession);
-      formData.append('image', paymentSlip);
-      formData.append('name_on_certificate', nameOnCertificate);
-      formData.append('telephone_1', phone);
+    const formData = new FormData();
+    formData.append('student_number', studentData.studentInfo.username);
+    formData.append('course_id', selectedEnrollments.map(e => e.parent_course_id).join(','));
+    formData.append('package_id', selectedPackageId);
+    formData.append('convocation_id', selectedCeremonyId);
+    formData.append('payment_amount', String(totalPrice));
+    formData.append('additional_seats', additionalSeats);
+    formData.append('session', selectedSession);
+    formData.append('image', paymentSlip);
+    formData.append('name_on_certificate', nameOnCertificate);
+    formData.append('telephone_1', phone);
       
-      createBookingMutation.mutate(formData);
+    createBookingMutation.mutate(formData);
   };
   
   const copyToClipboard = () => {
@@ -256,6 +227,7 @@ export default function CreateConvocationBookingPage() {
       setSelectedEnrollments(prev => 
           checked ? [...prev, enrollment] : prev.filter(e => e.id !== enrollment.id)
       );
+
       if(enrollment.certificate_eligibility) {
           setDeselectedEligible(prev => 
               !checked ? [...prev, enrollment] : prev.filter(e => e.id !== enrollment.id)
@@ -268,8 +240,8 @@ export default function CreateConvocationBookingPage() {
   }, [packages, selectedPackageId]);
 
   const totalPrice = useMemo(() => {
-    const packagePrice = selectedPackage ? Number(selectedPackage.price) : 0;
-    const numAdditionalSeats = Number(additionalSeats);
+    const packagePrice = selectedPackage ? parseFloat(selectedPackage.price) : 0;
+    const numAdditionalSeats = parseInt(additionalSeats, 10);
     const safePackagePrice = isNaN(packagePrice) ? 0 : packagePrice;
     const safeSeatPrice = isNaN(numAdditionalSeats) ? 0 : numAdditionalSeats * PARENT_SEAT_RATE;
     return safePackagePrice + safeSeatPrice;
