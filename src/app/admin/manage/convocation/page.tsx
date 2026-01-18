@@ -2,15 +2,14 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getConvocationRegistrations, getPackagesByCeremony } from '@/lib/actions/certificates';
-import { getParentCourses } from '@/lib/actions/courses';
-import { getPaymentRequests } from '@/lib/actions/payments';
-import type { ConvocationRegistration, ConvocationPackage, ParentCourse, PaymentRequest, FullStudentData, StudentEnrollment, ApiPaymentRecord } from '@/lib/types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { getConvocationRegistrations, getPackagesByCeremony, getParentCourses, getConvocationSessionCounts, updateConvocationCourses, getUserCertificatePrintStatus, generateCertificate } from '@/lib/actions/certificates';
+import { getStudentFullInfo, getStudentBalance } from '@/lib/actions/users';
+import { getPaymentRequestsByReference } from '@/lib/api';
+import type { ConvocationRegistration, ConvocationPackage, ParentCourse, PaymentRequest, FullStudentData, StudentEnrollment, ApiPaymentRecord, UserCertificatePrintStatus, GenerateCertificatePayload, StudentBalanceData } from '@/lib/types';
 import { format, isValid, parseISO } from 'date-fns';
 import Image from 'next/image';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { getStudentFullInfo } from '@/lib/actions/users';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,11 +19,29 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Search, FileText, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users } from 'lucide-react';
+import { AlertTriangle, Search, FileText, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy, Trash2, Printer } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useAuth } from '@/contexts/AuthContext';
+
 
 const ITEMS_PER_PAGE = 25;
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
@@ -50,6 +67,12 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
 }) => {
     if (!registration) return null;
 
+    const { data: paymentRequests, isLoading: isLoadingPaymentRequests } = useQuery<PaymentRequest[]>({
+        queryKey: ['convocationPaymentRequests', registration?.reference_number],
+        queryFn: () => getPaymentRequestsByReference(registration!.reference_number),
+        enabled: !!registration?.reference_number,
+    });
+
     const getCourseNames = (courseIds: string) => {
         if (!courses) return 'Loading...';
         return courseIds.split(',').map(id => {
@@ -62,8 +85,6 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
         if (!packages) return 'Loading...';
         return packages.find(p => p.package_id === packageId)?.package_name || 'Unknown Package';
     };
-
-    const paymentRecordsArray = studentData ? Object.values(studentData.studentBalance.paymentRecords).sort((a, b) => new Date(b.paid_date).getTime() - new Date(a.paid_date).getTime()) : [];
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -101,32 +122,39 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
                             </Card>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                                 <Card>
-                                    <CardHeader><CardTitle>Payment Details</CardTitle></CardHeader>
+                                    <CardHeader><CardTitle>Student Account Balance</CardTitle></CardHeader>
                                     <CardContent className="space-y-2">
                                         <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Due:</span> <span className="font-semibold">LKR {studentData.studentBalance.TotalRegistrationFee.toLocaleString()}</span></div>
                                         <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Payments:</span> <span className="font-semibold text-green-600">LKR {studentData.studentBalance.totalPaymentAmount.toLocaleString()}</span></div>
                                         <div className="flex justify-between text-lg font-bold"><span className="text-muted-foreground">Balance:</span> <span className={cn(studentData.studentBalance.studentBalance > 0 ? 'text-destructive' : 'text-green-600')}>LKR {studentData.studentBalance.studentBalance.toLocaleString()}</span></div>
-                                        <div className="pt-4">
-                                            <a href={`${CONTENT_PROVIDER_URL}${registration.image_path}`} target="_blank" rel="noopener noreferrer">
-                                                <Button className="w-full" variant="outline">View Main Payment Slip</Button>
-                                            </a>
-                                        </div>
                                     </CardContent>
                                 </Card>
                                 <Card>
-                                    <CardHeader><CardTitle>Payment Transactions</CardTitle></CardHeader>
+                                    <CardHeader><CardTitle>Convocation Payment Request</CardTitle></CardHeader>
                                     <CardContent>
-                                        <div className="space-y-2">
-                                            {paymentRecordsArray.length > 0 ? paymentRecordsArray.map(rec => (
-                                                <div key={rec.id} className="text-xs p-2 border rounded-md flex justify-between items-center">
-                                                    <div>
-                                                        <p className="font-semibold">{rec.receipt_number}</p>
-                                                        <p>{rec.course_code} - {rec.paid_date}</p>
+                                        {isLoadingPaymentRequests ? <Skeleton className="h-16 w-full" /> : (
+                                            paymentRequests && paymentRequests.length > 0 ? (
+                                                paymentRequests.map(req => (
+                                                    <div key={req.id} className="text-sm p-3 border rounded-md flex justify-between items-center">
+                                                        <div>
+                                                            <p><strong>Ref:</strong> {req.payment_reference || `Req #${req.id}`}</p>
+                                                            <p><strong>Date:</strong> {format(new Date(req.paid_date), 'PP')}</p>
+                                                            <p className="font-bold text-lg mt-1">LKR {parseFloat(req.paid_amount).toLocaleString()}</p>
+                                                        </div>
+                                                        <div className="text-right flex flex-col items-end gap-2">
+                                                            <Badge className={cn(
+                                                                req.payment_status === 'Approved' && 'bg-green-600',
+                                                                req.payment_status === 'Pending' && 'bg-yellow-500 text-yellow-900',
+                                                                req.payment_status === 'Rejected' && 'bg-destructive'
+                                                            )}>{req.payment_status}</Badge>
+                                                            <ViewSlipDialog slipPath={req.slip_path} studentName={registration.name_on_certificate} trigger={<Button variant="outline" size="sm">View Slip</Button>} />
+                                                        </div>
                                                     </div>
-                                                    <p className="font-bold">LKR {parseFloat(rec.paid_amount).toLocaleString()}</p>
-                                                </div>
-                                            )) : <p className="text-sm text-center text-muted-foreground">No transaction history.</p>}
-                                        </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-sm text-center text-muted-foreground">No specific payment record found for this booking.</p>
+                                            )
+                                        )}
                                     </CardContent>
                                 </Card>
                             </div>
@@ -216,10 +244,10 @@ export default function ConvocationListPage() {
     
     const { data: paymentRequests, isLoading: isLoadingPayments } = useQuery<PaymentRequest[]>({
         queryKey: ['allPaymentRequests'],
-        queryFn: getPaymentRequests,
+        queryFn: () => getPaymentRequests(),
     });
 
-    const { data: studentData, isLoading: isLoadingStudentData, isError: isErrorStudentData, error: studentDataError } = useQuery<FullStudentData>({
+    const { data: studentData, isLoading: isLoadingStudentData, isError: isErrorStudentData, error: studentDataError } = useQuery({
         queryKey: ['studentFullInfoForConvocationDetail', viewingDetails?.student_number],
         queryFn: () => getStudentFullInfo(viewingDetails!.student_number),
         enabled: !!viewingDetails,
@@ -570,3 +598,5 @@ export default function ConvocationListPage() {
         </div>
     );
 }
+
+    
