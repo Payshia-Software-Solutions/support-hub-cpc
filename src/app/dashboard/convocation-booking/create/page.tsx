@@ -47,6 +47,34 @@ const PARENT_SEAT_RATE = 750;
 
 type OrderStep = 'loading' | 'ceremony_selection' | 'course_selection' | 'form' | 'confirmation' | 'success' | 'error';
 
+interface City {
+    id: string;
+    district_id: string;
+    name_en: string;
+}
+interface District {
+    id: string;
+    name_en: string;
+}
+
+
+const getCityName = async (cityId: string): Promise<City> => {
+    if (!cityId) return { id: '', district_id: '', name_en: 'N/A' };
+    const response = await fetch(`https://qa-api.pharmacollege.lk/cities/${cityId}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch city data');
+    }
+    return response.json();
+}
+
+const getDistrictName = async (districtId: string): Promise<District> => {
+    if (!districtId) return { id: '', name_en: 'N/A' };
+    const response = await fetch(`https://qa-api.pharmacollege.lk/districts/${districtId}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch district data');
+    }
+    return response.json();
+}
 
 export default function CreateConvocationBookingPage() {
   const { user } = useAuth();
