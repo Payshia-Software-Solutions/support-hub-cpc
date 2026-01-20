@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle, GraduationCap, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle, GraduationCap, Users, Video, FileText, Camera, Coffee, Sparkles, ScrollText, Star, User as UserIcon } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -457,12 +457,22 @@ export default function CreateConvocationBookingPage() {
                                                   <h4 className="font-bold">{pkg.package_name}</h4>
                                                   <p className="font-bold text-primary">LKR {parseFloat(pkg.price).toLocaleString()}</p>
                                               </div>
-                                              <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
-                                                  {pkg.graduation_cloth === '1' && <li>Graduation Cloak</li>}
-                                                  {pkg.garland === '1' && <li>Garland</li>}
-                                                  <li>Student Seat: 1</li>
-                                                  <li>Parent Seats: {pkg.parent_seat_count}</li>
-                                              </ul>
+                                                <div className="mt-4 space-y-2 text-sm">
+                                                    {pkg.description && <p className="text-muted-foreground">{pkg.description}</p>}
+                                                    <h5 className="font-semibold pt-2 border-t">What's Included:</h5>
+                                                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-muted-foreground">
+                                                        {pkg.student_seat === '1' && <li className="flex items-center gap-2"><UserIcon className="w-4 h-4 text-primary"/> Student Seat</li>}
+                                                        {parseInt(pkg.parent_seat_count, 10) > 0 && <li className="flex items-center gap-2"><Users className="w-4 h-4 text-primary"/> {pkg.parent_seat_count} Parent Seat(s)</li>}
+                                                        {parseInt(pkg.vip_seat, 10) > 0 && <li className="flex items-center gap-2"><Star className="w-4 h-4 text-primary"/> {pkg.vip_seat} VIP Seat(s)</li>}
+                                                        {pkg.graduation_cloth === '1' && <li className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-primary"/> Graduation Cloak</li>}
+                                                        {pkg.garland === '1' && <li className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary"/> Garland</li>}
+                                                        {pkg.scroll === '1' && <li className="flex items-center gap-2"><ScrollText className="w-4 h-4 text-primary"/> Scroll</li>}
+                                                        {pkg.certificate_file === '1' && <li className="flex items-center gap-2"><FileText className="w-4 h-4 text-primary"/> Certificate File</li>}
+                                                        {pkg.photo_package === '1' && <li className="flex items-center gap-2"><Camera className="w-4 h-4 text-primary"/> Photo Package</li>}
+                                                        {pkg.video_360 === '1' && <li className="flex items-center gap-2"><Video className="w-4 h-4 text-primary"/> 360 Video</li>}
+                                                        {pkg.refreshments === '1' && <li className="flex items-center gap-2"><Coffee className="w-4 h-4 text-primary"/> Refreshments</li>}
+                                                    </ul>
+                                                </div>
                                           </Label>
                                       ))}
                                   </RadioGroup>
@@ -720,4 +730,3 @@ export default function CreateConvocationBookingPage() {
       </div>
   );
 }
-
