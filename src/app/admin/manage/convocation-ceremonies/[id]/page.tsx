@@ -83,7 +83,7 @@ const PackageForm = ({ pkg, onSave, onClose, isSaving }: { pkg: ConvocationPacka
     });
 
     return (
-        <form onSubmit={form.handleSubmit(onSave)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSave)} className="space-y-4 max-h-[70vh] overflow-y-auto p-1 pr-4">
              <div className="space-y-2">
                 <Label htmlFor="package_name">Package Name</Label>
                 <Input id="package_name" {...form.register('package_name')} />
@@ -178,7 +178,7 @@ const PackageForm = ({ pkg, onSave, onClose, isSaving }: { pkg: ConvocationPacka
                     <div className="flex items-center space-x-2"><Switch id="refreshments" checked={form.watch('refreshments')} onCheckedChange={(c) => form.setValue('refreshments', c)} /><Label htmlFor="refreshments">Refreshments</Label></div>
                 </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="sticky bottom-0 bg-background pt-4">
                 <DialogClose asChild><Button variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
                 <Button type="submit" disabled={isSaving}>
                      {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -364,3 +364,5 @@ export default function ManagePackagesPage() {
         </div>
     );
 }
+
+    
