@@ -20,10 +20,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, PackageCheck, GraduationCap, BookOpen, Check } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, PackageCheck, GraduationCap, BookOpen, Check, ScrollText, Sparkles, Camera, Coffee } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandInput, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
 
 
 // API and Type imports
@@ -35,11 +36,18 @@ const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk/content-
 
 const packageFormSchema = z.object({
     package_name: z.string().min(3, "Package name is required."),
+    description: z.string().optional(),
     price: z.coerce.number().min(0, "Price must be a positive number."),
-    parent_seat_count: z.coerce.number().int().min(0, "Seat count cannot be negative."),
+    parent_seat_count: z.coerce.number().int().min(0, "Parent seat count cannot be negative."),
+    vip_seat: z.coerce.number().int().min(0, "VIP seat count cannot be negative.").optional(),
+    student_seat: z.boolean().default(true),
     garland: z.boolean().default(false),
     graduation_cloth: z.boolean().default(false),
     photo_package: z.boolean().default(false),
+    scroll: z.boolean().default(false),
+    certificate_file: z.boolean().default(false),
+    video_360: z.boolean().default(false),
+    refreshments: z.boolean().default(false),
     cover_image: z.any().optional(),
     courses: z.array(z.string()).optional(),
 });
@@ -57,11 +65,18 @@ const PackageForm = ({ pkg, onSave, onClose, isSaving }: { pkg: ConvocationPacka
         resolver: zodResolver(packageFormSchema),
         defaultValues: {
             package_name: pkg?.package_name || '',
+            description: pkg?.description || '',
             price: pkg ? parseFloat(pkg.price) : 0,
             parent_seat_count: pkg ? parseInt(pkg.parent_seat_count, 10) : 0,
+            vip_seat: pkg ? parseInt(pkg.vip_seat, 10) : 0,
+            student_seat: pkg ? pkg.student_seat === '1' : true,
             garland: pkg?.garland === '1',
             graduation_cloth: pkg?.graduation_cloth === '1',
             photo_package: pkg?.photo_package === '1',
+            scroll: pkg?.scroll === '1',
+            certificate_file: pkg?.certificate_file === '1',
+            video_360: pkg?.video_360 === '1',
+            refreshments: pkg?.refreshments === '1',
             cover_image: null,
             courses: pkg?.course_list ? pkg.course_list.split(',').map(s => s.trim()) : [],
         },
@@ -74,7 +89,11 @@ const PackageForm = ({ pkg, onSave, onClose, isSaving }: { pkg: ConvocationPacka
                 <Input id="package_name" {...form.register('package_name')} />
                 {form.formState.errors.package_name && <p className="text-sm text-destructive">{form.formState.errors.package_name.message}</p>}
             </div>
-             <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea id="description" {...form.register('description')} rows={3}/>
+            </div>
+             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="price">Price (LKR)</Label>
                     <Input id="price" type="number" {...form.register('price')} />
@@ -84,6 +103,11 @@ const PackageForm = ({ pkg, onSave, onClose, isSaving }: { pkg: ConvocationPacka
                     <Label htmlFor="parent_seat_count">Parent Seats</Label>
                     <Input id="parent_seat_count" type="number" {...form.register('parent_seat_count')} />
                     {form.formState.errors.parent_seat_count && <p className="text-sm text-destructive">{form.formState.errors.parent_seat_count.message}</p>}
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="vip_seat">VIP Seats</Label>
+                    <Input id="vip_seat" type="number" {...form.register('vip_seat')} />
+                    {form.formState.errors.vip_seat && <p className="text-sm text-destructive">{form.formState.errors.vip_seat.message}</p>}
                 </div>
             </div>
              <div className="space-y-2">
@@ -142,9 +166,17 @@ const PackageForm = ({ pkg, onSave, onClose, isSaving }: { pkg: ConvocationPacka
                 )}
             </div>
             <div className="space-y-3 pt-4">
-                <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm"><Label htmlFor="garland">Garland Included</Label><Switch id="garland" checked={form.watch('garland')} onCheckedChange={(checked) => form.setValue('garland', checked)} /></div>
-                <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm"><Label htmlFor="graduation_cloth">Graduation Cloth Included</Label><Switch id="graduation_cloth" checked={form.watch('graduation_cloth')} onCheckedChange={(checked) => form.setValue('graduation_cloth', checked)} /></div>
-                <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm"><Label htmlFor="photo_package">Photo Package Included</Label><Switch id="photo_package" checked={form.watch('photo_package')} onCheckedChange={(checked) => form.setValue('photo_package', checked)} /></div>
+                <h4 className="font-medium text-sm">Package Inclusions</h4>
+                <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
+                    <div className="flex items-center space-x-2"><Switch id="student_seat" checked={form.watch('student_seat')} onCheckedChange={(c) => form.setValue('student_seat', c)} /><Label htmlFor="student_seat">Student Seat</Label></div>
+                    <div className="flex items-center space-x-2"><Switch id="graduation_cloth" checked={form.watch('graduation_cloth')} onCheckedChange={(c) => form.setValue('graduation_cloth', c)} /><Label htmlFor="graduation_cloth">Graduation Cloak</Label></div>
+                    <div className="flex items-center space-x-2"><Switch id="garland" checked={form.watch('garland')} onCheckedChange={(c) => form.setValue('garland', c)} /><Label htmlFor="garland">Garland</Label></div>
+                    <div className="flex items-center space-x-2"><Switch id="scroll" checked={form.watch('scroll')} onCheckedChange={(c) => form.setValue('scroll', c)} /><Label htmlFor="scroll">Scroll</Label></div>
+                    <div className="flex items-center space-x-2"><Switch id="certificate_file" checked={form.watch('certificate_file')} onCheckedChange={(c) => form.setValue('certificate_file', c)} /><Label htmlFor="certificate_file">Certificate File</Label></div>
+                    <div className="flex items-center space-x-2"><Switch id="photo_package" checked={form.watch('photo_package')} onCheckedChange={(c) => form.setValue('photo_package', c)} /><Label htmlFor="photo_package">Photo Package</Label></div>
+                    <div className="flex items-center space-x-2"><Switch id="video_360" checked={form.watch('video_360')} onCheckedChange={(c) => form.setValue('video_360', c)} /><Label htmlFor="video_360">360 Video</Label></div>
+                    <div className="flex items-center space-x-2"><Switch id="refreshments" checked={form.watch('refreshments')} onCheckedChange={(c) => form.setValue('refreshments', c)} /><Label htmlFor="refreshments">Refreshments</Label></div>
+                </div>
             </div>
             <DialogFooter>
                 <DialogClose asChild><Button variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
@@ -212,11 +244,18 @@ export default function ManagePackagesPage() {
     const handleSave = (data: PackageFormValues) => {
         const formData = new FormData();
         formData.append('package_name', data.package_name);
+        formData.append('description', data.description || '');
         formData.append('price', String(data.price));
         formData.append('parent_seat_count', String(data.parent_seat_count));
+        formData.append('vip_seat', String(data.vip_seat || 0));
+        formData.append('student_seat', data.student_seat ? '1' : '0');
         formData.append('garland', data.garland ? '1' : '0');
         formData.append('graduation_cloth', data.graduation_cloth ? '1' : '0');
         formData.append('photo_package', data.photo_package ? '1' : '0');
+        formData.append('scroll', data.scroll ? '1' : '0');
+        formData.append('certificate_file', data.certificate_file ? '1' : '0');
+        formData.append('video_360', data.video_360 ? '1' : '0');
+        formData.append('refreshments', data.refreshments ? '1' : '0');
         formData.append('is_active', '1');
         formData.append('convocation_id', ceremonyId);
         formData.append('course_list', (data.courses || []).join(','));
@@ -269,7 +308,16 @@ export default function ManagePackagesPage() {
                     {isLoadingPackages ? <Skeleton className="h-48 w-full" /> : (
                         <div className="relative w-full overflow-auto border rounded-lg">
                              <Table>
-                                <TableHeader><TableRow><TableHead>Image</TableHead><TableHead>Package Name</TableHead><TableHead>Price</TableHead><TableHead>Seats</TableHead><TableHead className="text-center">Includes</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Image</TableHead>
+                                        <TableHead>Package Info</TableHead>
+                                        <TableHead>Price</TableHead>
+                                        <TableHead>Seats</TableHead>
+                                        <TableHead className="text-center">Includes</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
                                 <TableBody>
                                     {packages && packages.length > 0 ? packages.map(pkg => (
                                         <TableRow key={pkg.package_id}>
@@ -284,14 +332,19 @@ export default function ManagePackagesPage() {
                                                     </div>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="font-medium">{pkg.package_name}</TableCell>
+                                            <TableCell>
+                                                <p className="font-medium">{pkg.package_name}</p>
+                                                <p className="text-xs text-muted-foreground line-clamp-2">{pkg.description}</p>
+                                            </TableCell>
                                             <TableCell>LKR {parseFloat(pkg.price).toFixed(2)}</TableCell>
-                                            <TableCell>{pkg.parent_seat_count}</TableCell>
-                                            <TableCell className="text-center">
+                                            <TableCell>{pkg.parent_seat_count}P + {pkg.vip_seat}V</TableCell>
+                                            <TableCell>
                                                 <div className="flex justify-center gap-2">
-                                                    {pkg.garland === '1' && <PackageCheck className="h-5 w-5 text-green-500" title="Garland" />}
-                                                    {pkg.graduation_cloth === '1' && <GraduationCap className="h-5 w-5 text-blue-500" title="Graduation Cloth"/>}
-                                                    {pkg.photo_package === '1' && <PackageCheck className="h-5 w-5 text-purple-500" title="Photo Package"/>}
+                                                    {pkg.graduation_cloth === '1' && <GraduationCap className="h-5 w-5 text-blue-500" title="Graduation Cloak"/>}
+                                                    {pkg.garland === '1' && <Sparkles className="h-5 w-5 text-pink-500" title="Garland" />}
+                                                    {pkg.scroll === '1' && <ScrollText className="h-5 w-5 text-amber-600" title="Scroll"/>}
+                                                    {pkg.photo_package === '1' && <Camera className="h-5 w-5 text-purple-500" title="Photo Package"/>}
+                                                    {pkg.refreshments === '1' && <Coffee className="h-5 w-5 text-orange-500" title="Refreshments"/>}
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right space-x-1">
