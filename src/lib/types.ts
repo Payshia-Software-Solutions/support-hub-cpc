@@ -1021,3 +1021,6 @@ export interface PrescriptionSubmissionPayload {
   patient_description: string;
   address: string;
 }
+
+
+    
