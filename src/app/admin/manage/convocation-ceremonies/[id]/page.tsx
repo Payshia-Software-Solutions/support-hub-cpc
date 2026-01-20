@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, PackageCheck, GraduationCap, BookOpen, Check, ScrollText, Sparkles, Camera, Coffee } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, PackageCheck, GraduationCap, BookOpen, Check, ScrollText, Sparkles, Camera, Coffee, Award } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandInput, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
@@ -173,7 +173,7 @@ const PackageForm = ({ pkg, onSave, onClose, isSaving }: { pkg: ConvocationPacka
                     <div className="flex items-center space-x-2"><Switch id="garland" checked={form.watch('garland')} onCheckedChange={(c) => form.setValue('garland', c)} /><Label htmlFor="garland">Garland</Label></div>
                     <div className="flex items-center space-x-2"><Switch id="scroll" checked={form.watch('scroll')} onCheckedChange={(c) => form.setValue('scroll', c)} /><Label htmlFor="scroll">Scroll</Label></div>
                     <div className="flex items-center space-x-2"><Switch id="certificate_file" checked={form.watch('certificate_file')} onCheckedChange={(c) => form.setValue('certificate_file', c)} /><Label htmlFor="certificate_file">Certificate File</Label></div>
-                    <div className="flex items-center space-x-2"><Switch id="photo_package" checked={form.watch('photo_package')} onCheckedChange={(c) => form.setValue('photo_package', c)} /><Label htmlFor="photo_package">Photo Package</Label></div>
+                    <div className="flex items-center space-x-2"><Switch id="photo_package" checked={form.watch('photo_package')} onCheckedChange={(c) => form.setValue('photo_package', c)} /><Label htmlFor="photo_package">Graduation Hat</Label></div>
                     <div className="flex items-center space-x-2"><Switch id="video_360" checked={form.watch('video_360')} onCheckedChange={(c) => form.setValue('video_360', c)} /><Label htmlFor="video_360">360 Video</Label></div>
                     <div className="flex items-center space-x-2"><Switch id="refreshments" checked={form.watch('refreshments')} onCheckedChange={(c) => form.setValue('refreshments', c)} /><Label htmlFor="refreshments">Refreshments</Label></div>
                 </div>
@@ -340,10 +340,10 @@ export default function ManagePackagesPage() {
                                             <TableCell>{pkg.parent_seat_count}P + {pkg.vip_seat}V</TableCell>
                                             <TableCell>
                                                 <div className="flex justify-center gap-2">
-                                                    {pkg.graduation_cloth === '1' && <GraduationCap className="h-5 w-5 text-blue-500" title="Graduation Cloak"/>}
+                                                    {pkg.graduation_cloth === '1' && <Award className="h-5 w-5 text-blue-500" title="Graduation Cloak"/>}
                                                     {pkg.garland === '1' && <Sparkles className="h-5 w-5 text-pink-500" title="Garland" />}
                                                     {pkg.scroll === '1' && <ScrollText className="h-5 w-5 text-amber-600" title="Scroll"/>}
-                                                    {pkg.photo_package === '1' && <Camera className="h-5 w-5 text-purple-500" title="Photo Package"/>}
+                                                    {pkg.photo_package === '1' && <GraduationCap className="h-5 w-5 text-purple-500" title="Graduation Hat"/>}
                                                     {pkg.refreshments === '1' && <Coffee className="h-5 w-5 text-orange-500" title="Refreshments"/>}
                                                 </div>
                                             </TableCell>
@@ -364,6 +364,8 @@ export default function ManagePackagesPage() {
         </div>
     );
 }
+
+    
 
     
 

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -492,11 +491,11 @@ export default function CreateConvocationBookingPage() {
                                                         {pkg.student_seat === '1' && <li className="flex items-center gap-2"><UserIcon className="w-4 h-4 text-primary"/> Student Seat</li>}
                                                         {parseInt(pkg.parent_seat_count, 10) > 0 && <li className="flex items-center gap-2"><Users className="w-4 h-4 text-primary"/> {pkg.parent_seat_count} Parent Seat(s)</li>}
                                                         {parseInt(pkg.vip_seat, 10) > 0 && <li className="flex items-center gap-2"><Star className="w-4 h-4 text-primary"/> {pkg.vip_seat} VIP Seat(s)</li>}
-                                                        {pkg.graduation_cloth === '1' && <li className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-primary"/> Graduation Cloak</li>}
+                                                        {pkg.graduation_cloth === '1' && <li className="flex items-center gap-2"><Award className="w-4 h-4 text-primary"/> Graduation Cloak</li>}
                                                         {pkg.garland === '1' && <li className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary"/> Garland</li>}
                                                         {pkg.scroll === '1' && <li className="flex items-center gap-2"><ScrollText className="w-4 h-4 text-primary"/> Scroll</li>}
                                                         {pkg.certificate_file === '1' && <li className="flex items-center gap-2"><FileText className="w-4 h-4 text-primary"/> Certificate File</li>}
-                                                        {pkg.photo_package === '1' && <li className="flex items-center gap-2"><Camera className="w-4 h-4 text-primary"/> Photo Package</li>}
+                                                        {pkg.photo_package === '1' && <li className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-primary"/> Graduation Hat</li>}
                                                         {pkg.video_360 === '1' && <li className="flex items-center gap-2"><Video className="w-4 h-4 text-primary"/> 360 Video</li>}
                                                         {pkg.refreshments === '1' && <li className="flex items-center gap-2"><Coffee className="w-4 h-4 text-primary"/> Refreshments</li>}
                                                     </ul>
@@ -758,3 +757,5 @@ export default function CreateConvocationBookingPage() {
       </div>
   );
 }
+
+    
