@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle, GraduationCap, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle, GraduationCap, Users, Video, FileText, Camera, Coffee, Sparkles, ScrollText, Star, User as UserIcon } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -43,10 +43,38 @@ import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
-const PARENT_SEAT_RATE = 500; 
+const PARENT_SEAT_RATE = 750; 
 
 type OrderStep = 'loading' | 'ceremony_selection' | 'course_selection' | 'form' | 'confirmation' | 'success' | 'error';
 
+interface City {
+    id: string;
+    district_id: string;
+    name_en: string;
+}
+interface District {
+    id: string;
+    name_en: string;
+}
+
+
+const getCityName = async (cityId: string): Promise<City> => {
+    if (!cityId) return { id: '', district_id: '', name_en: 'N/A' };
+    const response = await fetch(`https://qa-api.pharmacollege.lk/cities/${cityId}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch city data');
+    }
+    return response.json();
+}
+
+const getDistrictName = async (districtId: string): Promise<District> => {
+    if (!districtId) return { id: '', name_en: 'N/A' };
+    const response = await fetch(`https://qa-api.pharmacollege.lk/districts/${districtId}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch district data');
+    }
+    return response.json();
+}
 
 export default function CreateConvocationBookingPage() {
   const { user } = useAuth();
@@ -266,6 +294,27 @@ export default function CreateConvocationBookingPage() {
           );
       }
   };
+  
+  const filteredPackages = useMemo(() => {
+    if (!packages || selectedEnrollments.length === 0) {
+        return [];
+    }
+
+    const selectedCourseIds = new Set(selectedEnrollments.map(e => e.parent_course_id));
+
+    return packages.filter(pkg => {
+        if (!pkg.course_list) {
+            // Packages with no course list are available for all
+            return true;
+        }
+        const packageCourseIds = pkg.course_list.split(',').map(id => id.trim());
+        if (packageCourseIds.length === 0) {
+            return true;
+        }
+        return packageCourseIds.some(id => selectedCourseIds.has(id));
+    });
+  }, [packages, selectedEnrollments]);
+
 
   const selectedPackage = useMemo(() => {
       return packages?.find(p => p.package_id === selectedPackageId);
@@ -415,34 +464,56 @@ export default function CreateConvocationBookingPage() {
                    <div className="space-y-3">
                       <Label className="text-base font-semibold">Choose Your Package</Label>
                       {isLoadingPackages ? <Skeleton className="h-24 w-full" /> : (
-                          <RadioGroup value={selectedPackageId} onValueChange={setSelectedPackageId} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {packages?.map(pkg => (
-                                  <Label key={pkg.package_id} htmlFor={pkg.package_id} className="block border rounded-lg p-4 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary overflow-hidden">
-                                      <RadioGroupItem value={pkg.package_id} id={pkg.package_id} className="sr-only" />
-                                      {pkg.cover_image && (
-                                          <div className="relative aspect-video -mt-4 -mx-4 mb-4">
-                                              <Image
-                                                  src={`https://content-provider.pharmacollege.lk/content-provider/uploads/package-images/${pkg.cover_image}`}
-                                                  alt={pkg.package_name}
-                                                  layout="fill"
-                                                  objectFit="contain"
-                                                  className="bg-muted"
-                                              />
-                                          </div>
-                                      )}
-                                      <div className="flex justify-between items-start">
-                                          <h4 className="font-bold">{pkg.package_name}</h4>
-                                          <p className="font-bold text-primary">LKR {parseFloat(pkg.price).toLocaleString()}</p>
-                                      </div>
-                                      <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
-                                          {pkg.graduation_cloth === '1' && <li>Graduation Cloak</li>}
-                                          {pkg.garland === '1' && <li>Garland</li>}
-                                          <li>Student Seat: 1</li>
-                                          <li>Parent Seats: {pkg.parent_seat_count}</li>
-                                      </ul>
-                                  </Label>
-                              ))}
-                          </RadioGroup>
+                           <>
+                                {filteredPackages.length > 0 ? (
+                                  <RadioGroup value={selectedPackageId} onValueChange={setSelectedPackageId} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {filteredPackages.map(pkg => (
+                                          <Label key={pkg.package_id} htmlFor={pkg.package_id} className="block border rounded-lg p-4 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary overflow-hidden">
+                                              <RadioGroupItem value={pkg.package_id} id={pkg.package_id} className="sr-only" />
+                                              {pkg.cover_image && (
+                                                  <div className="relative aspect-video -mt-4 -mx-4 mb-4">
+                                                      <Image
+                                                          src={`https://content-provider.pharmacollege.lk//content-provider/uploads/package-images/${pkg.cover_image}`}
+                                                          alt={pkg.package_name}
+                                                          layout="fill"
+                                                          objectFit="contain"
+                                                          className="bg-muted"
+                                                      />
+                                                  </div>
+                                              )}
+                                              <div className="flex justify-between items-start">
+                                                  <h4 className="font-bold">{pkg.package_name}</h4>
+                                                  <p className="font-bold text-primary">LKR {parseFloat(pkg.price).toLocaleString()}</p>
+                                              </div>
+                                                <div className="mt-4 space-y-2 text-sm">
+                                                    {pkg.description && <p className="text-muted-foreground">{pkg.description}</p>}
+                                                    <h5 className="font-semibold pt-2 border-t">What's Included:</h5>
+                                                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-muted-foreground">
+                                                        {pkg.student_seat === '1' && <li className="flex items-center gap-2"><UserIcon className="w-4 h-4 text-primary"/> Student Seat</li>}
+                                                        {parseInt(pkg.parent_seat_count, 10) > 0 && <li className="flex items-center gap-2"><Users className="w-4 h-4 text-primary"/> {pkg.parent_seat_count} Parent Seat(s)</li>}
+                                                        {parseInt(pkg.vip_seat, 10) > 0 && <li className="flex items-center gap-2"><Star className="w-4 h-4 text-primary"/> {pkg.vip_seat} VIP Seat(s)</li>}
+                                                        {pkg.graduation_cloth === '1' && <li className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-primary"/> Graduation Cloak</li>}
+                                                        {pkg.garland === '1' && <li className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary"/> Garland</li>}
+                                                        {pkg.scroll === '1' && <li className="flex items-center gap-2"><ScrollText className="w-4 h-4 text-primary"/> Scroll</li>}
+                                                        {pkg.certificate_file === '1' && <li className="flex items-center gap-2"><FileText className="w-4 h-4 text-primary"/> Certificate File</li>}
+                                                        {pkg.photo_package === '1' && <li className="flex items-center gap-2"><Camera className="w-4 h-4 text-primary"/> Photo Package</li>}
+                                                        {pkg.video_360 === '1' && <li className="flex items-center gap-2"><Video className="w-4 h-4 text-primary"/> 360 Video</li>}
+                                                        {pkg.refreshments === '1' && <li className="flex items-center gap-2"><Coffee className="w-4 h-4 text-primary"/> Refreshments</li>}
+                                                    </ul>
+                                                </div>
+                                          </Label>
+                                      ))}
+                                  </RadioGroup>
+                                ) : (
+                                  <Alert>
+                                    <AlertTriangle className="h-4 w-4" />
+                                    <AlertTitle>No Packages Available</AlertTitle>
+                                    <AlertDescription>
+                                      There are no convocation packages available for the course(s) you selected. Please contact support for assistance.
+                                    </AlertDescription>
+                                  </Alert>
+                                )}
+                            </>
                       )}
                   </div>
                   
@@ -493,19 +564,52 @@ export default function CreateConvocationBookingPage() {
                                 )}
                             </div>
                             <div className="space-y-3">
-                                <Label htmlFor="additional-seats" className="text-base font-semibold flex items-center gap-2"><Users className="w-5 h-5"/>Additional Parent Seats</Label>
-                                <Select value={additionalSeats} onValueChange={setAdditionalSeats}>
-                                    <SelectTrigger id="additional-seats">
-                                        <SelectValue placeholder="Select number of seats" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="0">0</SelectItem>
-                                        <SelectItem value="1">1</SelectItem>
-                                        <SelectItem value="2">2</SelectItem>
-                                        <SelectItem value="3">3</SelectItem>
-                                        <SelectItem value="4">4</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Label className="text-base font-semibold flex items-center gap-2"><Users className="w-5 h-5"/>Additional Parent Seats</Label>
+                                <RadioGroup
+                                    value={additionalSeats}
+                                    onValueChange={setAdditionalSeats}
+                                    className="flex gap-2"
+                                >
+                                    <div className="flex items-center">
+                                        <RadioGroupItem value="0" id="seats-0" className="sr-only" />
+                                        <Label
+                                            htmlFor="seats-0"
+                                            className={cn(
+                                                "flex w-20 h-20 flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                                additionalSeats === '0' && "border-primary"
+                                            )}
+                                        >
+                                            <span className="text-2xl font-bold">0</span>
+                                            <span className="text-xs">Seats</span>
+                                        </Label>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <RadioGroupItem value="1" id="seats-1" className="sr-only" />
+                                        <Label
+                                            htmlFor="seats-1"
+                                            className={cn(
+                                                "flex w-20 h-20 flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                                additionalSeats === '1' && "border-primary"
+                                            )}
+                                        >
+                                            <span className="text-2xl font-bold">1</span>
+                                            <span className="text-xs">Seat</span>
+                                        </Label>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <RadioGroupItem value="2" id="seats-2" className="sr-only" />
+                                        <Label
+                                            htmlFor="seats-2"
+                                            className={cn(
+                                                "flex w-20 h-20 flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                                additionalSeats === '2' && "border-primary"
+                                            )}
+                                        >
+                                            <span className="text-2xl font-bold">2</span>
+                                            <span className="text-xs">Seats</span>
+                                        </Label>
+                                    </div>
+                                </RadioGroup>
                                 <p className="text-xs text-muted-foreground">Each additional seat costs LKR {PARENT_SEAT_RATE}.</p>
                             </div>
                         </div>

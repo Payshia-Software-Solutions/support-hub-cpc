@@ -1,7 +1,3 @@
-
-
-
-
 import type { BnfChapter, BnfPage } from './bnf-data';
 
 export interface ApiStaffMember {
@@ -217,6 +213,8 @@ export interface ConvocationRegistration {
     certificate_id: string;
     advanced_id: string;
     convocation_id: string;
+    name_on_certificate: string;
+    telephone_1?: string;
 }
 
 export interface CertificateOrder {
@@ -794,15 +792,22 @@ export interface ConvocationCeremony {
 export interface ConvocationPackage {
     package_id: string;
     package_name: string;
+    description: string | null;
     price: string;
     parent_seat_count: string;
+    student_seat: '0' | '1';
+    vip_seat: string;
     garland: '0' | '1';
+    scroll: '0' | '1';
     graduation_cloth: '0' | '1';
+    certificate_file: '0' | '1';
     photo_package: '0' | '1';
+    video_360: '0' | '1';
+    refreshments: '0' | '1';
     is_active: '0' | '1';
     created_at: string;
     updated_at: string;
-    courses: string;
+    course_list: string;
     cover_image: string;
     convocation_id: string;
 }
@@ -1016,3 +1021,6 @@ export interface PrescriptionSubmissionPayload {
   patient_description: string;
   address: string;
 }
+
+
+    
