@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle, FileText } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle, FileText, Sparkles, ScrollText, Check } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -60,9 +60,9 @@ interface District {
     name_en: string;
 }
 
-const GARLAND_PRICE = 500;
-const SCROLL_PRICE = 300;
-const CERTIFICATE_FILE_PRICE = 200;
+const GARLAND_PRICE = 2000;
+const SCROLL_PRICE = 1000;
+const CERTIFICATE_FILE_PRICE = 750;
 
 
 const getCityName = async (cityId: string): Promise<City> => {
@@ -185,6 +185,7 @@ export default function CreateCertificateOrderPage() {
         setStep('error');
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoadingStudent, isError, studentData, error, allEnrollments, form]);
 
 
@@ -425,25 +426,33 @@ export default function CreateCertificateOrderPage() {
 
                 <div className="space-y-4 pt-6 border-t">
                     <h3 className="font-semibold text-foreground">Additional Items (Optional)</h3>
-                    <div className="flex items-center space-x-2 p-3 border rounded-md">
-                        <Checkbox id="garland" checked={orderGarland} onCheckedChange={(checked) => setOrderGarland(Boolean(checked))} />
-                        <Label htmlFor="garland" className="font-medium flex justify-between w-full cursor-pointer">
-                            <span>Order Garland</span>
-                            <span>LKR {GARLAND_PRICE.toFixed(2)}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <Label htmlFor="garland" className={cn("block border rounded-lg p-4 cursor-pointer relative transition-all", orderGarland && "ring-2 ring-primary border-primary")}>
+                            <Checkbox id="garland" checked={orderGarland} onCheckedChange={(checked) => setOrderGarland(Boolean(checked))} className="sr-only"/>
+                            {orderGarland && (<div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-0.5"><Check className="h-3 w-3" /></div>)}
+                            <div className="flex flex-col items-center gap-2 text-center">
+                                <Sparkles className="h-8 w-8 text-primary"/>
+                                <p className="font-semibold text-sm">Order Garland</p>
+                                <p className="text-xs text-muted-foreground">LKR {GARLAND_PRICE.toFixed(2)}</p>
+                            </div>
                         </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 p-3 border rounded-md">
-                        <Checkbox id="scroll" checked={orderScroll} onCheckedChange={(checked) => setOrderScroll(Boolean(checked))} />
-                        <Label htmlFor="scroll" className="font-medium flex justify-between w-full cursor-pointer">
-                            <span>Order Scroll</span>
-                            <span>LKR {SCROLL_PRICE.toFixed(2)}</span>
+                        <Label htmlFor="scroll" className={cn("block border rounded-lg p-4 cursor-pointer relative transition-all", orderScroll && "ring-2 ring-primary border-primary")}>
+                            <Checkbox id="scroll" checked={orderScroll} onCheckedChange={(checked) => setOrderScroll(Boolean(checked))} className="sr-only"/>
+                             {orderScroll && (<div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-0.5"><Check className="h-3 w-3" /></div>)}
+                             <div className="flex flex-col items-center gap-2 text-center">
+                                <ScrollText className="h-8 w-8 text-primary"/>
+                                <p className="font-semibold text-sm">Order Scroll</p>
+                                <p className="text-xs text-muted-foreground">LKR {SCROLL_PRICE.toFixed(2)}</p>
+                            </div>
                         </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 p-3 border rounded-md">
-                        <Checkbox id="certificate_file" checked={orderCertificateFile} onCheckedChange={(checked) => setOrderCertificateFile(Boolean(checked))} />
-                        <Label htmlFor="certificate_file" className="font-medium flex justify-between w-full cursor-pointer">
-                            <span>Order Certificate File</span>
-                            <span>LKR {CERTIFICATE_FILE_PRICE.toFixed(2)}</span>
+                        <Label htmlFor="certificate_file" className={cn("block border rounded-lg p-4 cursor-pointer relative transition-all", orderCertificateFile && "ring-2 ring-primary border-primary")}>
+                            <Checkbox id="certificate_file" checked={orderCertificateFile} onCheckedChange={(checked) => setOrderCertificateFile(Boolean(checked))} className="sr-only"/>
+                            {orderCertificateFile && (<div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-0.5"><Check className="h-3 w-3" /></div>)}
+                            <div className="flex flex-col items-center gap-2 text-center">
+                                <FileText className="h-8 w-8 text-primary"/>
+                                <p className="font-semibold text-sm">Certificate File</p>
+                                <p className="text-xs text-muted-foreground">LKR {CERTIFICATE_FILE_PRICE.toFixed(2)}</p>
+                            </div>
                         </Label>
                     </div>
                 </div>
@@ -494,18 +503,21 @@ export default function CreateCertificateOrderPage() {
                 </div>
                 {(orderGarland || orderScroll || orderCertificateFile) && (
                     <div className="space-y-2 pt-4 border-t">
-                        <h3 className="font-semibold text-foreground flex items-center gap-2">Additional Items</h3>
-                        <ul className="list-disc list-inside text-muted-foreground text-sm pl-4">
-                            {orderGarland && <li>Garland (LKR {GARLAND_PRICE.toFixed(2)})</li>}
-                            {orderScroll && <li>Scroll (LKR {SCROLL_PRICE.toFixed(2)})</li>}
-                            {orderCertificateFile && <li>Certificate File (LKR {CERTIFICATE_FILE_PRICE.toFixed(2)})</li>}
-                        </ul>
+                        <h3 className="font-semibold text-foreground">Additional Items</h3>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                            {orderGarland && <div className="flex justify-between items-center"><span>Garland</span><span>LKR {GARLAND_PRICE.toFixed(2)}</span></div>}
+                            {orderScroll && <div className="flex justify-between items-center"><span>Scroll</span><span>LKR {SCROLL_PRICE.toFixed(2)}</span></div>}
+                            {orderCertificateFile && <div className="flex justify-between items-center"><span>Certificate File</span><span>LKR {CERTIFICATE_FILE_PRICE.toFixed(2)}</span></div>}
+                        </div>
                     </div>
                 )}
                 {totalPrice > 0 && (
                     <div className="space-y-2 pt-4 border-t">
-                        <h3 className="font-semibold text-foreground flex items-center gap-2">Payment Details</h3>
-                        <p className="text-2xl font-bold text-primary">Total: LKR {totalPrice.toLocaleString()}</p>
+                        <h3 className="font-semibold text-foreground">Payment Details</h3>
+                        <div className="flex justify-between items-baseline">
+                            <p className="text-muted-foreground">Total:</p>
+                            <p className="text-2xl font-bold text-primary">LKR {totalPrice.toLocaleString()}</p>
+                        </div>
                         <p className="text-sm text-muted-foreground flex items-center gap-2">
                             <FileText className="h-4 w-4" />
                             Slip Uploaded: {paymentSlip?.name}
