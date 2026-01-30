@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle, FileText } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -59,6 +59,9 @@ interface District {
     name_en: string;
 }
 
+const GARLAND_PRICE = 500;
+const SCROLL_PRICE = 300;
+
 
 const getCityName = async (cityId: string): Promise<City> => {
     if (!cityId) return { id: '', district_id: '', name_en: 'N/A' };
@@ -91,6 +94,17 @@ export default function CreateCertificateOrderPage() {
   const [districtName, setDistrictName] = useState('');
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   
+  const [orderGarland, setOrderGarland] = useState(false);
+  const [orderScroll, setOrderScroll] = useState(false);
+  const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
+  
+  const totalPrice = useMemo(() => {
+    let total = 0;
+    if (orderGarland) total += GARLAND_PRICE;
+    if (orderScroll) total += SCROLL_PRICE;
+    return total;
+  }, [orderGarland, orderScroll]);
+
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
     defaultValues: {
@@ -205,6 +219,14 @@ export default function CreateCertificateOrderPage() {
   };
 
   const handleFormSubmit = (values: AddressFormValues) => {
+    if (totalPrice > 0 && !paymentSlip) {
+        toast({
+            variant: "destructive",
+            title: "Payment Slip Required",
+            description: "Please upload your payment slip for the additional items.",
+        });
+        return;
+    }
     setAddressData(values);
     setStep('confirmation');
   };
@@ -213,6 +235,11 @@ export default function CreateCertificateOrderPage() {
     const studentUsername = studentData?.studentInfo.username;
     if (!studentUsername || !addressData || selectedEnrollments.length === 0) {
       setErrorMessage("Missing required information to submit the order.");
+      setStep('error');
+      return;
+    }
+     if (totalPrice > 0 && !paymentSlip) {
+      setErrorMessage("Payment slip is required for orders with additional items.");
       setStep('error');
       return;
     }
@@ -225,10 +252,14 @@ export default function CreateCertificateOrderPage() {
     submissionData.append("mobile", addressData.phone);
     submissionData.append("created_by", studentUsername);
     submissionData.append("type", "1");
-    submissionData.append("payment_amount", "0");
+    submissionData.append("payment_amount", String(totalPrice));
     submissionData.append("package_id", "default");
     submissionData.append("certificate_id", "0");
     submissionData.append("certificate_status", "Pending");
+
+    if (orderGarland) submissionData.append("garland", "1");
+    if (orderScroll) submissionData.append("scroll", "1");
+    if (paymentSlip) submissionData.append("image", paymentSlip);
 
     selectedEnrollments.forEach((enrollment) => {
       submissionData.append("course_id[]", enrollment.parent_course_id);
@@ -353,8 +384,8 @@ export default function CreateCertificateOrderPage() {
                   <Button variant="ghost" onClick={() => setStep('selection')} className="w-fit h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Selection
                   </Button>
-                <CardTitle>Step 2: Enter Delivery Address</CardTitle>
-                <CardDescription>Provide the address where the certificate(s) should be sent.</CardDescription>
+                <CardTitle>Step 2: Delivery & Payment</CardTitle>
+                <CardDescription>Provide the delivery address and payment details if required.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField control={form.control} name="addressLine1" render={({ field }) => ( <FormItem><FormLabel>Address Line 1</FormLabel><FormControl><Input placeholder="e.g., No. 123, Main Street" {...field} /></FormControl><FormMessage /></FormItem> )} />
@@ -386,6 +417,37 @@ export default function CreateCertificateOrderPage() {
                     <FormMessage />
                 </FormItem>
                 <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="e.g., 0771234567" {...field} /></FormControl><FormMessage /></FormItem> )} />
+
+                <div className="space-y-4 pt-6 border-t">
+                    <h3 className="font-semibold text-foreground">Additional Items (Optional)</h3>
+                    <div className="flex items-center space-x-2 p-3 border rounded-md">
+                        <Checkbox id="garland" checked={orderGarland} onCheckedChange={(checked) => setOrderGarland(Boolean(checked))} />
+                        <Label htmlFor="garland" className="font-medium flex justify-between w-full cursor-pointer">
+                            <span>Order Garland</span>
+                            <span>LKR {GARLAND_PRICE.toFixed(2)}</span>
+                        </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-3 border rounded-md">
+                        <Checkbox id="scroll" checked={orderScroll} onCheckedChange={(checked) => setOrderScroll(Boolean(checked))} />
+                        <Label htmlFor="scroll" className="font-medium flex justify-between w-full cursor-pointer">
+                            <span>Order Scroll</span>
+                            <span>LKR {SCROLL_PRICE.toFixed(2)}</span>
+                        </Label>
+                    </div>
+                </div>
+                
+                {totalPrice > 0 && (
+                    <div className="space-y-4 pt-6 border-t animate-in fade-in-50">
+                        <div className="text-xl font-bold flex justify-between">
+                            <span>Total Amount:</span>
+                            <span className="text-primary">LKR {totalPrice.toLocaleString()}</span>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="payment-slip" className="text-base font-semibold">Upload Payment Slip</Label>
+                            <Input id="payment-slip" type="file" required={totalPrice > 0} onChange={e => setPaymentSlip(e.target.files ? e.target.files[0] : null)} />
+                        </div>
+                    </div>
+                )}
               </CardContent>
               <CardFooter>
                 <Button type="submit">
@@ -418,7 +480,26 @@ export default function CreateCertificateOrderPage() {
                         ))}
                     </div>
                 </div>
-                <div className="space-y-2">
+                {(orderGarland || orderScroll) && (
+                    <div className="space-y-2 pt-4 border-t">
+                        <h3 className="font-semibold text-foreground flex items-center gap-2">Additional Items</h3>
+                        <ul className="list-disc list-inside text-muted-foreground text-sm pl-4">
+                            {orderGarland && <li>Garland (LKR {GARLAND_PRICE.toFixed(2)})</li>}
+                            {orderScroll && <li>Scroll (LKR {SCROLL_PRICE.toFixed(2)})</li>}
+                        </ul>
+                    </div>
+                )}
+                {totalPrice > 0 && (
+                    <div className="space-y-2 pt-4 border-t">
+                        <h3 className="font-semibold text-foreground flex items-center gap-2">Payment Details</h3>
+                        <p className="text-2xl font-bold text-primary">Total: LKR {totalPrice.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            Slip Uploaded: {paymentSlip?.name}
+                        </p>
+                    </div>
+                )}
+                <div className="space-y-2 pt-4 border-t">
                     <h3 className="font-semibold text-foreground flex items-center gap-2"><Truck className="h-5 w-5 text-primary"/>Delivery Address</h3>
                     <div className="text-sm text-muted-foreground pl-4 border-l-2 border-primary ml-2">
                         <p>{addressData?.addressLine1}</p>
@@ -485,7 +566,7 @@ export default function CreateCertificateOrderPage() {
         )
     }
   };
-
+  
   return (
     <div className="p-4 md:p-8 space-y-8 pb-20">
        <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
@@ -504,8 +585,23 @@ export default function CreateCertificateOrderPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {studentData && (
+          <Card className="max-w-4xl mx-auto shadow-md">
+            <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                <Avatar className="h-16 w-16 text-xl">
+                    <AvatarImage src={user?.avatar} alt={user?.name} />
+                    <AvatarFallback>{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <CardTitle className="text-xl">{studentData.studentInfo.full_name}</CardTitle>
+                    <CardDescription>{studentData.studentInfo.student_id}</CardDescription>
+                </div>
+            </CardHeader>
+          </Card>
+      )}
 
-      <Card className="shadow-lg w-full mt-4">
+      <Card className="max-w-4xl mx-auto shadow-lg">
           {renderContent()}
       </Card>
     </div>
