@@ -524,6 +524,13 @@ export default function CreateCertificateOrderPage() {
                         </p>
                     </div>
                 )}
+                 <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700/50 dark:text-blue-300">
+                    <AlertCircle className="h-4 w-4 !text-blue-800 dark:!text-blue-300" />
+                    <AlertTitle>Please Note</AlertTitle>
+                    <AlertDescription>
+                        The total amount above does not include the delivery fee. This will be charged upon delivery.
+                    </AlertDescription>
+                </Alert>
                 <div className="space-y-2 pt-4 border-t">
                     <h3 className="font-semibold text-foreground flex items-center gap-2"><Truck className="h-5 w-5 text-primary"/>Delivery Address</h3>
                     <div className="text-sm text-muted-foreground pl-4 border-l-2 border-primary ml-2">
@@ -570,7 +577,7 @@ export default function CreateCertificateOrderPage() {
         return (
           <>
             <CardHeader className="items-center text-center">
-               <AlertCircle className="h-16 w-16 text-destructive mb-4" />
+               <AlertCircle className="w-16 h-16 text-destructive mb-4" />
                <CardTitle>An Error Occurred</CardTitle>
                <CardDescription>We couldn't process the request.</CardDescription>
             </CardHeader>
