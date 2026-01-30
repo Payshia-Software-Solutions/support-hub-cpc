@@ -62,6 +62,7 @@ interface District {
 
 const GARLAND_PRICE = 500;
 const SCROLL_PRICE = 300;
+const CERTIFICATE_FILE_PRICE = 200;
 
 
 const getCityName = async (cityId: string): Promise<City> => {
@@ -97,14 +98,16 @@ export default function CreateCertificateOrderPage() {
   
   const [orderGarland, setOrderGarland] = useState(false);
   const [orderScroll, setOrderScroll] = useState(false);
+  const [orderCertificateFile, setOrderCertificateFile] = useState(false);
   const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
   
   const totalPrice = useMemo(() => {
     let total = 0;
     if (orderGarland) total += GARLAND_PRICE;
     if (orderScroll) total += SCROLL_PRICE;
+    if (orderCertificateFile) total += CERTIFICATE_FILE_PRICE;
     return total;
-  }, [orderGarland, orderScroll]);
+  }, [orderGarland, orderScroll, orderCertificateFile]);
 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
@@ -260,6 +263,7 @@ export default function CreateCertificateOrderPage() {
 
     if (orderGarland) submissionData.append("garland", "1");
     if (orderScroll) submissionData.append("scroll", "1");
+    if (orderCertificateFile) submissionData.append("certificate_file", "1");
     if (paymentSlip) submissionData.append("image", paymentSlip);
 
     selectedEnrollments.forEach((enrollment) => {
@@ -435,6 +439,13 @@ export default function CreateCertificateOrderPage() {
                             <span>LKR {SCROLL_PRICE.toFixed(2)}</span>
                         </Label>
                     </div>
+                    <div className="flex items-center space-x-2 p-3 border rounded-md">
+                        <Checkbox id="certificate_file" checked={orderCertificateFile} onCheckedChange={(checked) => setOrderCertificateFile(Boolean(checked))} />
+                        <Label htmlFor="certificate_file" className="font-medium flex justify-between w-full cursor-pointer">
+                            <span>Order Certificate File</span>
+                            <span>LKR {CERTIFICATE_FILE_PRICE.toFixed(2)}</span>
+                        </Label>
+                    </div>
                 </div>
                 
                 {totalPrice > 0 && (
@@ -481,12 +492,13 @@ export default function CreateCertificateOrderPage() {
                         ))}
                     </div>
                 </div>
-                {(orderGarland || orderScroll) && (
+                {(orderGarland || orderScroll || orderCertificateFile) && (
                     <div className="space-y-2 pt-4 border-t">
                         <h3 className="font-semibold text-foreground flex items-center gap-2">Additional Items</h3>
                         <ul className="list-disc list-inside text-muted-foreground text-sm pl-4">
                             {orderGarland && <li>Garland (LKR {GARLAND_PRICE.toFixed(2)})</li>}
                             {orderScroll && <li>Scroll (LKR {SCROLL_PRICE.toFixed(2)})</li>}
+                            {orderCertificateFile && <li>Certificate File (LKR {CERTIFICATE_FILE_PRICE.toFixed(2)})</li>}
                         </ul>
                     </div>
                 )}
@@ -608,4 +620,3 @@ export default function CreateCertificateOrderPage() {
     </div>
   );
 }
-
