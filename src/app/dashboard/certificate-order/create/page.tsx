@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getStudentFullInfo } from '@/lib/actions/users';
@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle, FileText, Sparkles, ScrollText, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Award, Loader2, Home, Truck, Copy, AlertCircle, XCircle, ChevronDown, ListOrdered, PlusCircle, FileText, Sparkles, ScrollText, Check, Paperclip } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -100,6 +100,7 @@ export default function CreateCertificateOrderPage() {
   const [orderScroll, setOrderScroll] = useState(false);
   const [orderCertificateFile, setOrderCertificateFile] = useState(false);
   const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const totalPrice = useMemo(() => {
     let total = 0;
@@ -235,6 +236,23 @@ export default function CreateCertificateOrderPage() {
     setAddressData(values);
     setStep('confirmation');
   };
+  
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                toast({
+                    variant: "destructive",
+                    title: "File too large",
+                    description: "Please select a file smaller than 5MB.",
+                });
+                if (fileInputRef.current) fileInputRef.current.value = "";
+                return;
+            }
+            setPaymentSlip(file);
+        }
+    };
+
 
   const handleConfirmAndSubmit = () => {
     const studentUsername = studentData?.studentInfo.username;
@@ -458,16 +476,51 @@ export default function CreateCertificateOrderPage() {
                 </div>
                 
                 {totalPrice > 0 && (
-                    <div className="space-y-4 pt-6 border-t animate-in fade-in-50">
-                        <div className="text-xl font-bold flex justify-between">
-                            <span>Total Amount:</span>
-                            <span className="text-primary">LKR {totalPrice.toLocaleString()}</span>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="payment-slip" className="text-base font-semibold">Upload Payment Slip</Label>
-                            <Input id="payment-slip" type="file" required={totalPrice > 0} onChange={e => setPaymentSlip(e.target.files ? e.target.files[0] : null)} />
-                        </div>
+                  <div className="space-y-4 pt-6 border-t animate-in fade-in-50">
+                    <div className="text-xl font-bold flex justify-between">
+                        <span>Total Amount:</span>
+                        <span className="text-primary">LKR {totalPrice.toLocaleString()}</span>
                     </div>
+                    <div className="space-y-2">
+                        <Label className="text-base font-semibold">Upload Payment Slip</Label>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            className="hidden"
+                            accept="image/*,application/pdf"
+                        />
+                        {paymentSlip ? (
+                            <div className="flex items-center justify-between p-2 border rounded-md bg-muted/50">
+                                <div className="flex items-center gap-2 truncate">
+                                    <FileText className="h-5 w-5 text-muted-foreground" />
+                                    <span className="text-sm text-muted-foreground truncate">{paymentSlip.name}</span>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                        setPaymentSlip(null);
+                                        if (fileInputRef.current) fileInputRef.current.value = "";
+                                    }}
+                                    className="text-destructive hover:text-destructive h-6 w-6"
+                                >
+                                    <XCircle className="h-5 w-5" />
+                                </Button>
+                            </div>
+                        ) : (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="w-full"
+                            >
+                                <Paperclip className="mr-2 h-4 w-4" /> Choose File
+                            </Button>
+                        )}
+                    </div>
+                  </div>
                 )}
               </CardContent>
               <CardFooter>
@@ -518,10 +571,12 @@ export default function CreateCertificateOrderPage() {
                             <p className="text-muted-foreground">Total:</p>
                             <p className="text-2xl font-bold text-primary">LKR {totalPrice.toLocaleString()}</p>
                         </div>
-                        <p className="text-sm text-muted-foreground flex items-center gap-2">
-                            <FileText className="h-4 w-4" />
-                            Slip Uploaded: {paymentSlip?.name}
-                        </p>
+                        {paymentSlip && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-2">
+                              <FileText className="h-4 w-4" />
+                              Slip Uploaded: {paymentSlip?.name}
+                          </p>
+                        )}
                     </div>
                 )}
                  <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700/50 dark:text-blue-300">
@@ -639,4 +694,3 @@ export default function CreateCertificateOrderPage() {
     </div>
   );
 }
-
