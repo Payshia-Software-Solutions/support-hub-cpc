@@ -481,6 +481,14 @@ export default function CreateCertificateOrderPage() {
                         <span>Total Amount:</span>
                         <span className="text-primary">LKR {totalPrice.toLocaleString()}</span>
                     </div>
+                     <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700/50 dark:text-blue-300">
+                        <AlertCircle className="h-4 w-4 !text-blue-800 dark:!text-blue-300" />
+                        <AlertTitle>Please Note</AlertTitle>
+                        <AlertDescription>
+                            <p>The total amount does not include the delivery fee. This will be charged upon delivery.</p>
+                            <p className="mt-1">ඉහත මුළු මුදලට බෙදාහැරීමේ ගාස්තුව ඇතුළත් නොවේ. එය භාණ්ඩය ලැබුණු පසු අය කරනු ලැබේ.</p>
+                        </AlertDescription>
+                    </Alert>
                     <div className="space-y-2">
                         <Label className="text-base font-semibold">Upload Payment Slip</Label>
                         <input
@@ -583,7 +591,8 @@ export default function CreateCertificateOrderPage() {
                     <AlertCircle className="h-4 w-4 !text-blue-800 dark:!text-blue-300" />
                     <AlertTitle>Please Note</AlertTitle>
                     <AlertDescription>
-                        The total amount above does not include the delivery fee. This will be charged upon delivery.
+                        <p>The total amount above does not include the delivery fee. This will be charged upon delivery.</p>
+                        <p className="mt-1">ඉහත මුළු මුදලට බෙදාහැරීමේ ගාස්තුව ඇතුළත් නොවේ. එය භාණ්ඩය ලැබුණු පසු අය කරනු ලැබේ.</p>
                     </AlertDescription>
                 </Alert>
                 <div className="space-y-2 pt-4 border-t">
