@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
 const addressFormSchema = z.object({
@@ -607,3 +608,4 @@ export default function CreateCertificateOrderPage() {
     </div>
   );
 }
+
