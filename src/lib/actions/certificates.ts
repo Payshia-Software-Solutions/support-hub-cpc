@@ -248,12 +248,7 @@ export const createCertificateOrder = async (payload: FormData): Promise<{ refer
         const errorData = await response.json().catch(() => ({ message: `Certificate order creation failed. Status: ${response.status}` }));
         throw new Error(errorData.error || errorData.message || 'Certificate order creation failed');
     }
-    const responseText = await response.text();
-    try {
-        return JSON.parse(responseText);
-    } catch (e) {
-        throw new Error(`Failed to parse server response: ${responseText}`);
-    }
+    return response.json();
 };
 
 export const deleteCertificateOrder = async (orderId: string): Promise<void> => {

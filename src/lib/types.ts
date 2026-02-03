@@ -241,18 +241,23 @@ export interface CertificateOrder {
 }
 
 export interface CreateCertificateOrderPayload {
-  created_by: string;
-  mobile: string;
-  address_line1: string;
-  address_line2?: string;
-  city_id: string;
-  district: string;
-  type: 'courier' | 'in-person';
-  payment_amount: string;
-  package_id: string;
-  certificate_id: string;
-  certificate_status: 'Pending' | 'Printed' | 'Delivered';
-  course_code: string;
+    created_by: string;
+    mobile: string;
+    address_line1: string;
+    address_line2?: string;
+    city_id: string;
+    district: string;
+    type: 'Delivery' | string;
+    payment_amount: string;
+    package_id: string;
+    certificate_id: string;
+    certificate_status: 'Pending' | string;
+    'course_id[]': string[];
+    is_active?: '1' | '0';
+    garlent?: '1';
+    scroll?: '1';
+    certificate_file?: '1';
+    payment_slip?: File;
 }
 
 export interface SendSmsPayload {

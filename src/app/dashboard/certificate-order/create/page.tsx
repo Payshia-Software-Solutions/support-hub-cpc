@@ -255,7 +255,7 @@ export default function CreateCertificateOrderPage() {
 
 
   const handleConfirmAndSubmit = () => {
-    const studentUsername = studentData?.studentInfo.username;
+    const studentUsername = user?.username;
     if (!studentUsername || !addressData || selectedEnrollments.length === 0) {
       setErrorMessage("Missing required information to submit the order.");
       setStep('error');
@@ -267,29 +267,33 @@ export default function CreateCertificateOrderPage() {
       return;
     }
     
-    const submissionData = new FormData();
-    submissionData.append("address_line1", addressData.addressLine1);
-    submissionData.append("address_line2", addressData.addressLine2 || "");
-    submissionData.append("city_id", cityName);
-    submissionData.append("district", districtName);
-    submissionData.append("mobile", addressData.phone);
-    submissionData.append("created_by", studentUsername);
-    submissionData.append("type", "1");
-    submissionData.append("payment_amount", String(totalPrice));
-    submissionData.append("package_id", "default");
-    submissionData.append("certificate_id", "0");
-    submissionData.append("certificate_status", "Pending");
-
-    if (orderGarland) submissionData.append("garland", "1");
-    if (orderScroll) submissionData.append("scroll", "1");
-    if (orderCertificateFile) submissionData.append("certificate_file", "1");
-    if (paymentSlip) submissionData.append("image", paymentSlip);
-
-    selectedEnrollments.forEach((enrollment) => {
-      submissionData.append("course_id[]", enrollment.parent_course_id);
-    });
+    const formData = new FormData();
+    formData.append("created_by", studentUsername);
+    formData.append("mobile", addressData.phone);
+    formData.append("address_line1", addressData.addressLine1);
+    formData.append("address_line2", addressData.addressLine2 || "");
+    formData.append("city_id", addressData.city);
+    formData.append("district", districtName);
+    formData.append("type", "Delivery");
+    formData.append("payment_amount", String(totalPrice));
+    formData.append("package_id", "1"); // Default package ID
+    formData.append("certificate_id", "0");
+    formData.append("certificate_status", "Pending");
+    formData.append("is_active", "1");
     
-    createOrderMutation.mutate(submissionData);
+    selectedEnrollments.forEach(enrollment => {
+        formData.append("course_id[]", enrollment.parent_course_id);
+    });
+
+    if (orderGarland) formData.append("garlent", "1");
+    if (orderScroll) formData.append("scroll", "1");
+    if (orderCertificateFile) formData.append("certificate_file", "1");
+    
+    if (paymentSlip) {
+        formData.append("payment_slip", paymentSlip);
+    }
+    
+    createOrderMutation.mutate(formData);
   };
   
   const copyToClipboard = () => {
@@ -491,6 +495,38 @@ export default function CreateCertificateOrderPage() {
                     </Alert>
                     <div className="space-y-2">
                         <Label className="text-base font-semibold">Upload Payment Slip</Label>
+                        <div className="flex items-center justify-between p-2 pl-4 border rounded-md">
+                            {paymentSlip ? (
+                                <>
+                                    <div className="flex items-center gap-2 truncate">
+                                        <Paperclip className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm text-muted-foreground truncate">{paymentSlip.name}</span>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => {
+                                            setPaymentSlip(null);
+                                            if (fileInputRef.current) fileInputRef.current.value = "";
+                                        }}
+                                        className="text-destructive hover:text-destructive h-7 w-7"
+                                    >
+                                        <XCircle className="h-5 w-5" />
+                                    </Button>
+                                </>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No file selected.</p>
+                            )}
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="shrink-0"
+                            >
+                                Choose File
+                            </Button>
+                        </div>
                         <input
                             type="file"
                             ref={fileInputRef}
@@ -498,35 +534,6 @@ export default function CreateCertificateOrderPage() {
                             className="hidden"
                             accept="image/*,application/pdf"
                         />
-                        {paymentSlip ? (
-                            <div className="flex items-center justify-between p-2 border rounded-md bg-muted/50">
-                                <div className="flex items-center gap-2 truncate">
-                                    <FileText className="h-5 w-5 text-muted-foreground" />
-                                    <span className="text-sm text-muted-foreground truncate">{paymentSlip.name}</span>
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => {
-                                        setPaymentSlip(null);
-                                        if (fileInputRef.current) fileInputRef.current.value = "";
-                                    }}
-                                    className="text-destructive hover:text-destructive h-6 w-6"
-                                >
-                                    <XCircle className="h-5 w-5" />
-                                </Button>
-                            </div>
-                        ) : (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="w-full"
-                            >
-                                <Paperclip className="mr-2 h-4 w-4" /> Choose File
-                            </Button>
-                        )}
                     </div>
                   </div>
                 )}
@@ -541,78 +548,78 @@ export default function CreateCertificateOrderPage() {
         );
 
       case 'confirmation':
-        return (
-          <>
-            <CardHeader>
-               <Button variant="ghost" onClick={() => setStep('form')} className="w-fit h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Edit
-                </Button>
-              <CardTitle>Step 3: Confirm Your Order</CardTitle>
-              <CardDescription>Please review all the details below before submitting the request.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="space-y-4">
-                    <h3 className="font-semibold text-foreground flex items-center gap-2"><Award className="h-5 w-5 text-primary"/>Requested Certificate(s)</h3>
-                    <div className="space-y-4">
-                        {selectedEnrollments.map(enrollment => (
-                            <div key={enrollment.id} className="p-3 border rounded-md">
-                                <h4 className="font-semibold text-card-foreground">{enrollment.parent_course_name}</h4>
-                                <p className="text-xs text-muted-foreground mb-2">Average Grade: {parseFloat(enrollment.assignment_grades.average_grade).toFixed(2)}%</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                {(orderGarland || orderScroll || orderCertificateFile) && (
-                    <div className="space-y-2 pt-4 border-t">
-                        <h3 className="font-semibold text-foreground">Additional Items</h3>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                            {orderGarland && <div className="flex justify-between items-center"><span>Garland</span><span>LKR {GARLAND_PRICE.toFixed(2)}</span></div>}
-                            {orderScroll && <div className="flex justify-between items-center"><span>Scroll</span><span>LKR {SCROLL_PRICE.toFixed(2)}</span></div>}
-                            {orderCertificateFile && <div className="flex justify-between items-center"><span>Certificate File</span><span>LKR {CERTIFICATE_FILE_PRICE.toFixed(2)}</span></div>}
-                        </div>
-                    </div>
-                )}
-                {totalPrice > 0 && (
-                    <div className="space-y-2 pt-4 border-t">
-                        <h3 className="font-semibold text-foreground">Payment Details</h3>
-                        <div className="flex justify-between items-baseline">
-                            <p className="text-muted-foreground">Total:</p>
-                            <p className="text-2xl font-bold text-primary">LKR {totalPrice.toLocaleString()}</p>
-                        </div>
-                        {paymentSlip && (
-                          <p className="text-sm text-muted-foreground flex items-center gap-2">
-                              <FileText className="h-4 w-4" />
-                              Slip Uploaded: {paymentSlip?.name}
-                          </p>
-                        )}
-                    </div>
-                )}
-                 <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700/50 dark:text-blue-300">
-                    <AlertCircle className="h-4 w-4 !text-blue-800 dark:!text-blue-300" />
-                    <AlertTitle>Please Note</AlertTitle>
-                    <AlertDescription>
-                        <p>The total amount above does not include the delivery fee. This will be charged upon delivery.</p>
-                        <p className="mt-1">ඉහත මුළු මුදලට බෙදාහැරීමේ ගාස්තුව ඇතුළත් නොවේ. එය භාණ්ඩය ලැබුණු පසු අය කරනු ලැබේ.</p>
-                    </AlertDescription>
-                </Alert>
-                <div className="space-y-2 pt-4 border-t">
-                    <h3 className="font-semibold text-foreground flex items-center gap-2"><Truck className="h-5 w-5 text-primary"/>Delivery Address</h3>
-                    <div className="text-sm text-muted-foreground pl-4 border-l-2 border-primary ml-2">
-                        <p>{addressData?.addressLine1}</p>
-                        {addressData?.addressLine2 && <p>{addressData.addressLine2}</p>}
-                        <p>{cityName}, {districtName}</p>
-                        <p>Phone: {addressData?.phone}</p>
-                    </div>
-                </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleConfirmAndSubmit} disabled={createOrderMutation.isPending}>
-                {createOrderMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                Confirm & Submit
-              </Button>
-            </CardFooter>
-          </>
-        );
+               return (
+                  <>
+                      <CardHeader>
+                         <Button variant="ghost" onClick={() => setStep('form')} className="w-fit h-auto p-0 mb-2 text-sm text-muted-foreground hover:text-foreground">
+                              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Edit
+                          </Button>
+                        <CardTitle>Step 3: Confirm Your Order</CardTitle>
+                        <CardDescription>Please review all details below before submitting the request.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                          <div className="space-y-4">
+                              <h3 className="font-semibold text-foreground flex items-center gap-2"><Award className="h-5 w-5 text-primary"/>Requested Certificate(s)</h3>
+                              <div className="space-y-4">
+                                  {selectedEnrollments.map(enrollment => (
+                                      <div key={enrollment.id} className="p-3 border rounded-md">
+                                          <h4 className="font-semibold text-card-foreground">{enrollment.parent_course_name}</h4>
+                                          <p className="text-xs text-muted-foreground mb-2">Average Grade: {parseFloat(enrollment.assignment_grades.average_grade).toFixed(2)}%</p>
+                                      </div>
+                                  ))}
+                              </div>
+                          </div>
+                          {(orderGarland || orderScroll || orderCertificateFile) && (
+                              <div className="space-y-2 pt-4 border-t">
+                                  <h3 className="font-semibold text-foreground">Additional Items</h3>
+                                  <div className="text-sm text-muted-foreground space-y-1">
+                                      {orderGarland && <div className="flex justify-between items-center"><span>Garland</span><span>LKR {GARLAND_PRICE.toFixed(2)}</span></div>}
+                                      {orderScroll && <div className="flex justify-between items-center"><span>Scroll</span><span>LKR {SCROLL_PRICE.toFixed(2)}</span></div>}
+                                      {orderCertificateFile && <div className="flex justify-between items-center"><span>Certificate File</span><span>LKR {CERTIFICATE_FILE_PRICE.toFixed(2)}</span></div>}
+                                  </div>
+                              </div>
+                          )}
+                          {totalPrice > 0 && (
+                              <div className="space-y-2 pt-4 border-t">
+                                  <h3 className="font-semibold text-foreground">Payment Details</h3>
+                                  <div className="flex justify-between items-baseline">
+                                      <p className="text-muted-foreground">Total:</p>
+                                      <p className="text-2xl font-bold text-primary">LKR {totalPrice.toLocaleString()}</p>
+                                  </div>
+                                  {paymentSlip && (
+                                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                        <FileText className="h-4 w-4" />
+                                        Slip Uploaded: {paymentSlip?.name}
+                                    </p>
+                                  )}
+                              </div>
+                          )}
+                           <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700/50 dark:text-blue-300">
+                              <AlertCircle className="h-4 w-4 !text-blue-800 dark:!text-blue-300" />
+                              <AlertTitle>Please Note</AlertTitle>
+                              <AlertDescription>
+                                  <p>The total amount above does not include the delivery fee. This will be charged upon delivery.</p>
+                                  <p className="mt-1">ඉහත මුළු මුදලට බෙදාහැරීමේ ගාස්තුව ඇතුළත් නොවේ. එය භාණ්ඩය ලැබුණු පසු අය කරනු ලැබේ.</p>
+                              </AlertDescription>
+                          </Alert>
+                          <div className="space-y-2 pt-4 border-t">
+                              <h3 className="font-semibold text-foreground flex items-center gap-2"><Truck className="h-5 w-5 text-primary"/>Delivery Address</h3>
+                              <div className="text-sm text-muted-foreground pl-4 border-l-2 border-primary ml-2">
+                                  <p>{addressData?.addressLine1}</p>
+                                  {addressData?.addressLine2 && <p>{addressData.addressLine2}</p>}
+                                  <p>{cityName}, {districtName}</p>
+                                  <p>Phone: {addressData?.phone}</p>
+                              </div>
+                          </div>
+                      </CardContent>
+                      <CardFooter>
+                        <Button size="lg" className="w-full" onClick={handleConfirmAndSubmit} disabled={createOrderMutation.isPending}>
+                             {createOrderMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                              Confirm & Submit
+                        </Button>
+                      </CardFooter>
+                  </>
+              );
 
       case 'success':
         return (
@@ -637,69 +644,55 @@ export default function CreateCertificateOrderPage() {
           </>
         );
 
-      case 'error':
-        return (
-          <>
-            <CardHeader className="items-center text-center">
-               <AlertCircle className="w-16 h-16 text-destructive mb-4" />
-               <CardTitle>An Error Occurred</CardTitle>
-               <CardDescription>We couldn't process the request.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Alert variant="destructive">
-                    <AlertTitle>Error Details</AlertTitle>
-                    <AlertDescription>{errorMessage}</AlertDescription>
-                </Alert>
-            </CardContent>
-            <CardFooter className="justify-center">
-              <Button asChild variant="outline">
-                <Link href="/dashboard/certificate-order">
-                  <Home className="mr-2 h-4 w-4" /> Back to Order History
-                </Link>
-              </Button>
-            </CardFooter>
-          </>
-        )
-    }
+            case 'error':
+                return (
+                    <CardContent className="text-center p-8 flex flex-col items-center gap-4">
+                       <AlertCircle className="w-16 h-16 text-destructive" />
+                       <h2 className="text-xl font-semibold">Something Went Wrong</h2>
+                       <p className="text-muted-foreground">{errorMessage}</p>
+                       <Button asChild variant="outline" className="mt-4"><Link href="/dashboard/certificate-order">Back to Bookings</Link></Button>
+                    </CardContent>
+                );
+      }
   };
   
   return (
-    <div className="p-4 md:p-8 space-y-8 pb-20">
-       <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-                You have not selected all eligible courses. Are you sure you want to proceed without ordering all available certificates?
-            </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-            <AlertDialogCancel>Go Back</AlertDialogCancel>
-            <AlertDialogAction onClick={() => setStep('form')}>
-                Continue Anyway
-            </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      {studentData && (
-          <Card className="max-w-4xl mx-auto shadow-md">
-            <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                <Avatar className="h-16 w-16 text-xl">
-                    <AvatarImage src={user?.avatar} alt={user?.name} />
-                    <AvatarFallback>{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div>
-                    <CardTitle className="text-xl">{studentData.studentInfo.full_name}</CardTitle>
-                    <CardDescription>{studentData.studentInfo.student_id}</CardDescription>
-                </div>
-            </CardHeader>
-          </Card>
-      )}
+      <div className="p-4 md:p-8 space-y-8 pb-20">
+           <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    You have not selected all eligible courses. Are you sure you want to proceed without ordering all available certificates?
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel>Go Back</AlertDialogCancel>
+                <AlertDialogAction onClick={() => setStep('form')}>
+                    Continue Anyway
+                </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          
+          {studentData && (
+              <Card className="max-w-4xl mx-auto shadow-md">
+                <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                    <Avatar className="h-16 w-16 text-xl">
+                        <AvatarImage src={user?.avatar} alt={user?.name} />
+                        <AvatarFallback>{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <CardTitle className="text-xl">{studentData.studentInfo.full_name}</CardTitle>
+                        <CardDescription>{studentData.studentInfo.student_id}</CardDescription>
+                    </div>
+                </CardHeader>
+              </Card>
+          )}
 
-      <Card className="max-w-4xl mx-auto shadow-lg">
-          {renderContent()}
-      </Card>
-    </div>
+          <Card className="max-w-4xl mx-auto shadow-lg">
+              {renderContent()}
+          </Card>
+      </div>
   );
 }
