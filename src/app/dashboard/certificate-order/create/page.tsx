@@ -5,8 +5,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getStudentFullInfo } from '@/lib/actions/users';
-import { createCertificateOrder } from '@/lib/actions/certificates';
-import type { FullStudentData, StudentEnrollment } from '@/lib/types';
+import { createCertificateOrder, getConvocationRegistrationsByStudent } from '@/lib/actions/certificates';
+import type { FullStudentData, StudentEnrollment, ConvocationRegistration } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -128,6 +128,25 @@ export default function CreateCertificateOrderPage() {
     retry: 1,
   });
 
+  const { data: convocationBookings, isLoading: isLoadingBookings } = useQuery<ConvocationRegistration[]>({
+    queryKey: ['studentConvocationBookingsForCertOrder', user?.username],
+    queryFn: () => getConvocationRegistrationsByStudent(user!.username!),
+    enabled: !!user?.username,
+  });
+
+  const bookedCourseIds = useMemo(() => {
+    if (!convocationBookings) return new Set<string>();
+    const ids = new Set<string>();
+    convocationBookings.forEach(booking => {
+        booking.course_id.split(',').forEach(id => {
+            if (id.trim()) {
+                ids.add(id.trim());
+            }
+        });
+    });
+    return ids;
+  }, [convocationBookings]);
+
   const allEnrollments = useMemo(() => {
     if (!studentData) return [];
     return Object.values(studentData.studentEnrollments);
@@ -144,7 +163,8 @@ export default function CreateCertificateOrderPage() {
 
   useEffect(() => {
     resetAllState();
-    if (isLoadingStudent) {
+    const isLoading = isLoadingStudent || isLoadingBookings;
+    if (isLoading) {
       setStep('loading');
       return;
     }
@@ -178,16 +198,30 @@ export default function CreateCertificateOrderPage() {
       
       if (allEnrollments.length > 0) {
         const eligibleEnrollments = allEnrollments.filter(e => e.certificate_eligibility);
-        setSelectedEnrollments(eligibleEnrollments);
+        const availableForOrder = eligibleEnrollments.filter(e => !bookedCourseIds.has(e.parent_course_id));
+
+        if (eligibleEnrollments.length > 0 && availableForOrder.length === 0) {
+             setErrorMessage("All your eligible courses are already part of a convocation booking. You cannot order a separate certificate for them.");
+            setStep('error');
+            return;
+        }
+
+        if (eligibleEnrollments.length === 0) {
+            setErrorMessage("You do not have any courses eligible for a certificate request at this time.");
+            setStep('error');
+            return;
+        }
+
+        setSelectedEnrollments(availableForOrder);
         setDeselectedEligible([]);
         setStep('selection');
       } else {
-        setErrorMessage("You do not have any courses eligible for a certificate request at this time.");
+        setErrorMessage("You have no course enrollments.");
         setStep('error');
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoadingStudent, isError, studentData, error, allEnrollments, form]);
+  }, [isLoadingStudent, isLoadingBookings, isError, studentData, error, allEnrollments, form, bookedCourseIds]);
 
 
   const createOrderMutation = useMutation({
@@ -347,24 +381,31 @@ export default function CreateCertificateOrderPage() {
                 )}
                 {allEnrollments.map(enrollment => {
                     const isEligible = enrollment.certificate_eligibility;
+                    const isBookedForConvocation = bookedCourseIds.has(enrollment.parent_course_id);
+                    const isDisabled = !isEligible || isBookedForConvocation;
+
                     return (
                         <Collapsible key={enrollment.id} className="p-4 border rounded-md has-[:disabled]:bg-muted/50 has-[:disabled]:opacity-60 transition-all">
                             <div className="flex items-center space-x-3">
                                 <Checkbox 
                                     id={enrollment.id} 
                                     checked={selectedEnrollments.some(e => e.id === enrollment.id)}
-                                    disabled={!isEligible}
+                                    disabled={isDisabled}
                                     onCheckedChange={(checked) => handleCheckboxChange(Boolean(checked), enrollment)}
                                 />
                                  <div className="flex-1">
-                                    <Label htmlFor={enrollment.id} className="font-medium leading-none peer-disabled:cursor-not-allowed">
+                                    <Label htmlFor={enrollment.id} className={cn("font-medium leading-none", isDisabled ? "cursor-not-allowed" : "peer-disabled:cursor-not-allowed")}>
                                         {enrollment.parent_course_name}
                                     </Label>
                                     <p className="text-xs text-muted-foreground">{enrollment.course_code}</p>
                                 </div>
-                                <Badge variant={isEligible ? 'default' : 'destructive'} className={cn("shrink-0", isEligible ? 'bg-green-600' : '')}>
-                                    {isEligible ? "Eligible" : "Not Eligible"}
-                                </Badge>
+                                {isBookedForConvocation ? (
+                                     <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">Booked for Convocation</Badge>
+                                ) : (
+                                    <Badge variant={isEligible ? 'default' : 'destructive'} className={cn("shrink-0", isEligible ? 'bg-green-600' : '')}>
+                                        {isEligible ? "Eligible" : "Not Eligible"}
+                                    </Badge>
+                                )}
                                 <CollapsibleTrigger asChild>
                                     <Button variant="ghost" size="sm" className="w-9 p-0">
                                         <ChevronDown className="h-4 w-4" />
