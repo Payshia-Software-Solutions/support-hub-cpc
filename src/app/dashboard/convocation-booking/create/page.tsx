@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getStudentFullInfo } from '@/lib/actions/users';
-import { getConvocationCeremonies, getPackagesByCeremony, createConvocationRegistration, getConvocationSessionCounts } from '@/lib/actions/certificates';
-import type { FullStudentData, StudentEnrollment, ConvocationCeremony, ConvocationPackage, SessionCount } from '@/lib/types';
+import { getConvocationCeremonies, getPackagesByCeremony, createConvocationRegistration, getConvocationSessionCounts, getCertificateOrdersByStudent, getConvocationRegistrationsByStudent } from '@/lib/actions/certificates';
+import type { FullStudentData, StudentEnrollment, ConvocationCeremony, ConvocationPackage, SessionCount, CertificateOrder, ConvocationRegistration } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -124,12 +124,38 @@ export default function CreateConvocationBookingPage() {
       enabled: !!selectedCeremonyId,
   });
 
+  const { data: certificateOrders, isLoading: isLoadingOrders } = useQuery<CertificateOrder[]>({
+      queryKey: ['studentCertificateOrders', user?.username],
+      queryFn: () => getCertificateOrdersByStudent(user!.username!),
+      enabled: !!user?.username,
+      staleTime: 5 * 60 * 1000,
+  });
+  
+  const { data: convocationBookings, isLoading: isLoadingBookings } = useQuery<ConvocationRegistration[]>({
+    queryKey: ['studentConvocationBookingsForCertOrder', user?.username],
+    queryFn: () => getConvocationRegistrationsByStudent(user!.username!),
+    enabled: !!user?.username,
+  });
+
 
   const allEnrollments = useMemo(() => {
     if (!studentData) return [];
     return Object.values(studentData.studentEnrollments);
   }, [studentData]);
   
+  const orderedCourseIds = useMemo(() => {
+    if (!certificateOrders) return new Set<string>();
+    const ids = new Set<string>();
+    certificateOrders.forEach(order => {
+      order.course_code.split(',').forEach(id => {
+        if (id.trim()) {
+          ids.add(id.trim());
+        }
+      });
+    });
+    return ids;
+  }, [certificateOrders]);
+
   const resetAllState = () => {
     setStep('loading');
     setSelectedCeremonyId('');
@@ -141,7 +167,7 @@ export default function CreateConvocationBookingPage() {
 
   useEffect(() => {
     resetAllState();
-    const isLoading = isLoadingStudent || isLoadingCeremonies;
+    const isLoading = isLoadingStudent || isLoadingCeremonies || isLoadingOrders || isLoadingBookings;
     if (isLoading) {
       setStep('loading');
       return;
@@ -152,25 +178,42 @@ export default function CreateConvocationBookingPage() {
       setStep('error');
       return;
     }
-     if (!allCeremonies || activeCeremonies.length === 0) {
-      setErrorMessage('There are no active convocation ceremonies at the moment. Please check back later.');
-      setStep('error');
-      return;
-    }
+
     if (studentData) {
-      if (allEnrollments.length === 0) {
-         setErrorMessage("You are not enrolled in any courses, so you cannot book for the convocation.");
-         setStep('error');
-         return;
+        if (convocationBookings && convocationBookings.some(booking => booking.registration_status !== 'Rejected' && booking.registration_status !== 'Canceled')) {
+            setErrorMessage("You already have an active convocation booking. You cannot create another one at this time.");
+            setStep('error');
+            return;
+        }
+
+      const eligibleEnrollments = allEnrollments.filter(e => e.certificate_eligibility);
+      
+      if (eligibleEnrollments.length === 0) {
+        setErrorMessage("You do not have any courses eligible for a convocation booking at this time.");
+        setStep('error');
+        return;
       }
-      // Set defaults for user info fields
+      
+      const availableForBooking = eligibleEnrollments.filter(e => !orderedCourseIds.has(e.parent_course_id));
+
+      if (availableForBooking.length === 0) {
+        setErrorMessage("You have already requested certificates for all your eligible courses. You cannot create a new convocation booking for them.");
+        setStep('error');
+        return;
+      }
+
+      if (!allCeremonies || activeCeremonies.length === 0) {
+        setErrorMessage('There are no active convocation ceremonies at the moment. Please check back later.');
+        setStep('error');
+        return;
+      }
+
       setNameOnCertificate(studentData.studentInfo.name_on_certificate || studentData.studentInfo.full_name);
       setPhone(studentData.studentInfo.telephone_1);
       
       setStep('ceremony_selection');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoadingStudent, isLoadingCeremonies, isStudentError, isCeremonyError, studentData, allCeremonies, activeCeremonies, studentError, ceremonyError, allEnrollments]);
+  }, [isLoadingStudent, isLoadingCeremonies, isLoadingOrders, isLoadingBookings, isStudentError, isCeremonyError, studentData, allCeremonies, activeCeremonies, certificateOrders, orderedCourseIds, convocationBookings, router]);
 
 
   const createBookingMutation = useMutation({
@@ -212,9 +255,8 @@ export default function CreateConvocationBookingPage() {
         toast({ variant: 'destructive', title: 'No Ceremony Selected', description: 'Please select a ceremony to continue.' });
         return;
     }
-    // Pre-select eligible courses when moving to the next step
-    const eligibleEnrollments = allEnrollments.filter(e => e.certificate_eligibility);
-    setSelectedEnrollments(eligibleEnrollments);
+    const eligibleAndNotOrdered = allEnrollments.filter(e => e.certificate_eligibility && !orderedCourseIds.has(e.parent_course_id));
+    setSelectedEnrollments(eligibleAndNotOrdered);
     setDeselectedEligible([]);
     setStep('course_selection');
   }
@@ -259,7 +301,7 @@ export default function CreateConvocationBookingPage() {
       setStep('error');
       return;
     }
-
+    
     const formData = new FormData();
     formData.append('student_number', studentData.studentInfo.username);
     formData.append('course_id', selectedEnrollments.map(e => e.parent_course_id).join(','));
@@ -391,23 +433,27 @@ export default function CreateConvocationBookingPage() {
                 )}
                 {allEnrollments.map(enrollment => {
                     const isEligible = enrollment.certificate_eligibility;
+                    const hasBeenOrdered = orderedCourseIds.has(enrollment.parent_course_id);
+                    const isDisabled = !isEligible || hasBeenOrdered;
+
                     return (
                         <Collapsible key={enrollment.id} className="p-4 border rounded-md has-[:disabled]:bg-muted/50 has-[:disabled]:opacity-60 transition-all">
                             <div className="flex items-center space-x-3">
                                 <Checkbox 
                                     id={enrollment.id} 
                                     checked={selectedEnrollments.some(e => e.id === enrollment.id)}
-                                    disabled={!isEligible}
+                                    disabled={isDisabled}
                                     onCheckedChange={(checked) => handleCheckboxChange(Boolean(checked), enrollment)}
                                 />
                                  <div className="flex-1">
-                                    <Label htmlFor={enrollment.id} className="font-medium leading-none peer-disabled:cursor-not-allowed">
+                                    <Label htmlFor={enrollment.id} className={cn("font-medium leading-none", isDisabled ? "cursor-not-allowed" : "peer-disabled:cursor-not-allowed")}>
                                         {enrollment.parent_course_name}
+                                        {hasBeenOrdered && <span className="text-xs text-amber-600 font-normal ml-2">(Certificate Ordered)</span>}
                                     </Label>
                                     <p className="text-xs text-muted-foreground">{enrollment.course_code}</p>
                                 </div>
-                                <Badge variant={isEligible ? 'default' : 'destructive'} className={cn("shrink-0", isEligible ? 'bg-green-600' : '')}>
-                                    {isEligible ? "Eligible" : "Not Eligible"}
+                                <Badge variant={isEligible ? (hasBeenOrdered ? 'secondary' : 'default') : 'destructive'} className={cn("shrink-0", isEligible && !hasBeenOrdered ? 'bg-green-600' : '')}>
+                                    {isEligible ? (hasBeenOrdered ? "Ordered" : "Eligible") : "Not Eligible"}
                                 </Badge>
                                 <CollapsibleTrigger asChild>
                                     <Button variant="ghost" size="sm" className="w-9 p-0">
@@ -757,5 +803,3 @@ export default function CreateConvocationBookingPage() {
       </div>
   );
 }
-
-    
