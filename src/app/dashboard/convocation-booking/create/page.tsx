@@ -5,8 +5,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getStudentFullInfo } from '@/lib/actions/users';
-import { getConvocationCeremonies, getPackagesByCeremony, createConvocationRegistration, getConvocationSessionCounts, getCertificateOrdersByStudent } from '@/lib/actions/certificates';
-import type { FullStudentData, StudentEnrollment, ConvocationCeremony, ConvocationPackage, SessionCount, CertificateOrder } from '@/lib/types';
+import { getConvocationCeremonies, getPackagesByCeremony, createConvocationRegistration, getConvocationSessionCounts, getCertificateOrdersByStudent, getConvocationRegistrationsByStudent } from '@/lib/actions/certificates';
+import type { FullStudentData, StudentEnrollment, ConvocationCeremony, ConvocationPackage, SessionCount, CertificateOrder, ConvocationRegistration } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -130,6 +130,12 @@ export default function CreateConvocationBookingPage() {
       enabled: !!user?.username,
       staleTime: 5 * 60 * 1000,
   });
+  
+  const { data: convocationBookings, isLoading: isLoadingBookings } = useQuery<ConvocationRegistration[]>({
+    queryKey: ['studentConvocationBookingsForCertOrder', user?.username],
+    queryFn: () => getConvocationRegistrationsByStudent(user!.username!),
+    enabled: !!user?.username,
+  });
 
 
   const allEnrollments = useMemo(() => {
@@ -161,7 +167,7 @@ export default function CreateConvocationBookingPage() {
 
   useEffect(() => {
     resetAllState();
-    const isLoading = isLoadingStudent || isLoadingCeremonies || isLoadingOrders;
+    const isLoading = isLoadingStudent || isLoadingCeremonies || isLoadingOrders || isLoadingBookings;
     if (isLoading) {
       setStep('loading');
       return;
@@ -174,6 +180,12 @@ export default function CreateConvocationBookingPage() {
     }
 
     if (studentData) {
+        if (convocationBookings && convocationBookings.some(booking => booking.registration_status !== 'Rejected' && booking.registration_status !== 'Canceled')) {
+            setErrorMessage("You already have an active convocation booking. You cannot create another one at this time.");
+            setStep('error');
+            return;
+        }
+
       const eligibleEnrollments = allEnrollments.filter(e => e.certificate_eligibility);
       
       if (eligibleEnrollments.length === 0) {
@@ -201,7 +213,7 @@ export default function CreateConvocationBookingPage() {
       
       setStep('ceremony_selection');
     }
-  }, [isLoadingStudent, isLoadingCeremonies, isLoadingOrders, isStudentError, isCeremonyError, studentData, allEnrollments, allCeremonies, activeCeremonies, certificateOrders, orderedCourseIds, router]);
+  }, [isLoadingStudent, isLoadingCeremonies, isLoadingOrders, isLoadingBookings, isStudentError, isCeremonyError, studentData, allCeremonies, activeCeremonies, certificateOrders, orderedCourseIds, convocationBookings, router]);
 
 
   const createBookingMutation = useMutation({
@@ -422,17 +434,19 @@ export default function CreateConvocationBookingPage() {
                 {allEnrollments.map(enrollment => {
                     const isEligible = enrollment.certificate_eligibility;
                     const hasBeenOrdered = orderedCourseIds.has(enrollment.parent_course_id);
+                    const isDisabled = !isEligible || hasBeenOrdered;
+
                     return (
                         <Collapsible key={enrollment.id} className="p-4 border rounded-md has-[:disabled]:bg-muted/50 has-[:disabled]:opacity-60 transition-all">
                             <div className="flex items-center space-x-3">
                                 <Checkbox 
                                     id={enrollment.id} 
                                     checked={selectedEnrollments.some(e => e.id === enrollment.id)}
-                                    disabled={!isEligible || hasBeenOrdered}
+                                    disabled={isDisabled}
                                     onCheckedChange={(checked) => handleCheckboxChange(Boolean(checked), enrollment)}
                                 />
                                  <div className="flex-1">
-                                    <Label htmlFor={enrollment.id} className={cn("font-medium leading-none", !isEligible || hasBeenOrdered ? "cursor-not-allowed" : "peer-disabled:cursor-not-allowed")}>
+                                    <Label htmlFor={enrollment.id} className={cn("font-medium leading-none", isDisabled ? "cursor-not-allowed" : "peer-disabled:cursor-not-allowed")}>
                                         {enrollment.parent_course_name}
                                         {hasBeenOrdered && <span className="text-xs text-amber-600 font-normal ml-2">(Certificate Ordered)</span>}
                                     </Label>

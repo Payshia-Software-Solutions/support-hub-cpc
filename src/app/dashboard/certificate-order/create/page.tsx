@@ -5,8 +5,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getStudentFullInfo } from '@/lib/actions/users';
-import { createCertificateOrder, getConvocationRegistrationsByStudent } from '@/lib/actions/certificates';
-import type { FullStudentData, StudentEnrollment, ConvocationRegistration } from '@/lib/types';
+import { createCertificateOrder, getConvocationRegistrationsByStudent, getCertificateOrdersByStudent } from '@/lib/actions/certificates';
+import type { FullStudentData, StudentEnrollment, ConvocationRegistration, CertificateOrder } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -133,6 +133,13 @@ export default function CreateCertificateOrderPage() {
     queryFn: () => getConvocationRegistrationsByStudent(user!.username!),
     enabled: !!user?.username,
   });
+  
+  const { data: certificateOrders, isLoading: isLoadingOrders } = useQuery<CertificateOrder[]>({
+    queryKey: ['studentCertificateOrders', user?.username],
+    queryFn: () => getCertificateOrdersByStudent(user!.username!),
+    enabled: !!user?.username,
+  });
+
 
   const bookedCourseIds = useMemo(() => {
     if (!convocationBookings) return new Set<string>();
@@ -163,7 +170,7 @@ export default function CreateCertificateOrderPage() {
 
   useEffect(() => {
     resetAllState();
-    const isLoading = isLoadingStudent || isLoadingBookings;
+    const isLoading = isLoadingStudent || isLoadingBookings || isLoadingOrders;
     if (isLoading) {
       setStep('loading');
       return;
@@ -174,6 +181,13 @@ export default function CreateCertificateOrderPage() {
       return;
     }
     if (studentData) {
+        
+      if (certificateOrders && certificateOrders.some(order => order.certificate_status === 'Pending' || order.certificate_status === 'Printed')) {
+        setErrorMessage("You already have an active certificate order being processed. You cannot create a new one at this time.");
+        setStep('error');
+        return;
+      }
+
       const cityId = studentData.studentInfo.city || "";
       
       form.reset({
@@ -200,14 +214,8 @@ export default function CreateCertificateOrderPage() {
         const eligibleEnrollments = allEnrollments.filter(e => e.certificate_eligibility);
         const availableForOrder = eligibleEnrollments.filter(e => !bookedCourseIds.has(e.parent_course_id));
 
-        if (eligibleEnrollments.length > 0 && availableForOrder.length === 0) {
-             setErrorMessage("All your eligible courses are already part of a convocation booking. You cannot order a separate certificate for them.");
-            setStep('error');
-            return;
-        }
-
-        if (eligibleEnrollments.length === 0) {
-            setErrorMessage("You do not have any courses eligible for a certificate request at this time.");
+        if (availableForOrder.length === 0) {
+             setErrorMessage("All your eligible courses are already part of a convocation booking or you have no eligible courses. You cannot order a separate certificate.");
             setStep('error');
             return;
         }
@@ -220,8 +228,7 @@ export default function CreateCertificateOrderPage() {
         setStep('error');
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoadingStudent, isLoadingBookings, isError, studentData, error, allEnrollments, form, bookedCourseIds]);
+  }, [isLoadingStudent, isLoadingBookings, isLoadingOrders, isError, studentData, error, allEnrollments, form, bookedCourseIds, certificateOrders]);
 
 
   const createOrderMutation = useMutation({
