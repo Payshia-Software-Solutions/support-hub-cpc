@@ -140,25 +140,37 @@ export default function CreateCertificateOrderPage() {
     enabled: !!user?.username,
   });
 
-
-  const bookedCourseIds = useMemo(() => {
+  const activeBookedCourseIds = useMemo(() => {
     if (!convocationBookings) return new Set<string>();
     const ids = new Set<string>();
-    convocationBookings.forEach(booking => {
+    convocationBookings
+      .filter(booking => booking.registration_status !== 'Rejected' && booking.registration_status !== 'Canceled')
+      .forEach(booking => {
         booking.course_id.split(',').forEach(id => {
-            if (id.trim()) {
-                ids.add(id.trim());
-            }
+          if (id.trim()) ids.add(id.trim());
         });
-    });
+      });
     return ids;
   }, [convocationBookings]);
-
+  
   const allEnrollments = useMemo(() => {
     if (!studentData) return [];
     return Object.values(studentData.studentEnrollments);
   }, [studentData]);
   
+  const activeOrderedCourseIds = useMemo(() => {
+    if (!certificateOrders) return new Set<string>();
+    const ids = new Set<string>();
+    certificateOrders
+      .filter(order => order.certificate_status === 'Pending' || order.certificate_status === 'Printed')
+      .forEach(order => {
+        order.course_code.split(',').forEach(id => {
+          if (id.trim()) ids.add(id.trim());
+        });
+      });
+    return ids;
+  }, [certificateOrders]);
+
   const resetAllState = () => {
     setStep('loading');
     setSelectedEnrollments([]);
@@ -182,12 +194,6 @@ export default function CreateCertificateOrderPage() {
     }
     if (studentData) {
         
-      if (certificateOrders && certificateOrders.some(order => order.certificate_status === 'Pending' || order.certificate_status === 'Printed')) {
-        setErrorMessage("You already have an active certificate order being processed. You cannot create a new one at this time.");
-        setStep('error');
-        return;
-      }
-
       const cityId = studentData.studentInfo.city || "";
       
       form.reset({
@@ -212,10 +218,13 @@ export default function CreateCertificateOrderPage() {
       
       if (allEnrollments.length > 0) {
         const eligibleEnrollments = allEnrollments.filter(e => e.certificate_eligibility);
-        const availableForOrder = eligibleEnrollments.filter(e => !bookedCourseIds.has(e.parent_course_id));
+        const availableForOrder = eligibleEnrollments.filter(e => 
+            !activeBookedCourseIds.has(e.parent_course_id) && 
+            !activeOrderedCourseIds.has(e.parent_course_id)
+        );
 
         if (availableForOrder.length === 0) {
-             setErrorMessage("All your eligible courses are already part of a convocation booking or you have no eligible courses. You cannot order a separate certificate.");
+             setErrorMessage("All your eligible courses have already been booked for convocation or have a pending certificate order. There are no new courses available to order at this time.");
             setStep('error');
             return;
         }
@@ -228,7 +237,7 @@ export default function CreateCertificateOrderPage() {
         setStep('error');
       }
     }
-  }, [isLoadingStudent, isLoadingBookings, isLoadingOrders, isError, studentData, error, allEnrollments, form, bookedCourseIds, certificateOrders]);
+  }, [isLoadingStudent, isLoadingBookings, isLoadingOrders, isError, studentData, error, allEnrollments, form, activeBookedCourseIds, activeOrderedCourseIds]);
 
 
   const createOrderMutation = useMutation({
@@ -388,8 +397,9 @@ export default function CreateCertificateOrderPage() {
                 )}
                 {allEnrollments.map(enrollment => {
                     const isEligible = enrollment.certificate_eligibility;
-                    const isBookedForConvocation = bookedCourseIds.has(enrollment.parent_course_id);
-                    const isDisabled = !isEligible || isBookedForConvocation;
+                    const isBookedForConvocation = activeBookedCourseIds.has(enrollment.parent_course_id);
+                    const hasActiveOrder = activeOrderedCourseIds.has(enrollment.parent_course_id);
+                    const isDisabled = !isEligible || isBookedForConvocation || hasActiveOrder;
 
                     return (
                         <Collapsible key={enrollment.id} className="p-4 border rounded-md has-[:disabled]:bg-muted/50 has-[:disabled]:opacity-60 transition-all">
@@ -407,7 +417,9 @@ export default function CreateCertificateOrderPage() {
                                     <p className="text-xs text-muted-foreground">{enrollment.course_code}</p>
                                 </div>
                                 {isBookedForConvocation ? (
-                                     <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">Booked for Convocation</Badge>
+                                    <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">Booked for Convocation</Badge>
+                                ) : hasActiveOrder ? (
+                                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">Order Pending</Badge>
                                 ) : (
                                     <Badge variant={isEligible ? 'default' : 'destructive'} className={cn("shrink-0", isEligible ? 'bg-green-600' : '')}>
                                         {isEligible ? "Eligible" : "Not Eligible"}
