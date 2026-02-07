@@ -137,22 +137,34 @@ export default function CreateConvocationBookingPage() {
     enabled: !!user?.username,
   });
 
-
   const allEnrollments = useMemo(() => {
     if (!studentData) return [];
     return Object.values(studentData.studentEnrollments);
   }, [studentData]);
   
-  const orderedCourseIds = useMemo(() => {
+  const activeBookedCourseIds = useMemo(() => {
+    if (!convocationBookings) return new Set<string>();
+    const ids = new Set<string>();
+    convocationBookings
+      .filter(booking => booking.registration_status !== 'Rejected' && booking.registration_status !== 'Canceled')
+      .forEach(booking => {
+        booking.course_id.split(',').forEach(id => {
+          if (id.trim()) ids.add(id.trim());
+        });
+      });
+    return ids;
+  }, [convocationBookings]);
+  
+  const activeOrderedCourseIds = useMemo(() => {
     if (!certificateOrders) return new Set<string>();
     const ids = new Set<string>();
-    certificateOrders.forEach(order => {
-      order.course_code.split(',').forEach(id => {
-        if (id.trim()) {
-          ids.add(id.trim());
-        }
+    certificateOrders
+      .filter(order => order.certificate_status === 'Pending' || order.certificate_status === 'Printed')
+      .forEach(order => {
+        order.course_code.split(',').forEach(id => {
+          if (id.trim()) ids.add(id.trim());
+        });
       });
-    });
     return ids;
   }, [certificateOrders]);
 
@@ -180,12 +192,6 @@ export default function CreateConvocationBookingPage() {
     }
 
     if (studentData) {
-        if (convocationBookings && convocationBookings.some(booking => booking.registration_status !== 'Rejected' && booking.registration_status !== 'Canceled')) {
-            setErrorMessage("You already have an active convocation booking. You cannot create another one at this time.");
-            setStep('error');
-            return;
-        }
-
       const eligibleEnrollments = allEnrollments.filter(e => e.certificate_eligibility);
       
       if (eligibleEnrollments.length === 0) {
@@ -194,10 +200,13 @@ export default function CreateConvocationBookingPage() {
         return;
       }
       
-      const availableForBooking = eligibleEnrollments.filter(e => !orderedCourseIds.has(e.parent_course_id));
+      const availableForBooking = eligibleEnrollments.filter(e => 
+        !activeBookedCourseIds.has(e.parent_course_id) &&
+        !activeOrderedCourseIds.has(e.parent_course_id)
+      );
 
       if (availableForBooking.length === 0) {
-        setErrorMessage("You have already requested certificates for all your eligible courses. You cannot create a new convocation booking for them.");
+        setErrorMessage("All your eligible courses have already been booked for convocation or have a pending certificate order. There are no new courses available to book at this time.");
         setStep('error');
         return;
       }
@@ -213,7 +222,7 @@ export default function CreateConvocationBookingPage() {
       
       setStep('ceremony_selection');
     }
-  }, [isLoadingStudent, isLoadingCeremonies, isLoadingOrders, isLoadingBookings, isStudentError, isCeremonyError, studentData, allCeremonies, activeCeremonies, certificateOrders, orderedCourseIds, convocationBookings, router]);
+  }, [isLoadingStudent, isLoadingCeremonies, isLoadingOrders, isLoadingBookings, isStudentError, isCeremonyError, studentData, allCeremonies, activeCeremonies, allEnrollments, activeBookedCourseIds, activeOrderedCourseIds]);
 
 
   const createBookingMutation = useMutation({
@@ -255,8 +264,12 @@ export default function CreateConvocationBookingPage() {
         toast({ variant: 'destructive', title: 'No Ceremony Selected', description: 'Please select a ceremony to continue.' });
         return;
     }
-    const eligibleAndNotOrdered = allEnrollments.filter(e => e.certificate_eligibility && !orderedCourseIds.has(e.parent_course_id));
-    setSelectedEnrollments(eligibleAndNotOrdered);
+    const availableForBooking = allEnrollments.filter(e => 
+        e.certificate_eligibility && 
+        !activeBookedCourseIds.has(e.parent_course_id) &&
+        !activeOrderedCourseIds.has(e.parent_course_id)
+    );
+    setSelectedEnrollments(availableForBooking);
     setDeselectedEligible([]);
     setStep('course_selection');
   }
@@ -433,8 +446,9 @@ export default function CreateConvocationBookingPage() {
                 )}
                 {allEnrollments.map(enrollment => {
                     const isEligible = enrollment.certificate_eligibility;
-                    const hasBeenOrdered = orderedCourseIds.has(enrollment.parent_course_id);
-                    const isDisabled = !isEligible || hasBeenOrdered;
+                    const hasActiveOrder = activeOrderedCourseIds.has(enrollment.parent_course_id);
+                    const isBookedForConvocation = activeBookedCourseIds.has(enrollment.parent_course_id);
+                    const isDisabled = !isEligible || hasActiveOrder || isBookedForConvocation;
 
                     return (
                         <Collapsible key={enrollment.id} className="p-4 border rounded-md has-[:disabled]:bg-muted/50 has-[:disabled]:opacity-60 transition-all">
@@ -448,13 +462,18 @@ export default function CreateConvocationBookingPage() {
                                  <div className="flex-1">
                                     <Label htmlFor={enrollment.id} className={cn("font-medium leading-none", isDisabled ? "cursor-not-allowed" : "peer-disabled:cursor-not-allowed")}>
                                         {enrollment.parent_course_name}
-                                        {hasBeenOrdered && <span className="text-xs text-amber-600 font-normal ml-2">(Certificate Ordered)</span>}
                                     </Label>
                                     <p className="text-xs text-muted-foreground">{enrollment.course_code}</p>
                                 </div>
-                                <Badge variant={isEligible ? (hasBeenOrdered ? 'secondary' : 'default') : 'destructive'} className={cn("shrink-0", isEligible && !hasBeenOrdered ? 'bg-green-600' : '')}>
-                                    {isEligible ? (hasBeenOrdered ? "Ordered" : "Eligible") : "Not Eligible"}
-                                </Badge>
+                                {isBookedForConvocation ? (
+                                    <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">Booked</Badge>
+                                ) : hasActiveOrder ? (
+                                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">Ordered</Badge>
+                                ) : (
+                                    <Badge variant={isEligible ? 'default' : 'destructive'} className={cn("shrink-0", isEligible ? 'bg-green-600' : '')}>
+                                        {isEligible ? "Eligible" : "Not Eligible"}
+                                    </Badge>
+                                )}
                                 <CollapsibleTrigger asChild>
                                     <Button variant="ghost" size="sm" className="w-9 p-0">
                                         <ChevronDown className="h-4 w-4" />
