@@ -90,7 +90,7 @@ export default function CreateCertificateOrderPage() {
   const [selectedEnrollments, setSelectedEnrollments] = useState<StudentEnrollment[]>([]);
   const [deselectedEligible, setDeselectedEligible] = useState<StudentEnrollment[]>([]);
   const [addressData, setAddressData] = useState<AddressFormValues | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [errorDetails, setErrorDetails] = useState<{ message: string; enrollments?: StudentEnrollment[] } | null>(null);
   const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
   const [cityName, setCityName] = useState('');
   const [districtName, setDistrictName] = useState('');
@@ -175,8 +175,7 @@ export default function CreateCertificateOrderPage() {
     setStep('loading');
     setSelectedEnrollments([]);
     setDeselectedEligible([]);
-    setAddressData(null);
-    setErrorMessage('');
+    setErrorDetails(null);
     form.reset();
   };
 
@@ -188,7 +187,7 @@ export default function CreateCertificateOrderPage() {
       return;
     }
     if (isError) {
-      setErrorMessage(error.message);
+      setErrorDetails({ message: error.message });
       setStep('error');
       return;
     }
@@ -224,7 +223,10 @@ export default function CreateCertificateOrderPage() {
         );
 
         if (availableForOrder.length === 0) {
-             setErrorMessage("All your eligible courses have already been booked for convocation or have a pending certificate order. There are no new courses available to order at this time.");
+             setErrorDetails({
+                message: "All your eligible courses have either been booked for convocation or already have a pending certificate order. There are no new courses available to order at this time.",
+                enrollments: allEnrollments
+             });
             setStep('error');
             return;
         }
@@ -233,11 +235,12 @@ export default function CreateCertificateOrderPage() {
         setDeselectedEligible([]);
         setStep('selection');
       } else {
-        setErrorMessage("You have no course enrollments.");
+        setErrorDetails({ message: "You have no course enrollments." });
         setStep('error');
       }
     }
-  }, [isLoadingStudent, isLoadingBookings, isLoadingOrders, isError, studentData, error, allEnrollments, form, activeBookedCourseIds, activeOrderedCourseIds]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoadingStudent, isLoadingBookings, isLoadingOrders, isError, studentData, error]);
 
 
   const createOrderMutation = useMutation({
@@ -251,7 +254,7 @@ export default function CreateCertificateOrderPage() {
         });
     },
     onError: (err: Error) => {
-        setErrorMessage(err.message || 'An unknown error occurred while submitting the order.');
+        setErrorDetails({ message: err.message || 'An unknown error occurred while submitting the order.' });
         setStep('error');
     }
   });
@@ -307,12 +310,12 @@ export default function CreateCertificateOrderPage() {
   const handleConfirmAndSubmit = () => {
     const studentUsername = user?.username;
     if (!studentUsername || !addressData || selectedEnrollments.length === 0) {
-      setErrorMessage("Missing required information to submit the order.");
+      setErrorDetails({ message: "Missing required information to submit the order." });
       setStep('error');
       return;
     }
      if (totalPrice > 0 && !paymentSlip) {
-      setErrorMessage("Payment slip is required for orders with additional items.");
+      setErrorDetails({ message: "Payment slip is required for orders with additional items." });
       setStep('error');
       return;
     }
@@ -706,12 +709,72 @@ export default function CreateCertificateOrderPage() {
 
             case 'error':
                 return (
-                    <CardContent className="text-center p-8 flex flex-col items-center gap-4">
-                       <AlertCircle className="w-16 h-16 text-destructive" />
-                       <h2 className="text-xl font-semibold">Something Went Wrong</h2>
-                       <p className="text-muted-foreground">{errorMessage}</p>
-                       <Button asChild variant="outline" className="mt-4"><Link href="/dashboard/certificate-order">Back to Bookings</Link></Button>
-                    </CardContent>
+                    <>
+                        <CardHeader className="items-center text-center">
+                           <AlertCircle className="w-16 h-16 text-destructive" />
+                           <CardTitle>Order Not Available</CardTitle>
+                           <CardDescription>{errorDetails?.message}</CardDescription>
+                        </CardHeader>
+                        {errorDetails?.enrollments && errorDetails.enrollments.length > 0 && (
+                            <CardContent>
+                                <div className="w-full max-w-lg mx-auto text-left space-y-4">
+                                    <h3 className="font-semibold text-center">Your Course Status Overview</h3>
+                                    {errorDetails.enrollments.map(enrollment => {
+                                        const isEligible = enrollment.certificate_eligibility;
+                                        const isBooked = activeBookedCourseIds.has(enrollment.parent_course_id);
+                                        const isOrdered = activeOrderedCourseIds.has(enrollment.parent_course_id);
+
+                                        let statusBadge: React.ReactNode;
+                                        if (isBooked) {
+                                            statusBadge = <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">Booked</Badge>;
+                                        } else if (isOrdered) {
+                                            statusBadge = <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">Ordered</Badge>;
+                                        } else if (isEligible) {
+                                            statusBadge = <Badge variant="default" className="bg-green-600">Eligible to Order</Badge>;
+                                        } else {
+                                            statusBadge = <Badge variant="destructive">Not Eligible</Badge>;
+                                        }
+
+                                        return (
+                                            <Collapsible key={enrollment.id} className="p-4 border rounded-md" defaultOpen={!isEligible}>
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="font-medium">{enrollment.parent_course_name}</p>
+                                                        <p className="text-xs text-muted-foreground">{enrollment.course_code}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {statusBadge}
+                                                        {!isEligible && <CollapsibleTrigger asChild><Button variant="ghost" size="sm" className="w-9 p-0"><ChevronDown className="h-4 w-4" /></Button></CollapsibleTrigger>}
+                                                    </div>
+                                                </div>
+                                                {!isEligible && (
+                                                    <CollapsibleContent className="mt-4 pt-4 border-t">
+                                                        <h4 className="text-sm font-semibold mb-2">Reasons for Ineligibility:</h4>
+                                                        <ul className="space-y-2 text-sm">
+                                                            {enrollment.criteria_details.map(criterion => !criterion.evaluation.completed && (
+                                                                <li key={criterion.id} className="flex items-center justify-between text-xs">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <XCircle className="h-4 w-4 text-destructive shrink-0" />
+                                                                        <span className="text-muted-foreground">{criterion.list_name}</span>
+                                                                    </div>
+                                                                    <span className="font-mono text-foreground bg-muted px-1.5 py-0.5 rounded-sm">
+                                                                        {criterion.evaluation.currentValue} / {criterion.evaluation.requiredValue}
+                                                                    </span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </CollapsibleContent>
+                                                )}
+                                            </Collapsible>
+                                        );
+                                    })}
+                                </div>
+                            </CardContent>
+                        )}
+                        <CardFooter className="justify-center">
+                            <Button asChild variant="outline"><Link href="/dashboard/certificate-order">Back to Orders</Link></Button>
+                        </CardFooter>
+                    </>
                 );
       }
   };
@@ -756,3 +819,5 @@ export default function CreateCertificateOrderPage() {
       </div>
   );
 }
+
+    
