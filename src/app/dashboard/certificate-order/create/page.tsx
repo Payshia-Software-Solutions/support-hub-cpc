@@ -215,11 +215,18 @@ export default function CreateCertificateOrderPage() {
           }).catch(() => setCityName(''));
       }
       
+      const hasActiveOrder = certificateOrders && certificateOrders.some(order => order.certificate_status === 'Pending' || order.certificate_status === 'Printed');
+
+      if (hasActiveOrder) {
+          setErrorDetails({ message: "You already have an active certificate order. Please wait for it to be completed before placing a new one." });
+          setStep('error');
+          return;
+      }
+      
       if (allEnrollments.length > 0) {
         const eligibleEnrollments = allEnrollments.filter(e => e.certificate_eligibility);
         const availableForOrder = eligibleEnrollments.filter(e => 
-            !activeBookedCourseIds.has(e.parent_course_id) && 
-            !activeOrderedCourseIds.has(e.parent_course_id)
+            !activeBookedCourseIds.has(e.parent_course_id)
         );
 
         if (availableForOrder.length === 0) {
@@ -401,8 +408,7 @@ export default function CreateCertificateOrderPage() {
                 {allEnrollments.map(enrollment => {
                     const isEligible = enrollment.certificate_eligibility;
                     const isBookedForConvocation = activeBookedCourseIds.has(enrollment.parent_course_id);
-                    const hasActiveOrder = activeOrderedCourseIds.has(enrollment.parent_course_id);
-                    const isDisabled = !isEligible || isBookedForConvocation || hasActiveOrder;
+                    const isDisabled = !isEligible || isBookedForConvocation;
 
                     return (
                         <Collapsible key={enrollment.id} className="p-4 border rounded-md has-[:disabled]:bg-muted/50 has-[:disabled]:opacity-60 transition-all">
@@ -421,8 +427,6 @@ export default function CreateCertificateOrderPage() {
                                 </div>
                                 {isBookedForConvocation ? (
                                     <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">Booked for Convocation</Badge>
-                                ) : hasActiveOrder ? (
-                                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">Order Pending</Badge>
                                 ) : (
                                     <Badge variant={isEligible ? 'default' : 'destructive'} className={cn("shrink-0", isEligible ? 'bg-green-600' : '')}>
                                         {isEligible ? "Eligible" : "Not Eligible"}
@@ -726,9 +730,9 @@ export default function CreateCertificateOrderPage() {
 
                                         let statusBadge: React.ReactNode;
                                         if (isBooked) {
-                                            statusBadge = <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">Booked</Badge>;
+                                            statusBadge = <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">Booked for Convocation</Badge>;
                                         } else if (isOrdered) {
-                                            statusBadge = <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">Ordered</Badge>;
+                                            statusBadge = <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">Already Ordered</Badge>;
                                         } else if (isEligible) {
                                             statusBadge = <Badge variant="default" className="bg-green-600">Eligible to Order</Badge>;
                                         } else {
@@ -820,4 +824,3 @@ export default function CreateCertificateOrderPage() {
   );
 }
 
-    
