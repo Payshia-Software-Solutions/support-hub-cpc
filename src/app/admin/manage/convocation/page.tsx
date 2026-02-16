@@ -228,7 +228,8 @@ export default function ConvocationListPage() {
     const { data: registrations, isLoading, isError, error } = useQuery<ConvocationRegistration[]>({
         queryKey: ['convocationRegistrations', ceremonyIdFilter],
         queryFn: () => getConvocationRegistrations(ceremonyIdFilter || undefined),
-        staleTime: 1000 * 60 * 5, 
+        staleTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
     });
 
     const { data: packages, isLoading: isLoadingPackages } = useQuery<ConvocationPackage[]>({
@@ -236,24 +237,28 @@ export default function ConvocationListPage() {
         queryFn: () => getPackagesByCeremony(ceremonyIdFilter || ''),
         enabled: !!ceremonyIdFilter,
         staleTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
     });
     
     const { data: courses, isLoading: isLoadingCourses } = useQuery<ParentCourse[]>({
         queryKey: ['allParentCourses'],
         queryFn: getParentCourses,
         staleTime: Infinity,
+        refetchOnWindowFocus: false,
     });
     
     const { data: paymentRequests, isLoading: isLoadingPayments } = useQuery<PaymentRequest[]>({
         queryKey: ['allPaymentRequests'],
         queryFn: () => getPaymentRequests(),
         staleTime: 1000 * 60 * 2,
+        refetchOnWindowFocus: false,
     });
 
     const { data: studentData, isLoading: isLoadingStudentData, isError: isErrorStudentData, error: studentDataError } = useQuery({
         queryKey: ['studentFullInfoForConvocationDetail', viewingDetails?.student_number],
         queryFn: () => getStudentFullInfo(viewingDetails!.student_number),
         enabled: !!viewingDetails,
+        refetchOnWindowFocus: false,
     });
 
     type SortableColumn = 'date' | 'student' | 'ref' | 'ceremony' | 'due' | 'session' | 'course' | 'package' | 'seats';
@@ -601,5 +606,3 @@ export default function ConvocationListPage() {
         </div>
     );
 }
-
-    
