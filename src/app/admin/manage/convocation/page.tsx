@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getConvocationRegistrations, getPackagesByCeremony, getParentCourses, getConvocationSessionCounts, updateConvocationCourses, getUserCertificatePrintStatus, generateCertificate } from '@/lib/actions/certificates';
 import { getStudentFullInfo, getStudentBalance } from '@/lib/actions/users';
-import { getPaymentRequestsByReference } from '@/lib/api';
+import { getPaymentRequests } from '@/lib/actions/payments';
 import type { ConvocationRegistration, ConvocationPackage, ParentCourse, PaymentRequest, FullStudentData, StudentEnrollment, ApiPaymentRecord, UserCertificatePrintStatus, GenerateCertificatePayload, StudentBalanceData } from '@/lib/types';
 import { format, isValid, parseISO } from 'date-fns';
 import Image from 'next/image';
@@ -235,16 +235,19 @@ export default function ConvocationListPage() {
         queryKey: ['convocationPackages', ceremonyIdFilter],
         queryFn: () => getPackagesByCeremony(ceremonyIdFilter || ''),
         enabled: !!ceremonyIdFilter,
+        staleTime: 1000 * 60 * 5,
     });
     
     const { data: courses, isLoading: isLoadingCourses } = useQuery<ParentCourse[]>({
         queryKey: ['allParentCourses'],
         queryFn: getParentCourses,
+        staleTime: Infinity,
     });
     
     const { data: paymentRequests, isLoading: isLoadingPayments } = useQuery<PaymentRequest[]>({
         queryKey: ['allPaymentRequests'],
         queryFn: () => getPaymentRequests(),
+        staleTime: 1000 * 60 * 2,
     });
 
     const { data: studentData, isLoading: isLoadingStudentData, isError: isErrorStudentData, error: studentDataError } = useQuery({
