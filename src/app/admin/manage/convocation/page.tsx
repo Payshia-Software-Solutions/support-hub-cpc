@@ -27,7 +27,6 @@ import { cn } from '@/lib/utils';
 
 // Modular Components
 import { RegistrationDetailDialog } from '@/components/admin/convocation/RegistrationDetailDialog';
-import { ViewSlipDialog } from '@/components/admin/convocation/ViewSlipDialog';
 
 const ITEMS_PER_PAGE = 25;
 const PARENT_SEAT_RATE = 750;
@@ -241,11 +240,11 @@ export default function ConvocationListPage() {
                                     <TableRow className="hover:bg-transparent">
                                         <TableHead className="w-[120px]"><SortableHeader column="ref" label="Ref / Cerem" /></TableHead>
                                         <TableHead className="min-w-[180px]"><SortableHeader column="student" label="Student Details" /></TableHead>
-                                        <TableHead className="min-w-[200px]">Selection (Course/Pkg)</TableHead>
+                                        <TableHead className="min-w-[220px]">Selection (Course/Pkg)</TableHead>
                                         <TableHead className="w-[100px] text-center">Booking</TableHead>
                                         <TableHead className="w-[120px] text-right"><SortableHeader column="due" label="Financials" /></TableHead>
                                         <TableHead className="w-[140px]">Status</TableHead>
-                                        <TableHead className="w-[100px] text-right">Actions</TableHead>
+                                        <TableHead className="w-[100px] text-right pr-6">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -255,44 +254,51 @@ export default function ConvocationListPage() {
                                         const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || `ID: ${reg.package_id}`;
 
                                         return (
-                                        <TableRow key={reg.registration_id} className={cn("text-xs transition-colors", reg.isDuplicate && "bg-destructive/5 hover:bg-destructive/10")}>
-                                            <TableCell>
+                                        <TableRow key={reg.registration_id} className={cn("text-xs transition-colors hover:bg-muted/30", reg.isDuplicate && "bg-destructive/5 hover:bg-destructive/10")}>
+                                            <TableCell className="py-4">
                                                 <div className="font-mono font-bold text-sm">#{reg.reference_number}</div>
-                                                <div className="text-[10px] text-muted-foreground">Ceremony: {reg.ceremony_number}</div>
+                                                <div className="text-[10px] text-muted-foreground mt-0.5">Ceremony: {reg.ceremony_number || 'N/A'}</div>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="py-4">
                                                 <div className="font-semibold text-sm">{reg.student_number}</div>
-                                                <div className="text-[10px] text-muted-foreground truncate max-w-[160px]">{reg.name_on_certificate}</div>
+                                                <div className="text-[10px] text-muted-foreground truncate max-w-[160px] mt-0.5">{reg.name_on_certificate}</div>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="py-4">
                                                 <div className="flex flex-col gap-1 mb-1.5">
                                                     {reg.course_id.split(',').map(id => (
-                                                        <div key={id} className="text-[10px] leading-tight font-medium">• {courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`}</div>
+                                                        <div key={id} className="text-[10px] leading-tight font-medium text-foreground">• {courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`}</div>
                                                     ))}
                                                 </div>
-                                                <div className="text-[10px] font-bold text-primary">Pkg: {packageName}</div>
+                                                <div className="text-[10px] font-bold text-primary italic">Pkg: {packageName}</div>
                                             </TableCell>
-                                            <TableCell className="text-center">
-                                                <div className="flex flex-col gap-1">
-                                                    <Badge variant="outline" className="h-4 text-[9px] w-fit mx-auto">Sess {reg.session}</Badge>
-                                                    <span className="text-[10px] text-muted-foreground">{reg.additional_seats} Seats</span>
+                                            <TableCell className="text-center py-4">
+                                                <div className="flex flex-col gap-1.5 items-center">
+                                                    <Badge variant="outline" className="h-5 text-[9px] px-2 font-bold uppercase tracking-wider">Sess {reg.session}</Badge>
+                                                    <span className="text-[10px] font-medium text-muted-foreground">{reg.additional_seats} Guest Seats</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className={cn("font-mono font-bold text-sm", due > 0 ? "text-destructive" : "text-green-600")}>{due.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-                                                <div className="text-[10px] text-muted-foreground">Paid: {parseFloat(reg.payment_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                                            <TableCell className="text-right py-4">
+                                                <div className={cn("font-mono font-bold text-sm", due > 0 ? "text-destructive" : "text-green-600")}>
+                                                    {due.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                </div>
+                                                <div className="text-[10px] text-muted-foreground mt-0.5">Paid: {parseFloat(reg.payment_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
                                             </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col gap-1">
-                                                    <Badge className={cn("px-1.5 py-0 h-4 text-[9px] uppercase font-bold", getStatusBadge(reg.payment_status))}>{reg.payment_status}</Badge>
-                                                    <Badge variant="secondary" className="px-1.5 py-0 h-4 text-[9px] uppercase font-medium w-fit">{reg.registration_status}</Badge>
+                                            <TableCell className="py-4">
+                                                <div className="flex flex-col gap-1.5">
+                                                    <Badge className={cn("px-2 py-0.5 h-auto text-[9px] uppercase font-bold w-fit", getStatusBadge(reg.payment_status))}>{reg.payment_status}</Badge>
+                                                    <Badge variant="secondary" className="px-2 py-0.5 h-auto text-[9px] uppercase font-medium w-fit bg-muted text-muted-foreground">{reg.registration_status}</Badge>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-1">
-                                                    <Button variant="outline" size="sm" onClick={() => setViewingDetails(reg)} className="h-7 px-2 text-[10px]"><Eye className="h-3 w-3 mr-1" /> View</Button>
-                                                    <ViewSlipDialog slipPath={reg.image_path} studentName={reg.name_on_certificate} trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><FileText className="h-4 w-4"/></Button>} />
-                                                </div>
+                                            <TableCell className="text-right py-4 pr-6">
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm" 
+                                                    onClick={() => setViewingDetails(reg)} 
+                                                    className="h-8 px-3 text-[11px] font-semibold"
+                                                >
+                                                    <Eye className="h-3.5 w-3.5 mr-1.5" /> 
+                                                    View
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                         )
