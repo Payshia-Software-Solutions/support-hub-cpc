@@ -4,11 +4,33 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getConvocationRegistrations, getPackagesByCeremony, getConvocationSessionCounts, updateConvocationCourses, updateConvocationBooking, getUserCertificatePrintStatus, generateCertificate } from '@/lib/actions/certificates';
+import { 
+    getConvocationRegistrations, 
+    getPackagesByCeremony, 
+    getConvocationSessionCounts, 
+    updateConvocationBooking, 
+    getUserCertificatePrintStatus, 
+    generateCertificate,
+    getConvocationRegistrationsByStudent,
+    getCertificateOrdersByStudent
+} from '@/lib/actions/certificates';
 import { getStudentFullInfo, getStudentBalance } from '@/lib/actions/users';
 import { getParentCourses } from '@/lib/actions/courses';
 import { getPaymentRequests } from '@/lib/actions/payments';
-import type { ConvocationRegistration, ConvocationPackage, ParentCourse, PaymentRequest, FullStudentData, StudentEnrollment, ApiPaymentRecord, UserCertificatePrintStatus, GenerateCertificatePayload, StudentBalanceData, SessionCount } from '@/lib/types';
+import type { 
+    ConvocationRegistration, 
+    ConvocationPackage, 
+    ParentCourse, 
+    PaymentRequest, 
+    FullStudentData, 
+    StudentEnrollment, 
+    ApiPaymentRecord, 
+    UserCertificatePrintStatus, 
+    GenerateCertificatePayload, 
+    StudentBalanceData, 
+    SessionCount,
+    CertificateOrder
+} from '@/lib/types';
 import { format, isValid, parseISO } from 'date-fns';
 import Image from 'next/image';
 
@@ -20,7 +42,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Search, FileText, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy, Trash2, Printer, Eye, Gamepad2, ClipboardCheck, XCircle, Truck, Save } from 'lucide-react';
+import { AlertTriangle, Search, FileText, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy, Trash2, Printer, Eye, Gamepad2, ClipboardCheck, XCircle, Truck, Save, ChevronDown } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -43,6 +65,8 @@ import {
 } from "@/components/ui/tooltip";
 import { useAuth } from '@/contexts/AuthContext';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 
 const ITEMS_PER_PAGE = 25;
@@ -228,6 +252,7 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
     const [editSeats, setEditSeats] = useState('0');
     const [editName, setEditName] = useState('');
     const [editPhone, setEditPhone] = useState('');
+    const [editCourseIds, setEditCourseIds] = useState<string[]>([]);
 
     useEffect(() => {
         if (registration) {
@@ -236,8 +261,39 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
             setEditSeats(registration.additional_seats || '0');
             setEditName(registration.name_on_certificate || '');
             setEditPhone(registration.telephone_1 || '');
+            setEditCourseIds(registration.course_id.split(',').map(s => s.trim()).filter(Boolean));
         }
     }, [registration]);
+
+    const { data: otherBookings } = useQuery<ConvocationRegistration[]>({
+        queryKey: ['convocationRegistrationsByStudent', registration?.student_number],
+        queryFn: () => getConvocationRegistrationsByStudent(registration!.student_number),
+        enabled: !!registration?.student_number,
+    });
+
+    const { data: certOrders } = useQuery<CertificateOrder[]>({
+        queryKey: ['certificateOrdersByStudent', registration?.student_number],
+        queryFn: () => getCertificateOrdersByStudent(registration!.student_number),
+        enabled: !!registration?.student_number,
+    });
+
+    const bookedElsewhereIds = useMemo(() => {
+        if (!otherBookings || !registration) return new Set<string>();
+        const ids = new Set<string>();
+        otherBookings
+            .filter(b => b.registration_id !== registration.registration_id && b.registration_status !== 'Rejected' && b.registration_status !== 'Canceled')
+            .forEach(b => b.course_id.split(',').forEach(id => ids.add(id.trim())));
+        return ids;
+    }, [otherBookings, registration]);
+
+    const orderedElsewhereIds = useMemo(() => {
+        if (!certOrders) return new Set<string>();
+        const ids = new Set<string>();
+        certOrders
+            .filter(o => o.certificate_status !== 'Delivered')
+            .forEach(o => o.course_code.split(',').forEach(id => ids.add(id.trim())));
+        return ids;
+    }, [certOrders]);
 
     const { data: paymentRequests, isLoading: isLoadingPaymentRequests } = useQuery<PaymentRequest[]>({
         queryKey: ['convocationPaymentRequests', registration?.reference_number],
@@ -262,26 +318,6 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
 
     if (!registration) return null;
 
-    const getCourseNames = (courseIds: string) => {
-        if (!courses) return 'Loading...';
-        return courseIds.split(',').map(id => {
-            const course = courses.find(c => c.id === id.trim());
-            return course?.course_name || `Unknown Course (${id})`;
-        }).join(', ');
-    };
-
-    const getPaymentRequestsByReference = async (reference: string): Promise<PaymentRequest[]> => {
-        const response = await fetch(`https://qa-api.pharmacollege.lk/payment-portal-requests/by-reference/${reference}`);
-        if (response.status === 404) {
-            return [];
-        }
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: 'Failed to fetch payment requests by reference' }));
-            throw new Error(errorData.message || `Request failed with status ${response.status}`);
-        }
-        return response.json();
-    };
-
     const handleUpdate = () => {
         updateMutation.mutate({
             package_id: editPackageId,
@@ -289,12 +325,23 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
             additional_seats: editSeats,
             name_on_certificate: editName,
             telephone_1: editPhone,
+            course_id: editCourseIds.join(','),
         });
+    };
+
+    const getPaymentRequestsByReference = async (reference: string): Promise<PaymentRequest[]> => {
+        const response = await fetch(`https://qa-api.pharmacollege.lk/payment-portal-requests/by-reference/${reference}`);
+        if (response.status === 404) return [];
+        if (!response.ok) throw new Error('Failed to fetch payment requests');
+        return response.json();
+    };
+
+    const handleCourseToggle = (courseId: string, checked: boolean) => {
+        setEditCourseIds(prev => checked ? [...prev, courseId] : prev.filter(id => id !== courseId));
     };
 
     const seatsAvailable = (() => {
         if (!registration.convocation_id || !sessionCounts) return { s1: 0, s2: 0 };
-        // This is a simplified calculation, ideally you'd have the total capacity too.
         const s1 = parseInt(sessionCounts.find(s => s.session === '1')?.sessionCounts || '0', 10);
         const s2 = parseInt(sessionCounts.find(s => s.session === '2')?.sessionCounts || '0', 10);
         return { s1, s2 };
@@ -321,43 +368,102 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
                                         Update Details
                                     </Button>
                                 </CardHeader>
-                                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs">Package</Label>
-                                        <Select value={editPackageId} onValueChange={setEditPackageId}>
-                                            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                {packages?.filter(p => p.convocation_id === registration.convocation_id).map(p => (
-                                                    <SelectItem key={p.package_id} value={p.package_id} className="text-xs">{p.package_name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                <CardContent className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs">Package</Label>
+                                            <Select value={editPackageId} onValueChange={setEditPackageId}>
+                                                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    {packages?.filter(p => p.convocation_id === registration.convocation_id).map(p => (
+                                                        <SelectItem key={p.package_id} value={p.package_id} className="text-xs">{p.package_name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs">Session (S1: {seatsAvailable.s1} reg | S2: {seatsAvailable.s2} reg)</Label>
+                                            <Select value={editSession} onValueChange={(v) => setEditSession(v as '1' | '2')}>
+                                                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                                <SelectContent><SelectItem value="1">Session 1</SelectItem><SelectItem value="2">Session 2</SelectItem></SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs">Additional Seats</Label>
+                                            <Select value={editSeats} onValueChange={setEditSeats}>
+                                                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                                <SelectContent>{[0,1,2,3,4,5].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}</SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs">Name on Certificate</Label>
+                                            <Input value={editName} onChange={e => setEditName(e.target.value)} className="h-9 text-xs" />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs">Phone Number</Label>
+                                            <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} className="h-9 text-xs" />
+                                        </div>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs">Session (S1: {seatsAvailable.s1} reg | S2: {seatsAvailable.s2} reg)</Label>
-                                        <Select value={editSession} onValueChange={(v) => setEditSession(v as '1' | '2')}>
-                                            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                                            <SelectContent><SelectItem value="1">Session 1</SelectItem><SelectItem value="2">Session 2</SelectItem></SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs">Additional Seats</Label>
-                                        <Select value={editSeats} onValueChange={setEditSeats}>
-                                            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                                            <SelectContent>{[0,1,2,3,4,5].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}</SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs">Name on Certificate</Label>
-                                        <Input value={editName} onChange={e => setEditName(e.target.value)} className="h-9 text-xs" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs">Phone Number</Label>
-                                        <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} className="h-9 text-xs" />
-                                    </div>
-                                    <div className="space-y-1.5 opacity-70 pointer-events-none">
-                                        <Label className="text-xs">Course(s)</Label>
-                                        <div className="p-2 border rounded-md text-[10px] bg-muted/30 truncate">{getCourseNames(registration.course_id)}</div>
+
+                                    {/* Course Selection */}
+                                    <div className="space-y-3 pt-4 border-t">
+                                        <Label className="text-xs font-semibold">Course(s) in Booking</Label>
+                                        {isLoadingStudentData ? <Skeleton className="h-20 w-full" /> : studentData && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                {Object.values(studentData.studentEnrollments).map(enrollment => {
+                                                    const isChecked = editCourseIds.includes(enrollment.parent_course_id);
+                                                    const isEligible = enrollment.certificate_eligibility;
+                                                    const isBookedElsewhere = bookedElsewhereIds.has(enrollment.parent_course_id);
+                                                    const isOrderedElsewhere = orderedElsewhereIds.has(enrollment.parent_course_id);
+                                                    const isDisabled = !isEligible || isBookedElsewhere || isOrderedElsewhere;
+
+                                                    return (
+                                                        <Collapsible key={enrollment.id} className={cn(
+                                                            "border rounded-md p-3 transition-colors",
+                                                            isChecked && "bg-primary/5 border-primary/20",
+                                                            isDisabled && !isChecked && "opacity-60 bg-muted/50"
+                                                        )}>
+                                                            <div className="flex items-start gap-3">
+                                                                <Checkbox 
+                                                                    id={`edit-course-${enrollment.id}`} 
+                                                                    checked={isChecked}
+                                                                    disabled={isDisabled}
+                                                                    onCheckedChange={(checked) => handleCourseToggle(enrollment.parent_course_id, Boolean(checked))}
+                                                                    className="mt-1"
+                                                                />
+                                                                <div className="flex-1 space-y-1">
+                                                                    <Label htmlFor={`edit-course-${enrollment.id}`} className="text-xs font-bold leading-tight block">
+                                                                        {enrollment.parent_course_name}
+                                                                    </Label>
+                                                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                                                        {isChecked && <Badge variant="default" className="text-[9px] h-4 px-1 bg-primary/20 text-primary border-primary/30">In This Booking</Badge>}
+                                                                        {isBookedElsewhere && <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-purple-100 text-purple-800">Booked Elsewhere</Badge>}
+                                                                        {isOrderedElsewhere && <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-amber-100 text-amber-800 border-amber-200">Already Ordered</Badge>}
+                                                                        {!isEligible && (
+                                                                            <Badge variant="destructive" className="text-[9px] h-4 px-1">Not Eligible</Badge>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                {!isEligible && (
+                                                                    <CollapsibleTrigger asChild>
+                                                                        <Button variant="ghost" size="xs" className="h-6 w-6 p-0"><ChevronDown className="h-3 w-3"/></Button>
+                                                                    </CollapsibleTrigger>
+                                                                )}
+                                                            </div>
+                                                            <CollapsibleContent className="mt-2 pt-2 border-t text-[10px] space-y-1 text-muted-foreground">
+                                                                <p className="font-bold text-foreground">Pending Requirements:</p>
+                                                                {enrollment.criteria_details.filter(c => !c.evaluation.completed).map(c => (
+                                                                    <div key={c.id} className="flex justify-between">
+                                                                        <span>• {c.list_name}</span>
+                                                                        <span>{c.evaluation.currentValue} / {c.evaluation.requiredValue}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </CollapsibleContent>
+                                                        </Collapsible>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -596,7 +702,10 @@ export default function ConvocationListPage() {
                 reg.reference_number.toLowerCase().includes(lowercasedSearch);
             
             const matchesStatus = statusFilter === 'all' || reg.payment_status.toLowerCase() === statusFilter.toLowerCase();
-            const matchesCourse = courseFilter === 'all' || reg.course_id.split(',').map(s => s.trim()).includes(courseFilter);
+            const matchesCourse = reg.course_id.split(',').some(id => {
+                const course = courses?.find(c => c.id === id.trim());
+                return courseFilter === 'all' || course?.id === courseFilter;
+            });
             const matchesPackage = packageFilter === 'all' || reg.package_id === packageFilter;
             const matchesSession = sessionFilter === 'all' || reg.session === sessionFilter;
             
@@ -640,7 +749,7 @@ export default function ConvocationListPage() {
             return 0;
         });
 
-    }, [registrations, packages, searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption]);
+    }, [registrations, packages, searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption, courses]);
     
     useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption]);
 
