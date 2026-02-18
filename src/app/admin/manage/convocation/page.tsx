@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -22,7 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Eye, FileText } from 'lucide-react';
+import { Search, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Eye, FileText, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Modular Components
@@ -86,14 +87,17 @@ export default function ConvocationListPage() {
         const isAsc = isSorted && sortOption.endsWith('asc');
 
         return (
-            <Button variant="ghost" onClick={() => handleSort(column)} className="px-2 py-1 h-auto -ml-2 text-xs font-semibold hover:bg-transparent">
+            <button 
+                onClick={() => handleSort(column)} 
+                className="flex items-center gap-1 hover:text-primary transition-colors text-xs font-semibold uppercase tracking-wider"
+            >
                 {label}
                 {isSorted ? (
-                    isAsc ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />
+                    isAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
                 ) : (
-                    <ChevronsUpDown className="ml-1 h-3 w-3 opacity-30" />
+                    <ChevronsUpDown className="h-3 w-3 opacity-30" />
                 )}
-            </Button>
+            </button>
         );
     };
 
@@ -238,12 +242,9 @@ export default function ConvocationListPage() {
                             <Table>
                                 <TableHeader className="bg-muted/10">
                                     <TableRow className="hover:bg-transparent">
-                                        <TableHead className="w-[120px]"><SortableHeader column="ref" label="Ref / Cerem" /></TableHead>
-                                        <TableHead className="min-w-[180px]"><SortableHeader column="student" label="Student Details" /></TableHead>
-                                        <TableHead className="min-w-[220px]">Selection (Course/Pkg)</TableHead>
-                                        <TableHead className="w-[100px] text-center">Booking</TableHead>
-                                        <TableHead className="w-[120px] text-right"><SortableHeader column="due" label="Financials" /></TableHead>
-                                        <TableHead className="w-[140px]">Status</TableHead>
+                                        <TableHead className="w-[220px]"><SortableHeader column="student" label="Student / Reference" /></TableHead>
+                                        <TableHead className="min-w-[300px]">Registration Details</TableHead>
+                                        <TableHead className="w-[180px] text-right"><SortableHeader column="due" label="Status & Finance" /></TableHead>
                                         <TableHead className="w-[100px] text-right pr-6">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -255,41 +256,43 @@ export default function ConvocationListPage() {
 
                                         return (
                                         <TableRow key={reg.registration_id} className={cn("text-xs transition-colors hover:bg-muted/30", reg.isDuplicate && "bg-destructive/5 hover:bg-destructive/10")}>
-                                            <TableCell className="py-4">
-                                                <div className="font-mono font-bold text-sm">#{reg.reference_number}</div>
-                                                <div className="text-[10px] text-muted-foreground mt-0.5">Ceremony: {reg.ceremony_number || 'N/A'}</div>
-                                            </TableCell>
-                                            <TableCell className="py-4">
-                                                <div className="font-semibold text-sm">{reg.student_number}</div>
-                                                <div className="text-[10px] text-muted-foreground truncate max-w-[160px] mt-0.5">{reg.name_on_certificate}</div>
-                                            </TableCell>
-                                            <TableCell className="py-4">
-                                                <div className="flex flex-col gap-1 mb-1.5">
-                                                    {reg.course_id.split(',').map(id => (
-                                                        <div key={id} className="text-[10px] leading-tight font-medium text-foreground">• {courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`}</div>
-                                                    ))}
-                                                </div>
-                                                <div className="text-[10px] font-bold text-primary italic">Pkg: {packageName}</div>
-                                            </TableCell>
-                                            <TableCell className="text-center py-4">
-                                                <div className="flex flex-col gap-1.5 items-center">
-                                                    <Badge variant="outline" className="h-5 text-[9px] px-2 font-bold uppercase tracking-wider">Sess {reg.session}</Badge>
-                                                    <span className="text-[10px] font-medium text-muted-foreground">{reg.additional_seats} Guest Seats</span>
+                                            <TableCell className="py-4 align-top">
+                                                <div className="space-y-1">
+                                                    <div className="font-mono font-bold text-sm">#{reg.reference_number}</div>
+                                                    <div className="font-semibold text-sm text-primary">{reg.student_number}</div>
+                                                    <div className="text-[10px] font-medium uppercase tracking-tighter truncate max-w-[180px]">{reg.name_on_certificate}</div>
+                                                    <div className="text-[9px] text-muted-foreground pt-1 border-t border-dashed">Ceremony: {reg.ceremony_number || 'N/A'}</div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right py-4">
-                                                <div className={cn("font-mono font-bold text-sm", due > 0 ? "text-destructive" : "text-green-600")}>
-                                                    {due.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                            <TableCell className="py-4 align-top">
+                                                <div className="space-y-3">
+                                                    <div className="flex flex-col gap-1">
+                                                        {reg.course_id.split(',').map(id => (
+                                                            <div key={id} className="text-[11px] leading-tight font-medium text-foreground">• {courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`}</div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                        <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-100">Pkg: {packageName}</span>
+                                                        <Badge variant="outline" className="h-5 text-[9px] px-2 font-bold uppercase">Sess {reg.session}</Badge>
+                                                        <span className="text-[10px] font-medium text-muted-foreground">{reg.additional_seats} Guest Seats</span>
+                                                    </div>
                                                 </div>
-                                                <div className="text-[10px] text-muted-foreground mt-0.5">Paid: {parseFloat(reg.payment_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
                                             </TableCell>
-                                            <TableCell className="py-4">
-                                                <div className="flex flex-col gap-1.5">
-                                                    <Badge className={cn("px-2 py-0.5 h-auto text-[9px] uppercase font-bold w-fit", getStatusBadge(reg.payment_status))}>{reg.payment_status}</Badge>
-                                                    <Badge variant="secondary" className="px-2 py-0.5 h-auto text-[9px] uppercase font-medium w-fit bg-muted text-muted-foreground">{reg.registration_status}</Badge>
+                                            <TableCell className="py-4 align-top text-right">
+                                                <div className="space-y-2">
+                                                    <div>
+                                                        <div className={cn("font-mono font-bold text-sm", due > 0 ? "text-destructive" : "text-green-600")}>
+                                                            LKR {due.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                        </div>
+                                                        <div className="text-[10px] text-muted-foreground mt-0.5">Paid: {parseFloat(reg.payment_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <Badge className={cn("px-2 py-0.5 h-auto text-[9px] uppercase font-bold w-fit", getStatusBadge(reg.payment_status))}>{reg.payment_status}</Badge>
+                                                        <Badge variant="secondary" className="px-2 py-0.5 h-auto text-[9px] uppercase font-medium w-fit bg-muted text-muted-foreground">{reg.registration_status}</Badge>
+                                                    </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right py-4 pr-6">
+                                            <TableCell className="py-4 pr-6 align-top text-right">
                                                 <Button 
                                                     variant="outline" 
                                                     size="sm" 
@@ -303,7 +306,7 @@ export default function ConvocationListPage() {
                                         </TableRow>
                                         )
                                     }) : (
-                                        <TableRow><TableCell colSpan={7} className="text-center h-32 text-muted-foreground italic">No registrations found.</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={4} className="text-center h-32 text-muted-foreground italic">No registrations found.</TableCell></TableRow>
                                     )}
                                 </TableBody>
                             </Table>
