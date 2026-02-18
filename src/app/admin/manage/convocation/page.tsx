@@ -11,8 +11,8 @@ import type { ConvocationRegistration, ConvocationPackage, ParentCourse, Payment
 import { format, isValid, parseISO } from 'date-fns';
 import Image from 'next/image';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -84,6 +84,18 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
     const getPackageName = (packageId: string) => {
         if (!packages) return 'Loading...';
         return packages.find(p => p.package_id === packageId)?.package_name || 'Unknown Package';
+    };
+
+    const getPaymentRequestsByReference = async (reference: string): Promise<PaymentRequest[]> => {
+        const response = await fetch(`https://qa-api.pharmacollege.lk/payment-portal-requests/by-reference/${reference}`);
+        if (response.status === 404) {
+            return [];
+        }
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Failed to fetch payment requests by reference' }));
+            throw new Error(errorData.message || `Request failed with status ${response.status}`);
+        }
+        return response.json();
     };
 
     return (
@@ -167,7 +179,6 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
                                                 <AccordionTrigger className="py-3">{enrollment.parent_course_name} ({enrollment.course_code})</AccordionTrigger>
                                                 <AccordionContent>
                                                     <p className="text-sm">Average Grade: {enrollment.assignment_grades.average_grade}%</p>
-                                                    {/* Further details can be added here if needed */}
                                                 </AccordionContent>
                                             </AccordionItem>
                                         </Accordion>
@@ -228,7 +239,7 @@ export default function ConvocationListPage() {
     const { data: registrations, isLoading, isError, error } = useQuery<ConvocationRegistration[]>({
         queryKey: ['convocationRegistrations', ceremonyIdFilter],
         queryFn: () => getConvocationRegistrations(ceremonyIdFilter || undefined),
-        staleTime: 1000 * 60 * 5,
+        staleTime: 1000 * 60 * 15,
         refetchOnWindowFocus: false,
     });
 
@@ -236,7 +247,7 @@ export default function ConvocationListPage() {
         queryKey: ['convocationPackages', ceremonyIdFilter],
         queryFn: () => getPackagesByCeremony(ceremonyIdFilter || ''),
         enabled: !!ceremonyIdFilter,
-        staleTime: 1000 * 60 * 5,
+        staleTime: 1000 * 60 * 15,
         refetchOnWindowFocus: false,
     });
     
@@ -250,7 +261,7 @@ export default function ConvocationListPage() {
     const { data: paymentRequests, isLoading: isLoadingPayments } = useQuery<PaymentRequest[]>({
         queryKey: ['allPaymentRequests'],
         queryFn: () => getPaymentRequests(),
-        staleTime: 1000 * 60 * 2,
+        staleTime: 1000 * 60 * 5,
         refetchOnWindowFocus: false,
     });
 
@@ -281,12 +292,12 @@ export default function ConvocationListPage() {
         const isAsc = isSorted && sortOption.endsWith('asc');
 
         return (
-            <Button variant="ghost" onClick={() => handleSort(column)} className="px-2 py-1 h-auto -ml-2">
+            <Button variant="ghost" onClick={() => handleSort(column)} className="px-2 py-1 h-auto -ml-2 text-xs font-semibold">
                 {label}
                 {isSorted ? (
-                    isAsc ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                    isAsc ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />
                 ) : (
-                    <ChevronsUpDown className="ml-2 h-4 w-4 opacity-30" />
+                    <ChevronsUpDown className="ml-1 h-3 w-3 opacity-30" />
                 )}
             </Button>
         );
@@ -322,7 +333,7 @@ export default function ConvocationListPage() {
 
         const filtered = registrations.map(reg => {
             const isDuplicate = seenHashes.has(reg.hash_value);
-            seenHashes.add(reg.hash_value);
+            if (reg.hash_value) seenHashes.add(reg.hash_value);
             
             const pkg = packages.find(p => p.package_id === reg.package_id);
             const dueAmount = pkg ? parseFloat(pkg.price) + (parseInt(reg.additional_seats, 10) * PARENT_SEAT_RATE) : 0;
@@ -474,8 +485,8 @@ export default function ConvocationListPage() {
                 </Card>
             </section>
             
-            <Card className="shadow-lg relative w-full">
-                <CardHeader>
+            <Card className="shadow-lg relative w-full overflow-hidden">
+                <CardHeader className="border-b bg-muted/20 pb-6">
                      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
                             <CardTitle>All Registrations</CardTitle>
@@ -484,112 +495,141 @@ export default function ConvocationListPage() {
                             </CardDescription>
                         </div>
                     </div>
-                     <div className="space-y-2 pt-4">
-                        <div className="relative w-full md:max-w-xs">
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 pt-4">
+                        <div className="relative w-full lg:col-span-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search by name, student #, ref #" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10"/>
+                            <Input placeholder="Search name, student #, ref #" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-10"/>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                             <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger><SelectValue placeholder="Filter by status" /></SelectTrigger>
-                                <SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="paid">Paid</SelectItem><SelectItem value="pending">Pending</SelectItem><SelectItem value="rejected">Rejected</SelectItem></SelectContent>
-                            </Select>
-                            <Select value={sessionFilter} onValueChange={setSessionFilter}>
-                                <SelectTrigger><SelectValue placeholder="Filter by session" /></SelectTrigger>
-                                <SelectContent><SelectItem value="all">All Sessions</SelectItem><SelectItem value="1">Session 1</SelectItem><SelectItem value="2">Session 2</SelectItem></SelectContent>
-                            </Select>
-                            <Select value={courseFilter} onValueChange={setCourseFilter} disabled={isLoadingCourses}>
-                                <SelectTrigger><SelectValue placeholder="Filter by course" /></SelectTrigger>
-                                <SelectContent><SelectItem value="all">All Courses</SelectItem>{courses?.map(c => <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>)}</SelectContent>
-                            </Select>
-                             <Select value={packageFilter} onValueChange={setPackageFilter} disabled={isLoadingPackages}>
-                                <SelectTrigger><SelectValue placeholder="Filter by package" /></SelectTrigger>
-                                <SelectContent><SelectItem value="all">All Packages</SelectItem>{packages?.filter(p => !ceremonyIdFilter || p.convocation_id === ceremonyIdFilter).map(p => <SelectItem key={p.package_id} value={p.package_id}>{p.package_name}</SelectItem>)}</SelectContent>
-                            </Select>
-                        </div>
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="h-10"><SelectValue placeholder="Status" /></SelectTrigger>
+                            <SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="paid">Paid</SelectItem><SelectItem value="pending">Pending</SelectItem><SelectItem value="rejected">Rejected</SelectItem></SelectContent>
+                        </Select>
+                        <Select value={sessionFilter} onValueChange={setSessionFilter}>
+                            <SelectTrigger className="h-10"><SelectValue placeholder="Session" /></SelectTrigger>
+                            <SelectContent><SelectItem value="all">All Sessions</SelectItem><SelectItem value="1">Session 1</SelectItem><SelectItem value="2">Session 2</SelectItem></SelectContent>
+                        </Select>
+                        <Select value={courseFilter} onValueChange={setCourseFilter} disabled={isLoadingCourses}>
+                            <SelectTrigger className="h-10"><SelectValue placeholder="Course" /></SelectTrigger>
+                            <SelectContent><SelectItem value="all">All Courses</SelectItem>{courses?.map(c => <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>)}</SelectContent>
+                        </Select>
+                         <Select value={packageFilter} onValueChange={setPackageFilter} disabled={isLoadingPackages}>
+                            <SelectTrigger className="h-10"><SelectValue placeholder="Package" /></SelectTrigger>
+                            <SelectContent><SelectItem value="all">All Packages</SelectItem>{packages?.filter(p => !ceremonyIdFilter || p.convocation_id === ceremonyIdFilter).map(p => <SelectItem key={p.package_id} value={p.package_id}>{p.package_name}</SelectItem>)}</SelectContent>
+                        </Select>
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0">
                     {isLoadingData ? (
-                         <div className="space-y-2">
+                         <div className="p-6 space-y-2">
                            <Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" />
                         </div>
                     ) : (
                         <div className="w-full overflow-x-auto">
                             <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead><SortableHeader column="ref" label="Ref #" /></TableHead>
-                                        <TableHead>Action</TableHead>
-                                        <TableHead><SortableHeader column="ceremony" label="Ceremony #" /></TableHead>
-                                        <TableHead><SortableHeader column="due" label="Due" /></TableHead>
-                                        <TableHead>2nd Payment</TableHead>
-                                        <TableHead><SortableHeader column="student" label="Student #" /></TableHead>
-                                        <TableHead><SortableHeader column="session" label="Session" /></TableHead>
-                                        <TableHead><SortableHeader column="course" label="Courses" /></TableHead>
-                                        <TableHead><SortableHeader column="package" label="Package" /></TableHead>
-                                        <TableHead><SortableHeader column="seats" label="Add. Seats" /></TableHead>
-                                        <TableHead>Paid</TableHead>
-                                        <TableHead>Slip</TableHead>
-                                        <TableHead>Duplicate</TableHead>
-                                        <TableHead>Payment Status</TableHead>
-                                        <TableHead>Registration Status</TableHead>
+                                <TableHeader className="bg-muted/10">
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableHead className="w-[100px]"><SortableHeader column="ref" label="Ref #" /></TableHead>
+                                        <TableHead className="w-[100px] text-center">Action</TableHead>
+                                        <TableHead className="w-[100px]"><SortableHeader column="ceremony" label="Cerem." /></TableHead>
+                                        <TableHead className="w-[100px] text-right"><SortableHeader column="due" label="Due" /></TableHead>
+                                        <TableHead className="w-[120px] text-center">2nd Payment</TableHead>
+                                        <TableHead className="w-[120px]"><SortableHeader column="student" label="Student #" /></TableHead>
+                                        <TableHead className="w-[80px]"><SortableHeader column="session" label="Sess." /></TableHead>
+                                        <TableHead className="min-w-[150px]"><SortableHeader column="course" label="Course(s)" /></TableHead>
+                                        <TableHead className="min-w-[150px]"><SortableHeader column="package" label="Package" /></TableHead>
+                                        <TableHead className="w-[80px] text-center"><SortableHeader column="seats" label="Seats" /></TableHead>
+                                        <TableHead className="w-[100px] text-right">Paid</TableHead>
+                                        <TableHead className="w-[80px] text-center">Slip</TableHead>
+                                        <TableHead className="w-[120px]">Pay. Status</TableHead>
+                                        <TableHead className="w-[120px]">Reg. Status</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {paginatedRegistrations.length > 0 ? paginatedRegistrations.map((reg) => {
                                         const lastPaymentRequest = paymentRequests?.filter(pr => pr.unique_number === reg.student_number).pop();
+                                        const isPaid = ['paid', 'approved', 'confirmed'].includes(reg.payment_status.toLowerCase());
+                                        const due = isPaid ? reg.dueAmount - parseFloat(reg.payment_amount) : reg.dueAmount;
+
                                         return (
-                                        <TableRow key={reg.registration_id}>
-                                            <TableCell>{reg.reference_number}</TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col gap-1 w-20">
-                                                    <Button variant="outline" size="sm" onClick={() => setViewingDetails(reg)}>View</Button>
-                                                </div>
+                                        <TableRow key={reg.registration_id} className={cn("text-xs", reg.isDuplicate && "bg-destructive/5 hover:bg-destructive/10")}>
+                                            <TableCell className="font-mono">{reg.reference_number}</TableCell>
+                                            <TableCell className="text-center">
+                                                <Button variant="outline" size="xs" onClick={() => setViewingDetails(reg)} className="h-7 px-2">View</Button>
                                             </TableCell>
-                                            <TableCell>{reg.ceremony_number}</TableCell>
-                                            <TableCell>
-                                                {(() => {
-                                                    const isPaid = ['paid', 'approved', 'confirmed'].includes(reg.payment_status.toLowerCase());
-                                                    const due = isPaid ? reg.dueAmount - parseFloat(reg.payment_amount) : reg.dueAmount;
-                                                    return due.toFixed(2);
-                                                })()}
+                                            <TableCell className="text-center font-medium">{reg.ceremony_number}</TableCell>
+                                            <TableCell className="text-right font-mono font-semibold">
+                                                {due.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="text-center">
                                                 <ViewSlipDialog slipPath={lastPaymentRequest?.slip_path || null} studentName={reg.name_on_certificate} trigger={
-                                                    <Button variant="outline" size="sm" disabled={!lastPaymentRequest?.slip_path}>
-                                                        {lastPaymentRequest ? 'View Slip' : 'No Request'}
+                                                    <Button variant="ghost" size="xs" disabled={!lastPaymentRequest?.slip_path} className="h-7 px-2 underline decoration-dotted">
+                                                        {lastPaymentRequest ? 'View' : '-'}
                                                     </Button>
                                                 }/>
                                             </TableCell>
-                                            <TableCell>{reg.student_number}</TableCell>
-                                            <TableCell>
-                                                <Select defaultValue={reg.session} onValueChange={(value) => console.log('TODO: Update session to', value)}><SelectTrigger className="w-20"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">1</SelectItem><SelectItem value="2">2</SelectItem></SelectContent></Select>
+                                            <TableCell className="font-medium whitespace-nowrap">
+                                                <p>{reg.student_number}</p>
+                                                <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{reg.name_on_certificate}</p>
                                             </TableCell>
                                             <TableCell>
-                                                {reg.course_id.split(',').map(id => {
-                                                    const courseName = courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`;
-                                                    return <div key={id} className="whitespace-nowrap">{courseName}</div>
-                                                })}
+                                                <Select defaultValue={reg.session} onValueChange={(value) => console.log('Update session', value)}>
+                                                    <SelectTrigger className="h-7 px-2 w-14 text-[10px]"><SelectValue /></SelectTrigger>
+                                                    <SelectContent><SelectItem value="1">1</SelectItem><SelectItem value="2">2</SelectItem></SelectContent>
+                                                </Select>
                                             </TableCell>
                                             <TableCell>
-                                                <Select defaultValue={reg.package_id} onValueChange={(value) => console.log('TODO: Update package to', value)}><SelectTrigger><SelectValue placeholder="Select Package" /></SelectTrigger><SelectContent>{packages?.filter(p => p.convocation_id === reg.convocation_id).map(p => <SelectItem key={p.package_id} value={p.package_id}>{p.package_name}</SelectItem>)}</SelectContent></Select>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {reg.course_id.split(',').map(id => {
+                                                        const course = courses?.find(c => c.id === id.trim());
+                                                        return (
+                                                            <TooltipProvider key={id}>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-5 cursor-help">
+                                                                            {course?.course_code || id}
+                                                                        </Badge>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent className="max-w-[200px] text-xs">
+                                                                        {course?.course_name || `Course ID: ${id}`}
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        )
+                                                    })}
+                                                </div>
                                             </TableCell>
-                                             <TableCell>
-                                                <Select defaultValue={reg.additional_seats} onValueChange={(value) => console.log('TODO: Update seats to', value)}><SelectTrigger className="w-20"><SelectValue /></SelectTrigger><SelectContent>{[0,1,2].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}</SelectContent></Select>
-                                            </TableCell>
-                                            <TableCell>{parseFloat(reg.payment_amount).toFixed(2)}</TableCell>
                                             <TableCell>
-                                                <ViewSlipDialog slipPath={reg.image_path} studentName={reg.name_on_certificate} trigger={<Button variant="outline" size="sm">View</Button>} />
+                                                <Select defaultValue={reg.package_id} onValueChange={(value) => console.log('Update package', value)}>
+                                                    <SelectTrigger className="h-7 px-2 text-[10px] w-full max-w-[140px]"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {packages?.filter(p => p.convocation_id === reg.convocation_id).map(p => (
+                                                            <SelectItem key={p.package_id} value={p.package_id} className="text-xs">{p.package_name}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </TableCell>
-                                            <TableCell>{reg.isDuplicate && <Badge variant="destructive">Duplicate</Badge>}</TableCell>
-                                            <TableCell><Badge className={getStatusBadge(reg.payment_status)}>{reg.payment_status}</Badge></TableCell>
-                                            <TableCell><Badge variant="secondary">{reg.registration_status}</Badge></TableCell>
+                                             <TableCell className="text-center">
+                                                <Select defaultValue={reg.additional_seats} onValueChange={(value) => console.log('Update seats', value)}>
+                                                    <SelectTrigger className="h-7 px-2 w-14 text-[10px] mx-auto"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>{[0,1,2].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}</SelectContent>
+                                                </Select>
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono text-muted-foreground">{parseFloat(reg.payment_amount).toFixed(2)}</TableCell>
+                                            <TableCell className="text-center">
+                                                <ViewSlipDialog slipPath={reg.image_path} studentName={reg.name_on_certificate} trigger={<Button variant="ghost" size="xs" className="h-7 p-0"><FileText className="h-4 w-4"/></Button>} />
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Badge className={cn("px-1.5 py-0 h-5 text-[10px] uppercase font-bold", getStatusBadge(reg.payment_status))}>{reg.payment_status}</Badge>
+                                                    {reg.isDuplicate && <Badge variant="destructive" className="px-1.5 py-0 h-5 text-[9px] animate-pulse">DUP</Badge>}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell><Badge variant="secondary" className="px-1.5 py-0 h-5 text-[10px] uppercase font-medium">{reg.registration_status}</Badge></TableCell>
                                         </TableRow>
                                         )
                                     }) : (
                                         <TableRow>
-                                            <TableCell colSpan={16} className="text-center h-24">No registrations found.</TableCell>
+                                            <TableCell colSpan={14} className="text-center h-32 text-muted-foreground italic">No registrations found.</TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
@@ -597,9 +637,9 @@ export default function ConvocationListPage() {
                         </div>
                     )}
                 </CardContent>
-                 <CardFooter className="flex items-center justify-center space-x-2 pt-4">
+                 <CardFooter className="flex items-center justify-center space-x-2 py-4 border-t bg-muted/10">
                      <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>Previous</Button>
-                     <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
+                     <span className="text-sm font-medium">Page {currentPage} of {totalPages || 1}</span>
                      <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages || totalPages === 0}>Next</Button>
                 </CardFooter>
             </Card>
