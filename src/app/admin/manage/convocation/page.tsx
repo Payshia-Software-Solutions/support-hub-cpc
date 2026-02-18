@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -218,13 +219,13 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
     isError: boolean,
     error: Error | null
 }) => {
-    if (!registration) return null;
-
     const { data: paymentRequests, isLoading: isLoadingPaymentRequests } = useQuery<PaymentRequest[]>({
         queryKey: ['convocationPaymentRequests', registration?.reference_number],
         queryFn: () => getPaymentRequestsByReference(registration!.reference_number),
         enabled: !!registration?.reference_number,
     });
+
+    if (!registration) return null;
 
     const getCourseNames = (courseIds: string) => {
         if (!courses) return 'Loading...';
@@ -262,81 +263,99 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
                 </DialogHeader>
                 <ScrollArea className="flex-1">
                     <div className="p-6 space-y-6">
-                        {isLoadingStudentData && (
-                            <div className="space-y-4">
-                                <Skeleton className="h-40 w-full" />
-                                <Skeleton className="h-64 w-full" />
-                            </div>
-                        )}
-                        {isError && (
-                            <div className="text-destructive">Error loading student details: {(error as Error).message}</div>
-                        )}
-                        {studentData && (
-                            <div className="space-y-6 pb-10">
+                        <div className="space-y-6 pb-10">
+                            {/* Booking Info Card - Always visible */}
+                            <Card>
+                                <CardHeader><CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Booking Info</CardTitle></CardHeader>
+                                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <InfoBox label="Ref #" value={registration.reference_number} />
+                                    <InfoBox label="Student Number" value={registration.student_number} />
+                                    <InfoBox label="Courses" value={getCourseNames(registration.course_id)} />
+                                    <InfoBox label="Payment Status" value={<Badge className="uppercase text-[10px]">{registration.payment_status}</Badge>} />
+                                    <InfoBox 
+                                        label="Overall Balance" 
+                                        value={isLoadingStudentData ? <Skeleton className="h-4 w-16" /> : `LKR ${studentData?.studentBalance.studentBalance.toLocaleString() || '0'}`} 
+                                    />
+                                    <InfoBox label="Additional Seats" value={registration.additional_seats} />
+                                    <InfoBox label="Payable Amount" value={`LKR ${parseFloat(registration.payment_amount).toLocaleString()}`} />
+                                    <InfoBox label="Package" value={getPackageName(registration.package_id)} />
+                                </CardContent>
+                            </Card>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                                {/* Student Account Balance Card */}
                                 <Card>
-                                    <CardHeader><CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Booking Info</CardTitle></CardHeader>
-                                    <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        <InfoBox label="Ref #" value={registration.reference_number} />
-                                        <InfoBox label="Student Number" value={registration.student_number} />
-                                        <InfoBox label="Courses" value={getCourseNames(registration.course_id)} />
-                                        <InfoBox label="Payment Status" value={<Badge className="uppercase text-[10px]">{registration.payment_status}</Badge>} />
-                                        <InfoBox label="Overall Balance" value={`LKR ${studentData.studentBalance.studentBalance.toLocaleString()}`} />
-                                        <InfoBox label="Additional Seats" value={registration.additional_seats} />
-                                        <InfoBox label="Payable Amount" value={`LKR ${parseFloat(registration.payment_amount).toLocaleString()}`} />
-                                        <InfoBox label="Package" value={getPackageName(registration.package_id)} />
+                                    <CardHeader><CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Student Account Balance</CardTitle></CardHeader>
+                                    <CardContent className="space-y-2">
+                                        {isLoadingStudentData ? (
+                                            <div className="space-y-2">
+                                                <Skeleton className="h-4 w-full" />
+                                                <Skeleton className="h-4 w-full" />
+                                                <Skeleton className="h-8 w-full mt-4" />
+                                            </div>
+                                        ) : isError ? (
+                                            <p className="text-sm text-destructive">Error loading balance</p>
+                                        ) : studentData ? (
+                                            <>
+                                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Due:</span> <span className="font-semibold">LKR {studentData.studentBalance.TotalRegistrationFee.toLocaleString()}</span></div>
+                                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Payments:</span> <span className="font-semibold text-green-600">LKR {studentData.studentBalance.totalPaymentAmount.toLocaleString()}</span></div>
+                                                <div className="flex justify-between text-lg font-bold pt-2 border-t mt-2"><span className="text-muted-foreground">Balance:</span> <span className={cn(studentData.studentBalance.studentBalance > 0 ? 'text-destructive' : 'text-green-600')}>LKR {studentData.studentBalance.studentBalance.toLocaleString()}</span></div>
+                                            </>
+                                        ) : null}
                                     </CardContent>
                                 </Card>
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                                    <Card>
-                                        <CardHeader><CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Student Account Balance</CardTitle></CardHeader>
-                                        <CardContent className="space-y-2">
-                                            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Due:</span> <span className="font-semibold">LKR {studentData.studentBalance.TotalRegistrationFee.toLocaleString()}</span></div>
-                                            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Payments:</span> <span className="font-semibold text-green-600">LKR {studentData.studentBalance.totalPaymentAmount.toLocaleString()}</span></div>
-                                            <div className="flex justify-between text-lg font-bold pt-2 border-t mt-2"><span className="text-muted-foreground">Balance:</span> <span className={cn(studentData.studentBalance.studentBalance > 0 ? 'text-destructive' : 'text-green-600')}>LKR {studentData.studentBalance.studentBalance.toLocaleString()}</span></div>
-                                        </CardContent>
-                                    </Card>
-                                    <Card>
-                                        <CardHeader><CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Convocation Payment Request</CardTitle></CardHeader>
-                                        <CardContent>
-                                            {isLoadingPaymentRequests ? <Skeleton className="h-16 w-full" /> : (
-                                                paymentRequests && paymentRequests.length > 0 ? (
-                                                    paymentRequests.map(req => (
-                                                        <div key={req.id} className="text-sm p-3 border rounded-md flex justify-between items-center mb-2 last:mb-0">
-                                                            <div>
-                                                                <p className="text-[10px] text-muted-foreground uppercase font-bold">{req.payment_reference || `Req #${req.id}`}</p>
-                                                                <p className="text-xs text-muted-foreground mb-1">{format(new Date(req.paid_date), 'PP')}</p>
-                                                                <p className="font-bold text-lg">LKR {parseFloat(req.paid_amount).toLocaleString()}</p>
-                                                            </div>
-                                                            <div className="text-right flex flex-col items-end gap-2">
-                                                                <Badge className={cn(
-                                                                    req.payment_status === 'Approved' && 'bg-green-600',
-                                                                    req.payment_status === 'Pending' && 'bg-yellow-500 text-yellow-900',
-                                                                    req.payment_status === 'Rejected' && 'bg-destructive'
-                                                                )}>{req.payment_status}</Badge>
-                                                                <ViewSlipDialog slipPath={req.slip_path} studentName={registration.name_on_certificate} trigger={<Button variant="outline" size="xs">View Slip</Button>} />
-                                                            </div>
+
+                                {/* Convocation Payment Request Card */}
+                                <Card>
+                                    <CardHeader><CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Convocation Payment Request</CardTitle></CardHeader>
+                                    <CardContent>
+                                        {isLoadingPaymentRequests ? <Skeleton className="h-16 w-full" /> : (
+                                            paymentRequests && paymentRequests.length > 0 ? (
+                                                paymentRequests.map(req => (
+                                                    <div key={req.id} className="text-sm p-3 border rounded-md flex justify-between items-center mb-2 last:mb-0">
+                                                        <div>
+                                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">{req.payment_reference || `Req #${req.id}`}</p>
+                                                            <p className="text-xs text-muted-foreground mb-1">{format(new Date(req.paid_date), 'PP')}</p>
+                                                            <p className="font-bold text-lg">LKR {parseFloat(req.paid_amount).toLocaleString()}</p>
                                                         </div>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-sm text-center text-muted-foreground italic py-4">No specific payment record found.</p>
-                                                )
-                                            )}
-                                        </CardContent>
-                                    </Card>
+                                                        <div className="text-right flex flex-col items-end gap-2">
+                                                            <Badge className={cn(
+                                                                req.payment_status === 'Approved' && 'bg-green-600',
+                                                                req.payment_status === 'Pending' && 'bg-yellow-500 text-yellow-900',
+                                                                req.payment_status === 'Rejected' && 'bg-destructive'
+                                                            )}>{req.payment_status}</Badge>
+                                                            <ViewSlipDialog slipPath={req.slip_path} studentName={registration.name_on_certificate} trigger={<Button variant="outline" size="xs">View Slip</Button>} />
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-sm text-center text-muted-foreground italic py-4">No specific payment record found.</p>
+                                            )
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Student Enrollments Section */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-semibold font-headline">Student Enrollments</h3>
+                                    {isLoadingStudentData ? <Skeleton className="h-5 w-16" /> : studentData && <Badge variant="secondary" className="font-mono text-xs">{Object.keys(studentData.studentEnrollments).length} Total</Badge>}
                                 </div>
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-lg font-semibold font-headline">Student Enrollments</h3>
-                                        <Badge variant="secondary" className="font-mono text-xs">{Object.keys(studentData.studentEnrollments).length} Total</Badge>
-                                    </div>
-                                    <div className="space-y-4">
-                                        {Object.values(studentData.studentEnrollments).map(enrollment => (
+                                    {isLoadingStudentData ? (
+                                        <>
+                                            <Skeleton className="h-16 w-full" />
+                                            <Skeleton className="h-16 w-full" />
+                                        </>
+                                    ) : studentData ? (
+                                        Object.values(studentData.studentEnrollments).map(enrollment => (
                                             <EnrollmentDetailAccordion key={enrollment.id} enrollment={enrollment} />
-                                        ))}
-                                    </div>
+                                        ))
+                                    ) : null}
                                 </div>
                             </div>
-                        )}
+                        </div>
                     </div>
                 </ScrollArea>
             </DialogContent>
