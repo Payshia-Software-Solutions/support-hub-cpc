@@ -64,6 +64,12 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const [paymentStatus, setPaymentStatus] = useState('');
     const [ceremonyNumber, setCeremonyNumber] = useState('');
 
+    const { data: studentData, isLoading: isLoadingStudentData } = useQuery<FullStudentData>({
+        queryKey: ['studentFullInfoForConvocationDetail', registration?.student_number],
+        queryFn: () => getStudentFullInfo(registration!.student_number),
+        enabled: !!registration?.student_number,
+    });
+
     useEffect(() => {
         if (registration) {
             setEditPackageId(registration.package_id || '');
@@ -81,11 +87,15 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         }
     }, [registration]);
 
-    const { data: studentData, isLoading: isLoadingStudentData } = useQuery<FullStudentData>({
-        queryKey: ['studentFullInfoForConvocationDetail', registration?.student_number],
-        queryFn: () => getStudentFullInfo(registration!.student_number),
-        enabled: !!registration?.student_number,
-    });
+    // Fallback effect to fill name/phone from studentData if they are empty in registration
+    useEffect(() => {
+        if (studentData && !editName && !registration?.name_on_certificate) {
+            setEditName(studentData.studentInfo.name_on_certificate || studentData.studentInfo.full_name);
+        }
+        if (studentData && !editPhone && !registration?.telephone_1) {
+            setEditPhone(studentData.studentInfo.telephone_1);
+        }
+    }, [studentData, registration, editName, editPhone]);
 
     const { data: otherBookings } = useQuery<ConvocationRegistration[]>({
         queryKey: ['convocationRegistrationsByStudent', registration?.student_number],
@@ -242,15 +252,25 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                 <SelectContent>{[0,1,2,3,4,5].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}</SelectContent>
                                             </Select>
                                         </div>
-                                        <div className="space-y-1.5">
+                                        <div className="space-y-1.5 md:col-span-1 lg:col-span-1">
                                             <Label className="text-xs">Name on Certificate</Label>
-                                            <Input value={editName} onChange={e => setEditName(e.target.value)} className="h-9 text-xs" />
+                                            <Input 
+                                                value={editName} 
+                                                onChange={e => setEditName(e.target.value)} 
+                                                className="h-9 text-xs" 
+                                                placeholder={studentData?.studentInfo.name_on_certificate || "Enter name..."}
+                                            />
                                         </div>
-                                        <div className="space-y-1.5">
+                                        <div className="space-y-1.5 md:col-span-1 lg:col-span-1">
                                             <Label className="text-xs">Phone Number</Label>
-                                            <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} className="h-9 text-xs" />
+                                            <Input 
+                                                value={editPhone} 
+                                                onChange={e => setEditPhone(e.target.value)} 
+                                                className="h-9 text-xs" 
+                                                placeholder={studentData?.studentInfo.telephone_1 || "Enter phone..."}
+                                            />
                                         </div>
-                                        <div className="space-y-1.5">
+                                        <div className="space-y-1.5 md:col-span-2 lg:col-span-1">
                                             <Label className="text-xs">Total Payable (Auto-calc)</Label>
                                             <div className="h-9 flex items-center px-3 border rounded-md bg-muted/50 font-mono font-bold text-primary">
                                                 LKR {totalPayable.toLocaleString('en-US', { minimumFractionDigits: 2 })}
@@ -272,8 +292,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-[10px] text-muted-foreground uppercase font-bold">Certificate Details</p>
-                                            <p className="text-sm font-semibold">{registration.name_on_certificate}</p>
-                                            <p className="text-xs text-muted-foreground">{registration.telephone_1}</p>
+                                            <p className="text-sm font-semibold">{registration.name_on_certificate || studentData?.studentInfo.name_on_certificate || studentData?.studentInfo.full_name || 'N/A'}</p>
+                                            <p className="text-xs text-muted-foreground">{registration.telephone_1 || studentData?.studentInfo.telephone_1 || 'N/A'}</p>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-[10px] text-muted-foreground uppercase font-bold">Total Calculated Payable</p>
