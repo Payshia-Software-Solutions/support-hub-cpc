@@ -37,6 +37,16 @@ import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Wallet, Fil
 import { EnrollmentDetailAccordion } from './EnrollmentDetailAccordion';
 import { ViewSlipDialog } from './ViewSlipDialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
 const PARENT_SEAT_RATE = 750;
@@ -53,9 +63,11 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     // Dialog control states
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
     const [isConfirmAttendanceDialogOpen, setIsConfirmAttendanceDialogOpen] = useState(false);
+    const [isPackageConfirmOpen, setIsPackageConfirmOpen] = useState(false);
 
     // Form state
     const [editPackageId, setEditPackageId] = useState('');
+    const [pendingPackageId, setPendingPackageId] = useState('');
     const [editSession, setEditSession] = useState<'1' | '2'>('1');
     const [editSeats, setEditSeats] = useState('0');
     const [editName, setEditName] = useState('');
@@ -90,7 +102,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         }
     }, [registration]);
 
-    // Fallback effect to fill name/phone from studentData if they are empty in registration
     useEffect(() => {
         if (studentData && !editName && !registration?.name_on_certificate) {
             setEditName(studentData.studentInfo.name_on_certificate || studentData.studentInfo.full_name);
@@ -138,21 +149,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
 
     const updateMutation = useMutation({
         mutationFn: async (payload: Partial<ConvocationRegistration>) => {
-            const promises = [];
-            
-            // If package_id is changed, use the specialized endpoint
-            if (payload.package_id && payload.package_id !== registration?.package_id) {
-                promises.push(updateConvocationPackage(registration!.registration_id, payload.package_id));
-                // Remove package_id from the general payload to avoid redundant updates if supported by general API
-                const { package_id, ...rest } = payload;
-                if (Object.keys(rest).length > 0) {
-                    promises.push(updateConvocationBooking(registration!.registration_id, rest));
-                }
-            } else {
-                promises.push(updateConvocationBooking(registration!.registration_id, payload));
-            }
-            
-            return Promise.all(promises);
+            return updateConvocationBooking(registration!.registration_id, payload);
         },
         onSuccess: () => {
             toast({ title: 'Success', description: 'Booking updated successfully.' });
@@ -160,6 +157,16 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             setIsEditing(false);
             setIsPaymentDialogOpen(false);
             setIsConfirmAttendanceDialogOpen(false);
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message })
+    });
+
+    const packageUpdateMutation = useMutation({
+        mutationFn: (newPackageId: string) => updateConvocationPackage(registration!.registration_id, newPackageId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
+            toast({ title: 'Package Updated', description: 'The convocation package has been updated.' });
+            setIsPackageConfirmOpen(false);
         },
         onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message })
     });
@@ -187,7 +194,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
 
     const handleUpdate = () => {
         updateMutation.mutate({
-            package_id: editPackageId,
             session: editSession,
             additional_seats: editSeats,
             name_on_certificate: editName,
@@ -224,6 +230,31 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const currentPackage = packages?.find(p => p.package_id === registration.package_id);
 
     return (
+        <>
+        <AlertDialog open={isPackageConfirmOpen} onOpenChange={setIsPackageConfirmOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Change Package?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Are you sure you want to change the package to <strong>"{packages?.find(p => p.package_id === pendingPackageId)?.package_name}"</strong>? This will update the booking record immediately.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={() => {
+                            packageUpdateMutation.mutate(pendingPackageId);
+                            setEditPackageId(pendingPackageId);
+                        }} 
+                        disabled={packageUpdateMutation.isPending}
+                    >
+                        {packageUpdateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        Confirm Change
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden">
                 <DialogHeader className="p-6 pb-2 shrink-0 border-b">
@@ -260,7 +291,13 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in-50">
                                         <div className="space-y-1.5">
                                             <Label className="text-xs">Package</Label>
-                                            <Select value={editPackageId} onValueChange={setEditPackageId}>
+                                            <Select 
+                                                value={editPackageId} 
+                                                onValueChange={(val) => {
+                                                    setPendingPackageId(val);
+                                                    setIsPackageConfirmOpen(true);
+                                                }}
+                                            >
                                                 <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     {packages?.filter(p => p.convocation_id === registration.convocation_id).map(p => (
@@ -344,7 +381,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                 const isBookedElsewhere = bookedElsewhereIds.has(enrollment.parent_course_id);
                                                 const isOrderedElsewhere = orderedElsewhereIds.has(enrollment.parent_course_id);
                                                 
-                                                // Checkboxes should only be disabled if they are already booked or ordered elsewhere.
                                                 const isDisabled = isBookedElsewhere || isOrderedElsewhere;
 
                                                 return (
@@ -428,7 +464,12 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label>Verified Payment Amount (LKR)</Label>
-                                                    <Input type="number" value={paymentAmount} onChange={e => handleVerifiedAmountChange(e.target.value)} />
+                                                    <input 
+                                                        type="number" 
+                                                        value={paymentAmount} 
+                                                        onChange={e => handleVerifiedAmountChange(e.target.value)} 
+                                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label>Payment Status</Label>
@@ -565,5 +606,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+        </>
     );
 };
