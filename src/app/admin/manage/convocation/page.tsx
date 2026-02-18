@@ -82,14 +82,14 @@ export default function ConvocationListPage() {
         }
     };
     
-    const SortableHeader = ({ column, label }: { column: SortableColumn, label: string }) => {
+    const SortableHeader = ({ column, label, className }: { column: SortableColumn, label: string, className?: string }) => {
         const isSorted = sortOption.startsWith(column);
         const isAsc = isSorted && sortOption.endsWith('asc');
 
         return (
             <button 
                 onClick={() => handleSort(column)} 
-                className="flex items-center gap-1 hover:text-primary transition-colors text-xs font-semibold uppercase tracking-wider"
+                className={cn("flex items-center gap-1 hover:text-primary transition-colors text-xs font-semibold uppercase tracking-wider", className)}
             >
                 {label}
                 {isSorted ? (
@@ -242,9 +242,10 @@ export default function ConvocationListPage() {
                             <Table>
                                 <TableHeader className="bg-muted/10">
                                     <TableRow className="hover:bg-transparent">
-                                        <TableHead className="w-[220px]"><SortableHeader column="student" label="Student / Reference" /></TableHead>
-                                        <TableHead className="min-w-[300px]">Registration Details</TableHead>
-                                        <TableHead className="w-[180px] text-right"><SortableHeader column="due" label="Status & Finance" /></TableHead>
+                                        <TableHead className="w-[220px]"><SortableHeader column="student" label="Student Info" /></TableHead>
+                                        <TableHead className="min-w-[250px]">Booking Details</TableHead>
+                                        <TableHead className="w-[150px]">Status</TableHead>
+                                        <TableHead className="w-[150px] text-right"><SortableHeader column="due" label="Due Balance" className="justify-end" /></TableHead>
                                         <TableHead className="w-[100px] text-right pr-6">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -278,18 +279,18 @@ export default function ConvocationListPage() {
                                                     </div>
                                                 </div>
                                             </TableCell>
+                                            <TableCell className="py-4 align-top">
+                                                <div className="flex flex-col items-start gap-1.5 pt-1">
+                                                    <Badge className={cn("px-2 py-0.5 h-auto text-[9px] uppercase font-bold w-fit", getStatusBadge(reg.payment_status))}>{reg.payment_status}</Badge>
+                                                    <Badge variant="secondary" className="px-2 py-0.5 h-auto text-[9px] uppercase font-medium w-fit bg-muted text-muted-foreground">{reg.registration_status}</Badge>
+                                                </div>
+                                            </TableCell>
                                             <TableCell className="py-4 align-top text-right">
-                                                <div className="space-y-2">
-                                                    <div>
-                                                        <div className={cn("font-mono font-bold text-sm", due > 0 ? "text-destructive" : "text-green-600")}>
-                                                            LKR {due.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                                                        </div>
-                                                        <div className="text-[10px] text-muted-foreground mt-0.5">Paid: {parseFloat(reg.payment_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                                                <div className="space-y-1">
+                                                    <div className={cn("font-mono font-bold text-sm", due > 0 ? "text-destructive" : "text-green-600")}>
+                                                        LKR {due.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                     </div>
-                                                    <div className="flex flex-col items-end gap-1">
-                                                        <Badge className={cn("px-2 py-0.5 h-auto text-[9px] uppercase font-bold w-fit", getStatusBadge(reg.payment_status))}>{reg.payment_status}</Badge>
-                                                        <Badge variant="secondary" className="px-2 py-0.5 h-auto text-[9px] uppercase font-medium w-fit bg-muted text-muted-foreground">{reg.registration_status}</Badge>
-                                                    </div>
+                                                    <div className="text-[10px] text-muted-foreground">Paid: {parseFloat(reg.payment_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-4 pr-6 align-top text-right">
@@ -306,7 +307,7 @@ export default function ConvocationListPage() {
                                         </TableRow>
                                         )
                                     }) : (
-                                        <TableRow><TableCell colSpan={4} className="text-center h-32 text-muted-foreground italic">No registrations found.</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={5} className="text-center h-32 text-muted-foreground italic">No registrations found.</TableCell></TableRow>
                                     )}
                                 </TableBody>
                             </Table>
