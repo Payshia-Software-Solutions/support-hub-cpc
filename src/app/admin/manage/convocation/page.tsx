@@ -4,8 +4,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getConvocationRegistrations, getPackagesByCeremony, getParentCourses, getConvocationSessionCounts, updateConvocationCourses, getUserCertificatePrintStatus, generateCertificate } from '@/lib/actions/certificates';
+import { getConvocationRegistrations, getPackagesByCeremony, getConvocationSessionCounts, updateConvocationCourses, getUserCertificatePrintStatus, generateCertificate } from '@/lib/actions/certificates';
 import { getStudentFullInfo, getStudentBalance } from '@/lib/actions/users';
+import { getParentCourses } from '@/lib/actions/courses';
 import { getPaymentRequests } from '@/lib/actions/payments';
 import type { ConvocationRegistration, ConvocationPackage, ParentCourse, PaymentRequest, FullStudentData, StudentEnrollment, ApiPaymentRecord, UserCertificatePrintStatus, GenerateCertificatePayload, StudentBalanceData } from '@/lib/types';
 import { format, isValid, parseISO } from 'date-fns';
@@ -558,22 +559,13 @@ export default function ConvocationListPage() {
                                             </TableCell>
 
                                             <TableCell>
-                                                <div className="flex flex-wrap gap-1 mb-1.5">
+                                                <div className="flex flex-col gap-1 mb-1.5 max-w-[200px]">
                                                     {reg.course_id.split(',').map(id => {
                                                         const course = courses?.find(c => c.id === id.trim());
                                                         return (
-                                                            <TooltipProvider key={id}>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 cursor-help bg-background">
-                                                                            {course?.course_code || id}
-                                                                        </Badge>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent className="max-w-[200px] text-xs">
-                                                                        {course?.course_name || `Course ID: ${id}`}
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
+                                                            <div key={id} className="text-[10px] leading-tight font-medium text-foreground">
+                                                                • {course?.course_name || `ID: ${id}`}
+                                                            </div>
                                                         )
                                                     })}
                                                 </div>
