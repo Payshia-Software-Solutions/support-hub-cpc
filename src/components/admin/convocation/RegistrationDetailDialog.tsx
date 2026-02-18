@@ -36,6 +36,7 @@ import { ViewSlipDialog } from './ViewSlipDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
+const PARENT_SEAT_RATE = 750;
 
 export const RegistrationDetailDialog = ({ registration, open, onOpenChange, packages }: { 
     registration: ConvocationRegistration | null, 
@@ -133,6 +134,13 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         },
         onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message })
     });
+
+    const totalPayable = useMemo(() => {
+        const pkg = packages?.find(p => p.package_id === editPackageId);
+        const packagePrice = pkg ? parseFloat(pkg.price) : 0;
+        const numSeats = parseInt(editSeats, 10) || 0;
+        return packagePrice + (numSeats * PARENT_SEAT_RATE);
+    }, [editPackageId, editSeats, packages]);
 
     if (!registration) return null;
 
@@ -242,9 +250,15 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                             <Label className="text-xs">Phone Number</Label>
                                             <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} className="h-9 text-xs" />
                                         </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs">Total Payable (Auto-calc)</Label>
+                                            <div className="h-9 flex items-center px-3 border rounded-md bg-muted/50 font-mono font-bold text-primary">
+                                                LKR {totalPayable.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                            </div>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in-50">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in-50">
                                         <div className="space-y-1">
                                             <p className="text-[10px] text-muted-foreground uppercase font-bold">Selected Package</p>
                                             <p className="text-sm font-semibold">{currentPackage?.package_name || 'N/A'}</p>
@@ -260,6 +274,10 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                             <p className="text-[10px] text-muted-foreground uppercase font-bold">Certificate Details</p>
                                             <p className="text-sm font-semibold">{registration.name_on_certificate}</p>
                                             <p className="text-xs text-muted-foreground">{registration.telephone_1}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Total Calculated Payable</p>
+                                            <p className="text-sm font-bold text-primary">LKR {totalPayable.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                                         </div>
                                     </div>
                                 )}
