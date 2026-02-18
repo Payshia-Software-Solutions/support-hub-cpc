@@ -152,6 +152,18 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         return packagePrice + (numSeats * PARENT_SEAT_RATE);
     }, [editPackageId, editSeats, packages]);
 
+    const handleVerifiedAmountChange = (val: string) => {
+        setPaymentAmount(val);
+        const verified = parseFloat(val) || 0;
+        if (verified >= totalPayable && totalPayable > 0) {
+            setPaymentStatus('Paid');
+        } else if (verified > 0 && verified < totalPayable) {
+            setPaymentStatus('Partially Paid');
+        } else if (verified === 0) {
+            setPaymentStatus('Pending');
+        }
+    };
+
     if (!registration) return null;
 
     const handleUpdate = () => {
@@ -386,9 +398,16 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                 <DialogDescription>Manually verify and set the payment status for this registration.</DialogDescription>
                                             </DialogHeader>
                                             <div className="space-y-4 py-4">
+                                                <div className="p-3 bg-muted/50 rounded-lg flex justify-between items-center text-sm">
+                                                    <span className="text-muted-foreground">Total Required Amount:</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-primary font-mono">LKR {totalPayable.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                                                        <Button variant="ghost" size="xs" className="h-6 px-2 text-[10px]" onClick={() => handleVerifiedAmountChange(String(totalPayable))}>Match Total</Button>
+                                                    </div>
+                                                </div>
                                                 <div className="space-y-2">
                                                     <Label>Verified Payment Amount (LKR)</Label>
-                                                    <Input type="number" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} />
+                                                    <Input type="number" value={paymentAmount} onChange={e => handleVerifiedAmountChange(e.target.value)} />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label>Payment Status</Label>
@@ -396,6 +415,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="Pending">Pending</SelectItem>
+                                                            <SelectItem value="Partially Paid">Partially Paid</SelectItem>
                                                             <SelectItem value="Paid">Paid</SelectItem>
                                                             <SelectItem value="Rejected">Rejected</SelectItem>
                                                         </SelectContent>
@@ -427,7 +447,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                         <div className="flex items-center gap-3">
                                             <Badge className={cn(
                                                 "uppercase text-[10px]",
-                                                registration.payment_status === 'Paid' ? 'bg-green-600' : 'bg-destructive'
+                                                registration.payment_status === 'Paid' ? 'bg-green-600' : 
+                                                registration.payment_status === 'Partially Paid' ? 'bg-amber-500' : 'bg-destructive'
                                             )}>{registration.payment_status}</Badge>
                                             <p className="text-sm font-bold">LKR {parseFloat(registration.payment_amount).toLocaleString()}</p>
                                         </div>
