@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Search, FileText, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy, Trash2, Printer } from 'lucide-react';
+import { AlertTriangle, Search, FileText, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy, Trash2, Printer, Eye } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -292,7 +292,7 @@ export default function ConvocationListPage() {
         const isAsc = isSorted && sortOption.endsWith('asc');
 
         return (
-            <Button variant="ghost" onClick={() => handleSort(column)} className="px-2 py-1 h-auto -ml-2 text-xs font-semibold">
+            <Button variant="ghost" onClick={() => handleSort(column)} className="px-2 py-1 h-auto -ml-2 text-xs font-semibold hover:bg-transparent">
                 {label}
                 {isSorted ? (
                     isAsc ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />
@@ -528,20 +528,13 @@ export default function ConvocationListPage() {
                             <Table>
                                 <TableHeader className="bg-muted/10">
                                     <TableRow className="hover:bg-transparent">
-                                        <TableHead className="w-[100px]"><SortableHeader column="ref" label="Ref #" /></TableHead>
-                                        <TableHead className="w-[100px] text-center">Action</TableHead>
-                                        <TableHead className="w-[100px]"><SortableHeader column="ceremony" label="Cerem." /></TableHead>
-                                        <TableHead className="w-[100px] text-right"><SortableHeader column="due" label="Due" /></TableHead>
-                                        <TableHead className="w-[120px] text-center">2nd Payment</TableHead>
-                                        <TableHead className="w-[120px]"><SortableHeader column="student" label="Student #" /></TableHead>
-                                        <TableHead className="w-[80px]"><SortableHeader column="session" label="Sess." /></TableHead>
-                                        <TableHead className="min-w-[150px]"><SortableHeader column="course" label="Course(s)" /></TableHead>
-                                        <TableHead className="min-w-[150px]"><SortableHeader column="package" label="Package" /></TableHead>
-                                        <TableHead className="w-[80px] text-center"><SortableHeader column="seats" label="Seats" /></TableHead>
-                                        <TableHead className="w-[100px] text-right">Paid</TableHead>
-                                        <TableHead className="w-[80px] text-center">Slip</TableHead>
-                                        <TableHead className="w-[120px]">Pay. Status</TableHead>
-                                        <TableHead className="w-[120px]">Reg. Status</TableHead>
+                                        <TableHead className="w-[120px]"><SortableHeader column="ref" label="Ref / Cerem" /></TableHead>
+                                        <TableHead className="min-w-[180px]"><SortableHeader column="student" label="Student Details" /></TableHead>
+                                        <TableHead className="min-w-[200px]">Selection (Course/Pkg)</TableHead>
+                                        <TableHead className="w-[100px] text-center">Booking</TableHead>
+                                        <TableHead className="w-[120px] text-right"><SortableHeader column="due" label="Financials" /></TableHead>
+                                        <TableHead className="w-[140px]">Status</TableHead>
+                                        <TableHead className="w-[100px] text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -551,41 +544,28 @@ export default function ConvocationListPage() {
                                         const due = isPaid ? reg.dueAmount - parseFloat(reg.payment_amount) : reg.dueAmount;
 
                                         return (
-                                        <TableRow key={reg.registration_id} className={cn("text-xs", reg.isDuplicate && "bg-destructive/5 hover:bg-destructive/10")}>
-                                            <TableCell className="font-mono">{reg.reference_number}</TableCell>
-                                            <TableCell className="text-center">
-                                                <Button variant="outline" size="xs" onClick={() => setViewingDetails(reg)} className="h-7 px-2">View</Button>
-                                            </TableCell>
-                                            <TableCell className="text-center font-medium">{reg.ceremony_number}</TableCell>
-                                            <TableCell className="text-right font-mono font-semibold">
-                                                {due.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                                            </TableCell>
-                                            <TableCell className="text-center">
-                                                <ViewSlipDialog slipPath={lastPaymentRequest?.slip_path || null} studentName={reg.name_on_certificate} trigger={
-                                                    <Button variant="ghost" size="xs" disabled={!lastPaymentRequest?.slip_path} className="h-7 px-2 underline decoration-dotted">
-                                                        {lastPaymentRequest ? 'View' : '-'}
-                                                    </Button>
-                                                }/>
-                                            </TableCell>
-                                            <TableCell className="font-medium whitespace-nowrap">
-                                                <p>{reg.student_number}</p>
-                                                <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{reg.name_on_certificate}</p>
-                                            </TableCell>
+                                        <TableRow key={reg.registration_id} className={cn("text-xs transition-colors", reg.isDuplicate && "bg-destructive/5 hover:bg-destructive/10")}>
                                             <TableCell>
-                                                <Select defaultValue={reg.session} onValueChange={(value) => console.log('Update session', value)}>
-                                                    <SelectTrigger className="h-7 px-2 w-14 text-[10px]"><SelectValue /></SelectTrigger>
-                                                    <SelectContent><SelectItem value="1">1</SelectItem><SelectItem value="2">2</SelectItem></SelectContent>
-                                                </Select>
+                                                <div className="font-mono font-bold text-sm">#{reg.reference_number}</div>
+                                                <div className="text-[10px] text-muted-foreground">Ceremony: {reg.ceremony_number}</div>
                                             </TableCell>
+                                            
                                             <TableCell>
-                                                <div className="flex flex-wrap gap-1">
+                                                <div className="font-semibold text-sm">{reg.student_number}</div>
+                                                <div className="text-[10px] text-muted-foreground truncate max-w-[160px]" title={reg.name_on_certificate}>
+                                                    {reg.name_on_certificate}
+                                                </div>
+                                            </TableCell>
+
+                                            <TableCell>
+                                                <div className="flex flex-wrap gap-1 mb-1.5">
                                                     {reg.course_id.split(',').map(id => {
                                                         const course = courses?.find(c => c.id === id.trim());
                                                         return (
                                                             <TooltipProvider key={id}>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
-                                                                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-5 cursor-help">
+                                                                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 cursor-help bg-background">
                                                                             {course?.course_code || id}
                                                                         </Badge>
                                                                     </TooltipTrigger>
@@ -597,10 +577,8 @@ export default function ConvocationListPage() {
                                                         )
                                                     })}
                                                 </div>
-                                            </TableCell>
-                                            <TableCell>
                                                 <Select defaultValue={reg.package_id} onValueChange={(value) => console.log('Update package', value)}>
-                                                    <SelectTrigger className="h-7 px-2 text-[10px] w-full max-w-[140px]"><SelectValue /></SelectTrigger>
+                                                    <SelectTrigger className="h-7 px-2 text-[10px] w-full max-w-[160px] bg-background"><SelectValue /></SelectTrigger>
                                                     <SelectContent>
                                                         {packages?.filter(p => p.convocation_id === reg.convocation_id).map(p => (
                                                             <SelectItem key={p.package_id} value={p.package_id} className="text-xs">{p.package_name}</SelectItem>
@@ -608,28 +586,71 @@ export default function ConvocationListPage() {
                                                     </SelectContent>
                                                 </Select>
                                             </TableCell>
-                                             <TableCell className="text-center">
-                                                <Select defaultValue={reg.additional_seats} onValueChange={(value) => console.log('Update seats', value)}>
-                                                    <SelectTrigger className="h-7 px-2 w-14 text-[10px] mx-auto"><SelectValue /></SelectTrigger>
-                                                    <SelectContent>{[0,1,2].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}</SelectContent>
-                                                </Select>
-                                            </TableCell>
-                                            <TableCell className="text-right font-mono text-muted-foreground">{parseFloat(reg.payment_amount).toFixed(2)}</TableCell>
-                                            <TableCell className="text-center">
-                                                <ViewSlipDialog slipPath={reg.image_path} studentName={reg.name_on_certificate} trigger={<Button variant="ghost" size="xs" className="h-7 p-0"><FileText className="h-4 w-4"/></Button>} />
-                                            </TableCell>
+
                                             <TableCell>
-                                                <div className="flex items-center gap-1.5">
-                                                    <Badge className={cn("px-1.5 py-0 h-5 text-[10px] uppercase font-bold", getStatusBadge(reg.payment_status))}>{reg.payment_status}</Badge>
-                                                    {reg.isDuplicate && <Badge variant="destructive" className="px-1.5 py-0 h-5 text-[9px] animate-pulse">DUP</Badge>}
+                                                <div className="flex flex-col gap-1 items-center">
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="text-[10px] text-muted-foreground">Sess:</span>
+                                                        <Select defaultValue={reg.session} onValueChange={(value) => console.log('Update session', value)}>
+                                                            <SelectTrigger className="h-6 px-1 w-10 text-[10px] bg-background"><SelectValue /></SelectTrigger>
+                                                            <SelectContent><SelectItem value="1">1</SelectItem><SelectItem value="2">2</SelectItem></SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="text-[10px] text-muted-foreground">Seats:</span>
+                                                        <Select defaultValue={reg.additional_seats} onValueChange={(value) => console.log('Update seats', value)}>
+                                                            <SelectTrigger className="h-6 px-1 w-10 text-[10px] bg-background"><SelectValue /></SelectTrigger>
+                                                            <SelectContent>{[0,1,2].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}</SelectContent>
+                                                        </Select>
+                                                    </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell><Badge variant="secondary" className="px-1.5 py-0 h-5 text-[10px] uppercase font-medium">{reg.registration_status}</Badge></TableCell>
+
+                                            <TableCell className="text-right">
+                                                <div className={cn("font-mono font-bold text-sm", due > 0 ? "text-destructive" : "text-green-600")}>
+                                                    {due.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                </div>
+                                                <div className="text-[10px] text-muted-foreground">
+                                                    Paid: {parseFloat(reg.payment_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                </div>
+                                            </TableCell>
+
+                                            <TableCell>
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Badge className={cn("px-1.5 py-0 h-4 text-[9px] uppercase font-bold", getStatusBadge(reg.payment_status))}>{reg.payment_status}</Badge>
+                                                        {reg.isDuplicate && <Badge variant="destructive" className="px-1.5 py-0 h-4 text-[8px] animate-pulse">DUP</Badge>}
+                                                    </div>
+                                                    <Badge variant="secondary" className="px-1.5 py-0 h-4 text-[9px] uppercase font-medium w-fit">{reg.registration_status}</Badge>
+                                                </div>
+                                            </TableCell>
+
+                                            <TableCell className="text-right">
+                                                <div className="flex flex-col items-end gap-1">
+                                                    <div className="flex items-center gap-1">
+                                                        <Button variant="outline" size="sm" onClick={() => setViewingDetails(reg)} className="h-7 px-2 text-[10px]">
+                                                            <Eye className="h-3 w-3 mr-1" /> View
+                                                        </Button>
+                                                        <ViewSlipDialog slipPath={reg.image_path} studentName={reg.name_on_certificate} trigger={
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-primary hover:bg-primary/10">
+                                                                <FileText className="h-4 w-4"/>
+                                                            </Button>
+                                                        } />
+                                                    </div>
+                                                    {lastPaymentRequest?.slip_path && (
+                                                        <ViewSlipDialog slipPath={lastPaymentRequest.slip_path} studentName={reg.name_on_certificate} trigger={
+                                                            <Button variant="ghost" size="xs" className="h-5 px-1.5 text-[9px] underline underline-offset-2 decoration-dotted text-blue-600">
+                                                                2nd Payment Slip
+                                                            </Button>
+                                                        }/>
+                                                    )}
+                                                </div>
+                                            </TableCell>
                                         </TableRow>
                                         )
                                     }) : (
                                         <TableRow>
-                                            <TableCell colSpan={14} className="text-center h-32 text-muted-foreground italic">No registrations found.</TableCell>
+                                            <TableCell colSpan={7} className="text-center h-32 text-muted-foreground italic">No registrations found.</TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
