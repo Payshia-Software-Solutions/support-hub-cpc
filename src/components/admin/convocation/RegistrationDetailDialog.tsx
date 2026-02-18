@@ -1,9 +1,11 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     updateConvocationBooking, 
+    updateConvocationPackage,
     getConvocationSessionCounts, 
     getConvocationRegistrationsByStudent,
     getCertificateOrdersByStudent
@@ -135,7 +137,23 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     });
 
     const updateMutation = useMutation({
-        mutationFn: (payload: Partial<ConvocationRegistration>) => updateConvocationBooking(registration!.registration_id, payload),
+        mutationFn: async (payload: Partial<ConvocationRegistration>) => {
+            const promises = [];
+            
+            // If package_id is changed, use the specialized endpoint
+            if (payload.package_id && payload.package_id !== registration?.package_id) {
+                promises.push(updateConvocationPackage(registration!.registration_id, payload.package_id));
+                // Remove package_id from the general payload to avoid redundant updates if supported by general API
+                const { package_id, ...rest } = payload;
+                if (Object.keys(rest).length > 0) {
+                    promises.push(updateConvocationBooking(registration!.registration_id, rest));
+                }
+            } else {
+                promises.push(updateConvocationBooking(registration!.registration_id, payload));
+            }
+            
+            return Promise.all(promises);
+        },
         onSuccess: () => {
             toast({ title: 'Success', description: 'Booking updated successfully.' });
             queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
@@ -327,7 +345,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                 const isOrderedElsewhere = orderedElsewhereIds.has(enrollment.parent_course_id);
                                                 
                                                 // Checkboxes should only be disabled if they are already booked or ordered elsewhere.
-                                                // We allow admins to toggle eligibility status manually if needed.
                                                 const isDisabled = isBookedElsewhere || isOrderedElsewhere;
 
                                                 return (

@@ -89,6 +89,25 @@ export const updateConvocationBooking = async (id: string, payload: Partial<Conv
     return response.json();
 };
 
+export const updateConvocationPackage = async (registrationId: string, packageId: string): Promise<any> => {
+    const params = new URLSearchParams();
+    params.append('package_id', packageId);
+
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/${registrationId}/update-package/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString()
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update package' }));
+        throw new Error(errorData.message || 'Failed to update package');
+    }
+    return response.json();
+};
+
 
 // Convocation Ceremonies
 export const getConvocationCeremonies = async (): Promise<ConvocationCeremony[]> => {
