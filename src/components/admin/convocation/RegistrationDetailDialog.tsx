@@ -14,15 +14,13 @@ import type {
     ConvocationPackage, 
     FullStudentData, 
     SessionCount,
-    CertificateOrder,
-    PaymentRequest
+    CertificateOrder
 } from '@/lib/types';
-import { format } from 'date-fns';
 import Image from 'next/image';
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +30,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Wallet, FileText } from 'lucide-react';
+import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Wallet, FileText, Banknote, UserCheck } from 'lucide-react';
 import { EnrollmentDetailAccordion } from './EnrollmentDetailAccordion';
 import { ViewSlipDialog } from './ViewSlipDialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -48,6 +46,10 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const queryClient = useQueryClient();
     const [isEditing, setIsEditing] = useState(false);
     
+    // Dialog control states
+    const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+    const [isConfirmAttendanceDialogOpen, setIsConfirmAttendanceDialogOpen] = useState(false);
+
     // Form state
     const [editPackageId, setEditPackageId] = useState('');
     const [editSession, setEditSession] = useState<'1' | '2'>('1');
@@ -55,6 +57,11 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const [editName, setEditName] = useState('');
     const [editPhone, setEditPhone] = useState('');
     const [editCourseIds, setEditCourseIds] = useState<string[]>([]);
+
+    // Specific Update States
+    const [paymentAmount, setPaymentAmount] = useState('');
+    const [paymentStatus, setPaymentStatus] = useState('');
+    const [ceremonyNumber, setCeremonyNumber] = useState('');
 
     useEffect(() => {
         if (registration) {
@@ -64,6 +71,11 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             setEditName(registration.name_on_certificate || '');
             setEditPhone(registration.telephone_1 || '');
             setEditCourseIds(registration.course_id.split(',').map(s => s.trim()).filter(Boolean));
+            
+            setPaymentAmount(registration.payment_amount || '0');
+            setPaymentStatus(registration.payment_status || 'Pending');
+            setCeremonyNumber(registration.ceremony_number || '');
+            
             setIsEditing(false);
         }
     }, [registration]);
@@ -116,6 +128,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             toast({ title: 'Success', description: 'Booking updated successfully.' });
             queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
             setIsEditing(false);
+            setIsPaymentDialogOpen(false);
+            setIsConfirmAttendanceDialogOpen(false);
         },
         onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message })
     });
@@ -130,6 +144,24 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             name_on_certificate: editName,
             telephone_1: editPhone,
             course_id: editCourseIds.join(','),
+        });
+    };
+
+    const handlePaymentUpdate = () => {
+        updateMutation.mutate({
+            payment_amount: paymentAmount,
+            payment_status: paymentStatus
+        });
+    };
+
+    const handleAttendanceConfirmation = () => {
+        if (!ceremonyNumber.trim()) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please enter a valid ceremony number.' });
+            return;
+        }
+        updateMutation.mutate({
+            ceremony_number: ceremonyNumber,
+            registration_status: 'Confirmed'
         });
     };
 
@@ -151,6 +183,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                         Detailed overview and editing for student {registration.student_number}.
                     </DialogDescription>
                 </DialogHeader>
+                
                 <ScrollArea className="flex-1">
                     <div className="p-6 space-y-6">
                         {/* Booking Info Card */}
@@ -303,7 +336,44 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                         {/* Financials & Slip Preview */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                             <Card>
-                                <CardHeader><CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Financial Overview</CardTitle></CardHeader>
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Financial Overview</CardTitle>
+                                    <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button size="sm" variant="outline"><Banknote className="mr-2 h-4 w-4"/>Update Payment</Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Update Payment Details</DialogTitle>
+                                                <DialogDescription>Manually verify and set the payment status for this registration.</DialogDescription>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                                <div className="space-y-2">
+                                                    <Label>Verified Payment Amount (LKR)</Label>
+                                                    <Input type="number" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Payment Status</Label>
+                                                    <Select value={paymentStatus} onValueChange={setPaymentStatus}>
+                                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Pending">Pending</SelectItem>
+                                                            <SelectItem value="Paid">Paid</SelectItem>
+                                                            <SelectItem value="Rejected">Rejected</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                            <DialogFooter>
+                                                <Button variant="outline" onClick={() => setIsPaymentDialogOpen(false)}>Cancel</Button>
+                                                <Button onClick={handlePaymentUpdate} disabled={updateMutation.isPending}>
+                                                    {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                                    Update Financials
+                                                </Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2">
                                         {isLoadingStudentData ? <Skeleton className="h-20 w-full" /> : studentData && (
@@ -317,7 +387,10 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                     <div className="pt-4 border-t">
                                         <p className="text-[10px] text-muted-foreground uppercase font-bold mb-2">Payment Verification</p>
                                         <div className="flex items-center gap-3">
-                                            <Badge className="bg-green-600 uppercase text-[10px]">{registration.payment_status}</Badge>
+                                            <Badge className={cn(
+                                                "uppercase text-[10px]",
+                                                registration.payment_status === 'Paid' ? 'bg-green-600' : 'bg-destructive'
+                                            )}>{registration.payment_status}</Badge>
                                             <p className="text-sm font-bold">LKR {parseFloat(registration.payment_amount).toLocaleString()}</p>
                                         </div>
                                     </div>
@@ -372,6 +445,44 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                         </div>
                     </div>
                 </ScrollArea>
+
+                <DialogFooter className="p-4 bg-muted/20 border-t shrink-0 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="h-8">Current Status: {registration.registration_status}</Badge>
+                        {registration.ceremony_number && <Badge variant="default" className="h-8">Ceremony #: {registration.ceremony_number}</Badge>}
+                    </div>
+                    <Dialog open={isConfirmAttendanceDialogOpen} onOpenChange={setIsConfirmAttendanceDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="bg-primary hover:bg-primary/90">
+                                <UserCheck className="mr-2 h-4 w-4"/>
+                                Confirm & Assign Ceremony #
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Confirm Convocation Attendance</DialogTitle>
+                                <DialogDescription>
+                                    Assign a ceremony number to this student. This will automatically update their registration status to <strong>Confirmed</strong>.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4 space-y-2">
+                                <Label>Ceremony Number</Label>
+                                <Input 
+                                    placeholder="Enter ceremony number (e.g., 402)" 
+                                    value={ceremonyNumber} 
+                                    onChange={e => setCeremonyNumber(e.target.value)} 
+                                />
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsConfirmAttendanceDialogOpen(false)}>Cancel</Button>
+                                <Button onClick={handleAttendanceConfirmation} disabled={updateMutation.isPending}>
+                                    {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                    Confirm Attendance
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
