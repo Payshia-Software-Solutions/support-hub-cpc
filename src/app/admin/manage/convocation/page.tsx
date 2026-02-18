@@ -4,11 +4,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getConvocationRegistrations, getPackagesByCeremony, getConvocationSessionCounts, updateConvocationCourses, getUserCertificatePrintStatus, generateCertificate } from '@/lib/actions/certificates';
+import { getConvocationRegistrations, getPackagesByCeremony, getConvocationSessionCounts, updateConvocationCourses, updateConvocationBooking, getUserCertificatePrintStatus, generateCertificate } from '@/lib/actions/certificates';
 import { getStudentFullInfo, getStudentBalance } from '@/lib/actions/users';
 import { getParentCourses } from '@/lib/actions/courses';
 import { getPaymentRequests } from '@/lib/actions/payments';
-import type { ConvocationRegistration, ConvocationPackage, ParentCourse, PaymentRequest, FullStudentData, StudentEnrollment, ApiPaymentRecord, UserCertificatePrintStatus, GenerateCertificatePayload, StudentBalanceData } from '@/lib/types';
+import type { ConvocationRegistration, ConvocationPackage, ParentCourse, PaymentRequest, FullStudentData, StudentEnrollment, ApiPaymentRecord, UserCertificatePrintStatus, GenerateCertificatePayload, StudentBalanceData, SessionCount } from '@/lib/types';
 import { format, isValid, parseISO } from 'date-fns';
 import Image from 'next/image';
 
@@ -17,10 +17,10 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Search, FileText, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy, Trash2, Printer, Eye, Gamepad2, ClipboardCheck, XCircle, Truck } from 'lucide-react';
+import { AlertTriangle, Search, FileText, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy, Trash2, Printer, Eye, Gamepad2, ClipboardCheck, XCircle, Truck, Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -42,6 +42,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from '@/contexts/AuthContext';
+import { Label } from '@/components/ui/label';
 
 
 const ITEMS_PER_PAGE = 25;
@@ -51,7 +52,7 @@ const PARENT_SEAT_RATE = 750;
 const InfoBox = ({ label, value }: { label: string, value: React.ReactNode }) => (
     <div className="p-3 bg-muted/50 rounded-md">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="font-semibold text-sm">{value || 'N/A'}</p>
+        <div className="font-semibold text-sm">{value || 'N/A'}</div>
     </div>
 );
 
@@ -219,10 +220,44 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
     isError: boolean,
     error: Error | null
 }) => {
+    const queryClient = useQueryClient();
+    
+    // Editable state
+    const [editPackageId, setEditPackageId] = useState('');
+    const [editSession, setEditSession] = useState<'1' | '2'>('1');
+    const [editSeats, setEditSeats] = useState('0');
+    const [editName, setEditName] = useState('');
+    const [editPhone, setEditPhone] = useState('');
+
+    useEffect(() => {
+        if (registration) {
+            setEditPackageId(registration.package_id || '');
+            setEditSession(registration.session as '1' | '2' || '1');
+            setEditSeats(registration.additional_seats || '0');
+            setEditName(registration.name_on_certificate || '');
+            setEditPhone(registration.telephone_1 || '');
+        }
+    }, [registration]);
+
     const { data: paymentRequests, isLoading: isLoadingPaymentRequests } = useQuery<PaymentRequest[]>({
         queryKey: ['convocationPaymentRequests', registration?.reference_number],
         queryFn: () => getPaymentRequestsByReference(registration!.reference_number),
         enabled: !!registration?.reference_number,
+    });
+
+    const { data: sessionCounts } = useQuery<SessionCount[]>({
+        queryKey: ['convocationSessionCounts', registration?.convocation_id],
+        queryFn: () => getConvocationSessionCounts(registration!.convocation_id),
+        enabled: !!registration?.convocation_id,
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: (payload: Partial<ConvocationRegistration>) => updateConvocationBooking(registration!.registration_id, payload),
+        onSuccess: () => {
+            toast({ title: 'Success', description: 'Booking updated successfully.' });
+            queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message })
     });
 
     if (!registration) return null;
@@ -233,11 +268,6 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
             const course = courses.find(c => c.id === id.trim());
             return course?.course_name || `Unknown Course (${id})`;
         }).join(', ');
-    };
-
-    const getPackageName = (packageId: string) => {
-        if (!packages) return 'Loading...';
-        return packages.find(p => p.package_id === packageId)?.package_name || 'Unknown Package';
     };
 
     const getPaymentRequestsByReference = async (reference: string): Promise<PaymentRequest[]> => {
@@ -252,33 +282,83 @@ const RegistrationDetailDialog = ({ registration, open, onOpenChange, courses, p
         return response.json();
     };
 
+    const handleUpdate = () => {
+        updateMutation.mutate({
+            package_id: editPackageId,
+            session: editSession,
+            additional_seats: editSeats,
+            name_on_certificate: editName,
+            telephone_1: editPhone,
+        });
+    };
+
+    const seatsAvailable = (() => {
+        if (!registration.convocation_id || !sessionCounts) return { s1: 0, s2: 0 };
+        // This is a simplified calculation, ideally you'd have the total capacity too.
+        const s1 = parseInt(sessionCounts.find(s => s.session === '1')?.sessionCounts || '0', 10);
+        const s2 = parseInt(sessionCounts.find(s => s.session === '2')?.sessionCounts || '0', 10);
+        return { s1, s2 };
+    })();
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden">
                 <DialogHeader className="p-6 pb-2 shrink-0 border-b">
                     <DialogTitle>Booking Details: #{registration.reference_number}</DialogTitle>
                     <DialogDescription>
-                        Detailed overview for student {registration.student_number}.
+                        Detailed overview and editing for student {registration.student_number}.
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="flex-1">
                     <div className="p-6 space-y-6">
                         <div className="space-y-6 pb-10">
-                            {/* Booking Info Card - Always visible */}
+                            {/* Booking Edit Card */}
                             <Card>
-                                <CardHeader><CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Booking Info</CardTitle></CardHeader>
-                                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <InfoBox label="Ref #" value={registration.reference_number} />
-                                    <InfoBox label="Student Number" value={registration.student_number} />
-                                    <InfoBox label="Courses" value={getCourseNames(registration.course_id)} />
-                                    <InfoBox label="Payment Status" value={<Badge className="uppercase text-[10px]">{registration.payment_status}</Badge>} />
-                                    <InfoBox 
-                                        label="Overall Balance" 
-                                        value={isLoadingStudentData ? <Skeleton className="h-4 w-16" /> : `LKR ${studentData?.studentBalance.studentBalance.toLocaleString() || '0'}`} 
-                                    />
-                                    <InfoBox label="Additional Seats" value={registration.additional_seats} />
-                                    <InfoBox label="Payable Amount" value={`LKR ${parseFloat(registration.payment_amount).toLocaleString()}`} />
-                                    <InfoBox label="Package" value={getPackageName(registration.package_id)} />
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Edit Booking Info</CardTitle>
+                                    <Button size="sm" onClick={handleUpdate} disabled={updateMutation.isPending}>
+                                        {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                        Update Details
+                                    </Button>
+                                </CardHeader>
+                                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs">Package</Label>
+                                        <Select value={editPackageId} onValueChange={setEditPackageId}>
+                                            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                {packages?.filter(p => p.convocation_id === registration.convocation_id).map(p => (
+                                                    <SelectItem key={p.package_id} value={p.package_id} className="text-xs">{p.package_name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs">Session (S1: {seatsAvailable.s1} reg | S2: {seatsAvailable.s2} reg)</Label>
+                                        <Select value={editSession} onValueChange={(v) => setEditSession(v as '1' | '2')}>
+                                            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent><SelectItem value="1">Session 1</SelectItem><SelectItem value="2">Session 2</SelectItem></SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs">Additional Seats</Label>
+                                        <Select value={editSeats} onValueChange={setEditSeats}>
+                                            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent>{[0,1,2,3,4,5].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs">Name on Certificate</Label>
+                                        <Input value={editName} onChange={e => setEditName(e.target.value)} className="h-9 text-xs" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs">Phone Number</Label>
+                                        <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} className="h-9 text-xs" />
+                                    </div>
+                                    <div className="space-y-1.5 opacity-70 pointer-events-none">
+                                        <Label className="text-xs">Course(s)</Label>
+                                        <div className="p-2 border rounded-md text-[10px] bg-muted/30 truncate">{getCourseNames(registration.course_id)}</div>
+                                    </div>
                                 </CardContent>
                             </Card>
 
@@ -416,7 +496,6 @@ export default function ConvocationListPage() {
     const { data: packages, isLoading: isLoadingPackages } = useQuery<ConvocationPackage[]>({
         queryKey: ['convocationPackages', ceremonyIdFilter],
         queryFn: () => getPackagesByCeremony(ceremonyIdFilter || ''),
-        enabled: !!ceremonyIdFilter,
         staleTime: 1000 * 60 * 15,
         refetchOnWindowFocus: false,
     });
@@ -709,9 +788,9 @@ export default function ConvocationListPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {paginatedRegistrations.length > 0 ? paginatedRegistrations.map((reg) => {
-                                        const lastPaymentRequest = paymentRequests?.filter(pr => pr.unique_number === reg.student_number).pop();
                                         const isPaid = ['paid', 'approved', 'confirmed'].includes(reg.payment_status.toLowerCase());
                                         const due = isPaid ? reg.dueAmount - parseFloat(reg.payment_amount) : reg.dueAmount;
+                                        const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || `ID: ${reg.package_id}`;
 
                                         return (
                                         <TableRow key={reg.registration_id} className={cn("text-xs transition-colors", reg.isDuplicate && "bg-destructive/5 hover:bg-destructive/10")}>
@@ -738,31 +817,20 @@ export default function ConvocationListPage() {
                                                         )
                                                     })}
                                                 </div>
-                                                <Select defaultValue={reg.package_id} onValueChange={(value) => console.log('Update package', value)}>
-                                                    <SelectTrigger className="h-7 px-2 text-[10px] w-full max-w-[160px] bg-background"><SelectValue /></SelectTrigger>
-                                                    <SelectContent>
-                                                        {packages?.filter(p => p.convocation_id === reg.convocation_id).map(p => (
-                                                            <SelectItem key={p.package_id} value={p.package_id} className="text-xs">{p.package_name}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
+                                                <div className="text-[10px] font-bold text-primary truncate max-w-[160px]" title={packageName}>
+                                                    Pkg: {packageName}
+                                                </div>
                                             </TableCell>
 
                                             <TableCell>
                                                 <div className="flex flex-col gap-1 items-center">
                                                     <div className="flex items-center gap-1">
                                                         <span className="text-[10px] text-muted-foreground">Sess:</span>
-                                                        <Select defaultValue={reg.session} onValueChange={(value) => console.log('Update session', value)}>
-                                                            <SelectTrigger className="h-6 px-1 w-10 text-[10px] bg-background"><SelectValue /></SelectTrigger>
-                                                            <SelectContent><SelectItem value="1">1</SelectItem><SelectItem value="2">2</SelectItem></SelectContent>
-                                                        </Select>
+                                                        <span className="text-[10px] font-bold">{reg.session}</span>
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <span className="text-[10px] text-muted-foreground">Seats:</span>
-                                                        <Select defaultValue={reg.additional_seats} onValueChange={(value) => console.log('Update seats', value)}>
-                                                            <SelectTrigger className="h-6 px-1 w-10 text-[10px] bg-background"><SelectValue /></SelectTrigger>
-                                                            <SelectContent>{[0,1,2].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}</SelectContent>
-                                                        </Select>
+                                                        <span className="text-[10px] font-bold">{reg.additional_seats}</span>
                                                     </div>
                                                 </div>
                                             </TableCell>
@@ -798,13 +866,6 @@ export default function ConvocationListPage() {
                                                             </Button>
                                                         } />
                                                     </div>
-                                                    {lastPaymentRequest?.slip_path && (
-                                                        <ViewSlipDialog slipPath={lastPaymentRequest.slip_path} studentName={reg.name_on_certificate} trigger={
-                                                            <Button variant="ghost" size="xs" className="h-5 px-1.5 text-[9px] underline underline-offset-2 decoration-dotted text-blue-600">
-                                                                2nd Payment Slip
-                                                            </Button>
-                                                        }/>
-                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>

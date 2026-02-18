@@ -76,6 +76,19 @@ export const createConvocationRegistration = async (payload: FormData): Promise<
     return response.json();
 };
 
+export const updateConvocationBooking = async (id: string, payload: Partial<ConvocationRegistration>): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update booking' }));
+        throw new Error(errorData.message || 'Failed to update booking');
+    }
+    return response.json();
+};
+
 
 // Convocation Ceremonies
 export const getConvocationCeremonies = async (): Promise<ConvocationCeremony[]> => {
@@ -375,7 +388,3 @@ export const generateCertificate = async (payload: GenerateCertificatePayload): 
     }
     return response.json();
 };
-
-    
-
-    
