@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -124,9 +123,14 @@ const EnrollmentDetailAccordion = ({ enrollment }: { enrollment: StudentEnrollme
         <Accordion key={enrollment.id} type="multiple" className="w-full border rounded-md px-4 bg-background">
             <AccordionItem value="main" className="border-b-0">
                 <AccordionTrigger className="py-3 text-left hover:no-underline">
-                    <div className="flex flex-col">
-                        <span className="font-semibold text-sm md:text-base">{enrollment.parent_course_name}</span>
-                        <span className="text-[10px] md:text-xs text-muted-foreground font-normal">{enrollment.course_code} | Batch: {enrollment.batch_name}</span>
+                    <div className="flex items-center justify-between w-full pr-4">
+                        <div className="flex flex-col">
+                            <span className="font-semibold text-sm md:text-base">{enrollment.parent_course_name}</span>
+                            <span className="text-[10px] md:text-xs text-muted-foreground font-normal">{enrollment.course_code} | Batch: {enrollment.batch_name}</span>
+                        </div>
+                        <Badge variant={enrollment.certificate_eligibility ? 'default' : 'destructive'} className="text-[10px] h-5 px-2 uppercase">
+                            {enrollment.certificate_eligibility ? "Eligible" : "Not Eligible"}
+                        </Badge>
                     </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-6 pt-2 pb-4">
@@ -207,9 +211,6 @@ const EnrollmentDetailAccordion = ({ enrollment }: { enrollment: StudentEnrollme
                         <div className="space-y-2">
                             <h4 className="font-semibold text-xs uppercase text-muted-foreground flex items-center gap-2">
                                 <Award className="h-3.5 w-3.5" /> Eligibility Details
-                                <Badge variant={enrollment.certificate_eligibility ? 'default' : 'destructive'} className="ml-auto text-[9px] h-4 px-1 uppercase">
-                                    {enrollment.certificate_eligibility ? "Eligible" : "Not Eligible"}
-                                </Badge>
                             </h4>
                             <div className="border rounded-md bg-muted/5 divide-y">
                                 {enrollment.criteria_details.map(c => (
