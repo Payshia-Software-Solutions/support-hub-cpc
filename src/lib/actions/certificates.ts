@@ -1,4 +1,3 @@
-
 import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage, ParentCourse, SessionCount } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
@@ -85,6 +84,19 @@ export const updateConvocationBooking = async (id: string, payload: Partial<Conv
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to update booking' }));
         throw new Error(errorData.message || 'Failed to update booking');
+    }
+    return response.json();
+};
+
+export const updateConvocationPayment = async (registrationId: string, payload: { payment_status: string; payment_amount: number; created_by?: string }): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/payment/${registrationId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update payment' }));
+        throw new Error(errorData.message || 'Failed to update payment');
     }
     return response.json();
 };

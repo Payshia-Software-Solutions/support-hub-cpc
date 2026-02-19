@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -6,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     updateConvocationBooking, 
     updateConvocationPackage,
+    updateConvocationPayment,
     getConvocationSessionCounts, 
     getConvocationRegistrationsByStudent,
     getCertificateOrdersByStudent
@@ -37,6 +37,7 @@ import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Wallet, Fil
 import { EnrollmentDetailAccordion } from './EnrollmentDetailAccordion';
 import { ViewSlipDialog } from './ViewSlipDialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +59,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     packages?: ConvocationPackage[]
 }) => {
     const queryClient = useQueryClient();
+    const { user } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     
     // Dialog control states
@@ -162,6 +164,19 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message })
     });
 
+    const updatePaymentMutation = useMutation({
+        mutationFn: (payload: { payment_status: string; payment_amount: number; created_by: string }) => 
+            updateConvocationPayment(registration!.registration_id, payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
+            toast({ title: 'Success', description: 'Payment details updated successfully.' });
+            setIsPaymentDialogOpen(false);
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+        },
+    });
+
     const packageUpdateMutation = useMutation({
         mutationFn: (newPackageId: string) => updateConvocationPackage(registration!.registration_id, newPackageId),
         onSuccess: () => {
@@ -208,9 +223,10 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             toast({ variant: 'destructive', title: 'Error', description: 'Please enter the verified payment amount.' });
             return;
         }
-        updateMutation.mutate({
-            payment_amount: paymentAmount,
-            payment_status: paymentStatus
+        updatePaymentMutation.mutate({
+            payment_status: paymentStatus,
+            payment_amount: parseFloat(paymentAmount),
+            created_by: user?.username || 'admin',
         });
     };
 
@@ -500,8 +516,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                             </div>
                                             <DialogFooter>
                                                 <Button variant="outline" onClick={() => setIsPaymentDialogOpen(false)}>Cancel</Button>
-                                                <Button onClick={handlePaymentUpdate} disabled={updateMutation.isPending}>
-                                                    {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                                <Button onClick={handlePaymentUpdate} disabled={updatePaymentMutation.isPending}>
+                                                    {updatePaymentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                                                     Update Financials
                                                 </Button>
                                             </DialogFooter>
