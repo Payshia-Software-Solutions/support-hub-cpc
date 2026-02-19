@@ -48,13 +48,15 @@ export default function PaymentRequestsPage() {
     const { data: requests, isLoading, isError, error, refetch, isFetching } = useQuery<PaymentRequest[]>({
         queryKey: ['paymentRequests'],
         queryFn: getPaymentRequests,
-        staleTime: 1000 * 60,
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        refetchOnWindowFocus: false,
     });
 
     const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[]>({
         queryKey: ['allCoursesForPayment'],
         queryFn: getCourses,
         staleTime: Infinity,
+        refetchOnWindowFocus: false,
     });
     
     useEffect(() => {

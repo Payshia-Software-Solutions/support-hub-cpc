@@ -1,6 +1,4 @@
-
-
-import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage, ParentCourse, SessionCount } from '../types';
+import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage, ParentCourse, SessionCount, TcPaymentRecord } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -73,6 +71,64 @@ export const createConvocationRegistration = async (payload: FormData): Promise<
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: `Convocation registration failed. Status: ${response.status}` }));
         throw new Error(errorData.error || errorData.message || 'Convocation registration failed');
+    }
+    return response.json();
+};
+
+export const updateConvocationBooking = async (id: string, payload: Partial<ConvocationRegistration>): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update booking' }));
+        throw new Error(errorData.message || 'Failed to update booking');
+    }
+    return response.json();
+};
+
+export const updateConvocationPayment = async (registrationId: string, payload: { payment_status: string; payment_amount: number; created_by?: string }): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/payment/${registrationId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update payment' }));
+        throw new Error(errorData.message || 'Failed to update payment');
+    }
+    return response.json();
+};
+
+export const updateConvocationPackage = async (registrationId: string, packageId: string): Promise<any> => {
+    const params = new URLSearchParams();
+    params.append('package_id', packageId);
+
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/${registrationId}/update-package/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString()
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update package' }));
+        throw new Error(errorData.message || 'Failed to update package');
+    }
+    return response.json();
+};
+
+export const updateCeremonyNumber = async (registrationId: string, ceremonyNumber: string): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/ceremony-number/${registrationId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ceremony_number: ceremonyNumber })
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update ceremony number' }));
+        throw new Error(errorData.message || 'Failed to update ceremony number');
     }
     return response.json();
 };
@@ -377,4 +433,9 @@ export const generateCertificate = async (payload: GenerateCertificatePayload): 
     return response.json();
 };
 
-    
+export const getTcPayments = async (studentNumber: string, referKey: string = 'covocation-payment'): Promise<TcPaymentRecord[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/tc-payments?student_number=${studentNumber}&referKey=${referKey}`);
+    if (response.status === 404) return [];
+    if (!response.ok) throw new Error('Failed to fetch payment records');
+    return response.json();
+};

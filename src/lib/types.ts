@@ -1027,5 +1027,17 @@ export interface PrescriptionSubmissionPayload {
   address: string;
 }
 
-
-    
+export interface TcPaymentRecord {
+    id: string;
+    transaction_id: string;
+    rec_time: string;
+    reference: string;
+    ref_id: string;
+    created_by: string;
+    created_at: string;
+    student_number: string;
+    transaction_type: string;
+    reference_key: string;
+    record_status: string;
+    payment_amount: string;
+}

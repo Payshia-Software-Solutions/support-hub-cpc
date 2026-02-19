@@ -1,5 +1,4 @@
 
-
 import type { Course, ApiCourseResponse, Batch, ParentCourse, ApiCourse } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
@@ -184,3 +183,5 @@ export const getDeliverySettingsForCourse = async (courseCode: string): Promise<
     if (!response.ok) throw new Error('Failed to fetch delivery settings');
     return response.json();
 }
+
+    
