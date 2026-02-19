@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -193,11 +192,13 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     };
 
     const updateMutation = useMutation({
-        mutationFn: async (payload: Partial<ConvocationRegistration>) => {
+        mutationFn: async (payload: any) => {
             return updateConvocationBooking(registration!.registration_id, payload);
         },
         onSuccess: () => {
+            toast({ title: 'Success', description: 'Booking updated successfully.' });
             refreshAllData();
+            setIsEditing(false);
         },
         onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message })
     });
@@ -326,25 +327,19 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
 
     const handleUpdate = async () => {
         if (!registration) return;
-        try {
-            const fullPayload = {
-                ...registration,
-                package_id: editPackageId,
-                session: editSession,
-                additional_seats: editSeats,
-                name_on_certificate: editName,
-                telephone_1: editPhone,
-                course_id: editCourseIds.join(','),
-                updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-            };
+        
+        const fullPayload = {
+            ...registration,
+            package_id: editPackageId,
+            session: editSession,
+            additional_seats: editSeats,
+            name_on_certificate: editName,
+            telephone_1: editPhone,
+            course_id: editCourseIds.join(','),
+            updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        };
 
-            await updateMutation.mutateAsync(fullPayload);
-
-            toast({ title: 'Success', description: 'Booking updated successfully.' });
-            setIsEditing(false);
-        } catch (error) {
-            // Error handled by mutation
-        }
+        updateMutation.mutate(fullPayload);
     };
 
     const handlePaymentUpdate = () => {

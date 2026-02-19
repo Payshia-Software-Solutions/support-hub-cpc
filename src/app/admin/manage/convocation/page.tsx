@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
     getConvocationRegistrations, 
@@ -23,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Eye, FileText, Wallet, FileDown, Loader2, Banknote, AlertTriangle } from 'lucide-react';
+import { Search, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, Eye, FileDown, Loader2, Banknote, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
@@ -38,6 +37,7 @@ export default function ConvocationListPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const ceremonyIdFilter = searchParams.get('ceremonyId');
+    const initialPage = parseInt(searchParams.get('page') || '1', 10);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -45,7 +45,7 @@ export default function ConvocationListPage() {
     const [packageFilter, setPackageFilter] = useState('all');
     const [sessionFilter, setSessionFilter] = useState('all');
     const [sortOption, setSortOption] = useState('date-desc');
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(initialPage);
     const [viewingDetails, setViewingDetails] = useState<ConvocationRegistration | null>(null);
     const [isExporting, setIsExporting] = useState(false);
 
@@ -218,7 +218,15 @@ export default function ConvocationListPage() {
 
     }, [registrations, packages, searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption, courses]);
     
-    useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption]);
+    useEffect(() => {
+        const params = new URLSearchParams(searchParams);
+        params.set('page', String(currentPage));
+        router.push(`?${params.toString()}`, { scroll: false });
+    }, [currentPage, router, searchParams]);
+
+    useEffect(() => { 
+        setCurrentPage(1); 
+    }, [searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption]);
 
     const paginatedRegistrations = useMemo(() => {
         return filteredRegistrations.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
