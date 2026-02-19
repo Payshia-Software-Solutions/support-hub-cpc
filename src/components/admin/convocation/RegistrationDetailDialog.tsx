@@ -9,7 +9,8 @@ import {
     updateCeremonyNumber,
     getConvocationSessionCounts, 
     getConvocationRegistrationsByStudent,
-    getCertificateOrdersByStudent
+    getCertificateOrdersByStudent,
+    getTcPayments
 } from '@/lib/actions/certificates';
 import { getStudentFullInfo } from '@/lib/actions/users';
 import type { 
@@ -18,7 +19,8 @@ import type {
     FullStudentData, 
     SessionCount,
     CertificateOrder,
-    StudentEnrollmentInfo
+    StudentEnrollmentInfo,
+    TcPaymentRecord
 } from '@/lib/types';
 import Image from 'next/image';
 
@@ -34,7 +36,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Wallet, FileText, Banknote, UserCheck } from 'lucide-react';
+import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Wallet, FileText, Banknote, UserCheck, ListOrdered } from 'lucide-react';
 import { EnrollmentDetailAccordion } from './EnrollmentDetailAccordion';
 import { ViewSlipDialog } from './ViewSlipDialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -49,6 +51,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
 const PARENT_SEAT_RATE = 750;
@@ -85,6 +88,12 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const { data: studentData, isLoading: isLoadingStudentData } = useQuery<FullStudentData>({
         queryKey: ['studentFullInfoForConvocationDetail', registration?.student_number],
         queryFn: () => getStudentFullInfo(registration!.student_number),
+        enabled: !!registration?.student_number,
+    });
+
+    const { data: tcPayments, isLoading: isLoadingTcPayments } = useQuery<TcPaymentRecord[]>({
+        queryKey: ['tcPayments', registration?.student_number],
+        queryFn: () => getTcPayments(registration!.student_number),
         enabled: !!registration?.student_number,
     });
 
@@ -553,16 +562,52 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                         )}
                                     </div>
                                     <div className="pt-4 border-t">
-                                        <p className="text-[10px] text-muted-foreground uppercase font-bold mb-2">Payment Verification</p>
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Payment Verification</p>
                                             <Badge className={cn(
                                                 "uppercase text-[10px]",
                                                 registration.payment_status?.toLowerCase() === 'paid' ? 'bg-green-600' : 
                                                 (registration.payment_status?.toLowerCase() === 'partially-paid' || registration.payment_status?.toLowerCase() === 'partially paid') ? 'bg-orange-500' : 
                                                 'bg-destructive'
                                             )}>{registration.payment_status}</Badge>
-                                            <p className="text-sm font-bold">LKR {parseFloat(registration.payment_amount).toLocaleString()}</p>
                                         </div>
+                                        <p className="text-sm font-bold">Total Verified: LKR {parseFloat(registration.payment_amount).toLocaleString()}</p>
+                                    </div>
+                                    
+                                    {/* Detailed Transaction History */}
+                                    <div className="pt-4 border-t space-y-3">
+                                        <h4 className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-2">
+                                            <ListOrdered className="h-3 w-3" /> Transaction History
+                                        </h4>
+                                        {isLoadingTcPayments ? (
+                                            <div className="space-y-2">
+                                                <Skeleton className="h-8 w-full" />
+                                                <Skeleton className="h-8 w-full" />
+                                            </div>
+                                        ) : tcPayments && tcPayments.length > 0 ? (
+                                            <div className="border rounded-md overflow-hidden overflow-x-auto">
+                                                <Table>
+                                                    <TableHeader className="bg-muted/50">
+                                                        <TableRow className="h-8">
+                                                            <TableHead className="text-[10px] h-8">Date</TableHead>
+                                                            <TableHead className="text-[10px] h-8">Ref/Receipt</TableHead>
+                                                            <TableHead className="text-[10px] h-8 text-right">Amount</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {tcPayments.map(payment => (
+                                                            <TableRow key={payment.id} className="h-8">
+                                                                <TableCell className="text-[10px] py-1">{format(new Date(payment.created_at), 'yyyy-MM-dd')}</TableCell>
+                                                                <TableCell className="text-[10px] py-1 font-mono">{payment.receipt_number || 'N/A'}</TableCell>
+                                                                <TableCell className="text-[10px] py-1 text-right font-semibold">{parseFloat(payment.paid_amount).toLocaleString()}</TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                        ) : (
+                                            <p className="text-[10px] text-muted-foreground italic p-2 text-center border border-dashed rounded-md">No additional payment records found.</p>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>

@@ -1,4 +1,4 @@
-import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage, ParentCourse, SessionCount } from '../types';
+import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage, ParentCourse, SessionCount, TcPaymentRecord } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -430,5 +430,12 @@ export const generateCertificate = async (payload: GenerateCertificatePayload): 
         const errorData = await response.json().catch(() => ({ message: `Certificate generation failed. Status: ${response.status}` }));
         throw new Error(errorData.message || 'Certificate generation failed');
     }
+    return response.json();
+};
+
+export const getTcPayments = async (studentNumber: string, referKey: string = 'convocation-payment'): Promise<TcPaymentRecord[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/tc-payments?student_number=${studentNumber}&referKey=${referKey}`);
+    if (response.status === 404) return [];
+    if (!response.ok) throw new Error('Failed to fetch payment records');
     return response.json();
 };
