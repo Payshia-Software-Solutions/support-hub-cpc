@@ -96,7 +96,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             setEditPhone(registration.telephone_1 || '');
             setEditCourseIds(registration.course_id.split(',').map(s => s.trim()).filter(Boolean));
             
-            // For the verification dialog, we leave the amount empty so the admin must type it.
             setPaymentAmount('');
             setPaymentStatus(registration.payment_status || 'Pending');
             setCeremonyNumber(registration.ceremony_number || '');
@@ -223,8 +222,17 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             toast({ variant: 'destructive', title: 'Error', description: 'Please enter the verified payment amount.' });
             return;
         }
+
+        // Map status to expected API values
+        let statusToSubmit = paymentStatus;
+        if (paymentStatus === 'Partially Paid') {
+            statusToSubmit = 'partially-paid';
+        } else {
+            statusToSubmit = paymentStatus.toLowerCase();
+        }
+
         updatePaymentMutation.mutate({
-            payment_status: paymentStatus,
+            payment_status: statusToSubmit,
             payment_amount: parseFloat(paymentAmount),
             created_by: user?.username || 'admin',
         });
