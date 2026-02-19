@@ -129,7 +129,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     // Form state
     const [editPackageId, setEditPackageId] = useState('');
     const [pendingPackageId, setPendingPackageId] = useState('');
-    const [editSession, setEditSession] = useState<'1' | '2'>('1');
+    const [editSession, setEditSession] = useState<'1' | '2' || '1');
     const [editSeats, setEditSeats] = useState('0');
     const [editName, setEditName] = useState('');
     const [editPhone, setEditPhone] = useState('');
@@ -329,6 +329,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         try {
             const fullPayload = {
                 ...registration,
+                package_id: editPackageId,
                 session: editSession,
                 additional_seats: editSeats,
                 name_on_certificate: editName,
