@@ -39,7 +39,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Wallet, FileText, Banknote, UserCheck, ListOrdered, Calculator } from 'lucide-react';
-import { EnrollmentDetailAccordion } from './EnrollmentDetailAccordion';
 import { ViewSlipDialog } from './ViewSlipDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
@@ -57,6 +56,54 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
 const PARENT_SEAT_RATE = 750;
+
+function TempUserInfo({ user }: { user: any }) {
+    return (
+        <div className="space-y-2 text-muted-foreground text-sm">
+            <p className="flex items-center gap-2"><UserCheck className="h-4 w-4 text-primary shrink-0" /><strong className="text-card-foreground">{user.full_name}</strong></p>
+            <p className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{user.email_address}</span></p>
+            {user.phone_number && (
+                <div className="flex items-center gap-2">
+                    <span className="font-medium text-card-foreground">{user.phone_number}</span>
+                </div>
+            )}
+        </div>
+    )
+}
+
+function RegisteredStudentInfo({ user, studentNumber }: { user: UserFullDetails, studentNumber: string }) {
+    const { data: balanceData, isLoading: isLoadingBalance } = useQuery({
+        queryKey: ['studentBalance', studentNumber],
+        queryFn: () => getStudentFullInfo(studentNumber), // Reusing existing action
+        enabled: !!studentNumber,
+    });
+
+    return (
+        <Tabs defaultValue="details" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="details">Student Details</TabsTrigger>
+                <TabsTrigger value="payment">Payment History</TabsTrigger>
+            </TabsList>
+            <TabsContent value="details" className="pt-4 space-y-2 text-muted-foreground text-sm">
+                <p className="flex items-center gap-2"><UserCheck className="h-4 w-4 text-primary shrink-0" /><strong className="text-card-foreground">{user.full_name}</strong></p>
+                <p className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{user.e_mail}</span></p>
+                <div className="flex items-center gap-2">
+                    <span className="font-medium text-card-foreground">{user.telephone_1}</span>
+                </div>
+            </TabsContent>
+             <TabsContent value="payment">
+                {isLoadingBalance ? <Skeleton className="h-40"/> : balanceData && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4 text-center">
+                            <Card><CardHeader><CardTitle className="text-xs">Total Paid</CardTitle></CardHeader><CardContent><p className="text-sm font-bold">LKR {balanceData.studentBalance.totalPaymentAmount.toLocaleString()}</p></CardContent></Card>
+                            <Card><CardHeader><CardTitle className="text-xs">Outstanding</CardTitle></CardHeader><CardContent><p className="text-sm font-bold text-destructive">LKR {balanceData.studentBalance.studentBalance.toLocaleString()}</p></CardContent></Card>
+                        </div>
+                    </div>
+                )}
+            </TabsContent>
+        </Tabs>
+    );
+};
 
 export const RegistrationDetailDialog = ({ registration, open, onOpenChange, packages }: { 
     registration: ConvocationRegistration | null, 
@@ -87,6 +134,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const [paymentStatus, setPaymentStatus] = useState('');
     const [ceremonyNumber, setCeremonyNumber] = useState('');
 
+    // --- Hooks MUST be called before any early return ---
     const { data: studentInfo, isLoading: isLoadingStudentData } = useQuery<FullStudentData>({
         queryKey: ['studentFullInfoForConvocationDetail', registration?.student_number],
         queryFn: () => getStudentFullInfo(registration!.student_number),
@@ -98,38 +146,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         queryFn: () => getTcPayments(registration!.student_number, 'covocation-payment'),
         enabled: !!registration?.student_number,
     });
-
-    // Sum up all existing transaction records
-    const totalPaidFromRecords = useMemo(() => {
-        if (!tcPayments) return 0;
-        return tcPayments.reduce((acc, rec) => acc + (parseFloat(rec.payment_amount) || 0), 0);
-    }, [tcPayments]);
-
-    useEffect(() => {
-        if (registration) {
-            setEditPackageId(registration.package_id || '');
-            setEditSession(registration.session as '1' | '2' || '1');
-            setEditSeats(registration.additional_seats || '0');
-            setEditName(registration.name_on_certificate || '');
-            setEditPhone(registration.telephone_1 || '');
-            setEditCourseIds(registration.course_id.split(',').map(s => s.trim()).filter(Boolean));
-            
-            setPaymentAmount('');
-            setPaymentStatus(registration.payment_status || 'Pending');
-            setCeremonyNumber(registration.ceremony_number || '');
-            
-            setIsEditing(false);
-        }
-    }, [registration]);
-
-    useEffect(() => {
-        if (studentInfo && !editName && !registration?.name_on_certificate) {
-            setEditName(studentInfo.studentInfo.name_on_certificate || studentInfo.studentInfo.full_name);
-        }
-        if (studentInfo && !editPhone && !registration?.telephone_1) {
-            setEditPhone(studentInfo.studentInfo.telephone_1);
-        }
-    }, [studentInfo, registration, editName, editPhone]);
 
     const { data: otherBookings } = useQuery<ConvocationRegistration[]>({
         queryKey: ['convocationRegistrationsByStudent', registration?.student_number],
@@ -143,31 +159,12 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         enabled: !!registration?.student_number,
     });
 
-    const bookedElsewhereIds = useMemo(() => {
-        if (!otherBookings || !registration) return new Set<string>();
-        const ids = new Set<string>();
-        otherBookings
-            .filter(b => b.registration_id !== registration.registration_id && b.registration_status !== 'Rejected' && b.registration_status !== 'Canceled')
-            .forEach(b => b.course_id.split(',').forEach(id => ids.add(id.trim())));
-        return ids;
-    }, [otherBookings, registration]);
-
-    const orderedElsewhereIds = useMemo(() => {
-        if (!certOrders) return new Set<string>();
-        const ids = new Set<string>();
-        certOrders
-            .filter(o => o.certificate_status !== 'Delivered')
-            .forEach(o => o.course_code.split(',').forEach(id => ids.add(id.trim())));
-        return ids;
-    }, [certOrders]);
-
     const { data: sessionCounts } = useQuery<SessionCount[]>({
         queryKey: ['convocationSessionCounts', registration?.convocation_id],
         queryFn: () => getConvocationSessionCounts(registration!.convocation_id),
         enabled: !!registration?.convocation_id,
     });
 
-    // --- Helper function to refresh all relevant data ---
     const refreshAllData = () => {
         queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
         if (registration?.student_number) {
@@ -223,12 +220,78 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         },
     });
 
+    const totalPaidFromRecords = useMemo(() => {
+        if (!tcPayments) return 0;
+        return tcPayments.reduce((acc, rec) => acc + (parseFloat(rec.payment_amount) || 0), 0);
+    }, [tcPayments]);
+
     const totalPayable = useMemo(() => {
         const pkg = packages?.find(p => p.package_id === editPackageId);
         const packagePrice = pkg ? parseFloat(pkg.price) : 0;
         const numSeats = parseInt(editSeats, 10) || 0;
         return packagePrice + (numSeats * PARENT_SEAT_RATE);
     }, [editPackageId, editSeats, packages]);
+
+    const bookedElsewhereIds = useMemo(() => {
+        if (!otherBookings || !registration) return new Set<string>();
+        const ids = new Set<string>();
+        otherBookings
+            .filter(b => b.registration_id !== registration.registration_id && b.registration_status !== 'Rejected' && b.registration_status !== 'Canceled')
+            .forEach(b => b.course_id.split(',').forEach(id => ids.add(id.trim())));
+        return ids;
+    }, [otherBookings, registration]);
+
+    const orderedElsewhereIds = useMemo(() => {
+        if (!certOrders) return new Set<string>();
+        const ids = new Set<string>();
+        certOrders
+            .filter(o => o.certificate_status !== 'Delivered')
+            .forEach(o => o.course_code.split(',').forEach(id => ids.add(id.trim())));
+        return ids;
+    }, [certOrders]);
+
+    const courseGrouping = useMemo(() => {
+        if (!studentInfo || !registration) return { included: [], others: [] };
+        
+        const allEnrollments = Object.values(studentInfo.studentEnrollments);
+        const currentBookingIds = registration.course_id.split(',').map(s => s.trim()).filter(Boolean);
+        
+        const included: StudentEnrollment[] = [];
+        const others: StudentEnrollment[] = [];
+
+        allEnrollments.forEach(enrollment => {
+            if (currentBookingIds.includes(enrollment.parent_course_id)) {
+                included.push(enrollment);
+            } else {
+                others.push(enrollment);
+            }
+        });
+
+        return { included, others };
+    }, [studentInfo, registration]);
+
+    useEffect(() => {
+        if (registration) {
+            setEditPackageId(registration.package_id || '');
+            setEditSession(registration.session as '1' | '2' || '1');
+            setEditSeats(registration.additional_seats || '0');
+            setEditName(registration.name_on_certificate || '');
+            setEditPhone(registration.telephone_1 || '');
+            setEditCourseIds(registration.course_id.split(',').map(s => s.trim()).filter(Boolean));
+            setPaymentStatus(registration.payment_status || 'Pending');
+            setCeremonyNumber(registration.ceremony_number || '');
+            setIsEditing(false);
+        }
+    }, [registration]);
+
+    useEffect(() => {
+        if (studentInfo && !editName && !registration?.name_on_certificate) {
+            setEditName(studentInfo.studentInfo.name_on_certificate || studentInfo.studentInfo.full_name);
+        }
+        if (studentInfo && !editPhone && !registration?.telephone_1) {
+            setEditPhone(studentInfo.studentInfo.telephone_1);
+        }
+    }, [studentInfo, registration, editName, editPhone]);
 
     const handleVerifiedAmountChange = (val: string) => {
         setPaymentAmount(val);
@@ -243,8 +306,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             setPaymentStatus('Pending');
         }
     };
-
-    if (!registration) return null;
 
     const handleUpdate = () => {
         updateMutation.mutate({
@@ -284,6 +345,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         updateCeremonyMutation.mutate(ceremonyNumber);
     };
 
+    if (!registration) return null;
+
     const seatsAvailable = (() => {
         if (!registration.convocation_id || !sessionCounts) return { s1: 0, s2: 0 };
         const s1 = parseInt(sessionCounts.find(s => s.session === '1')?.sessionCounts || '0', 10);
@@ -294,25 +357,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const currentPackage = packages?.find(p => p.package_id === registration.package_id);
     const remainingToVerify = totalPayable - totalPaidFromRecords;
     const balanceAfterCurrentCheck = remainingToVerify - (parseFloat(paymentAmount) || 0);
-
-    // --- Course Separation Logic ---
-    const courseGrouping = useMemo(() => {
-        if (!studentInfo) return { included: [], others: [] };
-        
-        const allEnrollments = Object.values(studentInfo.studentEnrollments);
-        const included: StudentEnrollment[] = [];
-        const others: StudentEnrollment[] = [];
-
-        allEnrollments.forEach(enrollment => {
-            if (editCourseIds.includes(enrollment.parent_course_id)) {
-                included.push(enrollment);
-            } else {
-                others.push(enrollment);
-            }
-        });
-
-        return { included, others };
-    }, [studentInfo, editCourseIds]);
 
     const EnrollmentItem = ({ enrollment, isIncluded }: { enrollment: StudentEnrollment, isIncluded: boolean }) => {
         const isEligible = enrollment.certificate_eligibility;
@@ -330,7 +374,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                     {isEditing || !isIncluded ? (
                         <Checkbox 
                             id={`edit-course-${enrollment.id}`} 
-                            checked={isIncluded}
+                            checked={isIncluded || editCourseIds.includes(enrollment.parent_course_id)}
                             disabled={isDisabled}
                             onCheckedChange={(checked) => {
                                 setEditCourseIds(prev => checked ? [...prev, enrollment.parent_course_id] : prev.filter(id => id !== enrollment.parent_course_id))
@@ -666,7 +710,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                     
                                     <div className="pt-4 border-t space-y-3">
                                         <h4 className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-2">
-                                            <ListOrdered className="h-3 w-3" /> Verified Transaction Trail
+                                            <ListOrdered className="h-3.5 w-3.5" /> Verified Transaction Trail
                                         </h4>
                                         {isLoadingTcPayments ? (
                                             <div className="space-y-2">
