@@ -5,14 +5,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { getConvocationRegistrationsByStudent, getPackagesByCeremony, submitSecondPayment } from '@/lib/actions/certificates';
 import { getParentCourses } from '@/lib/actions/courses';
-import type { ConvocationRegistration, ParentCourse, ConvocationPackage } from '@/lib/types';
+import { getPaymentRequestsByReference } from '@/lib/api';
+import type { ConvocationRegistration, ParentCourse, ConvocationPackage, PaymentRequest } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { AlertCircle, ListOrdered, PlusCircle, ArrowLeft, GraduationCap, Banknote, Calendar, Users, Wallet, Upload, CheckCircle, Award, Sparkles, ScrollText, FileText, Video, Coffee, Loader2 } from 'lucide-react';
+import { AlertCircle, ListOrdered, PlusCircle, ArrowLeft, GraduationCap, Banknote, Calendar, Users, Wallet, Upload, CheckCircle, Award, Sparkles, ScrollText, FileText, Video, Coffee, Loader2, ExternalLink, Paperclip } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -22,7 +23,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import Image from 'next/image';
 
+const CONTENT_PROVIDER_URL = 'https://content-provider.pharmacollege.lk';
 const PARENT_SEAT_RATE = 750;
 
 const getStatusBadge = (status: string) => {
@@ -37,6 +41,42 @@ const getStatusBadge = (status: string) => {
         default: return <Badge variant="outline">{status}</Badge>;
     }
 }
+
+const ViewSlipDialog = ({ slipPath, title, trigger }: { slipPath: string | null; title: string; trigger: React.ReactNode }) => {
+    if (!slipPath) return null;
+
+    const fullSlipUrl = slipPath.startsWith('http') ? slipPath : `${CONTENT_PROVIDER_URL}${slipPath}`;
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(slipPath);
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>{trigger}</DialogTrigger>
+            <DialogContent className="max-w-xl">
+                <DialogHeader>
+                    <DialogTitle>{title}</DialogTitle>
+                </DialogHeader>
+                <div className="mt-4 max-h-[70vh] overflow-auto border rounded-lg p-2 bg-muted flex items-center justify-center">
+                    {isImage ? (
+                        <div className="relative w-full aspect-[3/4]">
+                            <Image src={fullSlipUrl} alt={title} layout="fill" objectFit="contain" data-ai-hint="payment slip" />
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center p-8 text-center bg-background w-full rounded-md">
+                            <FileText className="w-16 h-16 text-muted-foreground mb-4"/>
+                            <p className="mb-4 text-sm text-muted-foreground">This file is not an image (e.g. PDF). Open it in a new tab to view.</p>
+                            <a href={fullSlipUrl} target="_blank" rel="noopener noreferrer">
+                                <Button>
+                                    <ExternalLink className="mr-2 h-4 w-4" />
+                                    Open Document
+                                </Button>
+                            </a>
+                        </div>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 const BookingDetailCard = ({ booking, courseNameMap, allPackages }: { booking: ConvocationRegistration, courseNameMap: Map<string, string>, allPackages: ConvocationPackage[] }) => {
     const { user } = useAuth();
@@ -54,6 +94,18 @@ const BookingDetailCard = ({ booking, courseNameMap, allPackages }: { booking: C
             return res.json();
         }
     });
+
+    const { data: portalPayments, isLoading: isLoadingSlips } = useQuery<PaymentRequest[]>({
+        queryKey: ['paymentRequests', booking.student_number],
+        queryFn: () => getPaymentRequestsByReference(booking.student_number),
+        enabled: !!booking.student_number,
+    });
+
+    const balanceSlips = useMemo(() => {
+        if (!portalPayments) return [];
+        const reasonKey = `convocation2nd-${booking.convocation_id}`;
+        return portalPayments.filter(p => p.payment_reson === reasonKey);
+    }, [portalPayments, booking.convocation_id]);
 
     const courseNames = booking.course_id
         .split(',')
@@ -76,6 +128,7 @@ const BookingDetailCard = ({ booking, courseNameMap, allPackages }: { booking: C
         onSuccess: () => {
             toast({ title: 'Payment Submitted', description: 'Your balance payment slip has been uploaded for verification.' });
             queryClient.invalidateQueries({ queryKey: ['studentConvocationBookings'] });
+            queryClient.invalidateQueries({ queryKey: ['paymentRequests', booking.student_number] });
             setBank('');
             setBranch('');
             setSlip(null);
@@ -120,35 +173,82 @@ const BookingDetailCard = ({ booking, courseNameMap, allPackages }: { booking: C
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                        <div className="space-y-1">
-                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Enrolled Courses</Label>
-                            <p className="text-sm font-medium leading-relaxed">{courseNames}</p>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-6">
+                        <div className="space-y-4">
                             <div className="space-y-1">
-                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Session</Label>
-                                <p className="text-sm font-semibold">Session {booking.session}</p>
+                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Enrolled Courses</Label>
+                                <p className="text-sm font-medium leading-relaxed">{courseNames}</p>
                             </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Guest Seats</Label>
-                                <p className="text-sm font-semibold">{booking.additional_seats}</p>
-                            </div>
-                        </div>
-
-                        {pkg && (
-                            <div className="space-y-2 pt-2 border-t">
-                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Package Inclusions: {pkg.package_name}</Label>
-                                <div className="flex flex-wrap gap-3">
-                                    {pkg.graduation_cloth === '1' && <Badge variant="outline" className="gap-1.5"><Award className="h-3 w-3 text-primary" /> Cloak</Badge>}
-                                    {pkg.garland === '1' && <Badge variant="outline" className="gap-1.5"><Sparkles className="h-3 w-3 text-primary" /> Garland</Badge>}
-                                    {pkg.scroll === '1' && <Badge variant="outline" className="gap-1.5"><ScrollText className="h-3 w-3 text-primary" /> Scroll</Badge>}
-                                    {pkg.photo_package === '1' && <Badge variant="outline" className="gap-1.5"><GraduationCap className="h-3 w-3 text-primary" /> Hat</Badge>}
-                                    {pkg.refreshments === '1' && <Badge variant="outline" className="gap-1.5"><Coffee className="h-3 w-3 text-primary" /> Food</Badge>}
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Session</Label>
+                                    <p className="text-sm font-semibold">Session {booking.session}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Guest Seats</Label>
+                                    <p className="text-sm font-semibold">{booking.additional_seats}</p>
                                 </div>
                             </div>
-                        )}
+
+                            {pkg && (
+                                <div className="space-y-2 pt-2 border-t">
+                                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Package Inclusions: {pkg.package_name}</Label>
+                                    <div className="flex flex-wrap gap-3">
+                                        {pkg.graduation_cloth === '1' && <Badge variant="outline" className="gap-1.5"><Award className="h-3 w-3 text-primary" /> Cloak</Badge>}
+                                        {pkg.garland === '1' && <Badge variant="outline" className="gap-1.5"><Sparkles className="h-3 w-3 text-primary" /> Garland</Badge>}
+                                        {pkg.scroll === '1' && <Badge variant="outline" className="gap-1.5"><ScrollText className="h-3 w-3 text-primary" /> Scroll</Badge>}
+                                        {pkg.photo_package === '1' && <Badge variant="outline" className="gap-1.5"><GraduationCap className="h-3 w-3 text-primary" /> Hat</Badge>}
+                                        {pkg.refreshments === '1' && <Badge variant="outline" className="gap-1.5"><Coffee className="h-3 w-3 text-primary" /> Food</Badge>}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Slips Section */}
+                        <div className="space-y-3 pt-4 border-t">
+                            <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-2">
+                                <Paperclip className="h-3 w-3" /> Submitted Payment Documents
+                            </Label>
+                            <div className="grid grid-cols-1 gap-2">
+                                {/* Initial Slip */}
+                                {booking.image_path && (
+                                    <ViewSlipDialog 
+                                        title="Initial Payment Slip"
+                                        slipPath={booking.image_path}
+                                        trigger={
+                                            <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3">
+                                                <FileText className="h-4 w-4 mr-3 text-primary" />
+                                                <div className="text-left">
+                                                    <p className="text-xs font-semibold">Initial Booking Slip</p>
+                                                    <p className="text-[10px] text-muted-foreground">Uploaded on registration</p>
+                                                </div>
+                                            </Button>
+                                        }
+                                    />
+                                )}
+
+                                {/* Balance Slips */}
+                                {isLoadingSlips ? (
+                                    <Skeleton className="h-10 w-full" />
+                                ) : balanceSlips.map((p, idx) => (
+                                    <ViewSlipDialog 
+                                        key={p.id}
+                                        title={`Balance Payment Slip #${idx + 1}`}
+                                        slipPath={p.slip_path}
+                                        trigger={
+                                            <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3 border-dashed">
+                                                <FileText className="h-4 w-4 mr-3 text-orange-500" />
+                                                <div className="text-left">
+                                                    <p className="text-xs font-semibold">Balance Slip ({format(new Date(p.created_at), 'MMM d')})</p>
+                                                    <p className="text-[10px] text-muted-foreground">Status: {p.payment_status}</p>
+                                                </div>
+                                            </Button>
+                                        }
+                                    />
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="space-y-4 p-4 rounded-xl bg-muted/20 border border-muted-foreground/10">
