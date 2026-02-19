@@ -599,8 +599,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                         {tcPayments.map(payment => (
                                                             <TableRow key={payment.id} className="h-8">
                                                                 <TableCell className="text-[10px] py-1">{format(new Date(payment.created_at), 'yyyy-MM-dd')}</TableCell>
-                                                                <TableCell className="text-[10px] py-1 font-mono">{payment.receipt_number || 'N/A'}</TableCell>
-                                                                <TableCell className="text-[10px] py-1 text-right font-semibold">{parseFloat(payment.paid_amount).toLocaleString()}</TableCell>
+                                                                <TableCell className="text-[10px] py-1 font-mono">{payment.transaction_id || 'N/A'}</TableCell>
+                                                                <TableCell className="text-[10px] py-1 text-right font-semibold">{parseFloat(payment.payment_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell>
                                                             </TableRow>
                                                         ))}
                                                     </TableBody>
