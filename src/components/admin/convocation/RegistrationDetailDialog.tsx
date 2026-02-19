@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -37,7 +38,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Wallet, FileText, Banknote, UserCheck, ListOrdered } from 'lucide-react';
+import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Wallet, FileText, Banknote, UserCheck, ListOrdered, Calculator } from 'lucide-react';
 import { EnrollmentDetailAccordion } from './EnrollmentDetailAccordion';
 import { ViewSlipDialog } from './ViewSlipDialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -97,6 +98,12 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         queryFn: () => getTcPayments(registration!.student_number, 'covocation-payment'),
         enabled: !!registration?.student_number,
     });
+
+    // Sum up all existing transaction records
+    const totalPaidFromRecords = useMemo(() => {
+        if (!tcPayments) return 0;
+        return tcPayments.reduce((acc, rec) => acc + (parseFloat(rec.payment_amount) || 0), 0);
+    }, [tcPayments]);
 
     useEffect(() => {
         if (registration) {
@@ -190,6 +197,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const packageUpdateMutation = useMutation({
         mutationFn: (newPackageId: string) => updateConvocationPackage(registration!.registration_id, newPackageId),
         onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['packages', registration?.convocation_id] });
             queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
             toast({ title: 'Package Updated', description: 'The convocation package has been updated.' });
             setIsPackageConfirmOpen(false);
@@ -218,12 +226,14 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
 
     const handleVerifiedAmountChange = (val: string) => {
         setPaymentAmount(val);
-        const verified = parseFloat(val) || 0;
-        if (verified >= totalPayable && totalPayable > 0) {
+        const verifiedInput = parseFloat(val) || 0;
+        const totalVerifiedSoFar = totalPaidFromRecords + verifiedInput;
+
+        if (totalVerifiedSoFar >= totalPayable && totalPayable > 0) {
             setPaymentStatus('Paid');
-        } else if (verified > 0 && verified < totalPayable) {
+        } else if (totalVerifiedSoFar > 0 && totalVerifiedSoFar < totalPayable) {
             setPaymentStatus('Partially Paid');
-        } else if (verified === 0) {
+        } else if (totalVerifiedSoFar === 0) {
             setPaymentStatus('Pending');
         }
     };
@@ -254,9 +264,10 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             statusToSubmit = paymentStatus.toLowerCase();
         }
 
+        // The verified amount being submitted is cumulative (Existing Records + Current Input)
         updatePaymentMutation.mutate({
             payment_status: statusToSubmit,
-            payment_amount: parseFloat(paymentAmount),
+            payment_amount: totalPaidFromRecords + parseFloat(paymentAmount),
             created_by: user?.username || 'admin',
         });
     };
@@ -277,6 +288,10 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     })();
 
     const currentPackage = packages?.find(p => p.package_id === registration.package_id);
+
+    // Dynamic Balance Calculation for the UI
+    const remainingToVerify = totalPayable - totalPaidFromRecords;
+    const balanceAfterCurrentCheck = remainingToVerify - (parseFloat(paymentAmount) || 0);
 
     return (
         <>
@@ -501,37 +516,59 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                         <DialogContent>
                                             <DialogHeader>
                                                 <DialogTitle>Update Payment Details</DialogTitle>
-                                                <DialogDescription>Manually verify and set the payment status for this registration.</DialogDescription>
+                                                <DialogDescription>Manually verify and set the cumulative payment status for this registration.</DialogDescription>
                                             </DialogHeader>
                                             <div className="space-y-4 py-4">
-                                                <div className="p-3 bg-muted/50 rounded-lg flex justify-between items-center text-sm">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-muted-foreground">Total Required Amount:</span>
-                                                        {registration.image_path && (
-                                                            <ViewSlipDialog 
-                                                                slipPath={registration.image_path} 
-                                                                studentName={registration.name_on_certificate} 
-                                                                trigger={<Button variant="link" size="xs" className="h-auto p-0 text-[10px]">View Slip</Button>} 
-                                                            />
-                                                        )}
+                                                <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+                                                    <div className="flex justify-between items-center text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-muted-foreground">Total Required Amount:</span>
+                                                            {registration.image_path && (
+                                                                <ViewSlipDialog 
+                                                                    slipPath={registration.image_path} 
+                                                                    studentName={registration.name_on_certificate} 
+                                                                    trigger={<Button variant="link" size="xs" className="h-auto p-0 text-[10px]">View Slip</Button>} 
+                                                                />
+                                                            )}
+                                                        </div>
+                                                        <div className="font-bold font-mono">
+                                                            LKR {totalPayable.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                        </div>
                                                     </div>
-                                                    <div className="font-bold text-primary font-mono">
-                                                        LKR {totalPayable.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                    
+                                                    <div className="flex justify-between items-center text-sm text-green-600 border-t pt-2 border-dashed">
+                                                        <div className="flex items-center gap-2">
+                                                            <ListOrdered className="h-3.5 w-3.5" />
+                                                            <span>Already Verified (from records):</span>
+                                                        </div>
+                                                        <div className="font-bold font-mono">
+                                                            LKR {totalPaidFromRecords.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                
-                                                <div className="p-3 bg-muted/50 rounded-lg flex justify-between items-center text-sm">
-                                                    <span className="text-muted-foreground">Due Balance:</span>
-                                                    <div className={cn(
-                                                        "font-bold font-mono",
-                                                        (totalPayable - (parseFloat(paymentAmount) || 0)) > 0 ? "text-destructive" : "text-green-600"
-                                                    )}>
-                                                        LKR {(totalPayable - (parseFloat(paymentAmount) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+
+                                                    <div className="flex justify-between items-center text-sm font-bold border-t pt-2 mt-2">
+                                                        <span className="text-muted-foreground">Remaining to Verify:</span>
+                                                        <div className="font-mono text-primary">
+                                                            LKR {remainingToVerify.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="space-y-2">
-                                                    <Label>Verified Payment Amount (LKR)</Label>
+                                                <div className="p-3 bg-primary/5 rounded-lg flex justify-between items-center text-sm border border-primary/20">
+                                                    <div className="flex items-center gap-2 font-semibold">
+                                                        <Calculator className="h-4 w-4" />
+                                                        <span>Due Balance (After current check):</span>
+                                                    </div>
+                                                    <div className={cn(
+                                                        "font-bold font-mono text-lg",
+                                                        balanceAfterCurrentCheck > 0 ? "text-destructive" : "text-green-600"
+                                                    )}>
+                                                        LKR {balanceAfterCurrentCheck.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2 pt-2">
+                                                    <Label className="text-xs">Verified Amount in CURRENT Slip (LKR)</Label>
                                                     <input 
                                                         type="number" 
                                                         value={paymentAmount} 
@@ -541,14 +578,14 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>Payment Status</Label>
+                                                    <Label className="text-xs">Payment Status (Suggested by system)</Label>
                                                     <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-                                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                                        <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="Pending">Pending</SelectItem>
-                                                            <SelectItem value="Partially Paid">Partially Paid</SelectItem>
-                                                            <SelectItem value="Paid">Paid</SelectItem>
-                                                            <SelectItem value="Rejected">Rejected</SelectItem>
+                                                            <SelectItem value="Pending" className="text-xs">Pending</SelectItem>
+                                                            <SelectItem value="Partially Paid" className="text-xs">Partially Paid</SelectItem>
+                                                            <SelectItem value="Paid" className="text-xs">Paid</SelectItem>
+                                                            <SelectItem value="Rejected" className="text-xs">Rejected</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
@@ -567,15 +604,15 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                     <div className="space-y-2">
                                         {isLoadingStudentData ? <Skeleton className="h-20 w-full" /> : studentInfo && (
                                             <>
-                                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Due:</span> <span className="font-semibold">LKR {studentInfo.studentBalance.TotalRegistrationFee.toLocaleString()}</span></div>
-                                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Payments:</span> <span className="font-semibold text-green-600">LKR {studentInfo.studentBalance.totalPaymentAmount.toLocaleString()}</span></div>
-                                                <div className="flex justify-between text-lg font-bold pt-2 border-t mt-2"><span className="text-muted-foreground">Balance:</span> <span className={cn(studentInfo.studentBalance.studentBalance > 0 ? 'text-destructive' : 'text-green-600')}>LKR {studentInfo.studentBalance.studentBalance.toLocaleString()}</span></div>
+                                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Registration Fee:</span> <span className="font-semibold">LKR {studentInfo.studentBalance.TotalRegistrationFee.toLocaleString()}</span></div>
+                                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Verified Payments:</span> <span className="font-semibold text-green-600">LKR {studentInfo.studentBalance.totalPaymentAmount.toLocaleString()}</span></div>
+                                                <div className="flex justify-between text-lg font-bold pt-2 border-t mt-2"><span className="text-muted-foreground">Student Balance:</span> <span className={cn(studentInfo.studentBalance.studentBalance > 0 ? 'text-destructive' : 'text-green-600')}>LKR {studentInfo.studentBalance.studentBalance.toLocaleString()}</span></div>
                                             </>
                                         )}
                                     </div>
                                     <div className="pt-4 border-t">
                                         <div className="flex items-center justify-between mb-2">
-                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Payment Verification</p>
+                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Booking Payment Verification</p>
                                             <Badge className={cn(
                                                 "uppercase text-[10px]",
                                                 registration.payment_status?.toLowerCase() === 'paid' ? 'bg-green-600' : 
@@ -589,7 +626,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                     {/* Detailed Transaction History */}
                                     <div className="pt-4 border-t space-y-3">
                                         <h4 className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-2">
-                                            <ListOrdered className="h-3 w-3" /> Transaction History
+                                            <ListOrdered className="h-3 w-3" /> Verified Transaction Trail
                                         </h4>
                                         {isLoadingTcPayments ? (
                                             <div className="space-y-2">
@@ -597,12 +634,12 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                 <Skeleton className="h-8 w-full" />
                                             </div>
                                         ) : tcPayments && tcPayments.length > 0 ? (
-                                            <div className="border rounded-md overflow-hidden overflow-x-auto">
+                                            <div className="border rounded-md overflow-hidden overflow-x-auto bg-muted/10">
                                                 <Table>
                                                     <TableHeader className="bg-muted/50">
                                                         <TableRow className="h-8">
                                                             <TableHead className="text-[10px] h-8">Date</TableHead>
-                                                            <TableHead className="text-[10px] h-8">Ref/Receipt</TableHead>
+                                                            <TableHead className="text-[10px] h-8">Transaction ID</TableHead>
                                                             <TableHead className="text-[10px] h-8 text-right">Amount</TableHead>
                                                         </TableRow>
                                                     </TableHeader>
@@ -611,21 +648,21 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                             <TableRow key={payment.id} className="h-8">
                                                                 <TableCell className="text-[10px] py-1">{format(new Date(payment.created_at), 'yyyy-MM-dd')}</TableCell>
                                                                 <TableCell className="text-[10px] py-1 font-mono">{payment.transaction_id || 'N/A'}</TableCell>
-                                                                <TableCell className="text-[10px] py-1 text-right font-semibold">{parseFloat(payment.payment_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell>
+                                                                <TableCell className="text-[10px] py-1 text-right font-semibold">LKR {parseFloat(payment.payment_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell>
                                                             </TableRow>
                                                         ))}
                                                     </TableBody>
                                                 </Table>
                                             </div>
                                         ) : (
-                                            <p className="text-[10px] text-muted-foreground italic p-2 text-center border border-dashed rounded-md">No additional payment records found.</p>
+                                            <p className="text-[10px] text-muted-foreground italic p-2 text-center border border-dashed rounded-md">No transaction records found for this student.</p>
                                         )}
                                     </div>
                                 </CardContent>
                             </Card>
 
                             <Card>
-                                <CardHeader><CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Payment Slip</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Verification Document</CardTitle></CardHeader>
                                 <CardContent>
                                     {registration.image_path ? (
                                         <div className="space-y-3">
@@ -638,13 +675,13 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                             <ViewSlipDialog 
                                                 slipPath={registration.image_path} 
                                                 studentName={registration.name_on_certificate} 
-                                                trigger={<Button variant="outline" className="w-full" size="sm"><FileText className="mr-2 h-4 w-4" />View Uploaded Document</Button>} 
+                                                trigger={<Button variant="outline" className="w-full" size="sm"><FileText className="mr-2 h-4 w-4" />View Original Slip</Button>} 
                                             />
                                         </div>
                                     ) : (
                                         <div className="h-32 border-2 border-dashed rounded-md flex flex-col items-center justify-center text-muted-foreground">
                                             <XCircle className="h-8 w-8 mb-2 opacity-50" />
-                                            <p className="text-sm italic">No slip uploaded</p>
+                                            <p className="text-sm italic">No document uploaded</p>
                                         </div>
                                     )}
                                 </CardContent>
@@ -675,8 +712,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
 
                 <DialogFooter className="p-4 bg-muted/20 border-t shrink-0 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="h-8">Current Status: {registration.registration_status}</Badge>
-                        {registration.ceremony_number && <Badge variant="default" className="h-8">Ceremony #: {registration.ceremony_number}</Badge>}
+                        <Badge variant="outline" className="h-8 uppercase">Registration: {registration.registration_status}</Badge>
+                        {registration.ceremony_number && <Badge variant="default" className="h-8 bg-blue-600">Attendance #: {registration.ceremony_number}</Badge>}
                     </div>
                     <Dialog open={isConfirmAttendanceDialogOpen} onOpenChange={setIsConfirmAttendanceDialogOpen}>
                         <DialogTrigger asChild>
