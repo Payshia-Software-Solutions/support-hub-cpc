@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -118,20 +119,24 @@ export default function ConvocationListPage() {
             return { totalBookings: 0, pendingPayments: 0, confirmedPayments: 0, additionalSeats: 0 };
         }
         
-        // Count active bookings (those not rejected or canceled)
+        // 1. Total Active Bookings (not rejected or canceled)
         const activeRegs = registrations.filter(r => 
             !['rejected', 'canceled'].includes(r.registration_status?.toLowerCase() || '')
         );
 
+        // 2. Confirmed Payments: Check both payment_status and registration_status for success markers
+        const confirmed = activeRegs.filter(r => {
+            const pStatus = r.payment_status?.toLowerCase() || '';
+            const rStatus = r.registration_status?.toLowerCase() || '';
+            return ['paid', 'approved', 'confirmed'].includes(pStatus) || 
+                   ['paid', 'approved', 'confirmed'].includes(rStatus);
+        });
+
         return {
             totalBookings: activeRegs.length,
-            pendingPayments: activeRegs.filter(r => 
-                ['pending', 'partially-paid', 'partially paid'].includes(r.payment_status?.toLowerCase() || '')
-            ).length,
-            confirmedPayments: activeRegs.filter(r => 
-                ['paid', 'approved', 'confirmed'].includes(r.payment_status?.toLowerCase() || '') ||
-                ['paid', 'approved', 'confirmed'].includes(r.registration_status?.toLowerCase() || '')
-            ).length,
+            confirmedPayments: confirmed.length,
+            // 3. Pending Payments: Total active minus those that are confirmed
+            pendingPayments: activeRegs.length - confirmed.length,
             additionalSeats: activeRegs.reduce((acc, reg) => acc + (parseInt(reg.additional_seats, 10) || 0), 0)
         };
     }, [registrations]);
@@ -320,7 +325,7 @@ export default function ConvocationListPage() {
                 </div>
                 <Button onClick={handleExport} disabled={isExporting || isLoading || filteredRegistrations.length === 0} variant="outline" className="shadow-sm">
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
-                    Export to CSV
+                    Export CSV
                 </Button>
             </header>
             
@@ -378,9 +383,12 @@ export default function ConvocationListPage() {
                                             <TableCell className="py-4 align-top">
                                                 <div className="space-y-3">
                                                     <div className="flex flex-col gap-1">
-                                                        {reg.course_id.split(',').map((id, idIndex) => (
-                                                            <div key={`${id.trim()}-${regIndex}-${idIndex}`} className="text-[11px] leading-tight font-medium text-foreground">• {courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`}</div>
-                                                        ))}
+                                                        {reg.course_id.split(',').map((id, idIdx) => {
+                                                            const trimmedId = id.trim();
+                                                            return (
+                                                                <div key={`${trimmedId}-${reg.registration_id}-${idIdx}`} className="text-[11px] leading-tight font-medium text-foreground">• {courses?.find(c => c.id === trimmedId)?.course_name || `ID: ${trimmedId}`}</div>
+                                                            )
+                                                        })}
                                                     </div>
                                                     <div className="flex flex-wrap items-center gap-2 pt-1">
                                                         <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-100">Pkg: {packageName}</span>

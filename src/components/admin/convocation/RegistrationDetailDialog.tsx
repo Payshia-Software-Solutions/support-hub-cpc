@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -358,7 +359,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         updateCeremonyMutation.mutate(ceremonyNumber);
     };
 
-    if (!registration) return null;
+    if (!open || !registration) return null;
 
     const seatsAvailable = (() => {
         if (!registration.convocation_id || !sessionCounts) return { s1: 0, s2: 0 };
