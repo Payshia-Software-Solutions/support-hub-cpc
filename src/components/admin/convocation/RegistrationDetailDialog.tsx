@@ -618,7 +618,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                 'bg-destructive'
                                             )}>{registration.payment_status}</Badge>
                                         </div>
-                                        <p className="text-sm font-bold">Total Verified: LKR {parseFloat(registration.payment_amount).toLocaleString()}</p>
+                                        <p className="text-sm font-bold">Total Verified: LKR {totalPaidFromRecords.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                                     </div>
                                     
                                     <div className="pt-4 border-t space-y-3">

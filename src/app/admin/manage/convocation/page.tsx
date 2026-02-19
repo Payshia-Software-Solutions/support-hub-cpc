@@ -69,6 +69,16 @@ export default function ConvocationListPage() {
         refetchOnWindowFocus: false,
     });
 
+    // Keep the details dialog in sync with updated data when the query refreshes
+    useEffect(() => {
+        if (viewingDetails && registrations) {
+            const updated = registrations.find(r => r.registration_id === viewingDetails.registration_id);
+            if (updated) {
+                setViewingDetails(updated);
+            }
+        }
+    }, [registrations, viewingDetails]);
+
     type SortableColumn = 'date' | 'student' | 'ref' | 'ceremony' | 'due' | 'session' | 'course' | 'package' | 'seats';
 
     const handleSort = (column: SortableColumn) => {
