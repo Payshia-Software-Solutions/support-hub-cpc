@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Eye, FileText, Wallet, FileDown, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 
 // Modular Components
 import { RegistrationDetailDialog } from '@/components/admin/convocation/RegistrationDetailDialog';
@@ -116,11 +117,22 @@ export default function ConvocationListPage() {
         if (!registrations) {
             return { totalBookings: 0, pendingPayments: 0, confirmedPayments: 0, additionalSeats: 0 };
         }
+        
+        // Count active bookings (those not rejected or canceled)
+        const activeRegs = registrations.filter(r => 
+            !['rejected', 'canceled'].includes(r.registration_status?.toLowerCase() || '')
+        );
+
         return {
-            totalBookings: registrations.length,
-            pendingPayments: registrations.filter(r => r.payment_status.toLowerCase() === 'pending').length,
-            confirmedPayments: registrations.filter(r => ['paid', 'approved', 'confirmed'].includes(r.payment_status.toLowerCase())).length,
-            additionalSeats: registrations.reduce((acc, reg) => acc + (parseInt(reg.additional_seats, 10) || 0), 0)
+            totalBookings: activeRegs.length,
+            pendingPayments: activeRegs.filter(r => 
+                ['pending', 'partially-paid', 'partially paid'].includes(r.payment_status?.toLowerCase() || '')
+            ).length,
+            confirmedPayments: activeRegs.filter(r => 
+                ['paid', 'approved', 'confirmed'].includes(r.payment_status?.toLowerCase() || '') ||
+                ['paid', 'approved', 'confirmed'].includes(r.registration_status?.toLowerCase() || '')
+            ).length,
+            additionalSeats: activeRegs.reduce((acc, reg) => acc + (parseInt(reg.additional_seats, 10) || 0), 0)
         };
     }, [registrations]);
 
@@ -313,10 +325,10 @@ export default function ConvocationListPage() {
             </header>
             
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Bookings</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{registrationStats.totalBookings}</div></CardContent></Card>
-                <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Pending Payments</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{registrationStats.pendingPayments}</div></CardContent></Card>
-                <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Confirmed Payments</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{registrationStats.confirmedPayments}</div></CardContent></Card>
-                <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Additional Seats</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{registrationStats.additionalSeats}</div></CardContent></Card>
+                <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Bookings</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={registrationStats.totalBookings} /></div></CardContent></Card>
+                <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Pending Payments</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={registrationStats.pendingPayments} /></div></CardContent></Card>
+                <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Confirmed Payments</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={registrationStats.confirmedPayments} /></div></CardContent></Card>
+                <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Additional Seats</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={registrationStats.additionalSeats} /></div></CardContent></Card>
             </section>
             
             <Card className="shadow-lg overflow-hidden">
@@ -348,7 +360,7 @@ export default function ConvocationListPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {paginatedRegistrations.length > 0 ? paginatedRegistrations.map((reg) => {
+                                    {paginatedRegistrations.length > 0 ? paginatedRegistrations.map((reg, regIndex) => {
                                         const paidAmount = parseFloat(reg.payment_amount) || 0;
                                         const due = reg.dueAmount - paidAmount;
                                         const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || `ID: ${reg.package_id}`;
@@ -366,8 +378,8 @@ export default function ConvocationListPage() {
                                             <TableCell className="py-4 align-top">
                                                 <div className="space-y-3">
                                                     <div className="flex flex-col gap-1">
-                                                        {reg.course_id.split(',').map((id, index) => (
-                                                            <div key={`${id.trim()}-${index}`} className="text-[11px] leading-tight font-medium text-foreground">• {courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`}</div>
+                                                        {reg.course_id.split(',').map((id, idIndex) => (
+                                                            <div key={`${id.trim()}-${regIndex}-${idIndex}`} className="text-[11px] leading-tight font-medium text-foreground">• {courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`}</div>
                                                         ))}
                                                     </div>
                                                     <div className="flex flex-wrap items-center gap-2 pt-1">

@@ -311,7 +311,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const handleUpdate = async () => {
         if (!registration) return;
         try {
-            // Update everything in one go via the specialized endpoint that handles both basic info and courses
             const fullPayload = {
                 ...registration,
                 session: editSession,
@@ -324,7 +323,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
 
             await updateMutation.mutateAsync(fullPayload);
 
-            toast({ title: 'Success', description: 'Booking and courses updated successfully.' });
+            toast({ title: 'Success', description: 'Booking updated successfully.' });
             setIsEditing(false);
         } catch (error) {
             // Error handled by mutation
