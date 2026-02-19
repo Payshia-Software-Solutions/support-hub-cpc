@@ -21,14 +21,15 @@ import type {
     SessionCount,
     CertificateOrder,
     StudentEnrollment,
-    TcPaymentRecord
+    TcPaymentRecord,
+    UserFullDetails
 } from '@/lib/types';
 import Image from 'next/image';
 import { format } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -36,9 +37,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Wallet, FileText, Banknote, UserCheck, ListOrdered, Calculator } from 'lucide-react';
+import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Banknote, UserCheck, ListOrdered, Calculator, FileText } from 'lucide-react';
 import { ViewSlipDialog } from './ViewSlipDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
@@ -53,8 +55,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { EnrollmentDetailAccordion } from './EnrollmentDetailAccordion';
 
-const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
 const PARENT_SEAT_RATE = 750;
 
 function TempUserInfo({ user }: { user: any }) {
@@ -72,9 +74,9 @@ function TempUserInfo({ user }: { user: any }) {
 }
 
 function RegisteredStudentInfo({ user, studentNumber }: { user: UserFullDetails, studentNumber: string }) {
-    const { data: balanceData, isLoading: isLoadingBalance } = useQuery({
+    const { data: balanceData, isLoading: isLoadingBalance } = useQuery<FullStudentData>({
         queryKey: ['studentBalance', studentNumber],
-        queryFn: () => getStudentFullInfo(studentNumber), // Reusing existing action
+        queryFn: () => getStudentFullInfo(studentNumber),
         enabled: !!studentNumber,
     });
 
@@ -95,8 +97,8 @@ function RegisteredStudentInfo({ user, studentNumber }: { user: UserFullDetails,
                 {isLoadingBalance ? <Skeleton className="h-40"/> : balanceData && (
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4 text-center">
-                            <Card><CardHeader><CardTitle className="text-xs">Total Paid</CardTitle></CardHeader><CardContent><p className="text-sm font-bold">LKR {balanceData.studentBalance.totalPaymentAmount.toLocaleString()}</p></CardContent></Card>
-                            <Card><CardHeader><CardTitle className="text-xs">Outstanding</CardTitle></CardHeader><CardContent><p className="text-sm font-bold text-destructive">LKR {balanceData.studentBalance.studentBalance.toLocaleString()}</p></CardContent></Card>
+                            <Card><CardHeader className="p-2"><CardTitle className="text-xs">Total Paid</CardTitle></CardHeader><CardContent className="p-2 pt-0"><p className="text-sm font-bold">LKR {balanceData.studentBalance.totalPaymentAmount.toLocaleString()}</p></CardContent></Card>
+                            <Card><CardHeader className="p-2"><CardTitle className="text-xs">Outstanding</CardTitle></CardHeader><CardContent className="p-2 pt-0"><p className="text-sm font-bold text-destructive">LKR {balanceData.studentBalance.studentBalance.toLocaleString()}</p></CardContent></Card>
                         </div>
                     </div>
                 )}
