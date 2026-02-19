@@ -107,10 +107,13 @@ const BookingDetailCard = ({ booking, courseNameMap, allPackages }: { booking: C
         return portalPayments.filter(p => p.payment_reson === reasonKey);
     }, [portalPayments, booking.convocation_id]);
 
-    const courseNames = booking.course_id
-        .split(',')
-        .map(id => courseNameMap.get(id.trim()) || `Course (ID: ${id.trim()})`)
-        .join(', ');
+    const courseList = useMemo(() => {
+        return booking.course_id
+            .split(',')
+            .map(id => id.trim())
+            .filter(Boolean)
+            .map(id => courseNameMap.get(id) || `Course (ID: ${id})`);
+    }, [booking.course_id, courseNameMap]);
 
     const pkg = allPackages.find(p => p.package_id === booking.package_id);
     
@@ -176,8 +179,15 @@ const BookingDetailCard = ({ booking, courseNameMap, allPackages }: { booking: C
                     <div className="space-y-6">
                         <div className="space-y-4">
                             <div className="space-y-1">
-                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Enrolled Courses</Label>
-                                <p className="text-sm font-medium leading-relaxed">{courseNames}</p>
+                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Enrolled Course(s)</Label>
+                                <div className="space-y-1 mt-1">
+                                    {courseList.map((name, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 text-sm font-medium leading-relaxed">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                                            {name}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                             
                             <div className="grid grid-cols-2 gap-4">
