@@ -440,3 +440,15 @@ export const getTcPayments = async (studentNumber: string, referKey: string = 'c
     if (!response.ok) throw new Error('Failed to fetch payment records');
     return response.json();
 };
+
+export const submitSecondPayment = async (payload: FormData): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/payment-portal-requests`, {
+        method: 'POST',
+        body: payload,
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Payment submission failed. Status: ${response.status}` }));
+        throw new Error(errorData.message || 'Payment submission failed');
+    }
+    return response.json();
+};
