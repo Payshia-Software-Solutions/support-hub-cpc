@@ -317,7 +317,7 @@ const BookingDetailCard = ({ booking, courseNameMap, allPackages }: { booking: C
                                             <Input type="file" onChange={e => setSlip(e.target.files ? e.target.files[0] : null)} className="h-8 text-xs pt-1 file:h-6 file:text-[10px]" />
                                         </div>
                                         <Button onClick={handleUpload} size="sm" disabled={isSubmitting} className="w-full mt-2">
-                                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
                                             Submit Payment
                                         </Button>
                                     </div>
@@ -377,6 +377,14 @@ export default function ConvocationBookingHistoryPage() {
                     </Link>
                 </Button>
             </header>
+
+            <Alert variant="default" className="bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/30 dark:border-amber-700/50 dark:text-amber-300">
+                <AlertCircle className="h-4 w-4 !text-amber-800 dark:!text-amber-300" />
+                <AlertTitle className="font-bold">වැදගත් දැනුම්දීමයි (Important Notice)</AlertTitle>
+                <AlertDescription className="text-sm font-medium leading-relaxed">
+                    මේ අවස්ථාවේ අප විසින් ගෙවීම් යාවත්කාලීන කරන බැවින් දුරකතන ඇමතුම් හා Message එවීමෙන් වලකින මෙන් කාරුණාකව ඉල්ලා සිටින අතර ඔබගේ ගෙවීම් යාවත්කාලීන වූ විට ඔබට එය කෙටි පණිඩිඩයක් මගින් දනුම් දේ. එතෙක් රැඳී සිටින්න.
+                </AlertDescription>
+            </Alert>
 
             <div className="space-y-6">
                 {isLoading && (
