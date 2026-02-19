@@ -14,6 +14,7 @@ import {
     getTcPayments
 } from '@/lib/actions/certificates';
 import { getStudentFullInfo } from '@/lib/actions/users';
+import { getPaymentRequestsByReference } from '@/lib/api';
 import type { 
     ConvocationRegistration, 
     ConvocationPackage, 
@@ -23,7 +24,8 @@ import type {
     StudentEnrollment,
     TcPaymentRecord,
     UserFullDetails,
-    StudentBalanceData
+    StudentBalanceData,
+    PaymentRequest
 } from '@/lib/types';
 import Image from 'next/image';
 import { format } from 'date-fns';
@@ -41,7 +43,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Banknote, UserCheck, ListOrdered, Calculator, FileText } from 'lucide-react';
+import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Banknote, UserCheck, ListOrdered, Calculator, FileText, Paperclip, Hourglass } from 'lucide-react';
 import { ViewSlipDialog } from './ViewSlipDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
@@ -151,6 +153,12 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         enabled: !!registration?.student_number,
     });
 
+    const { data: portalPayments, isLoading: isLoadingPortalSlips } = useQuery<PaymentRequest[]>({
+        queryKey: ['paymentRequests', registration?.student_number],
+        queryFn: () => getPaymentRequestsByReference(registration!.student_number),
+        enabled: !!registration?.student_number,
+    });
+
     const { data: otherBookings } = useQuery<ConvocationRegistration[]>({
         queryKey: ['convocationRegistrationsByStudent', registration?.student_number],
         queryFn: () => getConvocationRegistrationsByStudent(registration!.student_number),
@@ -169,11 +177,18 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         enabled: !!registration?.convocation_id,
     });
 
+    const balanceSlips = useMemo(() => {
+        if (!portalPayments || !registration) return [];
+        const reasonKey = `convocation2nd-${registration.convocation_id}`;
+        return portalPayments.filter(p => p.payment_reson === reasonKey);
+    }, [portalPayments, registration]);
+
     const refreshAllData = () => {
         queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
         if (registration?.student_number) {
             queryClient.invalidateQueries({ queryKey: ['studentFullInfoForConvocationDetail', registration.student_number] });
             queryClient.invalidateQueries({ queryKey: ['tcPayments', registration.student_number, 'covocation-payment'] });
+            queryClient.invalidateQueries({ queryKey: ['paymentRequests', registration.student_number] });
         }
     };
 
@@ -603,7 +618,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                             </CardContent>
                         </Card>
 
-                        {/* Financials & Trail */}
+                        {/* Financials & Documents */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between">
@@ -620,16 +635,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                             <div className="space-y-4 py-4">
                                                 <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
                                                     <div className="flex justify-between items-center text-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-muted-foreground">Total Required Amount:</span>
-                                                            {registration.image_path && (
-                                                                <ViewSlipDialog 
-                                                                    slipPath={registration.image_path} 
-                                                                    studentName={registration.name_on_certificate} 
-                                                                    trigger={<Button variant="link" size="xs" className="h-auto p-0 text-[10px]">View Slip</Button>} 
-                                                                />
-                                                            )}
-                                                        </div>
+                                                        <span className="text-muted-foreground">Total Required Amount:</span>
                                                         <div className="font-bold font-mono">
                                                             LKR {totalPayable.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                         </div>
@@ -638,7 +644,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                     <div className="flex justify-between items-center text-sm text-green-600 border-t pt-2 border-dashed">
                                                         <div className="flex items-center gap-2">
                                                             <ListOrdered className="h-3.5 w-3.5" />
-                                                            <span>Already Verified (from records):</span>
+                                                            <span>Already Verified:</span>
                                                         </div>
                                                         <div className="font-bold font-mono">
                                                             LKR {totalPaidFromRecords.toLocaleString('en-US', { minimumFractionDigits: 2 })}
@@ -656,7 +662,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                 <div className="p-3 bg-primary/5 rounded-lg flex justify-between items-center text-sm border border-primary/20">
                                                     <div className="flex items-center gap-2 font-semibold">
                                                         <Calculator className="h-4 w-4" />
-                                                        <span>Due Balance (After current check):</span>
+                                                        <span>Due Balance (Final):</span>
                                                     </div>
                                                     <div className={cn(
                                                         "font-bold font-mono text-lg",
@@ -677,7 +683,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">Payment Status (Suggested by system)</Label>
+                                                    <Label className="text-xs">New Payment Status</Label>
                                                     <Select value={paymentStatus} onValueChange={setPaymentStatus}>
                                                         <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                                                         <SelectContent>
@@ -760,28 +766,53 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                             </Card>
 
                             <Card>
-                                <CardHeader><CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Verification Document</CardTitle></CardHeader>
-                                <CardContent>
-                                    {registration.image_path ? (
-                                        <div className="space-y-3">
-                                            <div className="relative aspect-video rounded-md overflow-hidden bg-muted group border border-dashed">
-                                                <Image src={`${CONTENT_PROVIDER_URL}${registration.image_path}`} alt="Slip Preview" layout="fill" objectFit="cover" />
-                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <ViewSlipDialog slipPath={registration.image_path} studentName={registration.name_on_certificate} trigger={<Button variant="secondary" size="sm">Full Preview</Button>} />
-                                                </div>
-                                            </div>
-                                            <ViewSlipDialog 
-                                                slipPath={registration.image_path} 
-                                                studentName={registration.name_on_certificate} 
-                                                trigger={<Button variant="outline" className="w-full" size="sm"><FileText className="mr-2 h-4 w-4" />View Original Slip</Button>} 
-                                            />
+                                <CardHeader><CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Verification Documents</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="space-y-3">
+                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-2">
+                                            <Paperclip className="h-3 w-3" /> All Submitted Slips
+                                        </Label>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {/* Initial Slip */}
+                                            {registration.image_path ? (
+                                                <ViewSlipDialog 
+                                                    title="Initial Booking Slip"
+                                                    slipPath={registration.image_path}
+                                                    trigger={
+                                                        <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3">
+                                                            <FileText className="h-4 w-4 mr-3 text-primary" />
+                                                            <div className="text-left">
+                                                                <p className="text-xs font-semibold">Initial Registration Slip</p>
+                                                                <p className="text-[10px] text-muted-foreground">Main verification</p>
+                                                            </div>
+                                                        </Button>
+                                                    }
+                                                />
+                                            ) : (
+                                                <div className="h-16 border-2 border-dashed rounded-md flex items-center justify-center text-muted-foreground italic text-xs">No initial slip</div>
+                                            )}
+
+                                            {/* Balance Slips */}
+                                            {isLoadingPortalSlips ? (
+                                                <Skeleton className="h-10 w-full" />
+                                            ) : balanceSlips.map((p, idx) => (
+                                                <ViewSlipDialog 
+                                                    key={p.id}
+                                                    title={`Balance Payment Slip #${idx + 1}`}
+                                                    slipPath={p.slip_path}
+                                                    trigger={
+                                                        <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3 border-dashed">
+                                                            <FileText className="h-4 w-4 mr-3 text-orange-500" />
+                                                            <div className="text-left">
+                                                                <p className="text-xs font-semibold">Balance Slip ({format(new Date(p.created_at), 'MMM d')})</p>
+                                                                <p className="text-[10px] text-muted-foreground">Status: {p.payment_status}</p>
+                                                            </div>
+                                                        </Button>
+                                                    }
+                                                />
+                                            ))}
                                         </div>
-                                    ) : (
-                                        <div className="h-32 border-2 border-dashed rounded-md flex flex-col items-center justify-center text-muted-foreground">
-                                            <XCircle className="h-8 w-8 mb-2 opacity-50" />
-                                            <p className="text-sm italic">No document uploaded</p>
-                                        </div>
-                                    )}
+                                    </div>
                                 </CardContent>
                             </Card>
                         </div>
