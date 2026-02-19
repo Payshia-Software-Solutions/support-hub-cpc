@@ -174,12 +174,12 @@ export default function ConvocationListPage() {
         })
         .filter(reg => {
             const matchesSearch = lowercasedSearch === '' || 
-                reg.student_number.toLowerCase().includes(lowercasedSearch) ||
-                reg.name_on_certificate.toLowerCase().includes(lowercasedSearch) ||
-                reg.reference_number.toLowerCase().includes(lowercasedSearch);
+                (reg.student_number?.toLowerCase() || '').includes(lowercasedSearch) ||
+                (reg.name_on_certificate?.toLowerCase() || '').includes(lowercasedSearch) ||
+                (reg.reference_number?.toLowerCase() || '').includes(lowercasedSearch);
             
-            const matchesStatus = statusFilter === 'all' || reg.payment_status.toLowerCase() === statusFilter.toLowerCase();
-            const matchesCourse = reg.course_id.split(',').some(id => {
+            const matchesStatus = statusFilter === 'all' || (reg.payment_status?.toLowerCase() || '') === statusFilter.toLowerCase();
+            const matchesCourse = (reg.course_id || '').split(',').some(id => {
                 const course = courses?.find(c => c.id === id.trim());
                 return courseFilter === 'all' || course?.id === courseFilter;
             });
@@ -192,14 +192,14 @@ export default function ConvocationListPage() {
         return filtered.sort((a, b) => {
             const getSortableValue = (reg: typeof a, column: SortableColumn) => {
                 switch(column) {
-                    case 'student': return reg.student_number;
-                    case 'ref': return parseInt(reg.reference_number, 10);
+                    case 'student': return reg.student_number || '';
+                    case 'ref': return parseInt(reg.reference_number || '0', 10);
                     case 'ceremony': return reg.ceremony_number || '';
-                    case 'due': return reg.dueAmount;
-                    case 'session': return reg.session;
-                    case 'course': return reg.course_id;
+                    case 'due': return reg.dueAmount || 0;
+                    case 'session': return reg.session || '';
+                    case 'course': return reg.course_id || '';
                     case 'package': return packages?.find(p => p.package_id === reg.package_id)?.package_name || '';
-                    case 'seats': return parseInt(reg.additional_seats, 10);
+                    case 'seats': return parseInt(reg.additional_seats || '0', 10);
                     case 'date':
                     default:
                         const date = parseISO(reg.registered_at);
@@ -398,7 +398,7 @@ export default function ConvocationListPage() {
                                             <TableCell className="py-4 align-top">
                                                 <div className="space-y-3">
                                                     <div className="flex flex-col gap-1">
-                                                        {reg.course_id.split(',').map((id, idIdx) => {
+                                                        {(reg.course_id || '').split(',').map((id, idIdx) => {
                                                             const trimmedId = id.trim();
                                                             return (
                                                                 <div key={`${trimmedId}-${reg.registration_id}-${idIdx}`} className="text-[11px] leading-tight font-medium text-foreground">• {courses?.find(c => c.id === trimmedId)?.course_name || `ID: ${trimmedId}`}</div>
