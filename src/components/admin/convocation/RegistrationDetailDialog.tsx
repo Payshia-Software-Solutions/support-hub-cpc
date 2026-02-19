@@ -20,7 +20,7 @@ import type {
     FullStudentData, 
     SessionCount,
     CertificateOrder,
-    StudentEnrollmentInfo,
+    StudentEnrollment,
     TcPaymentRecord
 } from '@/lib/types';
 import Image from 'next/image';
@@ -295,6 +295,81 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const remainingToVerify = totalPayable - totalPaidFromRecords;
     const balanceAfterCurrentCheck = remainingToVerify - (parseFloat(paymentAmount) || 0);
 
+    // --- Course Separation Logic ---
+    const courseGrouping = useMemo(() => {
+        if (!studentInfo) return { included: [], others: [] };
+        
+        const allEnrollments = Object.values(studentInfo.studentEnrollments);
+        const included: StudentEnrollment[] = [];
+        const others: StudentEnrollment[] = [];
+
+        allEnrollments.forEach(enrollment => {
+            if (editCourseIds.includes(enrollment.parent_course_id)) {
+                included.push(enrollment);
+            } else {
+                others.push(enrollment);
+            }
+        });
+
+        return { included, others };
+    }, [studentInfo, editCourseIds]);
+
+    const EnrollmentItem = ({ enrollment, isIncluded }: { enrollment: StudentEnrollment, isIncluded: boolean }) => {
+        const isEligible = enrollment.certificate_eligibility;
+        const isBookedElsewhere = bookedElsewhereIds.has(enrollment.parent_course_id);
+        const isOrderedElsewhere = orderedElsewhereIds.has(enrollment.parent_course_id);
+        const isDisabled = isBookedElsewhere || isOrderedElsewhere;
+
+        return (
+            <Collapsible className={cn(
+                "border rounded-md p-3 transition-colors",
+                isIncluded && "bg-primary/5 border-primary/20",
+                isDisabled && !isIncluded && "opacity-60 bg-muted/50"
+            )}>
+                <div className="flex items-start gap-3">
+                    {isEditing || !isIncluded ? (
+                        <Checkbox 
+                            id={`edit-course-${enrollment.id}`} 
+                            checked={isIncluded}
+                            disabled={isDisabled}
+                            onCheckedChange={(checked) => {
+                                setEditCourseIds(prev => checked ? [...prev, enrollment.parent_course_id] : prev.filter(id => id !== enrollment.parent_course_id))
+                            }}
+                            className="mt-1"
+                        />
+                    ) : (
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-1 shrink-0" />
+                    )}
+                    <div className="flex-1 space-y-1">
+                        <Label htmlFor={`edit-course-${enrollment.id}`} className="text-xs font-bold leading-tight block cursor-pointer">
+                            {enrollment.parent_course_name}
+                        </Label>
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                            {isIncluded && <Badge variant="default" className="text-[9px] h-4 px-1 bg-green-100 text-green-700 border-green-200">Included</Badge>}
+                            {isBookedElsewhere && <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-purple-100 text-purple-800">Booked Elsewhere</Badge>}
+                            {isOrderedElsewhere && <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-amber-100 text-amber-800 border-amber-200">Already Ordered</Badge>}
+                            {!isEligible && <Badge variant="destructive" className="text-[9px] h-4 px-1">Not Eligible</Badge>}
+                        </div>
+                    </div>
+                    {!isEligible && (
+                        <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="xs" className="h-6 w-6 p-0"><ChevronDown className="h-3 w-3" /></Button>
+                        </CollapsibleTrigger>
+                    )}
+                </div>
+                <CollapsibleContent className="mt-2 pt-2 border-t text-[10px] space-y-1 text-muted-foreground">
+                    <p className="font-bold text-foreground">Pending Requirements:</p>
+                    {enrollment.criteria_details.filter(c => !c.evaluation.completed).map(c => (
+                        <div key={c.id} className="flex justify-between">
+                            <span>• {c.list_name}</span>
+                            <span>{c.evaluation.currentValue} / {c.evaluation.requiredValue}</span>
+                        </div>
+                    ))}
+                </CollapsibleContent>
+            </Collapsible>
+        );
+    };
+
     return (
         <>
         <AlertDialog open={isPackageConfirmOpen} onOpenChange={setIsPackageConfirmOpen}>
@@ -436,68 +511,36 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                     </div>
                                 )}
 
-                                <div className="space-y-3 pt-4 border-t">
-                                    <Label className="text-xs font-semibold">Course(s) in Booking</Label>
-                                    {isLoadingStudentData ? <Skeleton className="h-20 w-full" /> : studentInfo && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            {Object.values(studentInfo.studentEnrollments).map(enrollment => {
-                                                const isIncluded = editCourseIds.includes(enrollment.parent_course_id);
-                                                const isEligible = enrollment.certificate_eligibility;
-                                                const isBookedElsewhere = bookedElsewhereIds.has(enrollment.parent_course_id);
-                                                const isOrderedElsewhere = orderedElsewhereIds.has(enrollment.parent_course_id);
-                                                const isDisabled = isBookedElsewhere || isOrderedElsewhere;
+                                <div className="space-y-6 pt-4 border-t">
+                                    <div className="space-y-3">
+                                        <Label className="text-xs font-semibold uppercase tracking-wider text-primary">Included in this Booking</Label>
+                                        {isLoadingStudentData ? <Skeleton className="h-20 w-full" /> : studentInfo && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                {courseGrouping.included.length > 0 ? (
+                                                    courseGrouping.included.map(enrollment => (
+                                                        <EnrollmentItem key={enrollment.id} enrollment={enrollment} isIncluded={true} />
+                                                    ))
+                                                ) : (
+                                                    <p className="text-xs text-muted-foreground italic col-span-2">No courses are currently assigned to this booking.</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
 
-                                                return (
-                                                    <Collapsible key={enrollment.id} className={cn(
-                                                        "border rounded-md p-3 transition-colors",
-                                                        isIncluded && "bg-primary/5 border-primary/20",
-                                                        isDisabled && !isIncluded && "opacity-60 bg-muted/50"
-                                                    )}>
-                                                        <div className="flex items-start gap-3">
-                                                            {isEditing || !isIncluded ? (
-                                                                <Checkbox 
-                                                                    id={`edit-course-${enrollment.id}`} 
-                                                                    checked={isIncluded}
-                                                                    disabled={isDisabled}
-                                                                    onCheckedChange={(checked) => {
-                                                                        setEditCourseIds(prev => checked ? [...prev, enrollment.parent_course_id] : prev.filter(id => id !== enrollment.parent_course_id))
-                                                                    }}
-                                                                    className="mt-1"
-                                                                />
-                                                            ) : (
-                                                                <CheckCircle className="h-4 w-4 text-green-500 mt-1 shrink-0" />
-                                                            )}
-                                                            <div className="flex-1 space-y-1">
-                                                                <Label htmlFor={`edit-course-${enrollment.id}`} className="text-xs font-bold leading-tight block cursor-pointer">
-                                                                    {enrollment.parent_course_name}
-                                                                </Label>
-                                                                <div className="flex flex-wrap gap-1.5 pt-1">
-                                                                    {isIncluded && <Badge variant="default" className="text-[9px] h-4 px-1 bg-green-100 text-green-700 border-green-200">Included</Badge>}
-                                                                    {isBookedElsewhere && <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-purple-100 text-purple-800">Booked Elsewhere</Badge>}
-                                                                    {isOrderedElsewhere && <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-amber-100 text-amber-800 border-amber-200">Already Ordered</Badge>}
-                                                                    {!isEligible && <Badge variant="destructive" className="text-[9px] h-4 px-1">Not Eligible</Badge>}
-                                                                </div>
-                                                            </div>
-                                                            {!isEligible && (
-                                                                <CollapsibleTrigger asChild>
-                                                                    <Button variant="ghost" size="xs" className="h-6 w-6 p-0"><ChevronDown className="h-3 w-3" /></Button>
-                                                                </CollapsibleTrigger>
-                                                            )}
-                                                        </div>
-                                                        <CollapsibleContent className="mt-2 pt-2 border-t text-[10px] space-y-1 text-muted-foreground">
-                                                            <p className="font-bold text-foreground">Pending Requirements:</p>
-                                                            {enrollment.criteria_details.filter(c => !c.evaluation.completed).map(c => (
-                                                                <div key={c.id} className="flex justify-between">
-                                                                    <span>• {c.list_name}</span>
-                                                                    <span>{c.evaluation.currentValue} / {c.evaluation.requiredValue}</span>
-                                                                </div>
-                                                            ))}
-                                                        </CollapsibleContent>
-                                                    </Collapsible>
-                                                )
-                                            })}
-                                        </div>
-                                    )}
+                                    <div className="space-y-3 pt-4 border-t">
+                                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Other Enrollments (Available to Add)</Label>
+                                        {isLoadingStudentData ? <Skeleton className="h-20 w-full" /> : studentInfo && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                {courseGrouping.others.length > 0 ? (
+                                                    courseGrouping.others.map(enrollment => (
+                                                        <EnrollmentItem key={enrollment.id} enrollment={enrollment} isIncluded={false} />
+                                                    ))
+                                                ) : (
+                                                    <p className="text-xs text-muted-foreground italic col-span-2">No other enrollments available.</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
