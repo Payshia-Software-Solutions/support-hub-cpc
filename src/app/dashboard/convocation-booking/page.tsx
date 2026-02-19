@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { AlertCircle, ListOrdered, PlusCircle, ArrowLeft, GraduationCap, Banknote, Calendar, Users, Wallet, Upload, CheckCircle, Award, Sparkles, ScrollText, FileText, Video, Coffee, Loader2, ExternalLink, Paperclip } from 'lucide-react';
+import { AlertCircle, ListOrdered, PlusCircle, ArrowLeft, GraduationCap, Banknote, Calendar, Users, Wallet, Upload, CheckCircle, Award, Sparkles, ScrollText, FileText, Video, Coffee, Loader2, ExternalLink, Paperclip, Hourglass } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -106,6 +106,10 @@ const BookingDetailCard = ({ booking, courseNameMap, allPackages }: { booking: C
         const reasonKey = `convocation2nd-${booking.convocation_id}`;
         return portalPayments.filter(p => p.payment_reson === reasonKey);
     }, [portalPayments, booking.convocation_id]);
+
+    const hasPendingSlip = useMemo(() => {
+        return balanceSlips.some(p => p.payment_status === 'Pending');
+    }, [balanceSlips]);
 
     const courseList = useMemo(() => {
         return booking.course_id
@@ -282,31 +286,42 @@ const BookingDetailCard = ({ booking, courseNameMap, allPackages }: { booking: C
                         {dueBalance > 0 && (
                             <div className="pt-4 border-t border-dashed mt-4 space-y-4">
                                 <h5 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                                    <Upload className="h-3.5 w-3.5" /> Upload Balance Payment Slip
+                                    <Upload className="h-3.5 w-3.5" /> Balance Payment
                                 </h5>
-                                <div className="grid grid-cols-1 gap-3">
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs">Paid Bank</Label>
-                                        <Select value={bank} onValueChange={setBank}>
-                                            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select bank..." /></SelectTrigger>
-                                            <SelectContent>
-                                                {banks?.map(b => <SelectItem key={b.id} value={b.id} className="text-xs">{b.bank_name}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
+                                
+                                {hasPendingSlip ? (
+                                    <Alert variant="default" className="bg-orange-50 border-orange-200 text-orange-800">
+                                        <Hourglass className="h-4 w-4 !text-orange-800" />
+                                        <AlertTitle className="text-xs font-bold">Payment Under Review</AlertTitle>
+                                        <AlertDescription className="text-[10px] leading-tight">
+                                            You have already submitted a balance payment slip. Please wait for the administration to verify it before submitting another.
+                                        </AlertDescription>
+                                    </Alert>
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-3 animate-in fade-in-50">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs">Paid Bank</Label>
+                                            <Select value={bank} onValueChange={setBank}>
+                                                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select bank..." /></SelectTrigger>
+                                                <SelectContent>
+                                                    {banks?.map(b => <SelectItem key={b.id} value={b.id} className="text-xs">{b.bank_name}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs">Branch (Optional)</Label>
+                                            <Input value={branch} onChange={e => setBranch(e.target.value)} className="h-8 text-xs" placeholder="Branch name..." />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs">Payment Slip</Label>
+                                            <Input type="file" onChange={e => setSlip(e.target.files ? e.target.files[0] : null)} className="h-8 text-xs pt-1 file:h-6 file:text-[10px]" />
+                                        </div>
+                                        <Button onClick={handleUpload} size="sm" disabled={isSubmitting} className="w-full mt-2">
+                                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                                            Submit Payment
+                                        </Button>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs">Branch (Optional)</Label>
-                                        <Input value={branch} onChange={e => setBranch(e.target.value)} className="h-8 text-xs" placeholder="Branch name..." />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs">Payment Slip</Label>
-                                        <Input type="file" onChange={e => setSlip(e.target.files ? e.target.files[0] : null)} className="h-8 text-xs pt-1 file:h-6 file:text-[10px]" />
-                                    </div>
-                                    <Button onClick={handleUpload} size="sm" disabled={isSubmitting} className="w-full mt-2">
-                                        {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-                                        Submit Payment
-                                    </Button>
-                                </div>
+                                )}
                             </div>
                         )}
                     </div>
