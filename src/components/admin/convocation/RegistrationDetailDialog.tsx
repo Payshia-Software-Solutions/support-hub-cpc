@@ -7,6 +7,7 @@ import {
     updateConvocationPackage,
     updateConvocationPayment,
     updateCeremonyNumber,
+    updateConvocationCourses,
     getConvocationSessionCounts, 
     getConvocationRegistrationsByStudent,
     getCertificateOrdersByStudent,
@@ -136,7 +137,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const [paymentStatus, setPaymentStatus] = useState('');
     const [ceremonyNumber, setCeremonyNumber] = useState('');
 
-    // --- Hooks MUST be called before any early return ---
+    // --- Hooks ---
     const { data: studentInfo, isLoading: isLoadingStudentData } = useQuery<FullStudentData>({
         queryKey: ['studentFullInfoForConvocationDetail', registration?.student_number],
         queryFn: () => getStudentFullInfo(registration!.student_number),
@@ -180,11 +181,19 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             return updateConvocationBooking(registration!.registration_id, payload);
         },
         onSuccess: () => {
-            toast({ title: 'Success', description: 'Booking updated successfully.' });
-            refreshAllData();
-            setIsEditing(false);
+            // General info updated successfully
         },
         onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message })
+    });
+
+    const updateCoursesMutation = useMutation({
+        mutationFn: async (payload: { registrationId: string, courseIds: (string|number)[] }) => {
+            return updateConvocationCourses(payload);
+        },
+        onSuccess: () => {
+            // Courses updated successfully
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Course Update Failed', description: err.message })
     });
 
     const updatePaymentMutation = useMutation({
@@ -309,14 +318,30 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         }
     };
 
-    const handleUpdate = () => {
-        updateMutation.mutate({
-            session: editSession,
-            additional_seats: editSeats,
-            name_on_certificate: editName,
-            telephone_1: editPhone,
-            course_id: editCourseIds.join(','),
-        });
+    const handleUpdate = async () => {
+        try {
+            // Update general info
+            const updateGeneral = updateMutation.mutateAsync({
+                session: editSession,
+                additional_seats: editSeats,
+                name_on_certificate: editName,
+                telephone_1: editPhone,
+            });
+
+            // Update course list using the specialized endpoint
+            const updateCourses = updateCoursesMutation.mutateAsync({
+                registrationId: registration!.registration_id,
+                courseIds: editCourseIds
+            });
+
+            await Promise.all([updateGeneral, updateCourses]);
+
+            toast({ title: 'Success', description: 'Booking and course list updated successfully.' });
+            refreshAllData();
+            setIsEditing(false);
+        } catch (error) {
+            // Errors handled in mutations
+        }
     };
 
     const handlePaymentUpdate = () => {
@@ -466,8 +491,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                         <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>
                                             <X className="h-4 w-4 mr-2" /> Cancel
                                         </Button>
-                                        <Button size="sm" onClick={handleUpdate} disabled={updateMutation.isPending}>
-                                            {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                        <Button size="sm" onClick={handleUpdate} disabled={updateMutation.isPending || updateCoursesMutation.isPending}>
+                                            {(updateMutation.isPending || updateCoursesMutation.isPending) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                             Save Changes
                                         </Button>
                                     </div>
