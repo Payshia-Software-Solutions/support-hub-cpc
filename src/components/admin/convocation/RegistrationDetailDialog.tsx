@@ -6,6 +6,7 @@ import {
     updateConvocationBooking, 
     updateConvocationPackage,
     updateConvocationPayment,
+    updateCeremonyNumber,
     getConvocationSessionCounts, 
     getConvocationRegistrationsByStudent,
     getCertificateOrdersByStudent
@@ -186,6 +187,18 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message })
     });
 
+    const updateCeremonyMutation = useMutation({
+        mutationFn: (ceremonyNum: string) => updateCeremonyNumber(registration!.registration_id, ceremonyNum),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
+            toast({ title: 'Attendance Confirmed', description: 'Ceremony number assigned successfully.' });
+            setIsConfirmAttendanceDialogOpen(false);
+        },
+        onError: (error: Error) => {
+            toast({ variant: 'destructive', title: 'Confirmation Failed', description: error.message });
+        },
+    });
+
     const totalPayable = useMemo(() => {
         const pkg = packages?.find(p => p.package_id === editPackageId);
         const packagePrice = pkg ? parseFloat(pkg.price) : 0;
@@ -236,6 +249,14 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             payment_amount: parseFloat(paymentAmount),
             created_by: user?.username || 'admin',
         });
+    };
+
+    const handleAttendanceConfirmation = () => {
+        if (!ceremonyNumber) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please enter a ceremony number.' });
+            return;
+        }
+        updateCeremonyMutation.mutate(ceremonyNumber);
     };
 
     const seatsAvailable = (() => {
@@ -624,8 +645,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                             </div>
                             <DialogFooter>
                                 <Button variant="outline" onClick={() => setIsConfirmAttendanceDialogOpen(false)}>Cancel</Button>
-                                <Button onClick={handleAttendanceConfirmation} disabled={updateMutation.isPending}>
-                                    {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                <Button onClick={handleAttendanceConfirmation} disabled={updateCeremonyMutation.isPending}>
+                                    {updateCeremonyMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                                     Confirm Attendance
                                 </Button>
                             </DialogFooter>

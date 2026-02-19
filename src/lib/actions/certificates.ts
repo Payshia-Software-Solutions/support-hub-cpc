@@ -120,6 +120,19 @@ export const updateConvocationPackage = async (registrationId: string, packageId
     return response.json();
 };
 
+export const updateCeremonyNumber = async (registrationId: string, ceremonyNumber: string): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/ceremony-number/${registrationId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ceremony_number: ceremonyNumber })
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update ceremony number' }));
+        throw new Error(errorData.message || 'Failed to update ceremony number');
+    }
+    return response.json();
+};
+
 
 // Convocation Ceremonies
 export const getConvocationCeremonies = async (): Promise<ConvocationCeremony[]> => {
