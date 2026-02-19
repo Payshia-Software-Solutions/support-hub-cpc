@@ -23,7 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Eye, FileText, Wallet, FileDown, Loader2 } from 'lucide-react';
+import { Search, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Eye, FileText, Wallet, FileDown, Loader2, Banknote, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
@@ -115,16 +115,14 @@ export default function ConvocationListPage() {
     };
 
     const registrationStats = useMemo(() => {
-        if (!registrations) {
-            return { totalBookings: 0, pendingPayments: 0, confirmedPayments: 0, additionalSeats: 0 };
+        if (!registrations || !packages) {
+            return { totalBookings: 0, pendingPayments: 0, confirmedPayments: 0, additionalSeats: 0, totalVerified: 0, totalDue: 0 };
         }
         
-        // 1. Total Active Bookings (not rejected or canceled)
         const activeRegs = registrations.filter(r => 
             !['rejected', 'canceled'].includes(r.registration_status?.toLowerCase() || '')
         );
 
-        // 2. Confirmed Payments: Check both payment_status and registration_status for success markers
         const confirmed = activeRegs.filter(r => {
             const pStatus = r.payment_status?.toLowerCase() || '';
             const rStatus = r.registration_status?.toLowerCase() || '';
@@ -132,14 +130,29 @@ export default function ConvocationListPage() {
                    ['paid', 'approved', 'confirmed'].includes(rStatus);
         });
 
+        let totalVerified = 0;
+        let totalDue = 0;
+
+        activeRegs.forEach(reg => {
+            const pkg = packages.find(p => p.package_id === reg.package_id);
+            const packagePrice = pkg ? parseFloat(pkg.price) : 0;
+            const guestSeatsCount = parseInt(reg.additional_seats, 10) || 0;
+            const dueAmount = packagePrice + (guestSeatsCount * PARENT_SEAT_RATE);
+            const paidAmount = parseFloat(reg.payment_amount) || 0;
+
+            totalVerified += paidAmount;
+            totalDue += Math.max(0, dueAmount - paidAmount);
+        });
+
         return {
             totalBookings: activeRegs.length,
             confirmedPayments: confirmed.length,
-            // 3. Pending Payments: Total active minus those that are confirmed
             pendingPayments: activeRegs.length - confirmed.length,
-            additionalSeats: activeRegs.reduce((acc, reg) => acc + (parseInt(reg.additional_seats, 10) || 0), 0)
+            additionalSeats: activeRegs.reduce((acc, reg) => acc + (parseInt(reg.additional_seats, 10) || 0), 0),
+            totalVerified,
+            totalDue
         };
-    }, [registrations]);
+    }, [registrations, packages]);
 
 
     const filteredRegistrations = useMemo(() => {
@@ -329,19 +342,21 @@ export default function ConvocationListPage() {
                 </Button>
             </header>
             
-            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                 <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Bookings</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={registrationStats.totalBookings} /></div></CardContent></Card>
                 <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Pending Payments</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={registrationStats.pendingPayments} /></div></CardContent></Card>
                 <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Confirmed Payments</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={registrationStats.confirmedPayments} /></div></CardContent></Card>
                 <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Additional Seats</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={registrationStats.additionalSeats} /></div></CardContent></Card>
+                <Card className="bg-primary/5 border-primary/20"><CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0"><CardTitle className="text-sm font-bold text-primary">Verified Revenue</CardTitle><Banknote className="h-4 w-4 text-primary" /></CardHeader><CardContent><div className="text-xl font-bold text-primary">LKR {registrationStats.totalVerified.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div></CardContent></Card>
+                <Card className="bg-destructive/5 border-destructive/20"><CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0"><CardTitle className="text-sm font-bold text-destructive">Due Balance</CardTitle><Wallet className="h-4 w-4 text-destructive" /></CardHeader><CardContent><div className="text-xl font-bold text-destructive">LKR {registrationStats.totalDue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div></CardContent></Card>
             </section>
             
             <Card className="shadow-lg overflow-hidden">
                 <CardHeader className="border-b bg-muted/20 pb-6">
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 pt-4">
-                        <div className="relative w-full lg:col-span-1">
+                        <div className="relative lg:col-span-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search name, student #, ref #" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-10"/>
+                            <Input placeholder="Search student info..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-10"/>
                         </div>
                         <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="h-10"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="paid">Paid</SelectItem><SelectItem value="pending">Pending</SelectItem><SelectItem value="rejected">Rejected</SelectItem></SelectContent></Select>
                         <Select value={sessionFilter} onValueChange={setSessionFilter}><SelectTrigger className="h-10"><SelectValue placeholder="Session" /></SelectTrigger><SelectContent><SelectItem value="all">All Sessions</SelectItem><SelectItem value="1">Session 1</SelectItem><SelectItem value="2">Session 2</SelectItem></SelectContent></Select>
@@ -365,7 +380,7 @@ export default function ConvocationListPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {paginatedRegistrations.length > 0 ? paginatedRegistrations.map((reg, regIndex) => {
+                                    {paginatedRegistrations.length > 0 ? paginatedRegistrations.map((reg) => {
                                         const paidAmount = parseFloat(reg.payment_amount) || 0;
                                         const due = reg.dueAmount - paidAmount;
                                         const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || `ID: ${reg.package_id}`;
