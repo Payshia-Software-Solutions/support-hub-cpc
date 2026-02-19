@@ -22,7 +22,8 @@ import type {
     CertificateOrder,
     StudentEnrollment,
     TcPaymentRecord,
-    UserFullDetails
+    UserFullDetails,
+    StudentBalanceData
 } from '@/lib/types';
 import Image from 'next/image';
 import { format } from 'date-fns';
@@ -181,19 +182,9 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             return updateConvocationBooking(registration!.registration_id, payload);
         },
         onSuccess: () => {
-            // General info updated successfully
+            refreshAllData();
         },
         onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message })
-    });
-
-    const updateCoursesMutation = useMutation({
-        mutationFn: async (payload: { registrationId: string, courseIds: (string|number)[] }) => {
-            return updateConvocationCourses(payload);
-        },
-        onSuccess: () => {
-            // Courses updated successfully
-        },
-        onError: (err: Error) => toast({ variant: 'destructive', title: 'Course Update Failed', description: err.message })
     });
 
     const updatePaymentMutation = useMutation({
@@ -321,31 +312,23 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const handleUpdate = async () => {
         if (!registration) return;
         try {
-            // Update general info - send ALL fields to maintain consistency
+            // Update everything in one go via the main endpoint
             const fullPayload = {
                 ...registration,
                 session: editSession,
                 additional_seats: editSeats,
                 name_on_certificate: editName,
                 telephone_1: editPhone,
+                course_id: editCourseIds.join(','),
                 updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
             };
 
-            const updateGeneral = updateMutation.mutateAsync(fullPayload);
+            await updateMutation.mutateAsync(fullPayload);
 
-            // Update course list using the specialized endpoint
-            const updateCourses = updateCoursesMutation.mutateAsync({
-                registrationId: registration.registration_id,
-                courseIds: editCourseIds
-            });
-
-            await Promise.all([updateGeneral, updateCourses]);
-
-            toast({ title: 'Success', description: 'Booking and course list updated successfully.' });
-            refreshAllData();
+            toast({ title: 'Success', description: 'Booking and courses updated successfully.' });
             setIsEditing(false);
         } catch (error) {
-            // Errors handled in mutations
+            // Error handled by mutation
         }
     };
 
@@ -496,8 +479,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                         <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>
                                             <X className="h-4 w-4 mr-2" /> Cancel
                                         </Button>
-                                        <Button size="sm" onClick={handleUpdate} disabled={updateMutation.isPending || updateCoursesMutation.isPending}>
-                                            {(updateMutation.isPending || updateCoursesMutation.isPending) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                        <Button size="sm" onClick={handleUpdate} disabled={updateMutation.isPending}>
+                                            {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                             Save Changes
                                         </Button>
                                     </div>
@@ -621,7 +604,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                             </CardContent>
                         </Card>
 
-                        {/* Financials & Slip Preview */}
+                        {/* Financials & Trail */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between">
