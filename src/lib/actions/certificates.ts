@@ -75,8 +75,9 @@ export const createConvocationRegistration = async (payload: FormData): Promise<
     return response.json();
 };
 
-export const updateConvocationBooking = async (id: string, payload: Partial<ConvocationRegistration>): Promise<any> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/${id}`, {
+export const updateConvocationBooking = async (id: string, payload: any): Promise<any> => {
+    // Using the specialized update-courses endpoint which can handle full updates as well
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/update-courses/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -88,7 +89,7 @@ export const updateConvocationBooking = async (id: string, payload: Partial<Conv
     return response.json();
 };
 
-export const updateConvocationPayment = async (registrationId: string, payload: { payment_status: string; payment_amount: number; created_by?: string }): Promise<any> => {
+export const updateConvocationPayment = async (registrationId: string, payload: { payment_status: string; payment_amount: number; created_by: string }): Promise<any> => {
     const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/payment/${registrationId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

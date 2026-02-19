@@ -7,7 +7,6 @@ import {
     updateConvocationPackage,
     updateConvocationPayment,
     updateCeremonyNumber,
-    updateConvocationCourses,
     getConvocationSessionCounts, 
     getConvocationRegistrationsByStudent,
     getCertificateOrdersByStudent,
@@ -312,7 +311,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const handleUpdate = async () => {
         if (!registration) return;
         try {
-            // Update everything in one go via the main endpoint
+            // Update everything in one go via the specialized endpoint that handles both basic info and courses
             const fullPayload = {
                 ...registration,
                 session: editSession,
@@ -522,19 +521,19 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                         </div>
                                         <div className="space-y-1.5 md:col-span-1 lg:col-span-1">
                                             <Label className="text-xs">Name on Certificate</Label>
-                                            <Input 
+                                            <input 
                                                 value={editName} 
                                                 onChange={e => setEditName(e.target.value)} 
-                                                className="h-9 text-xs" 
+                                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                                 placeholder={studentInfo?.studentInfo.name_on_certificate || "Enter name..."}
                                             />
                                         </div>
                                         <div className="space-y-1.5 md:col-span-1 lg:col-span-1">
                                             <Label className="text-xs">Phone Number</Label>
-                                            <Input 
+                                            <input 
                                                 value={editPhone} 
                                                 onChange={e => setEditPhone(e.target.value)} 
-                                                className="h-9 text-xs" 
+                                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                                 placeholder={studentInfo?.studentInfo.telephone_1 || "Enter phone..."}
                                             />
                                         </div>
