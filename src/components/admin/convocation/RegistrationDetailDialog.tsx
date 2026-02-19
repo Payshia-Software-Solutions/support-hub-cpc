@@ -44,7 +44,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Banknote, UserCheck, ListOrdered, Calculator, FileText, Paperclip, Hourglass } from 'lucide-react';
-import { ViewSlipDialog } from './ViewSlipDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -59,6 +58,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { EnrollmentDetailAccordion } from './EnrollmentDetailAccordion';
+import { ViewSlipDialog } from './ViewSlipDialog';
 
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
 const PARENT_SEAT_RATE = 750;
@@ -129,7 +129,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     // Form state
     const [editPackageId, setEditPackageId] = useState('');
     const [pendingPackageId, setPendingPackageId] = useState('');
-    const [editSession, setEditSession] = useState<'1' | '2' || '1');
+    const [editSession, setEditSession] = useState<'1' | '2'>('1');
     const [editSeats, setEditSeats] = useState('0');
     const [editName, setEditName] = useState('');
     const [editPhone, setEditPhone] = useState('');

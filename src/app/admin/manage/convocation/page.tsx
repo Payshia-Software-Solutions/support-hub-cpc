@@ -382,7 +382,7 @@ export default function ConvocationListPage() {
                                 <TableBody>
                                     {paginatedRegistrations.length > 0 ? paginatedRegistrations.map((reg) => {
                                         const paidAmount = parseFloat(reg.payment_amount) || 0;
-                                        const due = reg.dueAmount - paidAmount;
+                                        const due = (reg.dueAmount || 0) - paidAmount;
                                         const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || `ID: ${reg.package_id}`;
 
                                         return (
@@ -391,7 +391,7 @@ export default function ConvocationListPage() {
                                                 <div className="space-y-1">
                                                     <div className="font-mono font-bold text-sm">#{reg.reference_number}</div>
                                                     <div className="font-semibold text-sm text-primary">{reg.student_number}</div>
-                                                    <div className="text-[10px] font-medium uppercase tracking-tighter truncate max-w-[180px]">{reg.name_on_certificate}</div>
+                                                    <div className="text-[10px] font-medium uppercase tracking-tighter truncate max-w-[180px]">{reg.name_on_certificate || 'N/A'}</div>
                                                     <div className="text-[9px] text-muted-foreground pt-1 border-t border-dashed">Ceremony: {reg.ceremony_number || 'N/A'}</div>
                                                 </div>
                                             </TableCell>
@@ -414,13 +414,13 @@ export default function ConvocationListPage() {
                                             </TableCell>
                                             <TableCell className="py-4 align-top">
                                                 <div className="flex flex-col items-start gap-1.5 pt-1">
-                                                    <Badge className={cn("px-2 py-0.5 h-auto text-[9px] uppercase font-bold w-fit", getStatusBadge(reg.payment_status))}>{reg.payment_status}</Badge>
+                                                    <Badge className={cn("px-2 py-0.5 h-auto text-[9px] uppercase font-bold w-fit", getStatusBadge(reg.payment_status || 'Pending'))}>{reg.payment_status}</Badge>
                                                     <Badge variant="secondary" className="px-2 py-0.5 h-auto text-[9px] uppercase font-medium w-fit bg-muted text-muted-foreground">{reg.registration_status}</Badge>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-4 align-top text-right">
                                                 <div className="space-y-1.5">
-                                                    <div className="text-[10px] text-muted-foreground font-medium">Total: LKR {reg.dueAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                                                    <div className="text-[10px] text-muted-foreground font-medium">Total: LKR {(reg.dueAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
                                                     <div className="text-[10px] text-muted-foreground font-medium">Paid: LKR {paidAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
                                                     <div className={cn("font-mono font-bold text-sm pt-1 border-t border-dashed", due > 0 ? "text-destructive" : "text-green-600")}>
                                                         Due: LKR {due.toLocaleString('en-US', { minimumFractionDigits: 2 })}
