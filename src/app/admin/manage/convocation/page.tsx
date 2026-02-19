@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -13,7 +14,7 @@ import type {
     ConvocationPackage, 
     ParentCourse, 
 } from '@/lib/types';
-import { parseISO, isValid } from 'date-fns';
+import { parseISO, isValid, format } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,8 +23,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Eye, FileText, Wallet } from 'lucide-react';
+import { Search, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Eye, FileText, Wallet, FileDown, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 // Modular Components
 import { RegistrationDetailDialog } from '@/components/admin/convocation/RegistrationDetailDialog';
@@ -44,6 +46,7 @@ export default function ConvocationListPage() {
     const [sortOption, setSortOption] = useState('date-desc');
     const [currentPage, setCurrentPage] = useState(1);
     const [viewingDetails, setViewingDetails] = useState<ConvocationRegistration | null>(null);
+    const [isExporting, setIsExporting] = useState(false);
 
     const { data: registrations, isLoading, isError, error } = useQuery<ConvocationRegistration[]>({
         queryKey: ['convocationRegistrations', ceremonyIdFilter],
@@ -124,7 +127,9 @@ export default function ConvocationListPage() {
             if (reg.hash_value) seenHashes.add(reg.hash_value);
             
             const pkg = packages.find(p => p.package_id === reg.package_id);
-            const dueAmount = pkg ? parseFloat(pkg.price) + (parseInt(reg.additional_seats, 10) * PARENT_SEAT_RATE) : 0;
+            const packagePrice = pkg ? parseFloat(pkg.price) : 0;
+            const guestSeatsCount = parseInt(reg.additional_seats, 10) || 0;
+            const dueAmount = packagePrice + (guestSeatsCount * PARENT_SEAT_RATE);
             
             return { ...reg, isDuplicate, dueAmount };
         })
@@ -180,6 +185,83 @@ export default function ConvocationListPage() {
         return filteredRegistrations.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     }, [filteredRegistrations, currentPage]);
     
+    const handleExport = () => {
+        if (filteredRegistrations.length === 0) {
+            toast({ variant: 'destructive', title: 'No data to export', description: 'Filter some data first before exporting.' });
+            return;
+        }
+        
+        setIsExporting(true);
+        try {
+            const headers = [
+                'Reference #',
+                'Student Number',
+                'Name on Certificate',
+                'Ceremony #',
+                'Courses',
+                'Package',
+                'Session',
+                'Guest Seats',
+                'Payment Status',
+                'Registration Status',
+                'Total Payable (LKR)',
+                'Paid Amount (LKR)',
+                'Due Balance (LKR)',
+                'Registered Date'
+            ];
+
+            const rows = filteredRegistrations.map(reg => {
+                const courseNames = reg.course_id.split(',').map(id => {
+                    const course = courses?.find(c => c.id === id.trim());
+                    return course?.course_name || `ID: ${id.trim()}`;
+                }).join('; ');
+
+                const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || `ID: ${reg.package_id}`;
+                const paidAmount = parseFloat(reg.payment_amount) || 0;
+                const dueBalance = reg.dueAmount - paidAmount;
+
+                return [
+                    reg.reference_number,
+                    reg.student_number,
+                    reg.name_on_certificate,
+                    reg.ceremony_number || 'N/A',
+                    courseNames,
+                    packageName,
+                    `Session ${reg.session}`,
+                    reg.additional_seats,
+                    reg.payment_status,
+                    reg.registration_status,
+                    reg.dueAmount.toFixed(2),
+                    paidAmount.toFixed(2),
+                    dueBalance.toFixed(2),
+                    format(parseISO(reg.registered_at), 'yyyy-MM-dd HH:mm')
+                ];
+            });
+
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.map(val => `"${String(val || '').replace(/"/g, '""')}"`).join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `convocation_bookings_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            toast({ title: 'Export Successful', description: `${filteredRegistrations.length} records have been exported.` });
+        } catch (err) {
+            console.error(err);
+            toast({ variant: 'destructive', title: 'Export Failed', description: 'An error occurred while generating the CSV.' });
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const getStatusBadge = (status: string) => {
         switch (status.toLowerCase()) {
             case 'pending': return 'bg-yellow-500 text-white';
@@ -205,14 +287,20 @@ export default function ConvocationListPage() {
                 packages={packages}
             />
 
-            <header>
-                {ceremonyIdFilter && (
-                    <Button variant="ghost" onClick={() => router.push('/admin/manage/convocation-ceremonies')} className="-ml-4">
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Ceremonies
-                    </Button>
-                )}
-                <h1 className="text-3xl font-headline font-semibold mt-2">{ceremonyIdFilter ? "Ceremony Registrations" : "All Convocation Registrations"}</h1>
-                <p className="text-muted-foreground">Manage student registrations and verify bookings.</p>
+            <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div>
+                    {ceremonyIdFilter && (
+                        <Button variant="ghost" onClick={() => router.push('/admin/manage/convocation-ceremonies')} className="-ml-4 h-auto p-1 mb-1">
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Ceremonies
+                        </Button>
+                    )}
+                    <h1 className="text-3xl font-headline font-semibold">{ceremonyIdFilter ? "Ceremony Registrations" : "All Convocation Registrations"}</h1>
+                    <p className="text-muted-foreground">Manage student registrations and verify bookings.</p>
+                </div>
+                <Button onClick={handleExport} disabled={isExporting || isLoading || filteredRegistrations.length === 0} variant="outline" className="shadow-sm">
+                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                    Export to CSV
+                </Button>
             </header>
             
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
