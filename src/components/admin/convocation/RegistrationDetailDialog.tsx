@@ -37,7 +37,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Banknote, UserCheck, ListOrdered, Calculator, FileText } from 'lucide-react';
@@ -75,7 +75,7 @@ function TempUserInfo({ user }: { user: any }) {
 }
 
 function RegisteredStudentInfo({ user, studentNumber }: { user: UserFullDetails, studentNumber: string }) {
-    const { data: balanceData, isLoading: isLoadingBalance } = useQuery<FullStudentData>({
+    const { data: balanceData, isLoading: isLoadingBalance } = useQuery<StudentBalanceData>({
         queryKey: ['studentBalance', studentNumber],
         queryFn: () => getStudentFullInfo(studentNumber),
         enabled: !!studentNumber,
@@ -319,18 +319,23 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     };
 
     const handleUpdate = async () => {
+        if (!registration) return;
         try {
-            // Update general info
-            const updateGeneral = updateMutation.mutateAsync({
+            // Update general info - send ALL fields to maintain consistency
+            const fullPayload = {
+                ...registration,
                 session: editSession,
                 additional_seats: editSeats,
                 name_on_certificate: editName,
                 telephone_1: editPhone,
-            });
+                updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+            };
+
+            const updateGeneral = updateMutation.mutateAsync(fullPayload);
 
             // Update course list using the specialized endpoint
             const updateCourses = updateCoursesMutation.mutateAsync({
-                registrationId: registration!.registration_id,
+                registrationId: registration.registration_id,
                 courseIds: editCourseIds
             });
 
