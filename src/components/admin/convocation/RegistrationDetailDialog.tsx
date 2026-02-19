@@ -225,7 +225,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
 
         // Map status to expected API values
         let statusToSubmit = paymentStatus;
-        if (paymentStatus === 'Partially Paid') {
+        if (paymentStatus === 'Partially Paid' || paymentStatus.toLowerCase() === 'partially-paid') {
             statusToSubmit = 'partially-paid';
         } else {
             statusToSubmit = paymentStatus.toLowerCase();
@@ -235,17 +235,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             payment_status: statusToSubmit,
             payment_amount: parseFloat(paymentAmount),
             created_by: user?.username || 'admin',
-        });
-    };
-
-    const handleAttendanceConfirmation = () => {
-        if (!ceremonyNumber.trim()) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please enter a valid ceremony number.' });
-            return;
-        }
-        updateMutation.mutate({
-            ceremony_number: ceremonyNumber,
-            registration_status: 'Confirmed'
         });
     };
 
@@ -547,8 +536,9 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                         <div className="flex items-center gap-3">
                                             <Badge className={cn(
                                                 "uppercase text-[10px]",
-                                                registration.payment_status === 'Paid' ? 'bg-green-600' : 
-                                                registration.payment_status === 'Partially Paid' ? 'bg-amber-500' : 'bg-destructive'
+                                                registration.payment_status?.toLowerCase() === 'paid' ? 'bg-green-600' : 
+                                                (registration.payment_status?.toLowerCase() === 'partially-paid' || registration.payment_status?.toLowerCase() === 'partially paid') ? 'bg-orange-500' : 
+                                                'bg-destructive'
                                             )}>{registration.payment_status}</Badge>
                                             <p className="text-sm font-bold">LKR {parseFloat(registration.payment_amount).toLocaleString()}</p>
                                         </div>

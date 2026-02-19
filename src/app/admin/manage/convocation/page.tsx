@@ -183,6 +183,8 @@ export default function ConvocationListPage() {
     const getStatusBadge = (status: string) => {
         switch (status.toLowerCase()) {
             case 'pending': return 'bg-yellow-500 text-white';
+            case 'partially-paid':
+            case 'partially paid': return 'bg-orange-500 text-white';
             case 'paid':
             case 'approved': return 'bg-green-600 text-white';
             case 'confirmed': return 'bg-blue-600 text-white';
