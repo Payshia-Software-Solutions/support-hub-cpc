@@ -94,7 +94,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             setEditPhone(registration.telephone_1 || '');
             setEditCourseIds(registration.course_id.split(',').map(s => s.trim()).filter(Boolean));
             
-            setPaymentAmount(registration.payment_amount || '0');
+            // For the verification dialog, we leave the amount empty so the admin must type it.
+            setPaymentAmount('');
             setPaymentStatus(registration.payment_status || 'Pending');
             setCeremonyNumber(registration.ceremony_number || '');
             
@@ -203,6 +204,10 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     };
 
     const handlePaymentUpdate = () => {
+        if (!paymentAmount) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please enter the verified payment amount.' });
+            return;
+        }
         updateMutation.mutate({
             payment_amount: paymentAmount,
             payment_status: paymentStatus
@@ -466,9 +471,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                             />
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-bold text-primary font-mono">LKR {totalPayable.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                                                        <Button variant="ghost" size="xs" className="h-6 px-2 text-[10px]" onClick={() => handleVerifiedAmountChange(String(totalPayable))}>Match Total</Button>
+                                                    <div className="font-bold text-primary font-mono">
+                                                        LKR {totalPayable.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2">
@@ -477,6 +481,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                         type="number" 
                                                         value={paymentAmount} 
                                                         onChange={e => handleVerifiedAmountChange(e.target.value)} 
+                                                        placeholder="Type verified amount..."
                                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                                     />
                                                 </div>
