@@ -167,16 +167,23 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         enabled: !!registration?.convocation_id,
     });
 
+    // --- Helper function to refresh all relevant data ---
+    const refreshAllData = () => {
+        queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
+        if (registration?.student_number) {
+            queryClient.invalidateQueries({ queryKey: ['studentFullInfoForConvocationDetail', registration.student_number] });
+            queryClient.invalidateQueries({ queryKey: ['tcPayments', registration.student_number, 'covocation-payment'] });
+        }
+    };
+
     const updateMutation = useMutation({
         mutationFn: async (payload: Partial<ConvocationRegistration>) => {
             return updateConvocationBooking(registration!.registration_id, payload);
         },
         onSuccess: () => {
             toast({ title: 'Success', description: 'Booking updated successfully.' });
-            queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
+            refreshAllData();
             setIsEditing(false);
-            setIsPaymentDialogOpen(false);
-            setIsConfirmAttendanceDialogOpen(false);
         },
         onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message })
     });
@@ -185,8 +192,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         mutationFn: (payload: { payment_status: string; payment_amount: number; created_by: string }) => 
             updateConvocationPayment(registration!.registration_id, payload),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
-            toast({ title: 'Success', description: 'Payment details updated successfully.' });
+            toast({ title: 'Success', description: 'Payment details verified and updated.' });
+            refreshAllData();
             setIsPaymentDialogOpen(false);
         },
         onError: (error: Error) => {
@@ -197,9 +204,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const packageUpdateMutation = useMutation({
         mutationFn: (newPackageId: string) => updateConvocationPackage(registration!.registration_id, newPackageId),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['packages', registration?.convocation_id] });
-            queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
             toast({ title: 'Package Updated', description: 'The convocation package has been updated.' });
+            refreshAllData();
             setIsPackageConfirmOpen(false);
         },
         onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message })
@@ -208,8 +214,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const updateCeremonyMutation = useMutation({
         mutationFn: (ceremonyNum: string) => updateCeremonyNumber(registration!.registration_id, ceremonyNum),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
             toast({ title: 'Attendance Confirmed', description: 'Ceremony number assigned successfully.' });
+            refreshAllData();
             setIsConfirmAttendanceDialogOpen(false);
         },
         onError: (error: Error) => {
@@ -256,7 +262,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             return;
         }
 
-        // Map status to expected API values
         let statusToSubmit = paymentStatus;
         if (paymentStatus === 'Partially Paid' || paymentStatus.toLowerCase() === 'partially-paid') {
             statusToSubmit = 'partially-paid';
@@ -264,7 +269,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             statusToSubmit = paymentStatus.toLowerCase();
         }
 
-        // The verified amount being submitted is cumulative (Existing Records + Current Input)
         updatePaymentMutation.mutate({
             payment_status: statusToSubmit,
             payment_amount: totalPaidFromRecords + parseFloat(paymentAmount),
@@ -288,8 +292,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     })();
 
     const currentPackage = packages?.find(p => p.package_id === registration.package_id);
-
-    // Dynamic Balance Calculation for the UI
     const remainingToVerify = totalPayable - totalPaidFromRecords;
     const balanceAfterCurrentCheck = remainingToVerify - (parseFloat(paymentAmount) || 0);
 
@@ -434,7 +436,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                     </div>
                                 )}
 
-                                {/* Course Selection */}
                                 <div className="space-y-3 pt-4 border-t">
                                     <Label className="text-xs font-semibold">Course(s) in Booking</Label>
                                     {isLoadingStudentData ? <Skeleton className="h-20 w-full" /> : studentInfo && (
@@ -444,7 +445,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                 const isEligible = enrollment.certificate_eligibility;
                                                 const isBookedElsewhere = bookedElsewhereIds.has(enrollment.parent_course_id);
                                                 const isOrderedElsewhere = orderedElsewhereIds.has(enrollment.parent_course_id);
-                                                
                                                 const isDisabled = isBookedElsewhere || isOrderedElsewhere;
 
                                                 return (
@@ -475,9 +475,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                                     {isChecked && <Badge variant="default" className="text-[9px] h-4 px-1 bg-primary/20 text-primary border-primary/30">Included</Badge>}
                                                                     {isBookedElsewhere && <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-purple-100 text-purple-800">Booked Elsewhere</Badge>}
                                                                     {isOrderedElsewhere && <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-amber-100 text-amber-800 border-amber-200">Already Ordered</Badge>}
-                                                                    {!isEligible && (
-                                                                        <Badge variant="destructive" className="text-[9px] h-4 px-1">Not Eligible</Badge>
-                                                                    )}
+                                                                    {!isEligible && <Badge variant="destructive" className="text-[9px] h-4 px-1">Not Eligible</Badge>}
                                                                 </div>
                                                             </div>
                                                             {!isEligible && (
@@ -623,7 +621,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                         <p className="text-sm font-bold">Total Verified: LKR {parseFloat(registration.payment_amount).toLocaleString()}</p>
                                     </div>
                                     
-                                    {/* Detailed Transaction History */}
                                     <div className="pt-4 border-t space-y-3">
                                         <h4 className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-2">
                                             <ListOrdered className="h-3 w-3" /> Verified Transaction Trail
@@ -688,7 +685,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                             </Card>
                         </div>
 
-                        {/* Student Enrollments Deep Dive */}
                         <div className="space-y-4 pb-10">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-lg font-semibold font-headline">Course Performance & Eligibility</h3>
