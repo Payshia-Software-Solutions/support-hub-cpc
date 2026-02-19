@@ -76,7 +76,6 @@ export const createConvocationRegistration = async (payload: FormData): Promise<
 };
 
 export const updateConvocationBooking = async (id: string, payload: any): Promise<any> => {
-    // Corrected endpoint as per user request: PUT /convocation-registrations/{id}
     const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -434,8 +433,8 @@ export const generateCertificate = async (payload: GenerateCertificatePayload): 
     return response.json();
 };
 
-export const getTcPayments = async (studentNumber: string, referKey: string = 'covocation-payment'): Promise<TcPaymentRecord[]> => {
-    const response = await fetch(`${QA_API_BASE_URL}/tc-payments?student_number=${studentNumber}&referKey=${referKey}`);
+export const getTcPayments = async (studentNumber: string): Promise<TcPaymentRecord[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/tc-payments?student_number=${studentNumber}`);
     if (response.status === 404) return [];
     if (!response.ok) throw new Error('Failed to fetch payment records');
     return response.json();
