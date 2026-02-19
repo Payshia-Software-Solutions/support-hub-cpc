@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, ListOrdered, PlusCircle, ArrowLeft, GraduationCap, Banknote, Calendar, Users, Wallet, Upload, CheckCircle, Award, Sparkles, ScrollText, FileText, Video, Coffee, Loader2, Info } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { AlertCircle, ListOrdered, PlusCircle, ArrowLeft, GraduationCap, Banknote, Calendar, Users, Wallet, Upload, CheckCircle, Award, Sparkles, ScrollText, FileText, Video, Coffee, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -20,6 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const PARENT_SEAT_RATE = 750;
 
