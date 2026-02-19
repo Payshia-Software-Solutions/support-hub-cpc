@@ -519,6 +519,17 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                         LKR {totalPayable.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                     </div>
                                                 </div>
+                                                
+                                                <div className="p-3 bg-muted/50 rounded-lg flex justify-between items-center text-sm">
+                                                    <span className="text-muted-foreground">Due Balance:</span>
+                                                    <div className={cn(
+                                                        "font-bold font-mono",
+                                                        (totalPayable - (parseFloat(paymentAmount) || 0)) > 0 ? "text-destructive" : "text-green-600"
+                                                    )}>
+                                                        LKR {(totalPayable - (parseFloat(paymentAmount) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                    </div>
+                                                </div>
+
                                                 <div className="space-y-2">
                                                     <Label>Verified Payment Amount (LKR)</Label>
                                                     <input 
