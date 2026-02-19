@@ -85,15 +85,15 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const [paymentStatus, setPaymentStatus] = useState('');
     const [ceremonyNumber, setCeremonyNumber] = useState('');
 
-    const { data: studentData, isLoading: isLoadingStudentData } = useQuery<FullStudentData>({
+    const { data: studentInfo, isLoading: isLoadingStudentData } = useQuery<FullStudentData>({
         queryKey: ['studentFullInfoForConvocationDetail', registration?.student_number],
         queryFn: () => getStudentFullInfo(registration!.student_number),
         enabled: !!registration?.student_number,
     });
 
     const { data: tcPayments, isLoading: isLoadingTcPayments } = useQuery<TcPaymentRecord[]>({
-        queryKey: ['tcPayments', registration?.student_number],
-        queryFn: () => getTcPayments(registration!.student_number),
+        queryKey: ['tcPayments', registration?.student_number, 'covocation-payment'],
+        queryFn: () => getTcPayments(registration!.student_number, 'covocation-payment'),
         enabled: !!registration?.student_number,
     });
 
@@ -115,13 +115,13 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     }, [registration]);
 
     useEffect(() => {
-        if (studentData && !editName && !registration?.name_on_certificate) {
-            setEditName(studentData.studentInfo.name_on_certificate || studentData.studentInfo.full_name);
+        if (studentInfo && !editName && !registration?.name_on_certificate) {
+            setEditName(studentInfo.studentInfo.name_on_certificate || studentInfo.studentInfo.full_name);
         }
-        if (studentData && !editPhone && !registration?.telephone_1) {
-            setEditPhone(studentData.studentInfo.telephone_1);
+        if (studentInfo && !editPhone && !registration?.telephone_1) {
+            setEditPhone(studentInfo.studentInfo.telephone_1);
         }
-    }, [studentData, registration, editName, editPhone]);
+    }, [studentInfo, registration, editName, editPhone]);
 
     const { data: otherBookings } = useQuery<ConvocationRegistration[]>({
         queryKey: ['convocationRegistrationsByStudent', registration?.student_number],
@@ -296,7 +296,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                         }} 
                         disabled={packageUpdateMutation.isPending}
                     >
-                        {packageUpdateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        {packageUpdateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Confirm Change
                     </AlertDialogAction>
                 </AlertDialogFooter>
@@ -374,7 +374,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                 value={editName} 
                                                 onChange={e => setEditName(e.target.value)} 
                                                 className="h-9 text-xs" 
-                                                placeholder={studentData?.studentInfo.name_on_certificate || "Enter name..."}
+                                                placeholder={studentInfo?.studentInfo.name_on_certificate || "Enter name..."}
                                             />
                                         </div>
                                         <div className="space-y-1.5 md:col-span-1 lg:col-span-1">
@@ -383,7 +383,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                 value={editPhone} 
                                                 onChange={e => setEditPhone(e.target.value)} 
                                                 className="h-9 text-xs" 
-                                                placeholder={studentData?.studentInfo.telephone_1 || "Enter phone..."}
+                                                placeholder={studentInfo?.studentInfo.telephone_1 || "Enter phone..."}
                                             />
                                         </div>
                                         <div className="space-y-1.5 md:col-span-2 lg:col-span-1">
@@ -408,8 +408,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-[10px] text-muted-foreground uppercase font-bold">Certificate Details</p>
-                                            <p className="text-sm font-semibold">{registration.name_on_certificate || studentData?.studentInfo.name_on_certificate || studentData?.studentInfo.full_name || 'N/A'}</p>
-                                            <p className="text-xs text-muted-foreground">{registration.telephone_1 || studentData?.studentInfo.telephone_1 || 'N/A'}</p>
+                                            <p className="text-sm font-semibold">{registration.name_on_certificate || studentInfo?.studentInfo.name_on_certificate || studentInfo?.studentInfo.full_name || 'N/A'}</p>
+                                            <p className="text-xs text-muted-foreground">{registration.telephone_1 || studentInfo?.studentInfo.telephone_1 || 'N/A'}</p>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-[10px] text-muted-foreground uppercase font-bold">Total Calculated Payable</p>
@@ -421,9 +421,9 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                 {/* Course Selection */}
                                 <div className="space-y-3 pt-4 border-t">
                                     <Label className="text-xs font-semibold">Course(s) in Booking</Label>
-                                    {isLoadingStudentData ? <Skeleton className="h-20 w-full" /> : studentData && (
+                                    {isLoadingStudentData ? <Skeleton className="h-20 w-full" /> : studentInfo && (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            {Object.values(studentData.studentEnrollments).map(enrollment => {
+                                            {Object.values(studentInfo.studentEnrollments).map(enrollment => {
                                                 const isChecked = editCourseIds.includes(enrollment.parent_course_id);
                                                 const isEligible = enrollment.certificate_eligibility;
                                                 const isBookedElsewhere = bookedElsewhereIds.has(enrollment.parent_course_id);
@@ -466,7 +466,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                             </div>
                                                             {!isEligible && (
                                                                 <CollapsibleTrigger asChild>
-                                                                    <Button variant="ghost" size="xs" className="h-6 w-6 p-0"><ChevronDown className="h-3 w-3"/></Button>
+                                                                    <Button variant="ghost" size="xs" className="h-6 w-6 p-0"><ChevronDown className="h-3 w-3" /></Button>
                                                                 </CollapsibleTrigger>
                                                             )}
                                                         </div>
@@ -495,7 +495,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                     <CardTitle className="text-base uppercase tracking-wider text-muted-foreground">Financial Overview</CardTitle>
                                     <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
                                         <DialogTrigger asChild>
-                                            <Button size="sm" variant="outline"><Banknote className="mr-2 h-4 w-4"/>Update Payment</Button>
+                                            <Button size="sm" variant="outline"><Banknote className="mr-2 h-4 w-4" />Update Payment</Button>
                                         </DialogTrigger>
                                         <DialogContent>
                                             <DialogHeader>
@@ -544,7 +544,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                             <DialogFooter>
                                                 <Button variant="outline" onClick={() => setIsPaymentDialogOpen(false)}>Cancel</Button>
                                                 <Button onClick={handlePaymentUpdate} disabled={updatePaymentMutation.isPending}>
-                                                    {updatePaymentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                                    {updatePaymentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                                     Update Financials
                                                 </Button>
                                             </DialogFooter>
@@ -553,11 +553,11 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2">
-                                        {isLoadingStudentData ? <Skeleton className="h-20 w-full" /> : studentData && (
+                                        {isLoadingStudentData ? <Skeleton className="h-20 w-full" /> : studentInfo && (
                                             <>
-                                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Due:</span> <span className="font-semibold">LKR {studentData.studentBalance.TotalRegistrationFee.toLocaleString()}</span></div>
-                                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Payments:</span> <span className="font-semibold text-green-600">LKR {studentData.studentBalance.totalPaymentAmount.toLocaleString()}</span></div>
-                                                <div className="flex justify-between text-lg font-bold pt-2 border-t mt-2"><span className="text-muted-foreground">Balance:</span> <span className={cn(studentData.studentBalance.studentBalance > 0 ? 'text-destructive' : 'text-green-600')}>LKR {studentData.studentBalance.studentBalance.toLocaleString()}</span></div>
+                                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Due:</span> <span className="font-semibold">LKR {studentInfo.studentBalance.TotalRegistrationFee.toLocaleString()}</span></div>
+                                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Payments:</span> <span className="font-semibold text-green-600">LKR {studentInfo.studentBalance.totalPaymentAmount.toLocaleString()}</span></div>
+                                                <div className="flex justify-between text-lg font-bold pt-2 border-t mt-2"><span className="text-muted-foreground">Balance:</span> <span className={cn(studentInfo.studentBalance.studentBalance > 0 ? 'text-destructive' : 'text-green-600')}>LKR {studentInfo.studentBalance.studentBalance.toLocaleString()}</span></div>
                                             </>
                                         )}
                                     </div>
@@ -626,7 +626,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                             <ViewSlipDialog 
                                                 slipPath={registration.image_path} 
                                                 studentName={registration.name_on_certificate} 
-                                                trigger={<Button variant="outline" className="w-full" size="sm"><FileText className="mr-2 h-4 w-4"/>View Uploaded Document</Button>} 
+                                                trigger={<Button variant="outline" className="w-full" size="sm"><FileText className="mr-2 h-4 w-4" />View Uploaded Document</Button>} 
                                             />
                                         </div>
                                     ) : (
@@ -643,7 +643,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                         <div className="space-y-4 pb-10">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-lg font-semibold font-headline">Course Performance & Eligibility</h3>
-                                {isLoadingStudentData ? <Skeleton className="h-5 w-16" /> : studentData && <Badge variant="secondary" className="font-mono text-xs">{Object.keys(studentData.studentEnrollments).length} Total Enrollments</Badge>}
+                                {isLoadingStudentData ? <Skeleton className="h-5 w-16" /> : studentInfo && <Badge variant="secondary" className="font-mono text-xs">{Object.keys(studentInfo.studentEnrollments).length} Total Enrollments</Badge>}
                             </div>
                             <div className="space-y-4">
                                 {isLoadingStudentData ? (
@@ -651,8 +651,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                         <Skeleton className="h-16 w-full" />
                                         <Skeleton className="h-16 w-full" />
                                     </div>
-                                ) : studentData ? (
-                                    Object.values(studentData.studentEnrollments).map(enrollment => (
+                                ) : studentInfo ? (
+                                    Object.values(studentInfo.studentEnrollments).map(enrollment => (
                                         <EnrollmentDetailAccordion key={enrollment.id} enrollment={enrollment} />
                                     ))
                                 ) : null}
@@ -669,7 +669,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                     <Dialog open={isConfirmAttendanceDialogOpen} onOpenChange={setIsConfirmAttendanceDialogOpen}>
                         <DialogTrigger asChild>
                             <Button className="bg-primary hover:bg-primary/90">
-                                <UserCheck className="mr-2 h-4 w-4"/>
+                                <UserCheck className="mr-2 h-4 w-4" />
                                 Confirm & Assign Ceremony #
                             </Button>
                         </DialogTrigger>
@@ -691,7 +691,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                             <DialogFooter>
                                 <Button variant="outline" onClick={() => setIsConfirmAttendanceDialogOpen(false)}>Cancel</Button>
                                 <Button onClick={handleAttendanceConfirmation} disabled={updateCeremonyMutation.isPending}>
-                                    {updateCeremonyMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                    {updateCeremonyMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Confirm Attendance
                                 </Button>
                             </DialogFooter>

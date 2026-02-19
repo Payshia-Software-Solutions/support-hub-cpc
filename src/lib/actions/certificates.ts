@@ -433,7 +433,7 @@ export const generateCertificate = async (payload: GenerateCertificatePayload): 
     return response.json();
 };
 
-export const getTcPayments = async (studentNumber: string, referKey: string = 'convocation-payment'): Promise<TcPaymentRecord[]> => {
+export const getTcPayments = async (studentNumber: string, referKey: string = 'covocation-payment'): Promise<TcPaymentRecord[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/tc-payments?student_number=${studentNumber}&referKey=${referKey}`);
     if (response.status === 404) return [];
     if (!response.ok) throw new Error('Failed to fetch payment records');
