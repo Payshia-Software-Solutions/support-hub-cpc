@@ -456,7 +456,16 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                             </DialogHeader>
                                             <div className="space-y-4 py-4">
                                                 <div className="p-3 bg-muted/50 rounded-lg flex justify-between items-center text-sm">
-                                                    <span className="text-muted-foreground">Total Required Amount:</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-muted-foreground">Total Required Amount:</span>
+                                                        {registration.image_path && (
+                                                            <ViewSlipDialog 
+                                                                slipPath={registration.image_path} 
+                                                                studentName={registration.name_on_certificate} 
+                                                                trigger={<Button variant="link" size="xs" className="h-auto p-0 text-[10px]">View Slip</Button>} 
+                                                            />
+                                                        )}
+                                                    </div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-bold text-primary font-mono">LKR {totalPayable.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                                                         <Button variant="ghost" size="xs" className="h-6 px-2 text-[10px]" onClick={() => handleVerifiedAmountChange(String(totalPayable))}>Match Total</Button>
