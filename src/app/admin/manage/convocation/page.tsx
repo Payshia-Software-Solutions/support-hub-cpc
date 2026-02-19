@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -190,7 +191,24 @@ export default function ConvocationListPage() {
         });
 
         return filtered.sort((a, b) => {
-            const getSortableValue = (reg: typeof a, column: SortableColumn) => {
+            // Status priority logic: Pending (1) > Partially Paid (2) > Paid/Confirmed (3) > Rejected/Canceled (4)
+            const getPriority = (status: string = '') => {
+                const s = status.toLowerCase();
+                if (s === 'pending') return 1;
+                if (s === 'partially-paid' || s === 'partially paid') return 2;
+                if (s === 'paid' || s === 'approved' || s === 'confirmed') return 3;
+                return 4;
+            };
+
+            const priorityA = getPriority(a.payment_status);
+            const priorityB = getPriority(b.payment_status);
+
+            if (priorityA !== priorityB) {
+                return priorityA - priorityB;
+            }
+
+            // Secondary sorting based on selected column
+            const getSortableValue = (reg: any, column: SortableColumn) => {
                 switch(column) {
                     case 'student': return reg.student_number || '';
                     case 'ref': return parseInt(reg.reference_number || '0', 10);
@@ -212,14 +230,14 @@ export default function ConvocationListPage() {
             const valB = getSortableValue(b, column);
 
             if (typeof valA === 'string' && typeof valB === 'string') return direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-            if (typeof valA === 'number' && typeof valB === 'number') return direction === 'asc' ? valA - valB : valB - valA;
+            if (typeof valA === 'number' && typeof valB === 'number') return direction === 'asc' ? (valA - valB) : (valB - valA);
             return 0;
         });
 
     }, [registrations, packages, searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption, courses]);
     
     useEffect(() => {
-        const params = new URLSearchParams(searchParams);
+        const params = new URLSearchParams(searchParams.toString());
         params.set('page', String(currentPage));
         router.push(`?${params.toString()}`, { scroll: false });
     }, [currentPage, router, searchParams]);
