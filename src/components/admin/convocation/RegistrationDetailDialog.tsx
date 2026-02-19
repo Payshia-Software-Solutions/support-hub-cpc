@@ -23,6 +23,7 @@ import type {
     TcPaymentRecord
 } from '@/lib/types';
 import Image from 'next/image';
+import { format } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
