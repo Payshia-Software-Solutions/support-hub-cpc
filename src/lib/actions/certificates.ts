@@ -75,8 +75,9 @@ export const createConvocationRegistration = async (payload: FormData): Promise<
     return response.json();
 };
 
-export const updateConvocationBooking = async (id: string, payload: Partial<ConvocationRegistration>): Promise<any> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/${id}`, {
+export const updateConvocationBooking = async (id: string, payload: any): Promise<any> => {
+    // Using the specialized update-courses endpoint which confirmedly handles broader updates
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/update-courses/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -88,7 +89,7 @@ export const updateConvocationBooking = async (id: string, payload: Partial<Conv
     return response.json();
 };
 
-export const updateConvocationPayment = async (registrationId: string, payload: { payment_status: string; payment_amount: number; created_by?: string }): Promise<any> => {
+export const updateConvocationPayment = async (registrationId: string, payload: { payment_status: string; payment_amount: number; created_by: string }): Promise<any> => {
     const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/payment/${registrationId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -437,5 +438,17 @@ export const getTcPayments = async (studentNumber: string, referKey: string = 'c
     const response = await fetch(`${QA_API_BASE_URL}/tc-payments?student_number=${studentNumber}&referKey=${referKey}`);
     if (response.status === 404) return [];
     if (!response.ok) throw new Error('Failed to fetch payment records');
+    return response.json();
+};
+
+export const submitSecondPayment = async (payload: FormData): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/payment-portal-requests`, {
+        method: 'POST',
+        body: payload,
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Payment submission failed. Status: ${response.status}` }));
+        throw new Error(errorData.message || 'Payment submission failed');
+    }
     return response.json();
 };
