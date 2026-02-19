@@ -76,8 +76,8 @@ export const createConvocationRegistration = async (payload: FormData): Promise<
 };
 
 export const updateConvocationBooking = async (id: string, payload: any): Promise<any> => {
-    // Using the specialized update-courses endpoint which confirmedly handles broader updates
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/update-courses/${id}`, {
+    // Corrected endpoint as per user request: PUT /convocation-registrations/{id}
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
     getConvocationRegistrations, 
@@ -23,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, BookUser, Hourglass, CheckCircle, Users, Eye, FileText, Wallet, FileDown, Loader2, Banknote, AlertTriangle } from 'lucide-react';
+import { Search, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, Eye, FileDown, Loader2, Banknote, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
@@ -38,6 +37,7 @@ export default function ConvocationListPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const ceremonyIdFilter = searchParams.get('ceremonyId');
+    const initialPage = parseInt(searchParams.get('page') || '1', 10);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -45,7 +45,7 @@ export default function ConvocationListPage() {
     const [packageFilter, setPackageFilter] = useState('all');
     const [sessionFilter, setSessionFilter] = useState('all');
     const [sortOption, setSortOption] = useState('date-desc');
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(initialPage);
     const [viewingDetails, setViewingDetails] = useState<ConvocationRegistration | null>(null);
     const [isExporting, setIsExporting] = useState(false);
 
@@ -174,12 +174,12 @@ export default function ConvocationListPage() {
         })
         .filter(reg => {
             const matchesSearch = lowercasedSearch === '' || 
-                reg.student_number.toLowerCase().includes(lowercasedSearch) ||
-                reg.name_on_certificate.toLowerCase().includes(lowercasedSearch) ||
-                reg.reference_number.toLowerCase().includes(lowercasedSearch);
+                (reg.student_number?.toLowerCase() || '').includes(lowercasedSearch) ||
+                (reg.name_on_certificate?.toLowerCase() || '').includes(lowercasedSearch) ||
+                (reg.reference_number?.toLowerCase() || '').includes(lowercasedSearch);
             
-            const matchesStatus = statusFilter === 'all' || reg.payment_status.toLowerCase() === statusFilter.toLowerCase();
-            const matchesCourse = reg.course_id.split(',').some(id => {
+            const matchesStatus = statusFilter === 'all' || (reg.payment_status?.toLowerCase() || '') === statusFilter.toLowerCase();
+            const matchesCourse = (reg.course_id || '').split(',').some(id => {
                 const course = courses?.find(c => c.id === id.trim());
                 return courseFilter === 'all' || course?.id === courseFilter;
             });
@@ -192,14 +192,14 @@ export default function ConvocationListPage() {
         return filtered.sort((a, b) => {
             const getSortableValue = (reg: typeof a, column: SortableColumn) => {
                 switch(column) {
-                    case 'student': return reg.student_number;
-                    case 'ref': return parseInt(reg.reference_number, 10);
+                    case 'student': return reg.student_number || '';
+                    case 'ref': return parseInt(reg.reference_number || '0', 10);
                     case 'ceremony': return reg.ceremony_number || '';
-                    case 'due': return reg.dueAmount;
-                    case 'session': return reg.session;
-                    case 'course': return reg.course_id;
+                    case 'due': return reg.dueAmount || 0;
+                    case 'session': return reg.session || '';
+                    case 'course': return reg.course_id || '';
                     case 'package': return packages?.find(p => p.package_id === reg.package_id)?.package_name || '';
-                    case 'seats': return parseInt(reg.additional_seats, 10);
+                    case 'seats': return parseInt(reg.additional_seats || '0', 10);
                     case 'date':
                     default:
                         const date = parseISO(reg.registered_at);
@@ -218,7 +218,15 @@ export default function ConvocationListPage() {
 
     }, [registrations, packages, searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption, courses]);
     
-    useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption]);
+    useEffect(() => {
+        const params = new URLSearchParams(searchParams);
+        params.set('page', String(currentPage));
+        router.push(`?${params.toString()}`, { scroll: false });
+    }, [currentPage, router, searchParams]);
+
+    useEffect(() => { 
+        setCurrentPage(1); 
+    }, [searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption]);
 
     const paginatedRegistrations = useMemo(() => {
         return filteredRegistrations.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -382,7 +390,7 @@ export default function ConvocationListPage() {
                                 <TableBody>
                                     {paginatedRegistrations.length > 0 ? paginatedRegistrations.map((reg) => {
                                         const paidAmount = parseFloat(reg.payment_amount) || 0;
-                                        const due = reg.dueAmount - paidAmount;
+                                        const due = (reg.dueAmount || 0) - paidAmount;
                                         const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || `ID: ${reg.package_id}`;
 
                                         return (
@@ -391,14 +399,14 @@ export default function ConvocationListPage() {
                                                 <div className="space-y-1">
                                                     <div className="font-mono font-bold text-sm">#{reg.reference_number}</div>
                                                     <div className="font-semibold text-sm text-primary">{reg.student_number}</div>
-                                                    <div className="text-[10px] font-medium uppercase tracking-tighter truncate max-w-[180px]">{reg.name_on_certificate}</div>
+                                                    <div className="text-[10px] font-medium uppercase tracking-tighter truncate max-w-[180px]">{reg.name_on_certificate || 'N/A'}</div>
                                                     <div className="text-[9px] text-muted-foreground pt-1 border-t border-dashed">Ceremony: {reg.ceremony_number || 'N/A'}</div>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-4 align-top">
                                                 <div className="space-y-3">
                                                     <div className="flex flex-col gap-1">
-                                                        {reg.course_id.split(',').map((id, idIdx) => {
+                                                        {(reg.course_id || '').split(',').map((id, idIdx) => {
                                                             const trimmedId = id.trim();
                                                             return (
                                                                 <div key={`${trimmedId}-${reg.registration_id}-${idIdx}`} className="text-[11px] leading-tight font-medium text-foreground">• {courses?.find(c => c.id === trimmedId)?.course_name || `ID: ${trimmedId}`}</div>
@@ -414,13 +422,13 @@ export default function ConvocationListPage() {
                                             </TableCell>
                                             <TableCell className="py-4 align-top">
                                                 <div className="flex flex-col items-start gap-1.5 pt-1">
-                                                    <Badge className={cn("px-2 py-0.5 h-auto text-[9px] uppercase font-bold w-fit", getStatusBadge(reg.payment_status))}>{reg.payment_status}</Badge>
+                                                    <Badge className={cn("px-2 py-0.5 h-auto text-[9px] uppercase font-bold w-fit", getStatusBadge(reg.payment_status || 'Pending'))}>{reg.payment_status}</Badge>
                                                     <Badge variant="secondary" className="px-2 py-0.5 h-auto text-[9px] uppercase font-medium w-fit bg-muted text-muted-foreground">{reg.registration_status}</Badge>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-4 align-top text-right">
                                                 <div className="space-y-1.5">
-                                                    <div className="text-[10px] text-muted-foreground font-medium">Total: LKR {reg.dueAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                                                    <div className="text-[10px] text-muted-foreground font-medium">Total: LKR {(reg.dueAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
                                                     <div className="text-[10px] text-muted-foreground font-medium">Paid: LKR {paidAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
                                                     <div className={cn("font-mono font-bold text-sm pt-1 border-t border-dashed", due > 0 ? "text-destructive" : "text-green-600")}>
                                                         Due: LKR {due.toLocaleString('en-US', { minimumFractionDigits: 2 })}
