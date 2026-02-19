@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -367,8 +366,8 @@ export default function ConvocationListPage() {
                                             <TableCell className="py-4 align-top">
                                                 <div className="space-y-3">
                                                     <div className="flex flex-col gap-1">
-                                                        {reg.course_id.split(',').map(id => (
-                                                            <div key={id} className="text-[11px] leading-tight font-medium text-foreground">• {courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`}</div>
+                                                        {reg.course_id.split(',').map((id, index) => (
+                                                            <div key={`${id.trim()}-${index}`} className="text-[11px] leading-tight font-medium text-foreground">• {courses?.find(c => c.id === id.trim())?.course_name || `ID: ${id}`}</div>
                                                         ))}
                                                     </div>
                                                     <div className="flex flex-wrap items-center gap-2 pt-1">
