@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -245,14 +244,14 @@ export default function ConvocationListPage() {
                                         <TableHead className="w-[220px]"><SortableHeader column="student" label="Student Info" /></TableHead>
                                         <TableHead className="min-w-[250px]">Booking Details</TableHead>
                                         <TableHead className="w-[150px]">Status</TableHead>
-                                        <TableHead className="w-[150px] text-right"><SortableHeader column="due" label="Due Balance" className="justify-end" /></TableHead>
+                                        <TableHead className="w-[180px] text-right"><SortableHeader column="due" label="Payment Details" className="justify-end" /></TableHead>
                                         <TableHead className="w-[100px] text-right pr-6">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {paginatedRegistrations.length > 0 ? paginatedRegistrations.map((reg) => {
-                                        const isPaid = ['paid', 'approved', 'confirmed'].includes(reg.payment_status.toLowerCase());
-                                        const due = isPaid ? reg.dueAmount - parseFloat(reg.payment_amount) : reg.dueAmount;
+                                        const paidAmount = parseFloat(reg.payment_amount) || 0;
+                                        const due = reg.dueAmount - paidAmount;
                                         const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || `ID: ${reg.package_id}`;
 
                                         return (
@@ -286,11 +285,12 @@ export default function ConvocationListPage() {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-4 align-top text-right">
-                                                <div className="space-y-1">
-                                                    <div className={cn("font-mono font-bold text-sm", due > 0 ? "text-destructive" : "text-green-600")}>
-                                                        LKR {due.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                <div className="space-y-1.5">
+                                                    <div className="text-[10px] text-muted-foreground font-medium">Total: LKR {reg.dueAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                                                    <div className="text-[10px] text-muted-foreground font-medium">Paid: LKR {paidAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                                                    <div className={cn("font-mono font-bold text-sm pt-1 border-t border-dashed", due > 0 ? "text-destructive" : "text-green-600")}>
+                                                        Due: LKR {due.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                     </div>
-                                                    <div className="text-[10px] text-muted-foreground">Paid: {parseFloat(reg.payment_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-4 pr-6 align-top text-right">
