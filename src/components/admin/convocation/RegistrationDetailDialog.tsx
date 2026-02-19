@@ -146,11 +146,17 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         enabled: !!registration?.student_number,
     });
 
-    const { data: tcPayments, isLoading: isLoadingTcPayments } = useQuery<TcPaymentRecord[]>({
-        queryKey: ['tcPayments', registration?.student_number, 'covocation-payment'],
-        queryFn: () => getTcPayments(registration!.student_number, 'covocation-payment'),
+    const { data: allTcPayments, isLoading: isLoadingTcPayments } = useQuery<TcPaymentRecord[]>({
+        queryKey: ['tcPayments', registration?.student_number],
+        queryFn: () => getTcPayments(registration!.student_number),
         enabled: !!registration?.student_number,
     });
+
+    const tcPayments = useMemo(() => {
+        if (!allTcPayments || !registration) return [];
+        const referKey = `covocation-payment-${registration.convocation_id}`;
+        return allTcPayments.filter(p => p.reference_key === referKey);
+    }, [allTcPayments, registration]);
 
     const { data: portalPayments, isLoading: isLoadingPortalSlips } = useQuery<PaymentRequest[]>({
         queryKey: ['paymentRequests', registration?.student_number],
@@ -186,7 +192,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         queryClient.invalidateQueries({ queryKey: ['convocationRegistrations'] });
         if (registration?.student_number) {
             queryClient.invalidateQueries({ queryKey: ['studentFullInfoForConvocationDetail', registration.student_number] });
-            queryClient.invalidateQueries({ queryKey: ['tcPayments', registration.student_number, 'covocation-payment'] });
+            queryClient.invalidateQueries({ queryKey: ['tcPayments', registration.student_number] });
             queryClient.invalidateQueries({ queryKey: ['paymentRequests', registration.student_number] });
         }
     };
@@ -774,6 +780,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                 <ViewSlipDialog 
                                                     title="Initial Booking Slip"
                                                     slipPath={registration.image_path}
+                                                    studentName={registration.student_number}
                                                     trigger={
                                                         <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3">
                                                             <FileText className="h-4 w-4 mr-3 text-primary" />
@@ -796,6 +803,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                     key={p.id}
                                                     title={`Balance Payment Slip #${idx + 1}`}
                                                     slipPath={p.slip_path}
+                                                    studentName={registration.student_number}
                                                     trigger={
                                                         <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3 border-dashed">
                                                             <FileText className="h-4 w-4 mr-3 text-orange-500" />
