@@ -208,7 +208,7 @@ export default function ConvocationListPage() {
             }
 
             // Secondary sorting based on selected column
-            const getSortableValue = (reg: typeof a, column: SortableColumn) => {
+            const getSortableValue = (reg: any, column: SortableColumn) => {
                 switch(column) {
                     case 'student': return reg.student_number || '';
                     case 'ref': return parseInt(reg.reference_number || '0', 10);
@@ -230,14 +230,14 @@ export default function ConvocationListPage() {
             const valB = getSortableValue(b, column);
 
             if (typeof valA === 'string' && typeof valB === 'string') return direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-            if (typeof valA === 'number' && typeof valB === 'number') return direction === 'asc' ? valA - valB : valB - valA;
+            if (typeof valA === 'number' && typeof valB === 'number') return direction === 'asc' ? (valA - valB) : (valB - valA);
             return 0;
         });
 
     }, [registrations, packages, searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption, courses]);
     
     useEffect(() => {
-        const params = new URLSearchParams(searchParams);
+        const params = new URLSearchParams(searchParams.toString());
         params.set('page', String(currentPage));
         router.push(`?${params.toString()}`, { scroll: false });
     }, [currentPage, router, searchParams]);
