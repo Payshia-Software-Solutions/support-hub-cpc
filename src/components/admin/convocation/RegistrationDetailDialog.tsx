@@ -112,7 +112,7 @@ function RegisteredStudentInfo({ user, studentNumber }: { user: UserFullDetails,
     );
 };
 
-function DuplicateSlipCheck({ hashValue, currentRegistrationId }: { hashValue: string, currentRegistrationId: string }) {
+function DuplicateSlipCheck({ hashValue, currentRegistrationId, isInitialSlip = false }: { hashValue: string, currentRegistrationId: string, isInitialSlip?: boolean }) {
     const [viewingSlipPath, setViewingSlipPath] = useState<string | null>(null);
 
     const { data: duplicateRecords, isLoading, isError } = useQuery<any[]>({
@@ -127,44 +127,37 @@ function DuplicateSlipCheck({ hashValue, currentRegistrationId }: { hashValue: s
         enabled: !!hashValue,
     });
 
-    if (isLoading) return <div className="text-xs text-muted-foreground animate-pulse mb-4">Checking for duplicate slips...</div>;
+    if (isLoading) return <div className="text-[10px] text-muted-foreground animate-pulse flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin"/> Verifying unique ID...</div>;
     
-    if (isError) return null;
+    if (isError || !hashValue) return null;
 
-    if (duplicateRecords && duplicateRecords.length > 1) {
+    const isDuplicate = isInitialSlip ? (duplicateRecords && duplicateRecords.length > 0) : (duplicateRecords && duplicateRecords.length > 1);
+
+    if (isDuplicate) {
         return (
-            <>
-                <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive mb-4">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle className="font-bold">Duplicate Slip Detected!</AlertTitle>
-                    <AlertDescription className="space-y-2">
-                        <p>This payment slip has been uploaded in {duplicateRecords.length} different places.</p>
-                        <div className="flex gap-2 mt-2">
-                            <Button size="sm" variant="destructive" onClick={() => setViewingSlipPath(duplicateRecords[0].slip_path || duplicateRecords[0].image_path)}>
-                                View Duplicates
-                            </Button>
-                        </div>
-                    </AlertDescription>
-                </Alert>
+            <div className="mt-1">
+                <div className="flex items-center gap-2 text-destructive font-bold text-[10px] bg-destructive/10 p-1 px-2 rounded w-fit border border-destructive/20">
+                    <AlertTriangle className="h-3 w-3" />
+                    DUPLICATE DETECTED
+                    <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-destructive underline ml-1" onClick={() => setViewingSlipPath(duplicateRecords[0].slip_path || duplicateRecords[0].image_path)}>
+                        View
+                    </Button>
+                </div>
                 <ViewSlipDialog
                     slipPath={viewingSlipPath || ''}
                     studentName="Duplicate Record"
                     trigger={<span/>} 
                 />
-            </>
+            </div>
         );
     }
 
-    if (duplicateRecords && duplicateRecords.length <= 1) {
-        return (
-            <Alert variant="default" className="bg-green-50 border-green-200 text-green-800 mb-4 py-2">
-                <CheckCircle className="h-4 w-4 !text-green-800" />
-                <AlertDescription className="text-xs font-medium">No duplicate slips found.</AlertDescription>
-            </Alert>
-        );
-    }
-
-    return null;
+    return (
+        <div className="mt-1 flex items-center gap-1 text-green-600 font-bold text-[10px] bg-green-50 p-1 px-2 rounded w-fit border border-green-200">
+            <CheckCircle className="h-3 w-3" />
+            NO DUPLICATES
+        </div>
+    );
 }
 
 export const RegistrationDetailDialog = ({ registration, open, onOpenChange, packages }: { 
@@ -177,12 +170,10 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const { user } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     
-    // Dialog control states
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
     const [isConfirmAttendanceDialogOpen, setIsConfirmAttendanceDialogOpen] = useState(false);
     const [isPackageConfirmOpen, setIsPackageConfirmOpen] = useState(false);
 
-    // Form state
     const [editPackageId, setEditPackageId] = useState('');
     const [pendingPackageId, setPendingPackageId] = useState('');
     const [editSession, setEditSession] = useState<'1' | '2'>('1');
@@ -191,12 +182,10 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const [editPhone, setEditPhone] = useState('');
     const [editCourseIds, setEditCourseIds] = useState<string[]>([]);
 
-    // Specific Update States
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentStatus, setPaymentStatus] = useState('');
     const [ceremonyNumber, setCeremonyNumber] = useState('');
 
-    // --- Hooks ---
     const { data: studentInfo, isLoading: isLoadingStudentData } = useQuery<FullStudentData>({
         queryKey: ['studentFullInfoForConvocationDetail', registration?.student_number],
         queryFn: () => getStudentFullInfo(registration!.student_number),
@@ -539,8 +528,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                 
                 <ScrollArea className="flex-1">
                     <div className="p-6 space-y-6">
-                        <DuplicateSlipCheck hashValue={registration.hash_value} currentRegistrationId={registration.registration_id} />
-
                         {/* Booking Info Card */}
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between">
@@ -836,20 +823,29 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                         <div className="grid grid-cols-1 gap-2">
                                             {/* Initial Slip */}
                                             {registration.image_path ? (
-                                                <ViewSlipDialog 
-                                                    title="Initial Booking Slip"
-                                                    slipPath={registration.image_path}
-                                                    studentName={registration.student_number}
-                                                    trigger={
-                                                        <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3">
-                                                            <FileText className="h-4 w-4 mr-3 text-primary" />
-                                                            <div className="text-left">
-                                                                <p className="text-xs font-semibold">Initial Registration Slip</p>
-                                                                <p className="text-[10px] text-muted-foreground">Main verification</p>
-                                                            </div>
-                                                        </Button>
-                                                    }
-                                                />
+                                                <div className="flex flex-col gap-1">
+                                                    <ViewSlipDialog 
+                                                        title="Initial Booking Slip"
+                                                        slipPath={registration.image_path}
+                                                        studentName={registration.student_number}
+                                                        trigger={
+                                                            <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3">
+                                                                <FileText className="h-4 w-4 mr-3 text-primary" />
+                                                                <div className="text-left">
+                                                                    <p className="text-xs font-semibold">Initial Registration Slip</p>
+                                                                    <p className="text-[10px] text-muted-foreground">Main verification</p>
+                                                                </div>
+                                                            </Button>
+                                                        }
+                                                    />
+                                                    {registration.hash_value && (
+                                                        <DuplicateSlipCheck 
+                                                            hashValue={registration.hash_value} 
+                                                            currentRegistrationId={registration.registration_id} 
+                                                            isInitialSlip={true} 
+                                                        />
+                                                    )}
+                                                </div>
                                             ) : (
                                                 <div className="h-16 border-2 border-dashed rounded-md flex items-center justify-center text-muted-foreground italic text-xs">No initial slip</div>
                                             )}
@@ -858,21 +854,29 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                             {isLoadingPortalSlips ? (
                                                 <Skeleton className="h-10 w-full" />
                                             ) : balanceSlips.map((p, idx) => (
-                                                <ViewSlipDialog 
-                                                    key={p.id}
-                                                    title={`Balance Payment Slip #${idx + 1}`}
-                                                    slipPath={p.slip_path}
-                                                    studentName={registration.student_number}
-                                                    trigger={
-                                                        <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3 border-dashed">
-                                                            <FileText className="h-4 w-4 mr-3 text-orange-500" />
-                                                            <div className="text-left">
-                                                                <p className="text-xs font-semibold">Balance Slip ({format(new Date(p.created_at), 'MMM d')})</p>
-                                                                <p className="text-[10px] text-muted-foreground">Status: {p.payment_status}</p>
-                                                            </div>
-                                                        </Button>
-                                                    }
-                                                />
+                                                <div key={p.id} className="flex flex-col gap-1">
+                                                    <ViewSlipDialog 
+                                                        title={`Balance Payment Slip #${idx + 1}`}
+                                                        slipPath={p.slip_path}
+                                                        studentName={registration.student_number}
+                                                        trigger={
+                                                            <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3 border-dashed">
+                                                                <FileText className="h-4 w-4 mr-3 text-orange-500" />
+                                                                <div className="text-left">
+                                                                    <p className="text-xs font-semibold">Balance Slip ({format(new Date(p.created_at), 'MMM d')})</p>
+                                                                    <p className="text-[10px] text-muted-foreground">Status: {p.payment_status}</p>
+                                                                </div>
+                                                            </Button>
+                                                        }
+                                                    />
+                                                    {p.hash_value && (
+                                                        <DuplicateSlipCheck 
+                                                            hashValue={p.hash_value} 
+                                                            currentRegistrationId={p.id} 
+                                                            isInitialSlip={false} 
+                                                        />
+                                                    )}
+                                                </div>
                                             ))}
                                         </div>
                                     </div>
