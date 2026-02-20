@@ -129,6 +129,8 @@ function DuplicateSlipCheck({ hashValue, currentRegistrationId }: { hashValue: s
 
     if (isLoading) return <div className="text-xs text-muted-foreground animate-pulse mb-4">Checking for duplicate slips...</div>;
     
+    if (isError) return null;
+
     if (duplicateRecords && duplicateRecords.length > 1) {
         return (
             <>
@@ -136,7 +138,7 @@ function DuplicateSlipCheck({ hashValue, currentRegistrationId }: { hashValue: s
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle className="font-bold">Duplicate Slip Detected!</AlertTitle>
                     <AlertDescription className="space-y-2">
-                        <p>This payment slip (Hash: {hashValue.substring(0, 12)}...) has been uploaded in {duplicateRecords.length} different places.</p>
+                        <p>This payment slip has been uploaded in {duplicateRecords.length} different places.</p>
                         <div className="flex gap-2 mt-2">
                             <Button size="sm" variant="destructive" onClick={() => setViewingSlipPath(duplicateRecords[0].slip_path || duplicateRecords[0].image_path)}>
                                 View Duplicates
@@ -150,6 +152,15 @@ function DuplicateSlipCheck({ hashValue, currentRegistrationId }: { hashValue: s
                     trigger={<span/>} 
                 />
             </>
+        );
+    }
+
+    if (duplicateRecords && duplicateRecords.length <= 1) {
+        return (
+            <Alert variant="default" className="bg-green-50 border-green-200 text-green-800 mb-4 py-2">
+                <CheckCircle className="h-4 w-4 !text-green-800" />
+                <AlertDescription className="text-xs font-medium">No duplicate slips found.</AlertDescription>
+            </Alert>
         );
     }
 
