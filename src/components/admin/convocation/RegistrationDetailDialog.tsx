@@ -171,13 +171,16 @@ function DuplicateSlipCheck({ hashValue, currentRegistrationId }: { hashValue: s
                                     <TableBody>
                                         {duplicateRecords?.map((record, idx) => (
                                             <TableRow key={idx} className={cn(String(record.registration_id || record.id) === String(currentRegistrationId) && "bg-muted/50 font-bold")}>
-                                                <TableCell className="text-xs">{record.student_number}</TableCell>
-                                                <TableCell className="text-xs">{record.reference_number || record.id}</TableCell>
-                                                <TableCell className="text-xs">LKR {record.payment_amount}</TableCell>
+                                                <TableCell className="text-xs">{record.unique_number || record.student_number}</TableCell>
+                                                <TableCell className="text-xs">{record.reference_number || record.payment_reference || record.id}</TableCell>
+                                                <TableCell className="text-xs">LKR {record.payment_amount || record.paid_amount}</TableCell>
                                                 <TableCell className="text-xs">
-                                                    <Badge variant="outline" className="text-[10px] uppercase h-4">{record.payment_status}</Badge>
+                                                    <Badge variant="outline" className="text-[10px] uppercase h-4">{record.payment_status || record.registration_status}</Badge>
                                                 </TableCell>
-                                                <TableCell className="text-xs">{record.registered_at ? format(new Date(record.registered_at), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                                                <TableCell className="text-xs">
+                                                    {record.registered_at ? format(new Date(record.registered_at), 'yyyy-MM-dd') : 
+                                                     record.paid_date ? format(new Date(record.paid_date), 'yyyy-MM-dd') : 'N/A'}
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
