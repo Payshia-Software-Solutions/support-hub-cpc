@@ -43,7 +43,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Banknote, UserCheck, ListOrdered, Calculator, FileText, Paperclip, Hourglass } from 'lucide-react';
+import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Banknote, UserCheck, ListOrdered, Calculator, FileText, Paperclip, Hourglass, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -59,6 +59,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { EnrollmentDetailAccordion } from './EnrollmentDetailAccordion';
 import { ViewSlipDialog } from './ViewSlipDialog';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
 const PARENT_SEAT_RATE = 750;
@@ -101,8 +102,8 @@ function RegisteredStudentInfo({ user, studentNumber }: { user: UserFullDetails,
                 {isLoadingBalance ? <Skeleton className="h-40"/> : balanceData && (
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4 text-center">
-                            <Card><CardHeader className="p-2"><CardTitle className="text-xs">Total Paid</CardTitle></CardHeader><CardContent className="p-2 pt-0"><p className="text-sm font-bold">LKR {balanceData.studentBalance.totalPaymentAmount.toLocaleString()}</p></CardContent></Card>
-                            <Card><CardHeader className="p-2"><CardTitle className="text-xs">Outstanding</CardTitle></CardHeader><CardContent className="p-2 pt-0"><p className="text-sm font-bold text-destructive">LKR {balanceData.studentBalance.studentBalance.toLocaleString()}</p></CardContent></Card>
+                            <Card><CardHeader className="p-2"><CardTitle className="text-xs">Total Paid</CardTitle></CardHeader><CardContent className="p-2 pt-0"><p className="text-sm font-bold">LKR {balanceData.totalPaymentAmount.toLocaleString()}</p></CardContent></Card>
+                            <Card><CardHeader className="p-2"><CardTitle className="text-xs">Outstanding</CardTitle></CardHeader><CardContent className="p-2 pt-0"><p className="text-sm font-bold text-destructive">LKR {balanceData.studentBalance.toLocaleString()}</p></CardContent></Card>
                         </div>
                     </div>
                 )}
@@ -110,6 +111,50 @@ function RegisteredStudentInfo({ user, studentNumber }: { user: UserFullDetails,
         </Tabs>
     );
 };
+
+function DuplicateSlipCheck({ hashValue, currentRegistrationId }: { hashValue: string, currentRegistrationId: string }) {
+    const [viewingSlipPath, setViewingSlipPath] = useState<string | null>(null);
+
+    const { data: duplicateRecords, isLoading, isError } = useQuery<any[]>({
+        queryKey: ['duplicateCheck', hashValue],
+        queryFn: async () => {
+            if (!hashValue) return [];
+            const response = await fetch(`https://qa-api.pharmacollege.lk/payment-portal-requests/check-hash?hashValue=${hashValue}`);
+            if (response.status === 404) return [];
+            if (!response.ok) throw new Error('Failed check');
+            return response.json();
+        },
+        enabled: !!hashValue,
+    });
+
+    if (isLoading) return <div className="text-xs text-muted-foreground animate-pulse mb-4">Checking for duplicate slips...</div>;
+    
+    if (duplicateRecords && duplicateRecords.length > 1) {
+        return (
+            <>
+                <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive mb-4">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle className="font-bold">Duplicate Slip Detected!</AlertTitle>
+                    <AlertDescription className="space-y-2">
+                        <p>This payment slip (Hash: {hashValue.substring(0, 12)}...) has been uploaded in {duplicateRecords.length} different places.</p>
+                        <div className="flex gap-2 mt-2">
+                            <Button size="sm" variant="destructive" onClick={() => setViewingSlipPath(duplicateRecords[0].slip_path || duplicateRecords[0].image_path)}>
+                                View Duplicates
+                            </Button>
+                        </div>
+                    </AlertDescription>
+                </Alert>
+                <ViewSlipDialog
+                    slipPath={viewingSlipPath || ''}
+                    studentName="Duplicate Record"
+                    trigger={<span/>} 
+                />
+            </>
+        );
+    }
+
+    return null;
+}
 
 export const RegistrationDetailDialog = ({ registration, open, onOpenChange, packages }: { 
     registration: ConvocationRegistration | null, 
@@ -483,6 +528,8 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                 
                 <ScrollArea className="flex-1">
                     <div className="p-6 space-y-6">
+                        <DuplicateSlipCheck hashValue={registration.hash_value} currentRegistrationId={registration.registration_id} />
+
                         {/* Booking Info Card */}
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between">
