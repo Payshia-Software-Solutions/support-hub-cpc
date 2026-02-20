@@ -59,9 +59,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { EnrollmentDetailAccordion } from './EnrollmentDetailAccordion';
 import { ViewSlipDialog } from './ViewSlipDialog';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
-const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
 const PARENT_SEAT_RATE = 750;
 
 function TempUserInfo({ user }: { user: any }) {
@@ -112,7 +110,7 @@ function RegisteredStudentInfo({ user, studentNumber }: { user: UserFullDetails,
     );
 };
 
-function DuplicateSlipCheck({ hashValue, currentRegistrationId, isInitialSlip = false }: { hashValue: string, currentRegistrationId: string, isInitialSlip?: boolean }) {
+function DuplicateSlipCheck({ hashValue, currentRegistrationId }: { hashValue: string, currentRegistrationId: string }) {
     const { data: duplicateRecords, isLoading, isError } = useQuery<any[]>({
         queryKey: ['duplicateCheck', hashValue],
         queryFn: async () => {
@@ -125,18 +123,19 @@ function DuplicateSlipCheck({ hashValue, currentRegistrationId, isInitialSlip = 
         enabled: !!hashValue,
     });
 
-    if (isLoading) return <div className="text-[10px] text-muted-foreground animate-pulse flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin"/> Verifying unique ID...</div>;
+    if (isLoading) return <div className="text-[10px] text-muted-foreground animate-pulse flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin"/> Verifying...</div>;
     
     if (isError || !hashValue) return null;
 
-    const isDuplicate = duplicateRecords && duplicateRecords.length > 1;
+    const otherRecords = duplicateRecords?.filter(r => 
+        (r.registration_id && String(r.registration_id) !== String(currentRegistrationId)) || 
+        (r.id && String(r.id) !== String(currentRegistrationId))
+    ) || [];
+
+    const isDuplicate = otherRecords.length > 0;
 
     if (isDuplicate) {
-        const otherMatch = duplicateRecords.find(r => 
-            (r.registration_id && String(r.registration_id) !== String(currentRegistrationId)) || 
-            (r.id && String(r.id) !== String(currentRegistrationId))
-        ) || duplicateRecords[0];
-
+        const otherMatch = otherRecords[0];
         const otherSlipPath = otherMatch.slip_path || otherMatch.image_path;
 
         return (
@@ -848,7 +847,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                         <DuplicateSlipCheck 
                                                             hashValue={registration.hash_value} 
                                                             currentRegistrationId={registration.registration_id} 
-                                                            isInitialSlip={true} 
                                                         />
                                                     )}
                                                 </div>
@@ -879,7 +877,6 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                         <DuplicateSlipCheck 
                                                             hashValue={p.hash_value} 
                                                             currentRegistrationId={p.id} 
-                                                            isInitialSlip={false} 
                                                         />
                                                     )}
                                                 </div>
@@ -953,57 +950,3 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         </>
     );
 };
-
-function DuplicateSlipCheck({ hashValue, currentRegistrationId, isInitialSlip = false }: { hashValue: string, currentRegistrationId: string, isInitialSlip?: boolean }) {
-    const { data: duplicateRecords, isLoading, isError } = useQuery<any[]>({
-        queryKey: ['duplicateCheck', hashValue],
-        queryFn: async () => {
-            if (!hashValue) return [];
-            const response = await fetch(`https://qa-api.pharmacollege.lk/payment-portal-requests/check-hash?hashValue=${hashValue}`);
-            if (response.status === 404) return [];
-            if (!response.ok) throw new Error('Failed check');
-            return response.json();
-        },
-        enabled: !!hashValue,
-    });
-
-    if (isLoading) return <div className="text-[10px] text-muted-foreground animate-pulse flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin"/> Verifying unique ID...</div>;
-    
-    if (isError || !hashValue) return null;
-
-    const isDuplicate = duplicateRecords && duplicateRecords.length > 1;
-
-    if (isDuplicate) {
-        const otherMatch = duplicateRecords.find(r => 
-            (r.registration_id && String(r.registration_id) !== String(currentRegistrationId)) || 
-            (r.id && String(r.id) !== String(currentRegistrationId))
-        ) || duplicateRecords[0];
-
-        const otherSlipPath = otherMatch.slip_path || otherMatch.image_path;
-
-        return (
-            <div className="mt-1">
-                <div className="flex items-center gap-2 text-destructive font-bold text-[10px] bg-destructive/10 p-1 px-2 rounded w-fit border border-destructive/20">
-                    <AlertTriangle className="h-3 w-3" />
-                    DUPLICATE DETECTED
-                    <ViewSlipDialog
-                        slipPath={otherSlipPath}
-                        studentName="Conflicting Record"
-                        trigger={
-                            <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-destructive underline ml-1 font-bold">
-                                View
-                            </Button>
-                        }
-                    />
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="mt-1 flex items-center gap-1 text-green-600 font-bold text-[10px] bg-green-50 p-1 px-2 rounded w-fit border border-green-200">
-            <CheckCircle className="h-3 w-3" />
-            NO DUPLICATES
-        </div>
-    );
-}
