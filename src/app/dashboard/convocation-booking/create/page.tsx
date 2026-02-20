@@ -272,6 +272,21 @@ export default function CreateConvocationBookingPage() {
     };
   }, [selectedCeremony, sessionCounts]);
 
+  // Prevent selection of full session
+  useEffect(() => {
+    if (seatsAvailable.session1 !== undefined && seatsAvailable.session2 !== undefined) {
+        if (selectedSession === '1' && seatsAvailable.session1 <= 0) {
+            if (seatsAvailable.session2 > 0) {
+                setSelectedSession('2');
+            }
+        } else if (selectedSession === '2' && seatsAvailable.session2 <= 0) {
+            if (seatsAvailable.session1 > 0) {
+                setSelectedSession('1');
+            }
+        }
+    }
+  }, [seatsAvailable, selectedSession]);
+
 
   const handleCeremonySelection = () => {
     if (!selectedCeremonyId) {
@@ -611,8 +626,8 @@ export default function CreateConvocationBookingPage() {
                                         <Label 
                                             htmlFor="session1" 
                                             className={cn(
-                                                "flex flex-col gap-1 border rounded-md p-3 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary flex-1 justify-center text-center",
-                                                seatsAvailable.session1 !== undefined && seatsAvailable.session1 <= 0 && "opacity-50 cursor-not-allowed"
+                                                "flex flex-col gap-1 border rounded-md p-3 transition-all flex-1 justify-center text-center",
+                                                seatsAvailable.session1 !== undefined && seatsAvailable.session1 <= 0 ? "opacity-50 cursor-not-allowed bg-muted" : "cursor-pointer hover:bg-accent has-[:checked]:ring-2 has-[:checked]:ring-primary"
                                             )}
                                         >
                                             <RadioGroupItem value="1" id="session1" className="sr-only" disabled={seatsAvailable.session1 !== undefined && seatsAvailable.session1 <= 0} />
@@ -626,8 +641,8 @@ export default function CreateConvocationBookingPage() {
                                          <Label 
                                             htmlFor="session2" 
                                             className={cn(
-                                                "flex flex-col gap-1 border rounded-md p-3 cursor-pointer has-[:checked]:ring-2 has-[:checked]:ring-primary flex-1 justify-center text-center",
-                                                seatsAvailable.session2 !== undefined && seatsAvailable.session2 <= 0 && "opacity-50 cursor-not-allowed"
+                                                "flex flex-col gap-1 border rounded-md p-3 transition-all flex-1 justify-center text-center",
+                                                seatsAvailable.session2 !== undefined && seatsAvailable.session2 <= 0 ? "opacity-50 cursor-not-allowed bg-muted" : "cursor-pointer hover:bg-accent has-[:checked]:ring-2 has-[:checked]:ring-primary"
                                             )}
                                         >
                                             <RadioGroupItem value="2" id="session2" className="sr-only" disabled={seatsAvailable.session2 !== undefined && seatsAvailable.session2 <= 0} />
