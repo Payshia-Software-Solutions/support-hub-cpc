@@ -32,7 +32,7 @@ import { format } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +55,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { EnrollmentDetailAccordion } from './EnrollmentDetailAccordion';
@@ -111,6 +112,8 @@ function RegisteredStudentInfo({ user, studentNumber }: { user: UserFullDetails,
 };
 
 function DuplicateSlipCheck({ hashValue, currentRegistrationId }: { hashValue: string, currentRegistrationId: string }) {
+    const [isInfoOpen, setIsInfoOpen] = useState(false);
+
     const { data: duplicateRecords, isLoading, isError } = useQuery<any[]>({
         queryKey: ['duplicateCheck', hashValue],
         queryFn: async () => {
@@ -127,6 +130,7 @@ function DuplicateSlipCheck({ hashValue, currentRegistrationId }: { hashValue: s
     
     if (isError || !hashValue) return null;
 
+    // Filter out the record we are currently viewing
     const otherRecords = duplicateRecords?.filter(r => 
         (r.registration_id && String(r.registration_id) !== String(currentRegistrationId)) || 
         (r.id && String(r.id) !== String(currentRegistrationId))
@@ -135,23 +139,57 @@ function DuplicateSlipCheck({ hashValue, currentRegistrationId }: { hashValue: s
     const isDuplicate = otherRecords.length > 0;
 
     if (isDuplicate) {
-        const otherMatch = otherRecords[0];
-        const otherSlipPath = otherMatch.slip_path || otherMatch.image_path;
-
         return (
             <div className="mt-1">
                 <div className="flex items-center gap-2 text-destructive font-bold text-[10px] bg-destructive/10 p-1 px-2 rounded w-fit border border-destructive/20">
                     <AlertTriangle className="h-3 w-3" />
                     DUPLICATE DETECTED
-                    <ViewSlipDialog
-                        slipPath={otherSlipPath}
-                        studentName="Conflicting Record"
-                        trigger={
+                    <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
+                        <DialogTrigger asChild>
                             <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-destructive underline ml-1 font-bold">
-                                View
+                                View Records
                             </Button>
-                        }
-                    />
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                                <DialogTitle>Conflicting Records</DialogTitle>
+                                <DialogDescription>
+                                    The following records were found sharing the same payment slip hash.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="mt-4 border rounded-md overflow-hidden">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="text-xs">Student ID</TableHead>
+                                            <TableHead className="text-xs">Ref #</TableHead>
+                                            <TableHead className="text-xs">Amount</TableHead>
+                                            <TableHead className="text-xs">Status</TableHead>
+                                            <TableHead className="text-xs">Date</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {duplicateRecords?.map((record, idx) => (
+                                            <TableRow key={idx} className={cn(String(record.registration_id || record.id) === String(currentRegistrationId) && "bg-muted/50 font-bold")}>
+                                                <TableCell className="text-xs">{record.student_number}</TableCell>
+                                                <TableCell className="text-xs">{record.reference_number || record.id}</TableCell>
+                                                <TableCell className="text-xs">LKR {record.payment_amount}</TableCell>
+                                                <TableCell className="text-xs">
+                                                    <Badge variant="outline" className="text-[10px] uppercase h-4">{record.payment_status}</Badge>
+                                                </TableCell>
+                                                <TableCell className="text-xs">{record.registered_at ? format(new Date(record.registered_at), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button variant="secondary">Close</Button>
+                                </DialogClose>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
         );
