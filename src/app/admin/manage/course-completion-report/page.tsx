@@ -14,8 +14,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Search, FileDown, Loader2, CheckCircle, XCircle, AlertCircle, Info, ChevronDown } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 import {
   Tooltip,
   TooltipContent,
@@ -135,9 +138,9 @@ export default function CourseCompletionReportPage() {
             const headers = ['Student ID', 'Full Name', 'Batch', 'Status', 'Avg Grade (%)', 'Missing Criteria'];
             const rows = students.map((s, idx) => {
                 const data = allResults[idx];
-                const enrollment = data ? Object.values(data.studentEnrollments).find(e => e.course_code === selectedBatchCode) : null;
+                const enrollment = data ? Object.values(data.studentEnrollments).find((e: any) => e.course_code === selectedBatchCode) : null;
                 const isCompleted = enrollment?.certificate_eligibility || false;
-                const missing = enrollment ? enrollment.criteria_details.filter(c => !c.evaluation.completed).map(c => c.list_name).join('; ') : 'Data Load Error';
+                const missing = enrollment ? enrollment.criteria_details.filter((c: any) => !c.evaluation.completed).map((c: any) => c.list_name).join('; ') : 'Data Load Error';
 
                 return [
                     s.username,
@@ -247,7 +250,7 @@ export default function CourseCompletionReportPage() {
                         {isLoadingStudents ? (
                             <div className="p-8 space-y-4"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>
                         ) : isError ? (
-                            <Alert variant="destructive" className="m-6"><AlertCircle className="h-4 w-4" /><AlertTitle>Data Load Error</AlertTitle><AlertDescription>{error.message}</AlertDescription></Alert>
+                            <Alert variant="destructive" className="m-6"><AlertCircle className="h-4 w-4" /><AlertTitle>Data Load Error</AlertTitle><AlertDescription>{(error as Error).message}</AlertDescription></Alert>
                         ) : (
                             <div className="w-full overflow-x-auto">
                                 <Table>
