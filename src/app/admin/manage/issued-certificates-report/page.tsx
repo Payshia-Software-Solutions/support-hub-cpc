@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -15,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Search, FileDown, Loader2, AlertCircle, Award, FileText, CheckCircle2 } from 'lucide-react';
+import { Search, FileDown, Loader2, AlertCircle, Award, FileText, CheckCircle2, BookText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -26,6 +25,7 @@ interface GroupedIssuance {
     name_on_certificate: string;
     certificate_id: string;
     transcript_id: string;
+    workshop_certificate_id: string;
     status: string;
 }
 
@@ -37,7 +37,6 @@ export default function IssuedCertificatesReportPage() {
     const [itemsPerPage, setItemsPerPage] = useState(50);
     const [isExporting, setIsExporting] = useState(false);
 
-    // --- Data Fetching ---
     const { data: parentCourses, isLoading: isLoadingParentCourses } = useQuery<ParentCourse[]>({
         queryKey: ['parentCoursesForIssuanceReport'],
         queryFn: getParentCourses,
@@ -57,13 +56,11 @@ export default function IssuedCertificatesReportPage() {
         staleTime: 1000 * 60 * 5,
     });
 
-    // Filter batches based on selected parent course
     const filteredBatches = useMemo(() => {
         if (!allBatches || !selectedParentCourseId) return [];
         return allBatches.filter(b => b.parent_course_id === selectedParentCourseId);
     }, [allBatches, selectedParentCourseId]);
 
-    // Group the flat API records by student
     const groupedData = useMemo(() => {
         if (!issuanceData) return [];
         
@@ -76,6 +73,7 @@ export default function IssuedCertificatesReportPage() {
                 name_on_certificate: item.name_on_certificate,
                 certificate_id: '',
                 transcript_id: '',
+                workshop_certificate_id: '',
                 status: item.print_status === '1' ? 'Printed' : 'Pending'
             };
 
@@ -83,6 +81,8 @@ export default function IssuedCertificatesReportPage() {
                 existing.certificate_id = item.certificate_id;
             } else if (item.document_type === 'Transcript') {
                 existing.transcript_id = item.certificate_id;
+            } else if (item.document_type === 'Workshop-Certificate') {
+                existing.workshop_certificate_id = item.certificate_id;
             }
             
             map.set(item.student_number, existing);
@@ -91,7 +91,6 @@ export default function IssuedCertificatesReportPage() {
         return Array.from(map.values());
     }, [issuanceData]);
 
-    // Apply Search
     const filteredGroupedData = useMemo(() => {
         if (!groupedData) return [];
         const lower = searchTerm.toLowerCase();
@@ -100,7 +99,8 @@ export default function IssuedCertificatesReportPage() {
             s.full_name.toLowerCase().includes(lower) ||
             s.name_on_certificate.toLowerCase().includes(lower) ||
             s.certificate_id.toLowerCase().includes(lower) ||
-            s.transcript_id.toLowerCase().includes(lower)
+            s.transcript_id.toLowerCase().includes(lower) ||
+            s.workshop_certificate_id.toLowerCase().includes(lower)
         );
     }, [groupedData, searchTerm]);
 
@@ -109,7 +109,6 @@ export default function IssuedCertificatesReportPage() {
         return filteredGroupedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
     }, [filteredGroupedData, currentPage, itemsPerPage]);
 
-    // Reset pagination on filter change
     useEffect(() => {
         setCurrentPage(1);
     }, [selectedBatchCode, searchTerm]);
@@ -122,13 +121,14 @@ export default function IssuedCertificatesReportPage() {
 
         setIsExporting(true);
         try {
-            const headers = ['Student ID', 'Full Name', 'Name on Certificate', 'Certificate ID', 'Transcript ID', 'Status'];
+            const headers = ['Student ID', 'Full Name', 'Name on Certificate', 'Certificate ID', 'Transcript ID', 'Workshop Cert ID', 'Status'];
             const rows = filteredGroupedData.map(s => [
                 s.student_number,
                 s.full_name,
                 s.name_on_certificate,
                 s.certificate_id,
                 s.transcript_id,
+                s.workshop_certificate_id,
                 s.status
             ]);
 
@@ -238,9 +238,9 @@ export default function IssuedCertificatesReportPage() {
                                         <TableRow>
                                             <TableHead className="w-[150px]">Student ID</TableHead>
                                             <TableHead>Full Name</TableHead>
-                                            <TableHead>Name on Cert.</TableHead>
                                             <TableHead>Certificate ID</TableHead>
                                             <TableHead>Transcript ID</TableHead>
+                                            <TableHead>Workshop Cert ID</TableHead>
                                             <TableHead className="text-right pr-6">Status</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -249,7 +249,6 @@ export default function IssuedCertificatesReportPage() {
                                             <TableRow key={s.student_number}>
                                                 <TableCell className="font-mono font-bold text-sm">{s.student_number}</TableCell>
                                                 <TableCell className="text-xs">{s.full_name}</TableCell>
-                                                <TableCell className="text-xs font-medium">{s.name_on_certificate}</TableCell>
                                                 <TableCell>
                                                     {s.certificate_id ? (
                                                         <Badge variant="outline" className="gap-1 font-mono text-[10px] bg-primary/5 border-primary/20">
@@ -261,6 +260,13 @@ export default function IssuedCertificatesReportPage() {
                                                     {s.transcript_id ? (
                                                         <Badge variant="outline" className="gap-1 font-mono text-[10px] bg-blue-50 border-blue-200 text-blue-700">
                                                             <FileText className="h-2.5 w-2.5 text-blue-600" /> {s.transcript_id}
+                                                        </Badge>
+                                                    ) : <span className="text-[10px] text-muted-foreground italic">Pending</span>}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {s.workshop_certificate_id ? (
+                                                        <Badge variant="outline" className="gap-1 font-mono text-[10px] bg-orange-50 border-orange-200 text-orange-700">
+                                                            <BookText className="h-2.5 w-2.5 text-orange-600" /> {s.workshop_certificate_id}
                                                         </Badge>
                                                     ) : <span className="text-[10px] text-muted-foreground italic">Pending</span>}
                                                 </TableCell>

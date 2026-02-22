@@ -35,10 +35,8 @@ export default function CourseCompletionReportPage() {
     const [itemsPerPage, setItemsPerPage] = useState(25);
     const [isExporting, setIsExporting] = useState(false);
     
-    // Detailed student data cache
     const [studentDataMap, setStudentDataMap] = useState<Map<string, FullStudentData>>(new Map());
 
-    // --- Master Data Fetching ---
     const { data: parentCourses, isLoading: isLoadingParentCourses } = useQuery<ParentCourse[]>({
         queryKey: ['parentCoursesForReport'],
         queryFn: getParentCourses,
@@ -51,25 +49,22 @@ export default function CourseCompletionReportPage() {
         staleTime: Infinity,
     });
 
-    // Filter batches based on selected parent course
     const filteredBatches = useMemo(() => {
         if (!allBatches || !selectedParentCourseId) return [];
         return allBatches.filter(b => b.parent_course_id === selectedParentCourseId);
     }, [allBatches, selectedParentCourseId]);
 
-    // --- Student List Fetching ---
     const { data: students, isLoading: isLoadingStudents, isError, error } = useQuery<StudentInBatch[]>({
         queryKey: ['studentsByBatchForReport', selectedBatchCode],
         queryFn: () => getStudentsByCourseCode(selectedBatchCode),
         enabled: !!selectedBatchCode,
     });
 
-    // --- Generated Certificates Fetching ---
     const { data: batchCertificates, isLoading: isLoadingBatchCerts } = useQuery<GeneratedCertificateBatchInfo[]>({
         queryKey: ['generatedCertsByBatch', selectedBatchCode],
         queryFn: () => getGeneratedCertificatesByBatch(selectedBatchCode),
         enabled: !!selectedBatchCode,
-        staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+        staleTime: 1000 * 60 * 5,
     });
 
     const batchCertificatesMap = useMemo(() => {
@@ -82,7 +77,6 @@ export default function CourseCompletionReportPage() {
         return map;
     }, [batchCertificates]);
 
-    // --- UI State Logic ---
     useEffect(() => {
         setCurrentPage(1);
     }, [selectedBatchCode, searchTerm, itemsPerPage]);
@@ -101,7 +95,6 @@ export default function CourseCompletionReportPage() {
         return filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
     }, [filteredStudents, currentPage, itemsPerPage]);
 
-    // --- Detail Data Fetching (Batched for current page to optimize server load) ---
     const studentUsernamesToFetch = useMemo(() => {
         return paginatedStudents
             .map(s => s.username)
@@ -112,8 +105,6 @@ export default function CourseCompletionReportPage() {
         queryKey: ['batchCompletionDetails', studentUsernamesToFetch],
         queryFn: async () => {
             if (studentUsernamesToFetch.length === 0) return null;
-            
-            // Limit concurrency: Fetch in groups of 5 to avoid overwhelming the server
             const results: (FullStudentData | null)[] = [];
             const chunkSize = 5;
             for (let i = 0; i < studentUsernamesToFetch.length; i += chunkSize) {
@@ -123,7 +114,6 @@ export default function CourseCompletionReportPage() {
                 );
                 results.push(...chunkResults);
             }
-            
             setStudentDataMap(prev => {
                 const newMap = new Map(prev);
                 results.forEach((data, index) => {
@@ -137,7 +127,6 @@ export default function CourseCompletionReportPage() {
         refetchOnWindowFocus: false,
     });
 
-    // --- Handlers ---
     const handlePageInputChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             const pageNum = parseInt(e.currentTarget.value, 10);
@@ -160,7 +149,7 @@ export default function CourseCompletionReportPage() {
             toast({ title: 'Preparing Export', description: 'Fetching detailed status in batches...' });
             
             const allFullData: (FullStudentData | null)[] = [];
-            const batchSize = 10; // Fetch 10 at a time for export
+            const batchSize = 10;
             
             for (let i = 0; i < students.length; i += batchSize) {
                 const batch = students.slice(i, i + batchSize);
@@ -168,14 +157,12 @@ export default function CourseCompletionReportPage() {
                     batch.map(s => getStudentFullInfo(s.username).catch(() => null))
                 );
                 allFullData.push(...batchResults);
-                
-                // Small delay to let server breathe
                 if (i + batchSize < students.length) {
                     await new Promise(resolve => setTimeout(resolve, 200));
                 }
             }
 
-            const headers = ['Student ID', 'Full Name', 'Batch', 'Status', 'Avg Grade (%)', 'Certificate ID', 'Transcript ID', 'Missing Criteria'];
+            const headers = ['Student ID', 'Full Name', 'Batch', 'Status', 'Avg Grade (%)', 'Certificate ID', 'Transcript ID', 'Workshop Cert ID', 'Missing Criteria'];
             const rows = students.map((s, idx) => {
                 const data = allFullData[idx];
                 const enrollment = data ? Object.values(data.studentEnrollments).find((e: any) => e.course_code === selectedBatchCode) : null;
@@ -185,6 +172,7 @@ export default function CourseCompletionReportPage() {
                 const certs = batchCertificatesMap.get(s.username) || [];
                 const certId = certs.find(c => c.document_type === 'Certificate')?.certificate_id || '';
                 const transId = certs.find(c => c.document_type === 'Transcript')?.certificate_id || '';
+                const workshopId = certs.find(c => c.document_type === 'Workshop-Certificate')?.certificate_id || '';
 
                 return [
                     s.username,
@@ -194,6 +182,7 @@ export default function CourseCompletionReportPage() {
                     enrollment?.assignment_grades.average_grade || '0.00',
                     certId,
                     transId,
+                    workshopId,
                     missing
                 ];
             });
@@ -316,7 +305,6 @@ export default function CourseCompletionReportPage() {
                                             const enrollment = data ? Object.values(data.studentEnrollments).find(e => e.course_code === selectedBatchCode) : null;
                                             const isCompleted = enrollment?.certificate_eligibility || false;
                                             const isRowLoading = isLoadingDetails && !data;
-                                            
                                             const issuedCerts = batchCertificatesMap.get(s.username) || [];
 
                                             return (
