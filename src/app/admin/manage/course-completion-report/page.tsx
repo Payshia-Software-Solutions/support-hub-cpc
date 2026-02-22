@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -6,7 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getParentCourses, getBatches } from '@/lib/actions/courses';
 import { getStudentsByCourseCode } from '@/lib/actions/delivery';
 import { getStudentFullInfo } from '@/lib/actions/users';
-import type { ParentCourse, Batch, StudentInBatch, FullStudentData } from '@/lib/types';
+import { getGeneratedCertificatesByBatch } from '@/lib/actions/certificates';
+import type { ParentCourse, Batch, StudentInBatch, FullStudentData, GeneratedCertificateBatchInfo } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Search, FileDown, Loader2, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
+import { Search, FileDown, Loader2, CheckCircle, XCircle, AlertCircle, Info, Award } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import {
@@ -63,6 +63,24 @@ export default function CourseCompletionReportPage() {
         queryFn: () => getStudentsByCourseCode(selectedBatchCode),
         enabled: !!selectedBatchCode,
     });
+
+    // --- Generated Certificates Fetching ---
+    const { data: batchCertificates, isLoading: isLoadingBatchCerts } = useQuery<GeneratedCertificateBatchInfo[]>({
+        queryKey: ['generatedCertsByBatch', selectedBatchCode],
+        queryFn: () => getGeneratedCertificatesByBatch(selectedBatchCode),
+        enabled: !!selectedBatchCode,
+        staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    });
+
+    const batchCertificatesMap = useMemo(() => {
+        if (!batchCertificates) return new Map<string, GeneratedCertificateBatchInfo[]>();
+        const map = new Map<string, GeneratedCertificateBatchInfo[]>();
+        batchCertificates.forEach(cert => {
+            const current = map.get(cert.student_number) || [];
+            map.set(cert.student_number, [...current, cert]);
+        });
+        return map;
+    }, [batchCertificates]);
 
     // --- UI State Logic ---
     useEffect(() => {
@@ -157,12 +175,16 @@ export default function CourseCompletionReportPage() {
                 }
             }
 
-            const headers = ['Student ID', 'Full Name', 'Batch', 'Status', 'Avg Grade (%)', 'Missing Criteria'];
+            const headers = ['Student ID', 'Full Name', 'Batch', 'Status', 'Avg Grade (%)', 'Certificate ID', 'Transcript ID', 'Missing Criteria'];
             const rows = students.map((s, idx) => {
                 const data = allFullData[idx];
                 const enrollment = data ? Object.values(data.studentEnrollments).find((e: any) => e.course_code === selectedBatchCode) : null;
                 const isCompleted = enrollment?.certificate_eligibility || false;
                 const missing = enrollment ? enrollment.criteria_details.filter((c: any) => !c.evaluation.completed).map((c: any) => c.list_name).join('; ') : 'Data Load Error';
+                
+                const certs = batchCertificatesMap.get(s.username) || [];
+                const certId = certs.find(c => c.document_type === 'Certificate')?.certificate_id || '';
+                const transId = certs.find(c => c.document_type === 'Transcript')?.certificate_id || '';
 
                 return [
                     s.username,
@@ -170,6 +192,8 @@ export default function CourseCompletionReportPage() {
                     selectedBatchCode,
                     isCompleted ? 'Completed' : 'Incomplete',
                     enrollment?.assignment_grades.average_grade || '0.00',
+                    certId,
+                    transId,
                     missing
                 ];
             });
@@ -200,7 +224,7 @@ export default function CourseCompletionReportPage() {
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-headline font-semibold">Course Completion Report</h1>
-                    <p className="text-muted-foreground">Monitor and export students' progress and eligibility across batches.</p>
+                    <p className="text-muted-foreground">Monitor and export students' progress and issued certificates.</p>
                 </div>
                 <Button onClick={handleExport} disabled={!selectedBatchCode || isExporting || isLoadingStudents}>
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
@@ -269,7 +293,7 @@ export default function CourseCompletionReportPage() {
                         <CardTitle>Batch Completion Status: {selectedBatchCode}</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        {isLoadingStudents ? (
+                        {isLoadingStudents || isLoadingBatchCerts ? (
                             <div className="p-8 space-y-4"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>
                         ) : isError ? (
                             <Alert variant="destructive" className="m-6"><AlertCircle className="h-4 w-4" /><AlertTitle>Data Load Error</AlertTitle><AlertDescription>{(error as Error).message}</AlertDescription></Alert>
@@ -280,6 +304,7 @@ export default function CourseCompletionReportPage() {
                                         <TableRow>
                                             <TableHead className="w-[150px]">Student ID</TableHead>
                                             <TableHead>Full Name</TableHead>
+                                            <TableHead>Generated Docs</TableHead>
                                             <TableHead>Avg Grade</TableHead>
                                             <TableHead className="w-[180px]">Status</TableHead>
                                             <TableHead className="text-right pr-6">Eligibility Details</TableHead>
@@ -291,11 +316,37 @@ export default function CourseCompletionReportPage() {
                                             const enrollment = data ? Object.values(data.studentEnrollments).find(e => e.course_code === selectedBatchCode) : null;
                                             const isCompleted = enrollment?.certificate_eligibility || false;
                                             const isRowLoading = isLoadingDetails && !data;
+                                            
+                                            const issuedCerts = batchCertificatesMap.get(s.username) || [];
 
                                             return (
                                                 <TableRow key={s.student_course_id}>
                                                     <TableCell className="font-mono font-bold text-sm">{s.username}</TableCell>
                                                     <TableCell className="font-medium">{s.full_name}</TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {issuedCerts.length > 0 ? (
+                                                                issuedCerts.map(cert => (
+                                                                    <TooltipProvider key={cert.certificate_id}>
+                                                                        <Tooltip>
+                                                                            <TooltipTrigger asChild>
+                                                                                <Badge variant="outline" className="h-5 px-1.5 text-[10px] gap-1 font-mono">
+                                                                                    <Award className="h-2.5 w-2.5 text-primary" />
+                                                                                    {cert.certificate_id}
+                                                                                </Badge>
+                                                                            </TooltipTrigger>
+                                                                            <TooltipContent>
+                                                                                <p className="text-xs font-bold">{cert.document_type}</p>
+                                                                                <p className="text-[10px] text-muted-foreground">ID: {cert.certificate_id}</p>
+                                                                            </TooltipContent>
+                                                                        </Tooltip>
+                                                                    </TooltipProvider>
+                                                                ))
+                                                            ) : (
+                                                                <span className="text-[10px] text-muted-foreground italic">None issued</span>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
                                                     <TableCell>
                                                         {isRowLoading ? <Skeleton className="h-4 w-12" /> : 
                                                          enrollment ? <span className="font-mono text-xs">{parseFloat(enrollment.assignment_grades.average_grade).toFixed(2)}%</span> : "N/A"}
@@ -340,7 +391,7 @@ export default function CourseCompletionReportPage() {
                                                 </TableRow>
                                             )
                                         }) : (
-                                            <TableRow><TableCell colSpan={5} className="text-center h-32 text-muted-foreground italic">No students found.</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground italic">No students found.</TableCell></TableRow>
                                         )}
                                     </TableBody>
                                 </Table>

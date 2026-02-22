@@ -1041,3 +1041,14 @@ export interface TcPaymentRecord {
     record_status: string;
     payment_amount: string;
 }
+
+export interface GeneratedCertificateBatchInfo {
+    student_number: string;
+    full_name: string;
+    name_on_certificate: string;
+    course_code: string;
+    document_type: string;
+    print_status: string;
+    certificate_id: string;
+    enrollment_key: string;
+}
