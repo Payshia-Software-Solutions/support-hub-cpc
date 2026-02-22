@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -16,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Search, FileDown, Loader2, CheckCircle, XCircle, AlertCircle, Info, Award } from 'lucide-react';
+import { Search, FileDown, Loader2, CheckCircle, XCircle, AlertCircle, Info, Award, Phone, MapPin } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import {
@@ -163,7 +164,7 @@ export default function CourseCompletionReportPage() {
                 }
             }
 
-            const headers = ['Course Name', 'Student ID', 'Full Name', 'Batch', 'Status', 'Avg Grade (%)', 'Certificate ID', 'Transcript ID', 'Workshop Cert ID', 'Missing Criteria'];
+            const headers = ['Course Name', 'Student ID', 'Full Name', 'Phone 1', 'Phone 2', 'Address', 'Batch', 'Status', 'Avg Grade (%)', 'Certificate ID', 'Transcript ID', 'Workshop Cert ID', 'Missing Criteria'];
             const rows = students.map((s, idx) => {
                 const data = allFullData[idx];
                 const enrollment = data ? Object.values(data.studentEnrollments).find((e: any) => e.course_code === selectedBatchCode) : null;
@@ -175,10 +176,15 @@ export default function CourseCompletionReportPage() {
                 const transId = certs.find(c => c.document_type === 'Transcript')?.certificate_id || '';
                 const workshopId = certs.find(c => c.document_type === 'Workshop-Certificate')?.certificate_id || '';
 
+                const fullAddress = data ? [data.studentInfo.address_line_1, data.studentInfo.address_line_2, data.studentInfo.city, data.studentInfo.district].filter(Boolean).join(', ') : '';
+
                 return [
                     courseName,
                     s.username,
                     s.full_name,
+                    data?.studentInfo.telephone_1 || '',
+                    data?.studentInfo.telephone_2 || '',
+                    fullAddress,
                     selectedBatchCode,
                     isCompleted ? 'Completed' : 'Incomplete',
                     enrollment?.assignment_grades.average_grade || '0.00',
@@ -293,11 +299,13 @@ export default function CourseCompletionReportPage() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="w-[150px]">Student ID</TableHead>
+                                            <TableHead className="w-[120px]">Student ID</TableHead>
                                             <TableHead>Full Name</TableHead>
+                                            <TableHead>Contact</TableHead>
+                                            <TableHead className="max-w-[150px]">Address</TableHead>
                                             <TableHead>Generated Docs</TableHead>
                                             <TableHead>Avg Grade</TableHead>
-                                            <TableHead className="w-[180px]">Status</TableHead>
+                                            <TableHead className="w-[150px]">Status</TableHead>
                                             <TableHead className="text-right pr-6">Eligibility Details</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -311,8 +319,26 @@ export default function CourseCompletionReportPage() {
 
                                             return (
                                                 <TableRow key={s.student_course_id}>
-                                                    <TableCell className="font-mono font-bold text-sm">{s.username}</TableCell>
-                                                    <TableCell className="font-medium">{s.full_name}</TableCell>
+                                                    <TableCell className="font-mono font-bold text-xs">{s.username}</TableCell>
+                                                    <TableCell className="text-xs font-medium">{s.full_name}</TableCell>
+                                                    <TableCell className="text-[10px]">
+                                                        {isRowLoading ? <Skeleton className="h-4 w-20" /> : 
+                                                         data ? (
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="flex items-center gap-1"><Phone className="h-2.5 w-2.5" />{data.studentInfo.telephone_1}</span>
+                                                                {data.studentInfo.telephone_2 && <span className="text-muted-foreground">{data.studentInfo.telephone_2}</span>}
+                                                            </div>
+                                                         ) : "N/A"}
+                                                    </TableCell>
+                                                    <TableCell className="text-[10px] max-w-[150px] truncate">
+                                                        {isRowLoading ? <Skeleton className="h-4 w-32" /> : 
+                                                         data ? (
+                                                            <div className="flex items-start gap-1">
+                                                                <MapPin className="h-2.5 w-2.5 shrink-0 mt-0.5" />
+                                                                <span className="truncate">{data.studentInfo.address_line_1}, {data.studentInfo.city}</span>
+                                                            </div>
+                                                         ) : "N/A"}
+                                                    </TableCell>
                                                     <TableCell>
                                                         <div className="flex flex-wrap gap-1">
                                                             {issuedCerts.length > 0 ? (
@@ -381,7 +407,7 @@ export default function CourseCompletionReportPage() {
                                                 </TableRow>
                                             )
                                         }) : (
-                                            <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground italic">No students found.</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={8} className="text-center h-32 text-muted-foreground italic">No students found.</TableCell></TableRow>
                                         )}
                                     </TableBody>
                                 </Table>
