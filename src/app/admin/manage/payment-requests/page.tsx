@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -237,7 +236,7 @@ export default function PaymentRequestsPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Pending</CardTitle><Hourglass className="w-4 h-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={requestStats.status.pending} /></div></CardContent></Card>
                     <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Approved</CardTitle><CheckCircle className="w-4 h-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={requestStats.status.approved} /></div></CardContent></Card>
-                    <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Rejected</CardTitle><XCircle className="w-4 h-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={requestStats.status.rejected} /></div></CardContent></Card>
+                    <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Rejected</CardTitle><XCircle className="w-4 h-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={count} /></div></CardContent></Card>
                     <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total</CardTitle><Package className="w-4 h-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={requestStats.status.total} /></div></CardContent></Card>
                 </div>
             </section>
@@ -383,7 +382,7 @@ export default function PaymentRequestsPage() {
                                     type="number"
                                     defaultValue={currentPage}
                                     onKeyDown={handlePageInputChange}
-                                    className="h-8 w-12 mx-2 text-center"
+                                    className="h-8 w-[200px] mx-2 text-center"
                                 />
                                 of {totalPages}
                             </div>
@@ -420,5 +419,3 @@ export default function PaymentRequestsPage() {
         </div>
     );
 }
-
-    

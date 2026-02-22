@@ -452,3 +452,13 @@ export const submitSecondPayment = async (payload: FormData): Promise<any> => {
     }
     return response.json();
 };
+
+export const deleteConvocationPayment = async (registrationId: string, paymentId: string): Promise<void> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/${registrationId}/payment/${paymentId}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete payment record' }));
+        throw new Error(errorData.message || 'Failed to delete payment record');
+    }
+};

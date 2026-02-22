@@ -11,10 +11,10 @@ import {
     getConvocationSessionCounts, 
     getConvocationRegistrationsByStudent,
     getCertificateOrdersByStudent,
-    getTcPayments
+    getTcPayments,
+    deleteConvocationPayment
 } from '@/lib/actions/certificates';
 import { getStudentFullInfo } from '@/lib/actions/users';
-import { getPaymentRequestsByReference } from '@/lib/api';
 import type { 
     ConvocationRegistration, 
     ConvocationPackage, 
@@ -24,15 +24,14 @@ import type {
     StudentEnrollment,
     TcPaymentRecord,
     UserFullDetails,
-    StudentBalanceData,
-    PaymentRequest
+    StudentBalanceData
 } from '@/lib/types';
 import Image from 'next/image';
 import { format } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +42,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Banknote, UserCheck, ListOrdered, Calculator, FileText, Paperclip, Hourglass } from 'lucide-react';
+import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Banknote, UserCheck, ListOrdered, Calculator, FileText, Paperclip, Hourglass, AlertTriangle, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -60,7 +59,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { EnrollmentDetailAccordion } from './EnrollmentDetailAccordion';
 import { ViewSlipDialog } from './ViewSlipDialog';
 
-const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
 const PARENT_SEAT_RATE = 750;
 
 function TempUserInfo({ user }: { user: any }) {
@@ -101,8 +99,8 @@ function RegisteredStudentInfo({ user, studentNumber }: { user: UserFullDetails,
                 {isLoadingBalance ? <Skeleton className="h-40"/> : balanceData && (
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4 text-center">
-                            <Card><CardHeader className="p-2"><CardTitle className="text-xs">Total Paid</CardTitle></CardHeader><CardContent className="p-2 pt-0"><p className="text-sm font-bold">LKR {balanceData.studentBalance.totalPaymentAmount.toLocaleString()}</p></CardContent></Card>
-                            <Card><CardHeader className="p-2"><CardTitle className="text-xs">Outstanding</CardTitle></CardHeader><CardContent className="p-2 pt-0"><p className="text-sm font-bold text-destructive">LKR {balanceData.studentBalance.studentBalance.toLocaleString()}</p></CardContent></Card>
+                            <Card><CardHeader className="p-2"><CardTitle className="text-xs">Total Paid</CardTitle></CardHeader><CardContent className="p-2 pt-0"><p className="text-sm font-bold">LKR {balanceData.totalPaymentAmount.toLocaleString()}</p></CardContent></Card>
+                            <Card><CardHeader className="p-2"><CardTitle className="text-xs">Outstanding</CardTitle></CardHeader><CardContent className="p-2 pt-0"><p className="text-sm font-bold text-destructive">LKR {balanceData.studentBalance.toLocaleString()}</p></CardContent></Card>
                         </div>
                     </div>
                 )}
@@ -110,6 +108,101 @@ function RegisteredStudentInfo({ user, studentNumber }: { user: UserFullDetails,
         </Tabs>
     );
 };
+
+function DuplicateSlipCheck({ hashValue, currentRegistrationId }: { hashValue: string, currentRegistrationId: string }) {
+    const [isInfoOpen, setIsInfoOpen] = useState(false);
+
+    const { data: duplicateRecords, isLoading, isError } = useQuery<any[]>({
+        queryKey: ['duplicateCheck', hashValue],
+        queryFn: async () => {
+            if (!hashValue) return [];
+            const response = await fetch(`https://qa-api.pharmacollege.lk/payment-portal-requests/check-hash?hashValue=${hashValue}`);
+            if (response.status === 404) return [];
+            if (!response.ok) throw new Error('Failed check');
+            return response.json();
+        },
+        enabled: !!hashValue,
+    });
+
+    if (isLoading) return <div className="text-[10px] text-muted-foreground animate-pulse flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin"/> Verifying...</div>;
+    
+    if (isError || !hashValue) return null;
+
+    // Filter out the record we are currently viewing
+    const otherRecords = duplicateRecords?.filter(r => 
+        (r.registration_id && String(r.registration_id) !== String(currentRegistrationId)) || 
+        (r.id && String(r.id) !== String(currentRegistrationId))
+    ) || [];
+
+    const isDuplicate = otherRecords.length > 0;
+
+    if (isDuplicate) {
+        return (
+            <div className="mt-1">
+                <div className="flex items-center gap-2 text-destructive font-bold text-[10px] bg-destructive/10 p-1 px-2 rounded w-fit border border-destructive/20">
+                    <AlertTriangle className="h-3 w-3" />
+                    DUPLICATE DETECTED
+                    <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-destructive underline ml-1 font-bold">
+                                View Records
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                                <DialogTitle>Conflicting Records</DialogTitle>
+                                <DialogDescription>
+                                    The following records were found sharing the same payment slip hash.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="mt-4 border rounded-md overflow-hidden">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="text-xs">Student ID</TableHead>
+                                            <TableHead className="text-xs">Ref #</TableHead>
+                                            <TableHead className="text-xs">Amount</TableHead>
+                                            <TableHead className="text-xs">Status</TableHead>
+                                            <TableHead className="text-xs">Date</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {duplicateRecords?.map((record, idx) => (
+                                            <TableRow key={idx} className={cn(String(record.registration_id || record.id) === String(currentRegistrationId) && "bg-muted/50 font-bold")}>
+                                                <TableCell className="text-xs">{record.unique_number || record.student_number}</TableCell>
+                                                <TableCell className="text-xs">{record.reference_number || record.payment_reference || record.id}</TableCell>
+                                                <TableCell className="text-xs">LKR {record.payment_amount || record.paid_amount}</TableCell>
+                                                <TableCell className="text-xs">
+                                                    <Badge variant="outline" className="text-[10px] uppercase h-4">{record.payment_status || record.registration_status}</Badge>
+                                                </TableCell>
+                                                <TableCell className="text-xs">
+                                                    {record.registered_at ? format(new Date(record.registered_at), 'yyyy-MM-dd') : 
+                                                     record.paid_date ? format(new Date(record.paid_date), 'yyyy-MM-dd') : 'N/A'}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button variant="secondary">Close</Button>
+                                </DialogClose>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="mt-1 flex items-center gap-1 text-green-600 font-bold text-[10px] bg-green-50 p-1 px-2 rounded w-fit border border-green-200">
+            <CheckCircle className="h-3 w-3" />
+            NO DUPLICATES
+        </div>
+    );
+}
 
 export const RegistrationDetailDialog = ({ registration, open, onOpenChange, packages }: { 
     registration: ConvocationRegistration | null, 
@@ -121,12 +214,10 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const { user } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     
-    // Dialog control states
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
     const [isConfirmAttendanceDialogOpen, setIsConfirmAttendanceDialogOpen] = useState(false);
     const [isPackageConfirmOpen, setIsPackageConfirmOpen] = useState(false);
 
-    // Form state
     const [editPackageId, setEditPackageId] = useState('');
     const [pendingPackageId, setPendingPackageId] = useState('');
     const [editSession, setEditSession] = useState<'1' | '2'>('1');
@@ -135,12 +226,10 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     const [editPhone, setEditPhone] = useState('');
     const [editCourseIds, setEditCourseIds] = useState<string[]>([]);
 
-    // Specific Update States
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentStatus, setPaymentStatus] = useState('');
     const [ceremonyNumber, setCeremonyNumber] = useState('');
 
-    // --- Hooks ---
     const { data: studentInfo, isLoading: isLoadingStudentData } = useQuery<FullStudentData>({
         queryKey: ['studentFullInfoForConvocationDetail', registration?.student_number],
         queryFn: () => getStudentFullInfo(registration!.student_number),
@@ -159,9 +248,12 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         return allTcPayments.filter(p => p.reference_key === referKey);
     }, [allTcPayments, registration]);
 
-    const { data: portalPayments, isLoading: isLoadingPortalSlips } = useQuery<PaymentRequest[]>({
+    const { data: portalPayments, isLoading: isLoadingPortalSlips } = useQuery<any[]>({
         queryKey: ['paymentRequests', registration?.student_number],
-        queryFn: () => getPaymentRequestsByReference(registration!.student_number),
+        queryFn: () => {
+            if (!registration?.student_number) return Promise.resolve([]);
+            return fetch(`https://qa-api.pharmacollege.lk/payment-portal-requests/by-reference/${registration.student_number}`).then(res => res.status === 404 ? [] : res.json());
+        },
         enabled: !!registration?.student_number,
     });
 
@@ -243,6 +335,15 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Confirmation Failed', description: error.message });
         },
+    });
+
+    const deletePaymentMutation = useMutation({
+        mutationFn: (paymentId: string) => deleteConvocationPayment(registration!.registration_id, paymentId),
+        onSuccess: () => {
+            toast({ title: 'Payment Deleted', description: 'The verified payment record has been removed.' });
+            refreshAllData();
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Deletion Failed', description: err.message })
     });
 
     const totalPaidFromRecords = useMemo(() => {
@@ -375,6 +476,12 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             return;
         }
         updateCeremonyMutation.mutate(ceremonyNumber);
+    };
+
+    const handleDeletePayment = (paymentId: string) => {
+        if (confirm('Are you sure you want to delete this payment record? This will affect the student balance.')) {
+            deletePaymentMutation.mutate(paymentId);
+        }
     };
 
     if (!open || !registration) return null;
@@ -748,6 +855,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                             <TableHead className="text-[10px] h-8">Date</TableHead>
                                                             <TableHead className="text-[10px] h-8">Transaction ID</TableHead>
                                                             <TableHead className="text-[10px] h-8 text-right">Amount</TableHead>
+                                                            <TableHead className="text-[10px] h-8 text-right">Action</TableHead>
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
@@ -756,6 +864,21 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                                 <TableCell className="text-[10px] py-1">{format(new Date(payment.created_at), 'yyyy-MM-dd')}</TableCell>
                                                                 <TableCell className="text-[10px] py-1 font-mono">{payment.transaction_id || 'N/A'}</TableCell>
                                                                 <TableCell className="text-[10px] py-1 text-right font-semibold">LKR {parseFloat(payment.payment_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell>
+                                                                <TableCell className="text-[10px] py-1 text-right">
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="icon" 
+                                                                        className="h-6 w-6 text-destructive hover:bg-destructive/10"
+                                                                        onClick={() => handleDeletePayment(payment.id)}
+                                                                        disabled={deletePaymentMutation.isPending}
+                                                                    >
+                                                                        {deletePaymentMutation.isPending && deletePaymentMutation.variables === payment.id ? (
+                                                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                                                        ) : (
+                                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                                        )}
+                                                                    </Button>
+                                                                </TableCell>
                                                             </TableRow>
                                                         ))}
                                                     </TableBody>
@@ -778,20 +901,28 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                         <div className="grid grid-cols-1 gap-2">
                                             {/* Initial Slip */}
                                             {registration.image_path ? (
-                                                <ViewSlipDialog 
-                                                    title="Initial Booking Slip"
-                                                    slipPath={registration.image_path}
-                                                    studentName={registration.student_number}
-                                                    trigger={
-                                                        <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3">
-                                                            <FileText className="h-4 w-4 mr-3 text-primary" />
-                                                            <div className="text-left">
-                                                                <p className="text-xs font-semibold">Initial Registration Slip</p>
-                                                                <p className="text-[10px] text-muted-foreground">Main verification</p>
-                                                            </div>
-                                                        </Button>
-                                                    }
-                                                />
+                                                <div className="flex flex-col gap-1">
+                                                    <ViewSlipDialog 
+                                                        title="Initial Booking Slip"
+                                                        slipPath={registration.image_path}
+                                                        studentName={registration.student_number}
+                                                        trigger={
+                                                            <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3">
+                                                                <FileText className="h-4 w-4 mr-3 text-primary" />
+                                                                <div className="text-left">
+                                                                    <p className="text-xs font-semibold">Initial Registration Slip</p>
+                                                                    <p className="text-[10px] text-muted-foreground">Main verification</p>
+                                                                </div>
+                                                            </Button>
+                                                        }
+                                                    />
+                                                    {registration.hash_value && (
+                                                        <DuplicateSlipCheck 
+                                                            hashValue={registration.hash_value} 
+                                                            currentRegistrationId={registration.registration_id} 
+                                                        />
+                                                    )}
+                                                </div>
                                             ) : (
                                                 <div className="h-16 border-2 border-dashed rounded-md flex items-center justify-center text-muted-foreground italic text-xs">No initial slip</div>
                                             )}
@@ -800,21 +931,28 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                             {isLoadingPortalSlips ? (
                                                 <Skeleton className="h-10 w-full" />
                                             ) : balanceSlips.map((p, idx) => (
-                                                <ViewSlipDialog 
-                                                    key={p.id}
-                                                    title={`Balance Payment Slip #${idx + 1}`}
-                                                    slipPath={p.slip_path}
-                                                    studentName={registration.student_number}
-                                                    trigger={
-                                                        <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3 border-dashed">
-                                                            <FileText className="h-4 w-4 mr-3 text-orange-500" />
-                                                            <div className="text-left">
-                                                                <p className="text-xs font-semibold">Balance Slip ({format(new Date(p.created_at), 'MMM d')})</p>
-                                                                <p className="text-[10px] text-muted-foreground">Status: {p.payment_status}</p>
-                                                            </div>
-                                                        </Button>
-                                                    }
-                                                />
+                                                <div key={p.id} className="flex flex-col gap-1">
+                                                    <ViewSlipDialog 
+                                                        title={`Balance Payment Slip #${idx + 1}`}
+                                                        slipPath={p.slip_path}
+                                                        studentName={registration.student_number}
+                                                        trigger={
+                                                            <Button variant="outline" size="sm" className="justify-start h-auto py-2.5 px-3 border-dashed">
+                                                                <FileText className="h-4 w-4 mr-3 text-orange-500" />
+                                                                <div className="text-left">
+                                                                    <p className="text-xs font-semibold">Balance Slip ({format(new Date(p.created_at), 'MMM d')})</p>
+                                                                    <p className="text-[10px] text-muted-foreground">Status: {p.payment_status}</p>
+                                                                </div>
+                                                            </Button>
+                                                        }
+                                                    />
+                                                    {p.hash_value && (
+                                                        <DuplicateSlipCheck 
+                                                            hashValue={p.hash_value} 
+                                                            currentRegistrationId={p.id} 
+                                                        />
+                                                    )}
+                                                </div>
                                             ))}
                                         </div>
                                     </div>
@@ -864,10 +1002,11 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                             </DialogHeader>
                             <div className="py-4 space-y-2">
                                 <Label>Ceremony Number</Label>
-                                <Input 
+                                <input 
                                     placeholder="Enter ceremony number (e.g., 402)" 
                                     value={ceremonyNumber} 
                                     onChange={e => setCeremonyNumber(e.target.value)} 
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 />
                             </div>
                             <DialogFooter>
