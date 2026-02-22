@@ -11,10 +11,10 @@ import {
     getConvocationSessionCounts, 
     getConvocationRegistrationsByStudent,
     getCertificateOrdersByStudent,
-    getTcPayments
+    getTcPayments,
+    deleteConvocationPayment
 } from '@/lib/actions/certificates';
 import { getStudentFullInfo } from '@/lib/actions/users';
-import { getPaymentRequestsByReference } from '@/lib/api';
 import type { 
     ConvocationRegistration, 
     ConvocationPackage, 
@@ -32,7 +32,7 @@ import { format } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +43,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Banknote, UserCheck, ListOrdered, Calculator, FileText, Paperclip, Hourglass, AlertTriangle } from 'lucide-react';
+import { Loader2, Save, Edit2, X, ChevronDown, CheckCircle, XCircle, Banknote, UserCheck, ListOrdered, Calculator, FileText, Paperclip, Hourglass, AlertTriangle, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -250,9 +250,12 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         return allTcPayments.filter(p => p.reference_key === referKey);
     }, [allTcPayments, registration]);
 
-    const { data: portalPayments, isLoading: isLoadingPortalSlips } = useQuery<PaymentRequest[]>({
+    const { data: portalPayments, isLoading: isLoadingPortalSlips } = useQuery<any[]>({
         queryKey: ['paymentRequests', registration?.student_number],
-        queryFn: () => getPaymentRequestsByReference(registration!.student_number),
+        queryFn: () => {
+            if (!registration?.student_number) return Promise.resolve([]);
+            return fetch(`https://qa-api.pharmacollege.lk/payment-portal-requests/by-reference/${registration.student_number}`).then(res => res.status === 404 ? [] : res.json());
+        },
         enabled: !!registration?.student_number,
     });
 
@@ -334,6 +337,15 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         onError: (error: Error) => {
             toast({ variant: 'destructive', title: 'Confirmation Failed', description: error.message });
         },
+    });
+
+    const deletePaymentMutation = useMutation({
+        mutationFn: (transactionId: string) => deleteConvocationPayment(registration!.registration_id, transactionId),
+        onSuccess: () => {
+            toast({ title: 'Payment Deleted', description: 'The verified payment record has been removed.' });
+            refreshAllData();
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Deletion Failed', description: err.message })
     });
 
     const totalPaidFromRecords = useMemo(() => {
@@ -466,6 +478,12 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
             return;
         }
         updateCeremonyMutation.mutate(ceremonyNumber);
+    };
+
+    const handleDeletePayment = (transactionId: string) => {
+        if (confirm('Are you sure you want to delete this payment record? This will affect the student balance.')) {
+            deletePaymentMutation.mutate(transactionId);
+        }
     };
 
     if (!open || !registration) return null;
@@ -839,6 +857,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                             <TableHead className="text-[10px] h-8">Date</TableHead>
                                                             <TableHead className="text-[10px] h-8">Transaction ID</TableHead>
                                                             <TableHead className="text-[10px] h-8 text-right">Amount</TableHead>
+                                                            <TableHead className="text-[10px] h-8 text-right">Action</TableHead>
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
@@ -847,6 +866,21 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                                 <TableCell className="text-[10px] py-1">{format(new Date(payment.created_at), 'yyyy-MM-dd')}</TableCell>
                                                                 <TableCell className="text-[10px] py-1 font-mono">{payment.transaction_id || 'N/A'}</TableCell>
                                                                 <TableCell className="text-[10px] py-1 text-right font-semibold">LKR {parseFloat(payment.payment_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell>
+                                                                <TableCell className="text-[10px] py-1 text-right">
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="icon" 
+                                                                        className="h-6 w-6 text-destructive hover:bg-destructive/10"
+                                                                        onClick={() => handleDeletePayment(payment.transaction_id)}
+                                                                        disabled={deletePaymentMutation.isPending}
+                                                                    >
+                                                                        {deletePaymentMutation.isPending && deletePaymentMutation.variables === payment.transaction_id ? (
+                                                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                                                        ) : (
+                                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                                        )}
+                                                                    </Button>
+                                                                </TableCell>
                                                             </TableRow>
                                                         ))}
                                                     </TableBody>
@@ -970,10 +1004,11 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                             </DialogHeader>
                             <div className="py-4 space-y-2">
                                 <Label>Ceremony Number</Label>
-                                <Input 
+                                <input 
                                     placeholder="Enter ceremony number (e.g., 402)" 
                                     value={ceremonyNumber} 
                                     onChange={e => setCeremonyNumber(e.target.value)} 
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 />
                             </div>
                             <DialogFooter>
