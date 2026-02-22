@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Search, FileDown, Loader2, CheckCircle, XCircle, AlertCircle, Info, Award, Phone, MapPin, Clock } from 'lucide-react';
+import { Search, FileDown, Loader2, CheckCircle, XCircle, AlertCircle, Info, Award, Phone, MapPin, Clock, Eye } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import {
@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils';
 export default function CourseCompletionReportPage() {
     const [selectedParentCourseId, setSelectedParentCourseId] = useState<string>('');
     const [selectedBatchCode, setSelectedBatchCode] = useState<string>('');
+    const [isReportViewed, setIsReportViewed] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(25);
@@ -80,7 +81,12 @@ export default function CourseCompletionReportPage() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [selectedBatchCode, searchTerm, itemsPerPage]);
+        setIsReportViewed(false); // Reset view when batch changes
+    }, [selectedBatchCode]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, itemsPerPage]);
 
     const filteredStudents = useMemo(() => {
         if (!students) return [];
@@ -124,13 +130,12 @@ export default function CourseCompletionReportPage() {
             });
             return true;
         },
-        enabled: studentUsernamesToFetch.length > 0,
+        enabled: isReportViewed && studentUsernamesToFetch.length > 0,
         refetchOnWindowFocus: false,
     });
 
     const estimatedExportTime = useMemo(() => {
         if (!students?.length) return 0;
-        // Roughly 1.5 seconds per batch of 10 students (including delay and network time)
         return Math.ceil(students.length / 10) * 1.5;
     }, [students]);
 
@@ -270,6 +275,12 @@ export default function CourseCompletionReportPage() {
                                 </SelectContent>
                             </Select>
                         </div>
+                        {selectedBatchCode && (
+                            <Button className="w-full mt-4" variant={isReportViewed ? "secondary" : "default"} onClick={() => setIsReportViewed(true)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                {isReportViewed ? "Refresh Detailed Report" : "View Detailed Report"}
+                            </Button>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -300,8 +311,8 @@ export default function CourseCompletionReportPage() {
                 </Card>
             </section>
 
-            {selectedBatchCode && (
-                <Card className="shadow-lg border-primary/10">
+            {isReportViewed && selectedBatchCode && (
+                <Card className="shadow-lg border-primary/10 animate-in fade-in-50 duration-500">
                     <CardHeader className="bg-muted/20">
                         <CardTitle>Batch Completion Status: {selectedBatchCode}</CardTitle>
                     </CardHeader>
