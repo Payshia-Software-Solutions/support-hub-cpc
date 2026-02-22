@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Search, FileDown, Loader2, CheckCircle, XCircle, AlertCircle, Info, Award, Phone, MapPin } from 'lucide-react';
+import { Search, FileDown, Loader2, CheckCircle, XCircle, AlertCircle, Info, Award, Phone, MapPin, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import {
@@ -128,6 +128,12 @@ export default function CourseCompletionReportPage() {
         refetchOnWindowFocus: false,
     });
 
+    const estimatedExportTime = useMemo(() => {
+        if (!students?.length) return 0;
+        // Roughly 1.5 seconds per batch of 10 students (including delay and network time)
+        return Math.ceil(students.length / 10) * 1.5;
+    }, [students]);
+
     const handlePageInputChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             const pageNum = parseInt(e.currentTarget.value, 10);
@@ -147,7 +153,10 @@ export default function CourseCompletionReportPage() {
 
         setIsExporting(true);
         try {
-            toast({ title: 'Preparing Export', description: 'Fetching detailed status in batches...' });
+            toast({ 
+                title: 'Preparing Export', 
+                description: `Fetching detailed status. Estimated time: ${Math.ceil(estimatedExportTime)}s...` 
+            });
             
             const courseName = parentCourses?.find(pc => pc.id === selectedParentCourseId)?.course_name || 'N/A';
             const allFullData: (FullStudentData | null)[] = [];
@@ -223,10 +232,17 @@ export default function CourseCompletionReportPage() {
                     <h1 className="text-3xl font-headline font-semibold">Course Completion Report</h1>
                     <p className="text-muted-foreground">Monitor and export students' progress and issued certificates.</p>
                 </div>
-                <Button onClick={handleExport} disabled={!selectedBatchCode || isExporting || isLoadingStudents}>
-                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
-                    {isExporting ? 'Preparing...' : 'Export Report (CSV)'}
-                </Button>
+                <div className="flex flex-col items-end gap-1">
+                    <Button onClick={handleExport} disabled={!selectedBatchCode || isExporting || isLoadingStudents}>
+                        {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                        {isExporting ? 'Preparing...' : 'Export Report (CSV)'}
+                    </Button>
+                    {selectedBatchCode && !isExporting && students && students.length > 0 && (
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> Est. Time: {Math.ceil(estimatedExportTime)}s
+                        </p>
+                    )}
+                </div>
             </header>
 
             <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
