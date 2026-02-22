@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -413,7 +412,7 @@ export default function CertificateOrderNameEditsPage() {
                             type="number"
                             defaultValue={currentPage}
                             onKeyDown={handlePageInputChange}
-                            className="h-8 w-12 mx-2 text-center"
+                            className="h-8 w-[200px] mx-2 text-center"
                         />
                         of {totalPages || 1}
                     </div>

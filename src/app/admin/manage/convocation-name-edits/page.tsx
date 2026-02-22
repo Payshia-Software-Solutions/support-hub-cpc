@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -140,7 +139,7 @@ export default function ConvocationNameEditsPage() {
                 description: `Message sent to ${variables.studenNumber} successfully.`
             });
         },
-        onError: (error: Error, variables) => {
+        onError: (error: Error) => {
             toast({
                 variant: 'destructive',
                 title: 'SMS Failed',
@@ -356,7 +355,7 @@ export default function ConvocationNameEditsPage() {
                             type="number"
                             defaultValue={currentPage}
                             onKeyDown={handlePageInputChange}
-                            className="h-8 w-12 mx-2 text-center"
+                            className="h-8 w-[200px] mx-2 text-center"
                         />
                         of {totalPages || 1}
                     </div>
