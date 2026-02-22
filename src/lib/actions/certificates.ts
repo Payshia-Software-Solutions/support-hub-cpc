@@ -453,8 +453,8 @@ export const submitSecondPayment = async (payload: FormData): Promise<any> => {
     return response.json();
 };
 
-export const deleteConvocationPayment = async (registrationId: string, transactionId: string): Promise<void> => {
-    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/${registrationId}/payment/${transactionId}`, {
+export const deleteConvocationPayment = async (registrationId: string, paymentId: string): Promise<void> => {
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-registrations/${registrationId}/payment/${paymentId}`, {
         method: 'DELETE',
     });
     if (!response.ok) {

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -337,7 +338,7 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
     });
 
     const deletePaymentMutation = useMutation({
-        mutationFn: (transactionId: string) => deleteConvocationPayment(registration!.registration_id, transactionId),
+        mutationFn: (paymentId: string) => deleteConvocationPayment(registration!.registration_id, paymentId),
         onSuccess: () => {
             toast({ title: 'Payment Deleted', description: 'The verified payment record has been removed.' });
             refreshAllData();
@@ -477,9 +478,9 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
         updateCeremonyMutation.mutate(ceremonyNumber);
     };
 
-    const handleDeletePayment = (transactionId: string) => {
+    const handleDeletePayment = (paymentId: string) => {
         if (confirm('Are you sure you want to delete this payment record? This will affect the student balance.')) {
-            deletePaymentMutation.mutate(transactionId);
+            deletePaymentMutation.mutate(paymentId);
         }
     };
 
@@ -868,10 +869,10 @@ export const RegistrationDetailDialog = ({ registration, open, onOpenChange, pac
                                                                         variant="ghost" 
                                                                         size="icon" 
                                                                         className="h-6 w-6 text-destructive hover:bg-destructive/10"
-                                                                        onClick={() => handleDeletePayment(payment.transaction_id)}
+                                                                        onClick={() => handleDeletePayment(payment.id)}
                                                                         disabled={deletePaymentMutation.isPending}
                                                                     >
-                                                                        {deletePaymentMutation.isPending && deletePaymentMutation.variables === payment.transaction_id ? (
+                                                                        {deletePaymentMutation.isPending && deletePaymentMutation.variables === payment.id ? (
                                                                             <Loader2 className="h-3 w-3 animate-spin" />
                                                                         ) : (
                                                                             <Trash2 className="h-3.5 w-3.5" />
