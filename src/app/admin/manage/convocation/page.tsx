@@ -246,10 +246,26 @@ export default function ConvocationListPage() {
         setCurrentPage(1); 
     }, [searchTerm, statusFilter, courseFilter, packageFilter, sessionFilter, sortOption]);
 
+    const totalPages = Math.ceil(filteredRegistrations.length / ITEMS_PER_PAGE);
     const paginatedRegistrations = useMemo(() => {
         return filteredRegistrations.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     }, [filteredRegistrations, currentPage]);
     
+    const handlePageInputChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            const pageNum = parseInt(e.currentTarget.value, 10);
+            if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+                setCurrentPage(pageNum);
+            } else {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Invalid Page Number',
+                    description: `Please enter a number between 1 and ${totalPages}.`
+                });
+            }
+        }
+    };
+
     const handleExport = () => {
         if (filteredRegistrations.length === 0) {
             toast({ variant: 'destructive', title: 'No data to export', description: 'Filter some data first before exporting.' });
@@ -476,8 +492,18 @@ export default function ConvocationListPage() {
                 </CardContent>
                  <CardFooter className="flex items-center justify-center space-x-2 py-4 border-t bg-muted/10">
                      <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>Previous</Button>
-                     <span className="text-sm font-medium">Page {currentPage} of {Math.ceil(filteredRegistrations.length / ITEMS_PER_PAGE) || 1}</span>
-                     <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredRegistrations.length / ITEMS_PER_PAGE)))} disabled={currentPage === Math.ceil(filteredRegistrations.length / ITEMS_PER_PAGE)}>Next</Button>
+                     <div className="flex items-center justify-center text-sm font-medium">
+                        Page 
+                        <Input
+                            key={currentPage}
+                            type="number"
+                            defaultValue={currentPage}
+                            onKeyDown={handlePageInputChange}
+                            className="h-8 w-12 mx-2 text-center"
+                        />
+                        of {totalPages || 1}
+                    </div>
+                     <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages || 1))} disabled={currentPage === totalPages || totalPages === 0}>Next</Button>
                 </CardFooter>
             </Card>
         </div>

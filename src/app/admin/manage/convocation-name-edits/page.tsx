@@ -173,6 +173,21 @@ export default function ConvocationNameEditsPage() {
         );
     }, [filteredRecords, currentPage]);
 
+    const handlePageInputChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            const pageNum = parseInt(e.currentTarget.value, 10);
+            if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+                setCurrentPage(pageNum);
+            } else {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Invalid Page Number',
+                    description: `Please enter a number between 1 and ${totalPages}.`
+                });
+            }
+        }
+    };
+
 
     if (isLoading) {
         return (
@@ -334,9 +349,17 @@ export default function ConvocationNameEditsPage() {
                      >
                         Previous
                      </Button>
-                     <span className="text-sm text-muted-foreground">
-                        Page {currentPage} of {totalPages || 1}
-                     </span>
+                     <div className="flex items-center justify-center text-sm font-medium">
+                        Page 
+                        <Input
+                            key={currentPage}
+                            type="number"
+                            defaultValue={currentPage}
+                            onKeyDown={handlePageInputChange}
+                            className="h-8 w-12 mx-2 text-center"
+                        />
+                        of {totalPages || 1}
+                    </div>
                      <Button
                         variant="outline"
                         size="sm"
