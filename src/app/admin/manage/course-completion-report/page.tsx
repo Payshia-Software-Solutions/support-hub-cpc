@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Search, FileDown, Loader2, CheckCircle, XCircle, AlertCircle, Info, ChevronDown } from 'lucide-react';
+import { Search, FileDown, Loader2, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import {
@@ -27,13 +27,12 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from '@/lib/utils';
 
-const ITEMS_PER_PAGE = 25;
-
 export default function CourseCompletionReportPage() {
     const [selectedParentCourseId, setSelectedParentCourseId] = useState<string>('');
     const [selectedBatchCode, setSelectedBatchCode] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
     const [isExporting, setIsExporting] = useState(false);
     
     // Detailed student data cache
@@ -68,7 +67,7 @@ export default function CourseCompletionReportPage() {
     // --- UI State Logic ---
     useEffect(() => {
         setCurrentPage(1);
-    }, [selectedBatchCode, searchTerm]);
+    }, [selectedBatchCode, searchTerm, itemsPerPage]);
 
     const filteredStudents = useMemo(() => {
         if (!students) return [];
@@ -79,12 +78,12 @@ export default function CourseCompletionReportPage() {
         );
     }, [students, searchTerm]);
 
-    const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
     const paginatedStudents = useMemo(() => {
-        return filteredStudents.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-    }, [filteredStudents, currentPage]);
+        return filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    }, [filteredStudents, currentPage, itemsPerPage]);
 
-    // --- Detail Data Fetching (Batched for current page) ---
+    // --- Detail Data Fetching (Batched for current page to optimize server load) ---
     const studentUsernamesToFetch = useMemo(() => {
         return paginatedStudents
             .map(s => s.username)
@@ -95,15 +94,26 @@ export default function CourseCompletionReportPage() {
         queryKey: ['batchCompletionDetails', studentUsernamesToFetch],
         queryFn: async () => {
             if (studentUsernamesToFetch.length === 0) return null;
-            const promises = studentUsernamesToFetch.map(un => getStudentFullInfo(un).catch(() => null));
-            const results = await Promise.all(promises);
             
-            const newMap = new Map(studentDataMap);
-            results.forEach((data, index) => {
-                if (data) newMap.set(studentUsernamesToFetch[index], data);
+            // Limit concurrency: Fetch in groups of 5 to avoid overwhelming the server
+            const results: (FullStudentData | null)[] = [];
+            const chunkSize = 5;
+            for (let i = 0; i < studentUsernamesToFetch.length; i += chunkSize) {
+                const chunk = studentUsernamesToFetch.slice(i, i + chunkSize);
+                const chunkResults = await Promise.all(
+                    chunk.map(un => getStudentFullInfo(un).catch(() => null))
+                );
+                results.push(...chunkResults);
+            }
+            
+            setStudentDataMap(prev => {
+                const newMap = new Map(prev);
+                results.forEach((data, index) => {
+                    if (data) newMap.set(studentUsernamesToFetch[index], data);
+                });
+                return newMap;
             });
-            setStudentDataMap(newMap);
-            return newMap;
+            return true;
         },
         enabled: studentUsernamesToFetch.length > 0,
         refetchOnWindowFocus: false,
@@ -129,15 +139,27 @@ export default function CourseCompletionReportPage() {
 
         setIsExporting(true);
         try {
-            toast({ title: 'Preparing Export', description: 'Fetching detailed status for all students...' });
+            toast({ title: 'Preparing Export', description: 'Fetching detailed status in batches...' });
             
-            // We need to fetch data for ALL students in the batch for a full report
-            const allPromises = students.map(s => getStudentFullInfo(s.username).catch(() => null));
-            const allResults = await Promise.all(allPromises);
+            const allFullData: (FullStudentData | null)[] = [];
+            const batchSize = 10; // Fetch 10 at a time for export
+            
+            for (let i = 0; i < students.length; i += batchSize) {
+                const batch = students.slice(i, i + batchSize);
+                const batchResults = await Promise.all(
+                    batch.map(s => getStudentFullInfo(s.username).catch(() => null))
+                );
+                allFullData.push(...batchResults);
+                
+                // Small delay to let server breathe
+                if (i + batchSize < students.length) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+            }
 
             const headers = ['Student ID', 'Full Name', 'Batch', 'Status', 'Avg Grade (%)', 'Missing Criteria'];
             const rows = students.map((s, idx) => {
-                const data = allResults[idx];
+                const data = allFullData[idx];
                 const enrollment = data ? Object.values(data.studentEnrollments).find((e: any) => e.course_code === selectedBatchCode) : null;
                 const isCompleted = enrollment?.certificate_eligibility || false;
                 const missing = enrollment ? enrollment.criteria_details.filter((c: any) => !c.evaluation.completed).map((c: any) => c.list_name).join('; ') : 'Data Load Error';
@@ -182,7 +204,7 @@ export default function CourseCompletionReportPage() {
                 </div>
                 <Button onClick={handleExport} disabled={!selectedBatchCode || isExporting || isLoadingStudents}>
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
-                    Export Report (CSV)
+                    {isExporting ? 'Preparing...' : 'Export Report (CSV)'}
                 </Button>
             </header>
 
@@ -190,7 +212,7 @@ export default function CourseCompletionReportPage() {
                 <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle className="text-lg">Step 1: Select Filters</CardTitle>
-                        <CardDescription>Choose a parent course then a specific batch to load student records.</CardDescription>
+                        <CardDescription>Choose a parent course then a specific batch.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
@@ -217,7 +239,7 @@ export default function CourseCompletionReportPage() {
                 <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle className="text-lg">Step 2: Refine Results</CardTitle>
-                        <CardDescription>Quick search within the loaded batch.</CardDescription>
+                        <CardDescription>Quick search and batch summary.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
@@ -268,18 +290,18 @@ export default function CourseCompletionReportPage() {
                                             const data = studentDataMap.get(s.username);
                                             const enrollment = data ? Object.values(data.studentEnrollments).find(e => e.course_code === selectedBatchCode) : null;
                                             const isCompleted = enrollment?.certificate_eligibility || false;
-                                            const isLoadingRow = isLoadingDetails && !data;
+                                            const isRowLoading = isLoadingDetails && !data;
 
                                             return (
                                                 <TableRow key={s.student_course_id}>
                                                     <TableCell className="font-mono font-bold text-sm">{s.username}</TableCell>
                                                     <TableCell className="font-medium">{s.full_name}</TableCell>
                                                     <TableCell>
-                                                        {isLoadingRow ? <Skeleton className="h-4 w-12" /> : 
+                                                        {isRowLoading ? <Skeleton className="h-4 w-12" /> : 
                                                          enrollment ? <span className="font-mono text-xs">{parseFloat(enrollment.assignment_grades.average_grade).toFixed(2)}%</span> : "N/A"}
                                                     </TableCell>
                                                     <TableCell>
-                                                        {isLoadingRow ? <Skeleton className="h-6 w-24 rounded-full" /> : (
+                                                        {isRowLoading ? <Skeleton className="h-6 w-24 rounded-full" /> : (
                                                             <div className="flex items-center gap-2">
                                                                 <Badge variant={isCompleted ? "default" : "destructive"} className={cn("uppercase text-[10px]", isCompleted && "bg-green-600")}>
                                                                     {isCompleted ? <CheckCircle className="mr-1 h-3 w-3" /> : <XCircle className="mr-1 h-3 w-3" />}
@@ -289,7 +311,7 @@ export default function CourseCompletionReportPage() {
                                                         )}
                                                     </TableCell>
                                                     <TableCell className="text-right pr-6">
-                                                        {isLoadingRow ? <Skeleton className="h-8 w-8 rounded-md ml-auto" /> : enrollment && (
+                                                        {isRowLoading ? <Skeleton className="h-8 w-8 rounded-md ml-auto" /> : enrollment && (
                                                             <TooltipProvider>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
@@ -325,21 +347,44 @@ export default function CourseCompletionReportPage() {
                             </div>
                         )}
                     </CardContent>
-                    {totalPages > 1 && (
-                        <CardFooter className="flex items-center justify-center space-x-2 py-4 border-t bg-muted/10">
-                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>Previous</Button>
-                            <div className="flex items-center justify-center text-sm font-medium">
-                                Page 
-                                <Input
-                                    key={currentPage}
-                                    type="number"
-                                    defaultValue={currentPage}
-                                    onKeyDown={handlePageInputChange}
-                                    className="h-8 w-[200px] mx-2 text-center"
-                                />
-                                of {totalPages}
+                    {totalPages > 0 && (
+                        <CardFooter className="flex flex-col-reverse items-center gap-y-4 gap-x-6 sm:flex-row sm:justify-between pt-6 border-t">
+                            <div className="text-sm text-muted-foreground">
+                                Total: {filteredStudents.length} students
                             </div>
-                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>Next</Button>
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                <div className="flex items-center space-x-2">
+                                    <Label htmlFor="rows-per-page" className="whitespace-nowrap text-sm font-normal">Rows</Label>
+                                    <Select
+                                        value={`${itemsPerPage}`}
+                                        onValueChange={(value) => setItemsPerPage(Number(value))}
+                                    >
+                                        <SelectTrigger id="rows-per-page" className="h-8 w-[70px]">
+                                            <SelectValue placeholder={`${itemsPerPage}`} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {[10, 25, 50, 100].map((pageSize) => (
+                                                <SelectItem key={pageSize} value={`${pageSize}`}>{pageSize}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center justify-center text-sm font-medium">
+                                    Page 
+                                    <Input
+                                        key={currentPage}
+                                        type="number"
+                                        defaultValue={currentPage}
+                                        onKeyDown={handlePageInputChange}
+                                        className="h-8 w-[200px] mx-2 text-center"
+                                    />
+                                    of {totalPages}
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>Previous</Button>
+                                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages || totalPages === 0}>Next</Button>
+                                </div>
+                            </div>
                         </CardFooter>
                     )}
                 </Card>
