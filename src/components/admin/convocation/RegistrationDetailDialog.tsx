@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -24,15 +23,14 @@ import type {
     StudentEnrollment,
     TcPaymentRecord,
     UserFullDetails,
-    StudentBalanceData,
-    PaymentRequest
+    StudentBalanceData
 } from '@/lib/types';
 import Image from 'next/image';
 import { format } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -55,7 +53,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { EnrollmentDetailAccordion } from './EnrollmentDetailAccordion';
