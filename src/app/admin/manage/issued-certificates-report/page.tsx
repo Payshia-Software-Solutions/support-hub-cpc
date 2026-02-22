@@ -1,10 +1,12 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getParentCourses, getBatches } from '@/lib/actions/courses';
 import { getGeneratedCertificatesByBatch } from '@/lib/actions/certificates';
-import type { ParentCourse, Batch, GeneratedCertificateBatchInfo } from '@/lib/types';
+import { getStudentsByCourseCode } from '@/lib/actions/delivery';
+import type { ParentCourse, Batch, GeneratedCertificateBatchInfo, StudentInBatch } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Search, FileDown, Loader2, AlertCircle, Award, FileText, CheckCircle2, BookText } from 'lucide-react';
+import { Search, FileDown, Loader2, AlertCircle, Award, FileText, CheckCircle2, BookText, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -49,6 +51,12 @@ export default function IssuedCertificatesReportPage() {
         staleTime: Infinity,
     });
 
+    const { data: students, isLoading: isLoadingStudents } = useQuery<StudentInBatch[]>({
+        queryKey: ['studentsByBatchForIssuanceReport', selectedBatchCode],
+        queryFn: () => getStudentsByCourseCode(selectedBatchCode),
+        enabled: !!selectedBatchCode,
+    });
+
     const { data: issuanceData, isLoading: isLoadingIssuance, isError, error } = useQuery<GeneratedCertificateBatchInfo[]>({
         queryKey: ['generatedCertsReport', selectedBatchCode],
         queryFn: () => getGeneratedCertificatesByBatch(selectedBatchCode),
@@ -62,34 +70,54 @@ export default function IssuedCertificatesReportPage() {
     }, [allBatches, selectedParentCourseId]);
 
     const groupedData = useMemo(() => {
-        if (!issuanceData) return [];
+        if (!students) return [];
         
         const map = new Map<string, GroupedIssuance>();
         
-        issuanceData.forEach(item => {
-            const existing = map.get(item.student_number) || {
-                student_number: item.student_number,
-                full_name: item.full_name,
-                name_on_certificate: item.name_on_certificate,
+        // Step 1: Add all enrolled students as the base
+        students.forEach(s => {
+            map.set(s.username, {
+                student_number: s.username,
+                full_name: s.full_name,
+                name_on_certificate: '', // Will be filled from issuance data if available
                 certificate_id: '',
                 transcript_id: '',
                 workshop_certificate_id: '',
-                status: item.print_status === '1' ? 'Printed' : 'Pending'
-            };
-
-            if (item.document_type === 'Certificate') {
-                existing.certificate_id = item.certificate_id;
-            } else if (item.document_type === 'Transcript') {
-                existing.transcript_id = item.certificate_id;
-            } else if (item.document_type === 'Workshop-Certificate') {
-                existing.workshop_certificate_id = item.certificate_id;
-            }
-            
-            map.set(item.student_number, existing);
+                status: 'Pending'
+            });
         });
 
+        // Step 2: Merge issuance data
+        if (issuanceData) {
+            issuanceData.forEach(item => {
+                const existing = map.get(item.student_number);
+                if (existing) {
+                    existing.name_on_certificate = item.name_on_certificate;
+                    if (item.document_type === 'Certificate') {
+                        existing.certificate_id = item.certificate_id;
+                        if (item.print_status === '1') existing.status = 'Printed';
+                    } else if (item.document_type === 'Transcript') {
+                        existing.transcript_id = item.certificate_id;
+                    } else if (item.document_type === 'Workshop-Certificate') {
+                        existing.workshop_certificate_id = item.certificate_id;
+                    }
+                } else {
+                    // This handles students who might have a cert but are somehow not in the enrollment list (edge cases)
+                    map.set(item.student_number, {
+                        student_number: item.student_number,
+                        full_name: item.full_name,
+                        name_on_certificate: item.name_on_certificate,
+                        certificate_id: item.document_type === 'Certificate' ? item.certificate_id : '',
+                        transcript_id: item.document_type === 'Transcript' ? item.certificate_id : '',
+                        workshop_certificate_id: item.document_type === 'Workshop-Certificate' ? item.certificate_id : '',
+                        status: item.print_status === '1' ? 'Printed' : 'Pending'
+                    });
+                }
+            });
+        }
+
         return Array.from(map.values());
-    }, [issuanceData]);
+    }, [students, issuanceData]);
 
     const filteredGroupedData = useMemo(() => {
         if (!groupedData) return [];
@@ -153,6 +181,8 @@ export default function IssuedCertificatesReportPage() {
         }
     };
 
+    const isLoading = isLoadingParentCourses || isLoadingBatches || isLoadingStudents || isLoadingIssuance;
+
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -160,7 +190,7 @@ export default function IssuedCertificatesReportPage() {
                     <h1 className="text-3xl font-headline font-semibold">Issued Certificates Report</h1>
                     <p className="text-muted-foreground">Detailed student-to-certificate mapping for audit and logistics.</p>
                 </div>
-                <Button onClick={handleExport} disabled={!selectedBatchCode || isExporting || isLoadingIssuance}>
+                <Button onClick={handleExport} disabled={!selectedBatchCode || isExporting || isLoading}>
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
                     Export Issuance List (CSV)
                 </Button>
@@ -214,8 +244,8 @@ export default function IssuedCertificatesReportPage() {
                             </div>
                         </div>
                         <div className="pt-4 flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground font-medium">Unique Students Found:</span>
-                            <span className="font-bold">{isLoadingIssuance ? "..." : (groupedData.length)}</span>
+                            <span className="text-muted-foreground font-medium flex items-center gap-2"><Users className="h-4 w-4"/>Total Students:</span>
+                            <span className="font-bold">{isLoading ? "..." : (filteredGroupedData.length)}</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -227,7 +257,7 @@ export default function IssuedCertificatesReportPage() {
                         <CardTitle>Issuance Table: {selectedBatchCode}</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        {isLoadingIssuance ? (
+                        {isLoading ? (
                             <div className="p-8 space-y-4"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>
                         ) : isError ? (
                             <Alert variant="destructive" className="m-6"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{(error as Error).message}</AlertDescription></Alert>
@@ -278,7 +308,7 @@ export default function IssuedCertificatesReportPage() {
                                                 </TableCell>
                                             </TableRow>
                                         )) : (
-                                            <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground italic">No issuance records found.</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground italic">No students found in this batch.</TableCell></TableRow>
                                         )}
                                     </TableBody>
                                 </Table>
