@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -16,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Search, FileDown, Loader2, CheckCircle, XCircle, AlertCircle, Info, Award } from 'lucide-react';
+import { Search, FileDown, Loader2, CheckCircle, XCircle, AlertCircle, Info, Award, Phone, MapPin, Clock, Eye } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import {
@@ -30,6 +31,7 @@ import { cn } from '@/lib/utils';
 export default function CourseCompletionReportPage() {
     const [selectedParentCourseId, setSelectedParentCourseId] = useState<string>('');
     const [selectedBatchCode, setSelectedBatchCode] = useState<string>('');
+    const [isReportViewed, setIsReportViewed] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(25);
@@ -79,7 +81,12 @@ export default function CourseCompletionReportPage() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [selectedBatchCode, searchTerm, itemsPerPage]);
+        setIsReportViewed(false); // Reset view when batch changes
+    }, [selectedBatchCode]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, itemsPerPage]);
 
     const filteredStudents = useMemo(() => {
         if (!students) return [];
@@ -123,9 +130,14 @@ export default function CourseCompletionReportPage() {
             });
             return true;
         },
-        enabled: studentUsernamesToFetch.length > 0,
+        enabled: isReportViewed && studentUsernamesToFetch.length > 0,
         refetchOnWindowFocus: false,
     });
+
+    const estimatedExportTime = useMemo(() => {
+        if (!students?.length) return 0;
+        return Math.ceil(students.length / 10) * 1.5;
+    }, [students]);
 
     const handlePageInputChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
@@ -146,7 +158,10 @@ export default function CourseCompletionReportPage() {
 
         setIsExporting(true);
         try {
-            toast({ title: 'Preparing Export', description: 'Fetching detailed status in batches...' });
+            toast({ 
+                title: 'Preparing Export', 
+                description: `Fetching detailed status. Estimated time: ${Math.ceil(estimatedExportTime)}s...` 
+            });
             
             const courseName = parentCourses?.find(pc => pc.id === selectedParentCourseId)?.course_name || 'N/A';
             const allFullData: (FullStudentData | null)[] = [];
@@ -163,7 +178,7 @@ export default function CourseCompletionReportPage() {
                 }
             }
 
-            const headers = ['Course Name', 'Student ID', 'Full Name', 'Batch', 'Status', 'Avg Grade (%)', 'Certificate ID', 'Transcript ID', 'Workshop Cert ID', 'Missing Criteria'];
+            const headers = ['Course Name', 'Student ID', 'Full Name', 'Phone 1', 'Phone 2', 'Address', 'Batch', 'Status', 'Avg Grade (%)', 'Certificate ID', 'Transcript ID', 'Workshop Cert ID', 'Missing Criteria'];
             const rows = students.map((s, idx) => {
                 const data = allFullData[idx];
                 const enrollment = data ? Object.values(data.studentEnrollments).find((e: any) => e.course_code === selectedBatchCode) : null;
@@ -175,10 +190,15 @@ export default function CourseCompletionReportPage() {
                 const transId = certs.find(c => c.document_type === 'Transcript')?.certificate_id || '';
                 const workshopId = certs.find(c => c.document_type === 'Workshop-Certificate')?.certificate_id || '';
 
+                const fullAddress = data ? [data.studentInfo.address_line_1, data.studentInfo.address_line_2, data.studentInfo.city, data.studentInfo.district].filter(Boolean).join(', ') : '';
+
                 return [
                     courseName,
                     s.username,
                     s.full_name,
+                    data?.studentInfo.telephone_1 || '',
+                    data?.studentInfo.telephone_2 || '',
+                    fullAddress,
                     selectedBatchCode,
                     isCompleted ? 'Completed' : 'Incomplete',
                     enrollment?.assignment_grades.average_grade || '0.00',
@@ -217,10 +237,17 @@ export default function CourseCompletionReportPage() {
                     <h1 className="text-3xl font-headline font-semibold">Course Completion Report</h1>
                     <p className="text-muted-foreground">Monitor and export students' progress and issued certificates.</p>
                 </div>
-                <Button onClick={handleExport} disabled={!selectedBatchCode || isExporting || isLoadingStudents}>
-                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
-                    {isExporting ? 'Preparing...' : 'Export Report (CSV)'}
-                </Button>
+                <div className="flex flex-col items-end gap-1">
+                    <Button onClick={handleExport} disabled={!selectedBatchCode || isExporting || isLoadingStudents}>
+                        {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                        {isExporting ? 'Preparing...' : 'Export Report (CSV)'}
+                    </Button>
+                    {selectedBatchCode && !isExporting && students && students.length > 0 && (
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> Est. Time: {Math.ceil(estimatedExportTime)}s
+                        </p>
+                    )}
+                </div>
             </header>
 
             <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -248,6 +275,12 @@ export default function CourseCompletionReportPage() {
                                 </SelectContent>
                             </Select>
                         </div>
+                        {selectedBatchCode && (
+                            <Button className="w-full mt-4" variant={isReportViewed ? "secondary" : "default"} onClick={() => setIsReportViewed(true)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                {isReportViewed ? "Refresh Detailed Report" : "View Detailed Report"}
+                            </Button>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -278,8 +311,8 @@ export default function CourseCompletionReportPage() {
                 </Card>
             </section>
 
-            {selectedBatchCode && (
-                <Card className="shadow-lg border-primary/10">
+            {isReportViewed && selectedBatchCode && (
+                <Card className="shadow-lg border-primary/10 animate-in fade-in-50 duration-500">
                     <CardHeader className="bg-muted/20">
                         <CardTitle>Batch Completion Status: {selectedBatchCode}</CardTitle>
                     </CardHeader>
@@ -293,11 +326,13 @@ export default function CourseCompletionReportPage() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="w-[150px]">Student ID</TableHead>
+                                            <TableHead className="w-[120px]">Student ID</TableHead>
                                             <TableHead>Full Name</TableHead>
+                                            <TableHead>Contact</TableHead>
+                                            <TableHead className="max-w-[150px]">Address</TableHead>
                                             <TableHead>Generated Docs</TableHead>
                                             <TableHead>Avg Grade</TableHead>
-                                            <TableHead className="w-[180px]">Status</TableHead>
+                                            <TableHead className="w-[150px]">Status</TableHead>
                                             <TableHead className="text-right pr-6">Eligibility Details</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -311,8 +346,26 @@ export default function CourseCompletionReportPage() {
 
                                             return (
                                                 <TableRow key={s.student_course_id}>
-                                                    <TableCell className="font-mono font-bold text-sm">{s.username}</TableCell>
-                                                    <TableCell className="font-medium">{s.full_name}</TableCell>
+                                                    <TableCell className="font-mono font-bold text-xs">{s.username}</TableCell>
+                                                    <TableCell className="text-xs font-medium">{s.full_name}</TableCell>
+                                                    <TableCell className="text-[10px]">
+                                                        {isRowLoading ? <Skeleton className="h-4 w-20" /> : 
+                                                         data ? (
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="flex items-center gap-1"><Phone className="h-2.5 w-2.5" />{data.studentInfo.telephone_1}</span>
+                                                                {data.studentInfo.telephone_2 && <span className="text-muted-foreground">{data.studentInfo.telephone_2}</span>}
+                                                            </div>
+                                                         ) : "N/A"}
+                                                    </TableCell>
+                                                    <TableCell className="text-[10px] max-w-[150px] truncate">
+                                                        {isRowLoading ? <Skeleton className="h-4 w-32" /> : 
+                                                         data ? (
+                                                            <div className="flex items-start gap-1">
+                                                                <MapPin className="h-2.5 w-2.5 shrink-0 mt-0.5" />
+                                                                <span className="truncate">{data.studentInfo.address_line_1}, {data.studentInfo.city}</span>
+                                                            </div>
+                                                         ) : "N/A"}
+                                                    </TableCell>
                                                     <TableCell>
                                                         <div className="flex flex-wrap gap-1">
                                                             {issuedCerts.length > 0 ? (
@@ -381,7 +434,7 @@ export default function CourseCompletionReportPage() {
                                                 </TableRow>
                                             )
                                         }) : (
-                                            <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground italic">No students found.</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={8} className="text-center h-32 text-muted-foreground italic">No students found.</TableCell></TableRow>
                                         )}
                                     </TableBody>
                                 </Table>
