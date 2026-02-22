@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -149,8 +148,10 @@ export default function IssuedCertificatesReportPage() {
 
         setIsExporting(true);
         try {
-            const headers = ['Student ID', 'Full Name', 'Name on Certificate', 'Certificate ID', 'Transcript ID', 'Workshop Cert ID', 'Status'];
+            const courseName = parentCourses?.find(pc => pc.id === selectedParentCourseId)?.course_name || 'N/A';
+            const headers = ['Course Name', 'Student ID', 'Full Name', 'Name on Certificate', 'Certificate ID', 'Transcript ID', 'Workshop Cert ID', 'Status'];
             const rows = filteredGroupedData.map(s => [
+                courseName,
                 s.student_number,
                 s.full_name,
                 s.name_on_certificate,

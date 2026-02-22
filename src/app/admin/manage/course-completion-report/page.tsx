@@ -148,6 +148,7 @@ export default function CourseCompletionReportPage() {
         try {
             toast({ title: 'Preparing Export', description: 'Fetching detailed status in batches...' });
             
+            const courseName = parentCourses?.find(pc => pc.id === selectedParentCourseId)?.course_name || 'N/A';
             const allFullData: (FullStudentData | null)[] = [];
             const batchSize = 10;
             
@@ -162,7 +163,7 @@ export default function CourseCompletionReportPage() {
                 }
             }
 
-            const headers = ['Student ID', 'Full Name', 'Batch', 'Status', 'Avg Grade (%)', 'Certificate ID', 'Transcript ID', 'Workshop Cert ID', 'Missing Criteria'];
+            const headers = ['Course Name', 'Student ID', 'Full Name', 'Batch', 'Status', 'Avg Grade (%)', 'Certificate ID', 'Transcript ID', 'Workshop Cert ID', 'Missing Criteria'];
             const rows = students.map((s, idx) => {
                 const data = allFullData[idx];
                 const enrollment = data ? Object.values(data.studentEnrollments).find((e: any) => e.course_code === selectedBatchCode) : null;
@@ -175,6 +176,7 @@ export default function CourseCompletionReportPage() {
                 const workshopId = certs.find(c => c.document_type === 'Workshop-Certificate')?.certificate_id || '';
 
                 return [
+                    courseName,
                     s.username,
                     s.full_name,
                     selectedBatchCode,
