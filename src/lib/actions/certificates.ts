@@ -1,5 +1,4 @@
-
-import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage, ParentCourse, SessionCount, TcPaymentRecord } from '../types';
+import type { UpdateCertificateNamePayload, ConvocationRegistration, CertificateOrder, SendSmsPayload, ConvocationCourse, FilteredConvocationRegistration, UpdateConvocationCoursesPayload, UserCertificatePrintStatus, UpdateCertificateOrderCoursesPayload, GenerateCertificatePayload, CreateCertificateOrderPayload, ConvocationCeremony, ConvocationPackage, ParentCourse, SessionCount, TcPaymentRecord, GeneratedCertificateBatchInfo } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 
@@ -461,4 +460,14 @@ export const deleteConvocationPayment = async (registrationId: string, paymentId
         const errorData = await response.json().catch(() => ({ message: 'Failed to delete payment record' }));
         throw new Error(errorData.message || 'Failed to delete payment record');
     }
+};
+
+export const getGeneratedCertificatesByBatch = async (courseCode: string): Promise<GeneratedCertificateBatchInfo[]> => {
+    const response = await fetch(`${QA_API_BASE_URL}/certificate-print-status/course/${courseCode}`);
+    if (response.status === 404) return [];
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch generated certificates' }));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    return response.json();
 };
