@@ -130,6 +130,13 @@ const managementTasks: ManagementTask[] = [
     category: "Certificates & Convocation"
   },
   {
+    title: "Convocation Certificate Generation",
+    description: "Issue certificates for convocation bookings.",
+    icon: <Award className="w-8 h-8 text-white" />,
+    href: "/admin/manage/convocation-generate",
+    category: "Certificates & Convocation"
+  },
+  {
     title: "Certificate Orders",
     description: "Process and manage requests for certificates.",
     icon: <Award className="w-8 h-8 text-white" />,
