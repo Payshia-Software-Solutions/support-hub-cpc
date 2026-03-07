@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -24,6 +23,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { 
     Award, 
@@ -35,7 +35,8 @@ import {
     FileText, 
     RefreshCw,
     GraduationCap,
-    Printer
+    Printer,
+    ZoomIn
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
