@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -28,6 +29,14 @@ import { Search, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, Eye, FileDown, L
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 // Modular Components
 import { RegistrationDetailDialog } from '@/components/admin/convocation/RegistrationDetailDialog';
@@ -50,6 +59,7 @@ export default function ConvocationListPage() {
     const [currentPage, setCurrentPage] = useState(initialPage);
     const [viewingDetails, setViewingDetails] = useState<ConvocationRegistration | null>(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [exportProgress, setExportProgress] = useState(0);
     
     // Map to store fetched student enrollment details (including marks)
     const [studentDataMap, setStudentDataMap] = useState<Map<string, FullStudentData>>(new Map());
@@ -297,6 +307,7 @@ export default function ConvocationListPage() {
         }
         
         setIsExporting(true);
+        setExportProgress(0);
         toast({ title: 'Preparing Export', description: 'Fetching performance data for all records. This might take a moment.' });
 
         try {
@@ -304,23 +315,31 @@ export default function ConvocationListPage() {
             const allStudentNumbers = [...new Set(filteredRegistrations.map(r => r.student_number))];
             const neededStudentNumbers = allStudentNumbers.filter(sn => !studentDataMap.has(sn));
             
-            // Fetch missing data in chunks
-            const batchSize = 10;
             const updatedMap = new Map(studentDataMap);
-            
-            for (let i = 0; i < neededStudentNumbers.length; i += batchSize) {
-                const chunk = neededStudentNumbers.slice(i, i + batchSize);
-                const results = await Promise.all(
-                    chunk.map(sn => getStudentFullInfo(sn).catch(() => null))
-                );
-                results.forEach((res, idx) => {
-                    if (res) updatedMap.set(chunk[idx], res);
-                });
-                // Update map to use for CSV generation
-                if (i + batchSize < neededStudentNumbers.length) {
-                    await new Promise(resolve => setTimeout(resolve, 200));
+
+            if (neededStudentNumbers.length > 0) {
+                // Fetch missing data in chunks
+                const batchSize = 10;
+                for (let i = 0; i < neededStudentNumbers.length; i += batchSize) {
+                    const chunk = neededStudentNumbers.slice(i, i + batchSize);
+                    const results = await Promise.all(
+                        chunk.map(sn => getStudentFullInfo(sn).catch(() => null))
+                    );
+                    results.forEach((res, idx) => {
+                        if (res) updatedMap.set(chunk[idx], res);
+                    });
+                    
+                    const progress = Math.min(95, Math.round(((i + chunk.length) / neededStudentNumbers.length) * 100));
+                    setExportProgress(progress);
+
+                    // Delay to be gentle on server
+                    if (i + batchSize < neededStudentNumbers.length) {
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
                 }
             }
+            
+            setExportProgress(98);
 
             const headers = [
                 'Reference #',
@@ -387,12 +406,16 @@ export default function ConvocationListPage() {
             link.click();
             document.body.removeChild(link);
 
+            setExportProgress(100);
             toast({ title: 'Export Successful', description: `${filteredRegistrations.length} records exported with academic marks.` });
         } catch (err) {
             console.error(err);
             toast({ variant: 'destructive', title: 'Export Failed', description: 'An error occurred while generating the CSV.' });
         } finally {
-            setIsExporting(false);
+            setTimeout(() => {
+                setIsExporting(false);
+                setExportProgress(0);
+            }, 500);
         }
     };
 
@@ -420,6 +443,24 @@ export default function ConvocationListPage() {
                 onOpenChange={(open) => !open && setViewingDetails(null)}
                 packages={packages}
             />
+
+            <Dialog open={isExporting} onOpenChange={() => {}}>
+                <DialogContent className="sm:max-w-md" hideCloseButton>
+                    <DialogHeader>
+                        <DialogTitle>Generating Export</DialogTitle>
+                        <DialogDescription>
+                            Fetching academic data and preparing your CSV file. Please wait.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-4">
+                        <Progress value={exportProgress} className="h-2" />
+                        <div className="flex justify-between text-xs text-muted-foreground font-medium">
+                            <span>Processing student data...</span>
+                            <span>{exportProgress}%</span>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
