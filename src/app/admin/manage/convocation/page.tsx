@@ -58,6 +58,7 @@ export default function ConvocationListPage() {
     const [sortOption, setSortOption] = useState('ref-desc'); // Default to Latest First (Ref Descending)
     const [currentPage, setCurrentPage] = useState(initialPage);
     const [viewingDetails, setViewingDetails] = useState<ConvocationRegistration | null>(null);
+    const [isExporting, setIsExporting] = useState(false);
     
     // Map to store fetched student enrollment details (including marks)
     const [studentDataMap, setStudentDataMap] = useState<Map<string, FullStudentData>>(new Map());
@@ -268,6 +269,104 @@ export default function ConvocationListPage() {
         refetchOnWindowFocus: false,
     });
     
+    const handleExport = async () => {
+        if (!filteredRegistrations.length) return;
+        setIsExporting(true);
+        toast({ title: "Preparing Export", description: "Fetching academic data for all filtered students..." });
+
+        try {
+            const studentNumbers = [...new Set(filteredRegistrations.map(r => r.student_number))];
+            const fullDataMap = new Map<string, FullStudentData>();
+
+            const CHUNK_SIZE = 10;
+            for (let i = 0; i < studentNumbers.length; i += CHUNK_SIZE) {
+                const chunk = studentNumbers.slice(i, i + CHUNK_SIZE);
+                const results = await Promise.all(
+                    chunk.map(sn => getStudentFullInfo(sn).catch(() => null))
+                );
+                results.forEach((res, idx) => {
+                    if (res) fullDataMap.set(chunk[idx], res);
+                });
+            }
+
+            const headers = [
+                'Ref #',
+                'Student ID',
+                'Name on Certificate',
+                'Courses',
+                'CPP Avg (%)',
+                'ACPP Avg (%)',
+                'Package',
+                'Session',
+                'Seats',
+                'Payment Status',
+                'Reg. Status',
+                'Total Payable',
+                'Total Paid',
+                'Due Balance'
+            ];
+
+            const rows = filteredRegistrations.map(reg => {
+                const studentFullData = fullDataMap.get(reg.student_number);
+                
+                const cppEnrollment = studentFullData?.studentEnrollments ? 
+                    Object.values(studentFullData.studentEnrollments).find(e => e.parent_course_id === "1") : null;
+                const acppEnrollment = studentFullData?.studentEnrollments ? 
+                    Object.values(studentFullData.studentEnrollments).find(e => e.parent_course_id === "2") : null;
+
+                const cppAvg = cppEnrollment ? `${parseFloat(cppEnrollment.assignment_grades.average_grade).toFixed(2)}%` : 'N/A';
+                const acppAvg = acppEnrollment ? `${parseFloat(acppEnrollment.assignment_grades.average_grade).toFixed(2)}%` : 'N/A';
+
+                const courseNames = reg.course_id.split(',').map(id => {
+                    const course = courses?.find(c => c.id === id.trim());
+                    return course ? course.course_name : `ID: ${id}`;
+                }).join('; ');
+
+                const paidAmount = parseFloat(reg.payment_amount) || 0;
+                const due = (reg.dueAmount || 0) - paidAmount;
+                const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || reg.package_id;
+
+                return [
+                    reg.reference_number,
+                    reg.student_number,
+                    reg.name_on_certificate,
+                    courseNames,
+                    cppAvg,
+                    acppAvg,
+                    packageName,
+                    reg.session,
+                    reg.additional_seats,
+                    reg.payment_status,
+                    reg.registration_status,
+                    reg.dueAmount?.toFixed(2),
+                    paidAmount.toFixed(2),
+                    due.toFixed(2)
+                ];
+            });
+
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.map(val => `"${String(val || '').replace(/"/g, '""')}"`).join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Convocation_Report_${format(new Date(), 'yyyyMMdd')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            toast({ title: "Export Successful", description: "Your report has been downloaded." });
+        } catch (err) {
+            console.error(err);
+            toast({ variant: 'destructive', title: "Export Failed", description: "An error occurred while generating the CSV." });
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const handlePageInputChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             const pageNum = parseInt(e.currentTarget.value, 10);
@@ -318,6 +417,10 @@ export default function ConvocationListPage() {
                     <h1 className="text-3xl font-headline font-semibold">{ceremonyIdFilter ? "Ceremony Registrations" : "All Convocation Registrations"}</h1>
                     <p className="text-muted-foreground">Manage student registrations and verify bookings.</p>
                 </div>
+                <Button onClick={handleExport} disabled={isExporting || filteredRegistrations.length === 0}>
+                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                    {isExporting ? 'Preparing...' : 'Export to CSV'}
+                </Button>
             </header>
             
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
