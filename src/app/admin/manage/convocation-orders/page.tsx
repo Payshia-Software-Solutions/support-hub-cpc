@@ -189,9 +189,9 @@ const EligibilityStatusCell = ({ registration }: { registration: FilteredConvoca
     const { data: fullStudentData, isLoading, isError, isFetching } = useQuery<FullStudentData, Error>({
         queryKey: ['studentFullInfo', registration.student_number],
         queryFn: () => getStudentFullInfo(registration.student_number),
+        enabled: true, // Auto-fetch on render
         staleTime: 5 * 60 * 1000,
         retry: 1,
-        enabled: true, // Auto-fetch on render
     });
 
     const { newEligibleEnrollments, isUpdateAvailable } = useMemo(() => {
@@ -397,6 +397,7 @@ export default function ConvocationOrdersPage() {
             const headers = [
                 'Registration ID',
                 'Student Number',
+                'Name on Certificate',
                 'Ceremony Number',
                 'Course Codes',
                 'Course Names',
@@ -450,6 +451,7 @@ export default function ConvocationOrdersPage() {
                 const row = [
                     reg.registration_id,
                     reg.student_number,
+                    studentData.studentInfo.name_on_certificate || studentData.studentInfo.full_name,
                     reg.ceremony_number,
                     `"${courseCodes.join(', ')}"`,
                     `"${courseNames.join(', ')}"`,
