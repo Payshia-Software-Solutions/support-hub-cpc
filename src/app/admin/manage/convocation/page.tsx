@@ -59,6 +59,7 @@ export default function ConvocationListPage() {
     const [currentPage, setCurrentPage] = useState(initialPage);
     const [viewingDetails, setViewingDetails] = useState<ConvocationRegistration | null>(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [exportProgress, setExportProgress] = useState(0);
     
     // Map to store fetched student enrollment details (including marks)
     const [studentDataMap, setStudentDataMap] = useState<Map<string, FullStudentData>>(new Map());
@@ -272,13 +273,15 @@ export default function ConvocationListPage() {
     const handleExport = async () => {
         if (!filteredRegistrations.length) return;
         setIsExporting(true);
-        toast({ title: "Preparing Export", description: "Fetching academic data for all filtered students..." });
+        setExportProgress(0);
 
         try {
             const studentNumbers = [...new Set(filteredRegistrations.map(r => r.student_number))];
             const fullDataMap = new Map<string, FullStudentData>();
 
             const CHUNK_SIZE = 10;
+            const totalSteps = studentNumbers.length;
+            
             for (let i = 0; i < studentNumbers.length; i += CHUNK_SIZE) {
                 const chunk = studentNumbers.slice(i, i + CHUNK_SIZE);
                 const results = await Promise.all(
@@ -287,6 +290,7 @@ export default function ConvocationListPage() {
                 results.forEach((res, idx) => {
                     if (res) fullDataMap.set(chunk[idx], res);
                 });
+                setExportProgress(Math.round(((i + chunk.length) / totalSteps) * 100));
             }
 
             const headers = [
@@ -364,6 +368,7 @@ export default function ConvocationListPage() {
             toast({ variant: 'destructive', title: "Export Failed", description: "An error occurred while generating the CSV." });
         } finally {
             setIsExporting(false);
+            setExportProgress(0);
         }
     };
 
@@ -406,6 +411,23 @@ export default function ConvocationListPage() {
                 onOpenChange={(open) => !open && setViewingDetails(null)}
                 packages={packages}
             />
+
+            <Dialog open={isExporting && exportProgress > 0} onOpenChange={() => {}}>
+                <DialogContent className="sm:max-w-md" hideCloseButton>
+                    <DialogHeader>
+                        <DialogTitle>Generating CSV Export</DialogTitle>
+                        <DialogDescription>
+                            Please wait while we hydrate academic performance data for {filteredRegistrations.length} records.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-4">
+                        <Progress value={exportProgress} className="h-2" />
+                        <p className="text-center text-sm font-medium text-muted-foreground">
+                            {exportProgress}% Complete
+                        </p>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
