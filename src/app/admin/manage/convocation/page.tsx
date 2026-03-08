@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -8,10 +9,12 @@ import {
     getPackagesByCeremony, 
 } from '@/lib/actions/certificates';
 import { getParentCourses } from '@/lib/actions/courses';
+import { getStudentFullInfo } from '@/lib/actions/users';
 import type { 
     ConvocationRegistration, 
     ConvocationPackage, 
     ParentCourse, 
+    FullStudentData
 } from '@/lib/types';
 import { parseISO, isValid, format } from 'date-fns';
 
@@ -48,6 +51,9 @@ export default function ConvocationListPage() {
     const [currentPage, setCurrentPage] = useState(initialPage);
     const [viewingDetails, setViewingDetails] = useState<ConvocationRegistration | null>(null);
     const [isExporting, setIsExporting] = useState(false);
+    
+    // Map to store fetched student enrollment details (including marks)
+    const [studentDataMap, setStudentDataMap] = useState<Map<string, FullStudentData>>(new Map());
 
     const { data: registrations, isLoading, isError, error } = useQuery<ConvocationRegistration[]>({
         queryKey: ['convocationRegistrations', ceremonyIdFilter],
@@ -249,6 +255,29 @@ export default function ConvocationListPage() {
     const paginatedRegistrations = useMemo(() => {
         return filteredRegistrations.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     }, [filteredRegistrations, currentPage]);
+
+    // --- Batch Data Fetching for Marks ---
+    const studentNumbersToFetch = useMemo(() => {
+        return [...new Set(paginatedRegistrations.map(o => o.student_number).filter(sn => !studentDataMap.has(sn)))];
+    }, [paginatedRegistrations, studentDataMap]);
+
+    const { isLoading: isLoadingStudentData } = useQuery({
+        queryKey: ['batchStudentDataConvocation', studentNumbersToFetch],
+        queryFn: async () => {
+            if (studentNumbersToFetch.length === 0) return null;
+            const results = await Promise.all(
+                studentNumbersToFetch.map(sn => getStudentFullInfo(sn).catch(() => null))
+            );
+            const newMap = new Map(studentDataMap);
+            results.forEach((res, index) => {
+                if (res) newMap.set(studentNumbersToFetch[index], res);
+            });
+            setStudentDataMap(newMap);
+            return newMap;
+        },
+        enabled: studentNumbersToFetch.length > 0,
+        refetchOnWindowFocus: false,
+    });
     
     const handlePageInputChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
@@ -441,8 +470,20 @@ export default function ConvocationListPage() {
                                                     <div className="flex flex-col gap-1">
                                                         {(reg.course_id || '').split(',').map((id, idIdx) => {
                                                             const trimmedId = id.trim();
+                                                            const studentFullData = studentDataMap.get(reg.student_number);
+                                                            const enrollment = studentFullData?.studentEnrollments ? 
+                                                                Object.values(studentFullData.studentEnrollments).find(e => e.parent_course_id === trimmedId) : null;
+                                                            const avgGrade = enrollment?.assignment_grades?.average_grade;
+
                                                             return (
-                                                                <div key={`${trimmedId}-${reg.registration_id}-${idIdx}`} className="text-[11px] leading-tight font-medium text-foreground">• {courses?.find(c => c.id === trimmedId)?.course_name || `ID: ${trimmedId}`}</div>
+                                                                <div key={`${trimmedId}-${reg.registration_id}-${idIdx}`} className="flex items-center justify-between gap-4 text-[11px] leading-tight font-medium text-foreground">
+                                                                    <span>• {courses?.find(c => c.id === trimmedId)?.course_name || `ID: ${trimmedId}`}</span>
+                                                                    {avgGrade && (
+                                                                        <Badge variant="secondary" className="h-4 px-1 text-[9px] font-mono shrink-0 bg-blue-50 text-blue-700 border-blue-200">
+                                                                            {parseFloat(avgGrade).toFixed(2)}%
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
                                                             )
                                                         })}
                                                     </div>
