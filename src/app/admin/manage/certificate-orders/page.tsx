@@ -214,7 +214,7 @@ const OrderActionsCell = ({ order, onUpdateClick, studentData, balanceData, isLo
     const balance = balanceData?.studentBalance;
 
     return (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <div className="flex flex-col items-start sm:items-center gap-2">
             <div className="flex-shrink-0">
                 {isUpdateAvailable ? (
                     <Button variant="default" size="sm" onClick={onUpdateClick}>Update Available</Button>
@@ -274,12 +274,18 @@ export default function CertificateOrdersListPage() {
     const filteredOrders = useMemo(() => {
         if (!orders) return [];
         const lowercasedFilter = searchTerm.toLowerCase();
-        if (!lowercasedFilter) return orders;
-        return orders.filter(order =>
-            order.created_by.toLowerCase().includes(lowercasedFilter) ||
-            order.name_on_certificate.toLowerCase().includes(lowercasedFilter) ||
-            order.id.toLowerCase().includes(lowercasedFilter)
-        );
+        
+        let result = orders;
+        if (lowercasedFilter) {
+            result = orders.filter(order =>
+                order.created_by.toLowerCase().includes(lowercasedFilter) ||
+                order.name_on_certificate.toLowerCase().includes(lowercasedFilter) ||
+                order.id.toLowerCase().includes(lowercasedFilter)
+            );
+        }
+
+        // Sort by ID in descending order to show the last order first
+        return [...result].sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
     }, [orders, searchTerm]);
 
     const openUpdateDialog = (order: CertificateOrder) => { setOrderToUpdate(order); setIsUpdateDialogOpen(true); };

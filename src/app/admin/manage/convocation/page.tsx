@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -8,10 +9,12 @@ import {
     getPackagesByCeremony, 
 } from '@/lib/actions/certificates';
 import { getParentCourses } from '@/lib/actions/courses';
+import { getStudentFullInfo } from '@/lib/actions/users';
 import type { 
     ConvocationRegistration, 
     ConvocationPackage, 
     ParentCourse, 
+    FullStudentData
 } from '@/lib/types';
 import { parseISO, isValid, format } from 'date-fns';
 
@@ -26,6 +29,14 @@ import { Search, ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, Eye, FileDown, L
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 // Modular Components
 import { RegistrationDetailDialog } from '@/components/admin/convocation/RegistrationDetailDialog';
@@ -44,10 +55,13 @@ export default function ConvocationListPage() {
     const [courseFilter, setCourseFilter] = useState('all');
     const [packageFilter, setPackageFilter] = useState('all');
     const [sessionFilter, setSessionFilter] = useState('all');
-    const [sortOption, setSortOption] = useState('date-desc');
+    const [sortOption, setSortOption] = useState('ref-desc'); // Default to Latest First (Ref Descending)
     const [currentPage, setCurrentPage] = useState(initialPage);
     const [viewingDetails, setViewingDetails] = useState<ConvocationRegistration | null>(null);
     const [isExporting, setIsExporting] = useState(false);
+    
+    // Map to store fetched student enrollment details (including marks)
+    const [studentDataMap, setStudentDataMap] = useState<Map<string, FullStudentData>>(new Map());
 
     const { data: registrations, isLoading, isError, error } = useQuery<ConvocationRegistration[]>({
         queryKey: ['convocationRegistrations', ceremonyIdFilter],
@@ -90,7 +104,7 @@ export default function ConvocationListPage() {
             const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
             setSortOption(`${column}-${newDirection}`);
         } else {
-            const newDirection = column === 'date' ? 'desc' : 'asc';
+            const newDirection = column === 'date' || column === 'ref' ? 'desc' : 'asc';
             setSortOption(`${column}-${newDirection}`);
         }
     };
@@ -190,23 +204,6 @@ export default function ConvocationListPage() {
         });
 
         return filtered.sort((a, b) => {
-            // Status priority logic: Pending (1) > Partially Paid (2) > Paid/Confirmed (3) > Rejected/Canceled (4)
-            const getPriority = (status: string = '') => {
-                const s = status.toLowerCase();
-                if (s === 'pending') return 1;
-                if (s === 'partially-paid' || s === 'partially paid') return 2;
-                if (s === 'paid' || s === 'approved' || s === 'confirmed') return 3;
-                return 4;
-            };
-
-            const priorityA = getPriority(a.payment_status);
-            const priorityB = getPriority(b.payment_status);
-
-            if (priorityA !== priorityB) {
-                return priorityA - priorityB;
-            }
-
-            // Secondary sorting based on selected column
             const getSortableValue = (reg: any, column: SortableColumn) => {
                 switch(column) {
                     case 'student': return reg.student_number || '';
@@ -249,7 +246,127 @@ export default function ConvocationListPage() {
     const paginatedRegistrations = useMemo(() => {
         return filteredRegistrations.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     }, [filteredRegistrations, currentPage]);
+
+    const studentNumbersToFetch = useMemo(() => {
+        return [...new Set(paginatedRegistrations.map(o => o.student_number).filter(sn => !studentDataMap.has(sn)))];
+    }, [paginatedRegistrations, studentDataMap]);
+
+    const { isLoading: isLoadingStudentData } = useQuery({
+        queryKey: ['batchStudentDataConvocation', studentNumbersToFetch],
+        queryFn: async () => {
+            if (studentNumbersToFetch.length === 0) return null;
+            const results = await Promise.all(
+                studentNumbersToFetch.map(sn => getStudentFullInfo(sn).catch(() => null))
+            );
+            const newMap = new Map(studentDataMap);
+            results.forEach((res, index) => {
+                if (res) newMap.set(studentNumbersToFetch[index], res);
+            });
+            setStudentDataMap(newMap);
+            return newMap;
+        },
+        enabled: studentNumbersToFetch.length > 0,
+        refetchOnWindowFocus: false,
+    });
     
+    const handleExport = async () => {
+        if (!filteredRegistrations.length) return;
+        setIsExporting(true);
+        toast({ title: "Preparing Export", description: "Fetching academic data for all filtered students..." });
+
+        try {
+            const studentNumbers = [...new Set(filteredRegistrations.map(r => r.student_number))];
+            const fullDataMap = new Map<string, FullStudentData>();
+
+            const CHUNK_SIZE = 10;
+            for (let i = 0; i < studentNumbers.length; i += CHUNK_SIZE) {
+                const chunk = studentNumbers.slice(i, i + CHUNK_SIZE);
+                const results = await Promise.all(
+                    chunk.map(sn => getStudentFullInfo(sn).catch(() => null))
+                );
+                results.forEach((res, idx) => {
+                    if (res) fullDataMap.set(chunk[idx], res);
+                });
+            }
+
+            const headers = [
+                'Ref #',
+                'Student ID',
+                'Name on Certificate',
+                'Courses',
+                'CPP Avg (%)',
+                'ACPP Avg (%)',
+                'Package',
+                'Session',
+                'Seats',
+                'Payment Status',
+                'Reg. Status',
+                'Total Payable',
+                'Total Paid',
+                'Due Balance'
+            ];
+
+            const rows = filteredRegistrations.map(reg => {
+                const studentFullData = fullDataMap.get(reg.student_number);
+                
+                const cppEnrollment = studentFullData?.studentEnrollments ? 
+                    Object.values(studentFullData.studentEnrollments).find(e => e.parent_course_id === "1") : null;
+                const acppEnrollment = studentFullData?.studentEnrollments ? 
+                    Object.values(studentFullData.studentEnrollments).find(e => e.parent_course_id === "2") : null;
+
+                const cppAvg = cppEnrollment ? `${parseFloat(cppEnrollment.assignment_grades.average_grade).toFixed(2)}%` : 'N/A';
+                const acppAvg = acppEnrollment ? `${parseFloat(acppEnrollment.assignment_grades.average_grade).toFixed(2)}%` : 'N/A';
+
+                const courseNames = reg.course_id.split(',').map(id => {
+                    const course = courses?.find(c => c.id === id.trim());
+                    return course ? course.course_name : `ID: ${id}`;
+                }).join('; ');
+
+                const paidAmount = parseFloat(reg.payment_amount) || 0;
+                const due = (reg.dueAmount || 0) - paidAmount;
+                const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || reg.package_id;
+
+                return [
+                    reg.reference_number,
+                    reg.student_number,
+                    reg.name_on_certificate,
+                    courseNames,
+                    cppAvg,
+                    acppAvg,
+                    packageName,
+                    reg.session,
+                    reg.additional_seats,
+                    reg.payment_status,
+                    reg.registration_status,
+                    reg.dueAmount?.toFixed(2),
+                    paidAmount.toFixed(2),
+                    due.toFixed(2)
+                ];
+            });
+
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.map(val => `"${String(val || '').replace(/"/g, '""')}"`).join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Convocation_Report_${format(new Date(), 'yyyyMMdd')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            toast({ title: "Export Successful", description: "Your report has been downloaded." });
+        } catch (err) {
+            console.error(err);
+            toast({ variant: 'destructive', title: "Export Failed", description: "An error occurred while generating the CSV." });
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const handlePageInputChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             const pageNum = parseInt(e.currentTarget.value, 10);
@@ -262,83 +379,6 @@ export default function ConvocationListPage() {
                     description: `Please enter a number between 1 and ${totalPages}.`
                 });
             }
-        }
-    };
-
-    const handleExport = () => {
-        if (filteredRegistrations.length === 0) {
-            toast({ variant: 'destructive', title: 'No data to export', description: 'Filter some data first before exporting.' });
-            return;
-        }
-        
-        setIsExporting(true);
-        try {
-            const headers = [
-                'Reference #',
-                'Student Number',
-                'Name on Certificate',
-                'Ceremony #',
-                'Courses',
-                'Package',
-                'Session',
-                'Guest Seats',
-                'Payment Status',
-                'Registration Status',
-                'Total Payable (LKR)',
-                'Paid Amount (LKR)',
-                'Due Balance (LKR)',
-                'Registered Date'
-            ];
-
-            const rows = filteredRegistrations.map(reg => {
-                const courseNames = reg.course_id.split(',').map(id => {
-                    const course = courses?.find(c => c.id === id.trim());
-                    return course?.course_name || `ID: ${id.trim()}`;
-                }).join('; ');
-
-                const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || `ID: ${reg.package_id}`;
-                const paidAmount = parseFloat(reg.payment_amount) || 0;
-                const dueBalance = reg.dueAmount - paidAmount;
-
-                return [
-                    reg.reference_number,
-                    reg.student_number,
-                    reg.name_on_certificate,
-                    reg.ceremony_number || 'N/A',
-                    courseNames,
-                    packageName,
-                    `Session ${reg.session}`,
-                    reg.additional_seats,
-                    reg.payment_status,
-                    reg.registration_status,
-                    reg.dueAmount.toFixed(2),
-                    paidAmount.toFixed(2),
-                    dueBalance.toFixed(2),
-                    format(parseISO(reg.registered_at), 'yyyy-MM-dd HH:mm')
-                ];
-            });
-
-            const csvContent = [
-                headers.join(','),
-                ...rows.map(row => row.map(val => `"${String(val || '').replace(/"/g, '""')}"`).join(','))
-            ].join('\n');
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `convocation_bookings_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-
-            toast({ title: 'Export Successful', description: `${filteredRegistrations.length} records have been exported.` });
-        } catch (err) {
-            console.error(err);
-            toast({ variant: 'destructive', title: 'Export Failed', description: 'An error occurred while generating the CSV.' });
-        } finally {
-            setIsExporting(false);
         }
     };
 
@@ -377,9 +417,9 @@ export default function ConvocationListPage() {
                     <h1 className="text-3xl font-headline font-semibold">{ceremonyIdFilter ? "Ceremony Registrations" : "All Convocation Registrations"}</h1>
                     <p className="text-muted-foreground">Manage student registrations and verify bookings.</p>
                 </div>
-                <Button onClick={handleExport} disabled={isExporting || isLoading || filteredRegistrations.length === 0} variant="outline" className="shadow-sm">
+                <Button onClick={handleExport} disabled={isExporting || filteredRegistrations.length === 0}>
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
-                    Export CSV
+                    {isExporting ? 'Preparing...' : 'Export to CSV'}
                 </Button>
             </header>
             
@@ -413,8 +453,11 @@ export default function ConvocationListPage() {
                             <Table>
                                 <TableHeader className="bg-muted/10">
                                     <TableRow className="hover:bg-transparent">
-                                        <TableHead className="w-[220px]"><SortableHeader column="student" label="Student Info" /></TableHead>
-                                        <TableHead className="min-w-[250px]">Booking Details</TableHead>
+                                        <TableHead className="w-[180px]"><SortableHeader column="ref" label="Ref #" /></TableHead>
+                                        <TableHead className="w-[220px]">Student Info</TableHead>
+                                        <TableHead className="min-w-[200px]">Booking Details</TableHead>
+                                        <TableHead className="w-[120px] text-center">CPP Avg (%)</TableHead>
+                                        <TableHead className="w-[120px] text-center">ACPP Avg (%)</TableHead>
                                         <TableHead className="w-[150px]">Status</TableHead>
                                         <TableHead className="w-[180px] text-right"><SortableHeader column="due" label="Payment Details" className="justify-end" /></TableHead>
                                         <TableHead className="w-[100px] text-right pr-6">Actions</TableHead>
@@ -426,32 +469,63 @@ export default function ConvocationListPage() {
                                         const due = (reg.dueAmount || 0) - paidAmount;
                                         const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || `ID: ${reg.package_id}`;
 
+                                        const studentFullData = studentDataMap.get(reg.student_number);
+                                        const cppEnrollment = studentFullData?.studentEnrollments ? 
+                                            Object.values(studentFullData.studentEnrollments).find(e => e.parent_course_id === "1") : null;
+                                        const acppEnrollment = studentFullData?.studentEnrollments ? 
+                                            Object.values(studentFullData.studentEnrollments).find(e => e.parent_course_id === "2") : null;
+
                                         return (
                                         <TableRow key={reg.registration_id} className={cn("text-xs transition-colors hover:bg-muted/30", reg.isDuplicate && "bg-destructive/5 hover:bg-destructive/10")}>
                                             <TableCell className="py-4 align-top">
+                                                <div className="font-mono font-bold text-sm">#{reg.reference_number}</div>
+                                                <div className="text-[9px] text-muted-foreground pt-1">Ceremony: {reg.ceremony_number || 'N/A'}</div>
+                                            </TableCell>
+                                            <TableCell className="py-4 align-top">
                                                 <div className="space-y-1">
-                                                    <div className="font-mono font-bold text-sm">#{reg.reference_number}</div>
                                                     <div className="font-semibold text-sm text-primary">{reg.student_number}</div>
                                                     <div className="text-[10px] font-medium uppercase tracking-tighter truncate max-w-[180px]">{reg.name_on_certificate || 'N/A'}</div>
-                                                    <div className="text-[9px] text-muted-foreground pt-1 border-t border-dashed">Ceremony: {reg.ceremony_number || 'N/A'}</div>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-4 align-top">
-                                                <div className="space-y-3">
+                                                <div className="space-y-2">
                                                     <div className="flex flex-col gap-1">
                                                         {(reg.course_id || '').split(',').map((id, idIdx) => {
                                                             const trimmedId = id.trim();
                                                             return (
-                                                                <div key={`${trimmedId}-${reg.registration_id}-${idIdx}`} className="text-[11px] leading-tight font-medium text-foreground">• {courses?.find(c => c.id === trimmedId)?.course_name || `ID: ${trimmedId}`}</div>
+                                                                <div key={`${trimmedId}-${reg.registration_id}-${idIdx}`} className="text-[11px] leading-tight font-medium text-foreground">
+                                                                    • {courses?.find(c => c.id === trimmedId)?.course_name || `ID: ${trimmedId}`}
+                                                                </div>
                                                             )
                                                         })}
                                                     </div>
                                                     <div className="flex flex-wrap items-center gap-2 pt-1">
                                                         <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-100">Pkg: {packageName}</span>
                                                         <Badge variant="outline" className="h-5 text-[9px] px-2 font-bold uppercase">Sess {reg.session}</Badge>
-                                                        <span className="text-[10px] font-medium text-muted-foreground">{reg.additional_seats} Guest Seats</span>
                                                     </div>
                                                 </div>
+                                            </TableCell>
+                                            <TableCell className="py-4 align-top text-center">
+                                                {isLoadingStudentData && !studentFullData ? (
+                                                    <Skeleton className="h-5 w-12 mx-auto" />
+                                                ) : cppEnrollment ? (
+                                                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-mono bg-blue-50 text-blue-700 border-blue-200">
+                                                        {parseFloat(cppEnrollment.assignment_grades.average_grade).toFixed(2)}%
+                                                    </Badge>
+                                                ) : (
+                                                    <span className="text-muted-foreground">--</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="py-4 align-top text-center">
+                                                {isLoadingStudentData && !studentFullData ? (
+                                                    <Skeleton className="h-5 w-12 mx-auto" />
+                                                ) : acppEnrollment ? (
+                                                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-mono bg-purple-50 text-purple-700 border-purple-200">
+                                                        {parseFloat(acppEnrollment.assignment_grades.average_grade).toFixed(2)}%
+                                                    </Badge>
+                                                ) : (
+                                                    <span className="text-muted-foreground">--</span>
+                                                )}
                                             </TableCell>
                                             <TableCell className="py-4 align-top">
                                                 <div className="flex flex-col items-start gap-1.5 pt-1">
@@ -482,7 +556,7 @@ export default function ConvocationListPage() {
                                         </TableRow>
                                         )
                                     }) : (
-                                        <TableRow><TableCell colSpan={5} className="text-center h-32 text-muted-foreground italic">No registrations found.</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={8} className="text-center h-32 text-muted-foreground italic">No registrations found.</TableCell></TableRow>
                                     )}
                                 </TableBody>
                             </Table>
@@ -505,6 +579,12 @@ export default function ConvocationListPage() {
                      <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages || 1))} disabled={currentPage === totalPages || totalPages === 0}>Next</Button>
                 </CardFooter>
             </Card>
+            {isLoadingStudentData && paginatedRegistrations.length > 0 && (
+                <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-2xl animate-in fade-in-50 slide-in-from-bottom-4 flex items-center gap-2 text-xs font-bold">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Hydrating Academic Performance Data...
+                </div>
+            )}
         </div>
     );
 }

@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { PlusCircle, Edit, Trash2, Loader2, AlertTriangle, GraduationCap, Package, Users } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, AlertTriangle, GraduationCap, Package, Users, Award } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -246,6 +246,11 @@ export default function ManageConvocationCeremoniesPage() {
                                                      <Button asChild variant="outline" size="sm">
                                                         <Link href={`/admin/manage/convocation?ceremonyId=${c.id}`}>
                                                             <Users className="mr-2 h-4 w-4" /> Registrations
+                                                        </Link>
+                                                    </Button>
+                                                     <Button asChild variant="outline" size="sm">
+                                                        <Link href={`/admin/manage/convocation-generate?ceremonyId=${c.id}`}>
+                                                            <Award className="mr-2 h-4 w-4" /> Generate
                                                         </Link>
                                                     </Button>
                                                      <Button asChild variant="outline" size="sm">
