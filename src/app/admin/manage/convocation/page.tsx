@@ -55,11 +55,9 @@ export default function ConvocationListPage() {
     const [courseFilter, setCourseFilter] = useState('all');
     const [packageFilter, setPackageFilter] = useState('all');
     const [sessionFilter, setSessionFilter] = useState('all');
-    const [sortOption, setSortOption] = useState('date-desc');
+    const [sortOption, setSortOption] = useState('ref-desc'); // Default to Latest First (Ref Descending)
     const [currentPage, setCurrentPage] = useState(initialPage);
     const [viewingDetails, setViewingDetails] = useState<ConvocationRegistration | null>(null);
-    const [isExporting, setIsExporting] = useState(false);
-    const [exportProgress, setExportProgress] = useState(0);
     
     // Map to store fetched student enrollment details (including marks)
     const [studentDataMap, setStudentDataMap] = useState<Map<string, FullStudentData>>(new Map());
@@ -105,7 +103,7 @@ export default function ConvocationListPage() {
             const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
             setSortOption(`${column}-${newDirection}`);
         } else {
-            const newDirection = column === 'date' ? 'desc' : 'asc';
+            const newDirection = column === 'date' || column === 'ref' ? 'desc' : 'asc';
             setSortOption(`${column}-${newDirection}`);
         }
     };
@@ -205,21 +203,6 @@ export default function ConvocationListPage() {
         });
 
         return filtered.sort((a, b) => {
-            const getPriority = (status: string = '') => {
-                const s = status.toLowerCase();
-                if (s === 'pending') return 1;
-                if (s === 'partially-paid' || s === 'partially paid') return 2;
-                if (s === 'paid' || s === 'approved' || s === 'confirmed') return 3;
-                return 4;
-            };
-
-            const priorityA = getPriority(a.payment_status);
-            const priorityB = getPriority(b.payment_status);
-
-            if (priorityA !== priorityB) {
-                return priorityA - priorityB;
-            }
-
             const getSortableValue = (reg: any, column: SortableColumn) => {
                 switch(column) {
                     case 'student': return reg.student_number || '';
@@ -300,125 +283,6 @@ export default function ConvocationListPage() {
         }
     };
 
-    const handleExport = async () => {
-        if (filteredRegistrations.length === 0) {
-            toast({ variant: 'destructive', title: 'No data to export', description: 'Filter some data first before exporting.' });
-            return;
-        }
-        
-        setIsExporting(true);
-        setExportProgress(0);
-        toast({ title: 'Preparing Export', description: 'Fetching performance data for all records. This might take a moment.' });
-
-        try {
-            // Identify students who need performance data
-            const allStudentNumbers = [...new Set(filteredRegistrations.map(r => r.student_number))];
-            const neededStudentNumbers = allStudentNumbers.filter(sn => !studentDataMap.has(sn));
-            
-            const updatedMap = new Map(studentDataMap);
-
-            if (neededStudentNumbers.length > 0) {
-                // Fetch missing data in chunks
-                const batchSize = 10;
-                for (let i = 0; i < neededStudentNumbers.length; i += batchSize) {
-                    const chunk = neededStudentNumbers.slice(i, i + batchSize);
-                    const results = await Promise.all(
-                        chunk.map(sn => getStudentFullInfo(sn).catch(() => null))
-                    );
-                    results.forEach((res, idx) => {
-                        if (res) updatedMap.set(chunk[idx], res);
-                    });
-                    
-                    const progress = Math.min(95, Math.round(((i + chunk.length) / neededStudentNumbers.length) * 100));
-                    setExportProgress(progress);
-
-                    // Delay to be gentle on server
-                    if (i + batchSize < neededStudentNumbers.length) {
-                        await new Promise(resolve => setTimeout(resolve, 200));
-                    }
-                }
-            }
-            
-            setExportProgress(98);
-
-            const headers = [
-                'Reference #',
-                'Student Number',
-                'Name on Certificate',
-                'Ceremony #',
-                'Courses & Marks',
-                'Package',
-                'Session',
-                'Guest Seats',
-                'Payment Status',
-                'Registration Status',
-                'Total Payable (LKR)',
-                'Paid Amount (LKR)',
-                'Due Balance (LKR)',
-                'Registered Date'
-            ];
-
-            const rows = filteredRegistrations.map(reg => {
-                const courseInfo = reg.course_id.split(',').map(id => {
-                    const trimmedId = id.trim();
-                    const course = courses?.find(c => c.id === trimmedId);
-                    const studentFullData = updatedMap.get(reg.student_number);
-                    const enrollment = studentFullData?.studentEnrollments ? 
-                        Object.values(studentFullData.studentEnrollments).find(e => e.parent_course_id === trimmedId) : null;
-                    const avgGrade = enrollment?.assignment_grades?.average_grade;
-                    
-                    const baseName = course?.course_name || `ID: ${trimmedId}`;
-                    return avgGrade ? `${baseName} (${parseFloat(avgGrade).toFixed(2)}%)` : baseName;
-                }).join('; ');
-
-                const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || `ID: ${reg.package_id}`;
-                const paidAmount = parseFloat(reg.payment_amount) || 0;
-                const dueBalance = reg.dueAmount - paidAmount;
-
-                return [
-                    reg.reference_number,
-                    reg.student_number,
-                    reg.name_on_certificate,
-                    reg.ceremony_number || 'N/A',
-                    courseInfo,
-                    packageName,
-                    `Session ${reg.session}`,
-                    reg.additional_seats,
-                    reg.payment_status,
-                    reg.registration_status,
-                    reg.dueAmount.toFixed(2),
-                    paidAmount.toFixed(2),
-                    dueBalance.toFixed(2),
-                    format(parseISO(reg.registered_at), 'yyyy-MM-dd HH:mm')
-                ];
-            });
-
-            const csvContent = [
-                headers.join(','),
-                ...rows.map(row => row.map(val => `"${String(val || '').replace(/"/g, '""')}"`).join(','))
-            ].join('\n');
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.setAttribute('href', URL.createObjectURL(blob));
-            link.setAttribute('download', `convocation_bookings_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            setExportProgress(100);
-            toast({ title: 'Export Successful', description: `${filteredRegistrations.length} records exported with academic marks.` });
-        } catch (err) {
-            console.error(err);
-            toast({ variant: 'destructive', title: 'Export Failed', description: 'An error occurred while generating the CSV.' });
-        } finally {
-            setTimeout(() => {
-                setIsExporting(false);
-                setExportProgress(0);
-            }, 500);
-        }
-    };
-
     const getStatusBadge = (status: string) => {
         switch (status.toLowerCase()) {
             case 'pending': return 'bg-yellow-500 text-white';
@@ -444,24 +308,6 @@ export default function ConvocationListPage() {
                 packages={packages}
             />
 
-            <Dialog open={isExporting} onOpenChange={() => {}}>
-                <DialogContent className="sm:max-w-md" hideCloseButton>
-                    <DialogHeader>
-                        <DialogTitle>Generating Export</DialogTitle>
-                        <DialogDescription>
-                            Fetching academic data and preparing your CSV file. Please wait.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-6 space-y-4">
-                        <Progress value={exportProgress} className="h-2" />
-                        <div className="flex justify-between text-xs text-muted-foreground font-medium">
-                            <span>Processing student data...</span>
-                            <span>{exportProgress}%</span>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
                     {ceremonyIdFilter && (
@@ -472,10 +318,6 @@ export default function ConvocationListPage() {
                     <h1 className="text-3xl font-headline font-semibold">{ceremonyIdFilter ? "Ceremony Registrations" : "All Convocation Registrations"}</h1>
                     <p className="text-muted-foreground">Manage student registrations and verify bookings.</p>
                 </div>
-                <Button onClick={handleExport} disabled={isExporting || isLoading || filteredRegistrations.length === 0} variant="outline" className="shadow-sm">
-                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
-                    Export CSV
-                </Button>
             </header>
             
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -508,8 +350,11 @@ export default function ConvocationListPage() {
                             <Table>
                                 <TableHeader className="bg-muted/10">
                                     <TableRow className="hover:bg-transparent">
-                                        <TableHead className="w-[220px]"><SortableHeader column="student" label="Student Info" /></TableHead>
-                                        <TableHead className="min-w-[250px]">Booking Details</TableHead>
+                                        <TableHead className="w-[180px]"><SortableHeader column="ref" label="Ref #" /></TableHead>
+                                        <TableHead className="w-[220px]">Student Info</TableHead>
+                                        <TableHead className="min-w-[200px]">Booking Details</TableHead>
+                                        <TableHead className="w-[120px] text-center">CPP Avg (%)</TableHead>
+                                        <TableHead className="w-[120px] text-center">ACPP Avg (%)</TableHead>
                                         <TableHead className="w-[150px]">Status</TableHead>
                                         <TableHead className="w-[180px] text-right"><SortableHeader column="due" label="Payment Details" className="justify-end" /></TableHead>
                                         <TableHead className="w-[100px] text-right pr-6">Actions</TableHead>
@@ -521,36 +366,32 @@ export default function ConvocationListPage() {
                                         const due = (reg.dueAmount || 0) - paidAmount;
                                         const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || `ID: ${reg.package_id}`;
 
+                                        const studentFullData = studentDataMap.get(reg.student_number);
+                                        const cppEnrollment = studentFullData?.studentEnrollments ? 
+                                            Object.values(studentFullData.studentEnrollments).find(e => e.parent_course_id === "1") : null;
+                                        const acppEnrollment = studentFullData?.studentEnrollments ? 
+                                            Object.values(studentFullData.studentEnrollments).find(e => e.parent_course_id === "2") : null;
+
                                         return (
                                         <TableRow key={reg.registration_id} className={cn("text-xs transition-colors hover:bg-muted/30", reg.isDuplicate && "bg-destructive/5 hover:bg-destructive/10")}>
                                             <TableCell className="py-4 align-top">
+                                                <div className="font-mono font-bold text-sm">#{reg.reference_number}</div>
+                                                <div className="text-[9px] text-muted-foreground pt-1">Ceremony: {reg.ceremony_number || 'N/A'}</div>
+                                            </TableCell>
+                                            <TableCell className="py-4 align-top">
                                                 <div className="space-y-1">
-                                                    <div className="font-mono font-bold text-sm">#{reg.reference_number}</div>
                                                     <div className="font-semibold text-sm text-primary">{reg.student_number}</div>
                                                     <div className="text-[10px] font-medium uppercase tracking-tighter truncate max-w-[180px]">{reg.name_on_certificate || 'N/A'}</div>
-                                                    <div className="text-[9px] text-muted-foreground pt-1 border-t border-dashed">Ceremony: {reg.ceremony_number || 'N/A'}</div>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-4 align-top">
-                                                <div className="space-y-3">
+                                                <div className="space-y-2">
                                                     <div className="flex flex-col gap-1">
                                                         {(reg.course_id || '').split(',').map((id, idIdx) => {
                                                             const trimmedId = id.trim();
-                                                            const studentFullData = studentDataMap.get(reg.student_number);
-                                                            const enrollment = studentFullData?.studentEnrollments ? 
-                                                                Object.values(studentFullData.studentEnrollments).find(e => e.parent_course_id === trimmedId) : null;
-                                                            const avgGrade = enrollment?.assignment_grades?.average_grade;
-
                                                             return (
-                                                                <div key={`${trimmedId}-${reg.registration_id}-${idIdx}`} className="flex items-center justify-between gap-4 text-[11px] leading-tight font-medium text-foreground">
-                                                                    <span>• {courses?.find(c => c.id === trimmedId)?.course_name || `ID: ${trimmedId}`}</span>
-                                                                    {avgGrade ? (
-                                                                        <Badge variant="secondary" className="h-4 px-1 text-[9px] font-mono shrink-0 bg-blue-50 text-blue-700 border-blue-200">
-                                                                            {parseFloat(avgGrade).toFixed(2)}%
-                                                                        </Badge>
-                                                                    ) : isLoadingStudentData ? (
-                                                                        <Skeleton className="h-3 w-8 shrink-0" />
-                                                                    ) : null}
+                                                                <div key={`${trimmedId}-${reg.registration_id}-${idIdx}`} className="text-[11px] leading-tight font-medium text-foreground">
+                                                                    • {courses?.find(c => c.id === trimmedId)?.course_name || `ID: ${trimmedId}`}
                                                                 </div>
                                                             )
                                                         })}
@@ -558,9 +399,30 @@ export default function ConvocationListPage() {
                                                     <div className="flex flex-wrap items-center gap-2 pt-1">
                                                         <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-100">Pkg: {packageName}</span>
                                                         <Badge variant="outline" className="h-5 text-[9px] px-2 font-bold uppercase">Sess {reg.session}</Badge>
-                                                        <span className="text-[10px] font-medium text-muted-foreground">{reg.additional_seats} Guest Seats</span>
                                                     </div>
                                                 </div>
+                                            </TableCell>
+                                            <TableCell className="py-4 align-top text-center">
+                                                {isLoadingStudentData && !studentFullData ? (
+                                                    <Skeleton className="h-5 w-12 mx-auto" />
+                                                ) : cppEnrollment ? (
+                                                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-mono bg-blue-50 text-blue-700 border-blue-200">
+                                                        {parseFloat(cppEnrollment.assignment_grades.average_grade).toFixed(2)}%
+                                                    </Badge>
+                                                ) : (
+                                                    <span className="text-muted-foreground">--</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="py-4 align-top text-center">
+                                                {isLoadingStudentData && !studentFullData ? (
+                                                    <Skeleton className="h-5 w-12 mx-auto" />
+                                                ) : acppEnrollment ? (
+                                                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-mono bg-purple-50 text-purple-700 border-purple-200">
+                                                        {parseFloat(acppEnrollment.assignment_grades.average_grade).toFixed(2)}%
+                                                    </Badge>
+                                                ) : (
+                                                    <span className="text-muted-foreground">--</span>
+                                                )}
                                             </TableCell>
                                             <TableCell className="py-4 align-top">
                                                 <div className="flex flex-col items-start gap-1.5 pt-1">
@@ -591,7 +453,7 @@ export default function ConvocationListPage() {
                                         </TableRow>
                                         )
                                     }) : (
-                                        <TableRow><TableCell colSpan={5} className="text-center h-32 text-muted-foreground italic">No registrations found.</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={8} className="text-center h-32 text-muted-foreground italic">No registrations found.</TableCell></TableRow>
                                     )}
                                 </TableBody>
                             </Table>
@@ -617,7 +479,7 @@ export default function ConvocationListPage() {
             {isLoadingStudentData && paginatedRegistrations.length > 0 && (
                 <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-2xl animate-in fade-in-50 slide-in-from-bottom-4 flex items-center gap-2 text-xs font-bold">
                     <Loader2 className="h-3 w-3 animate-spin" />
-                    Fetching Academic Performance...
+                    Hydrating Academic Performance Data...
                 </div>
             )}
         </div>
