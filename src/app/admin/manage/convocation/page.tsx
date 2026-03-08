@@ -195,7 +195,6 @@ export default function ConvocationListPage() {
         });
 
         return filtered.sort((a, b) => {
-            // Status priority logic: Pending (1) > Partially Paid (2) > Paid/Confirmed (3) > Rejected/Canceled (4)
             const getPriority = (status: string = '') => {
                 const s = status.toLowerCase();
                 if (s === 'pending') return 1;
@@ -211,7 +210,6 @@ export default function ConvocationListPage() {
                 return priorityA - priorityB;
             }
 
-            // Secondary sorting based on selected column
             const getSortableValue = (reg: any, column: SortableColumn) => {
                 switch(column) {
                     case 'student': return reg.student_number || '';
@@ -255,7 +253,6 @@ export default function ConvocationListPage() {
         return filteredRegistrations.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     }, [filteredRegistrations, currentPage]);
 
-    // --- Batch Data Fetching for Marks ---
     const studentNumbersToFetch = useMemo(() => {
         return [...new Set(paginatedRegistrations.map(o => o.student_number).filter(sn => !studentDataMap.has(sn)))];
     }, [paginatedRegistrations, studentDataMap]);
@@ -293,20 +290,44 @@ export default function ConvocationListPage() {
         }
     };
 
-    const handleExport = () => {
+    const handleExport = async () => {
         if (filteredRegistrations.length === 0) {
             toast({ variant: 'destructive', title: 'No data to export', description: 'Filter some data first before exporting.' });
             return;
         }
         
         setIsExporting(true);
+        toast({ title: 'Preparing Export', description: 'Fetching performance data for all records. This might take a moment.' });
+
         try {
+            // Identify students who need performance data
+            const allStudentNumbers = [...new Set(filteredRegistrations.map(r => r.student_number))];
+            const neededStudentNumbers = allStudentNumbers.filter(sn => !studentDataMap.has(sn));
+            
+            // Fetch missing data in chunks
+            const batchSize = 10;
+            const updatedMap = new Map(studentDataMap);
+            
+            for (let i = 0; i < neededStudentNumbers.length; i += batchSize) {
+                const chunk = neededStudentNumbers.slice(i, i + batchSize);
+                const results = await Promise.all(
+                    chunk.map(sn => getStudentFullInfo(sn).catch(() => null))
+                );
+                results.forEach((res, idx) => {
+                    if (res) updatedMap.set(chunk[idx], res);
+                });
+                // Update map to use for CSV generation
+                if (i + batchSize < neededStudentNumbers.length) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+            }
+
             const headers = [
                 'Reference #',
                 'Student Number',
                 'Name on Certificate',
                 'Ceremony #',
-                'Courses',
+                'Courses & Marks',
                 'Package',
                 'Session',
                 'Guest Seats',
@@ -319,9 +340,16 @@ export default function ConvocationListPage() {
             ];
 
             const rows = filteredRegistrations.map(reg => {
-                const courseNames = reg.course_id.split(',').map(id => {
-                    const course = courses?.find(c => c.id === id.trim());
-                    return course?.course_name || `ID: ${id.trim()}`;
+                const courseInfo = reg.course_id.split(',').map(id => {
+                    const trimmedId = id.trim();
+                    const course = courses?.find(c => c.id === trimmedId);
+                    const studentFullData = updatedMap.get(reg.student_number);
+                    const enrollment = studentFullData?.studentEnrollments ? 
+                        Object.values(studentFullData.studentEnrollments).find(e => e.parent_course_id === trimmedId) : null;
+                    const avgGrade = enrollment?.assignment_grades?.average_grade;
+                    
+                    const baseName = course?.course_name || `ID: ${trimmedId}`;
+                    return avgGrade ? `${baseName} (${parseFloat(avgGrade).toFixed(2)}%)` : baseName;
                 }).join('; ');
 
                 const packageName = packages?.find(p => p.package_id === reg.package_id)?.package_name || `ID: ${reg.package_id}`;
@@ -333,7 +361,7 @@ export default function ConvocationListPage() {
                     reg.student_number,
                     reg.name_on_certificate,
                     reg.ceremony_number || 'N/A',
-                    courseNames,
+                    courseInfo,
                     packageName,
                     `Session ${reg.session}`,
                     reg.additional_seats,
@@ -353,15 +381,13 @@ export default function ConvocationListPage() {
 
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
+            link.setAttribute('href', URL.createObjectURL(blob));
             link.setAttribute('download', `convocation_bookings_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            URL.revokeObjectURL(url);
 
-            toast({ title: 'Export Successful', description: `${filteredRegistrations.length} records have been exported.` });
+            toast({ title: 'Export Successful', description: `${filteredRegistrations.length} records exported with academic marks.` });
         } catch (err) {
             console.error(err);
             toast({ variant: 'destructive', title: 'Export Failed', description: 'An error occurred while generating the CSV.' });
@@ -417,7 +443,7 @@ export default function ConvocationListPage() {
                 <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Confirmed Payments</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={registrationStats.confirmedPayments} /></div></CardContent></Card>
                 <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Additional Seats</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold"><AnimatedCounter value={registrationStats.additionalSeats} /></div></CardContent></Card>
                 <Card className="bg-primary/5 border-primary/20"><CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0"><CardTitle className="text-sm font-bold text-primary">Verified Revenue</CardTitle><Banknote className="h-4 w-4 text-primary" /></CardHeader><CardContent><div className="text-xl font-bold text-primary">LKR {registrationStats.totalVerified.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div></CardContent></Card>
-                <Card className="bg-destructive/5 border-destructive/20"><CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0"><CardTitle className="text-sm font-bold text-destructive">Due Balance</CardTitle><Wallet className="h-4 w-4 text-destructive" /></CardHeader><CardContent><div className="text-xl font-bold text-destructive">LKR {registrationStats.totalDue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div></CardContent></Card>
+                <Card className="bg-destructive/5 border-destructive/20"><CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0"><CardTitle className="text-sm font-bold text-destructive">Due Balance</CardTitle><Wallet className="h-4 w-4 text-destructive" /></CardHeader><CardContent><div className="text-xl font-bold text-destructive">LKR {registrationStats.totalDue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div></CardContent>
             </section>
             
             <Card className="shadow-lg overflow-hidden">
@@ -428,7 +454,7 @@ export default function ConvocationListPage() {
                             <Input placeholder="Search student info..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-10"/>
                         </div>
                         <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="h-10"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="paid">Paid</SelectItem><SelectItem value="pending">Pending</SelectItem><SelectItem value="rejected">Rejected</SelectItem></SelectContent></Select>
-                        <Select value={sessionFilter} onValueChange={setSessionFilter}><SelectTrigger className="h-10"><SelectValue placeholder="Session" /></SelectTrigger><SelectContent><SelectItem value="all">All Sessions</SelectItem><SelectItem value="1">Session 1</SelectItem><SelectItem value="2">Session 2</SelectItem></SelectContent></Select>
+                        <Select value={sessionFilter} onValueChange={sessionFilter} onValueChange={setSessionFilter}><SelectTrigger className="h-10"><SelectValue placeholder="Session" /></SelectTrigger><SelectContent><SelectItem value="all">All Sessions</SelectItem><SelectItem value="1">Session 1</SelectItem><SelectItem value="2">Session 2</SelectItem></SelectContent></Select>
                         <Select value={courseFilter} onValueChange={setCourseFilter} disabled={isLoadingCourses}><SelectTrigger className="h-10"><SelectValue placeholder="Course" /></SelectTrigger><SelectContent><SelectItem value="all">All Courses</SelectItem>{courses?.map(c => <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>)}</SelectContent></Select>
                          <Select value={packageFilter} onValueChange={setPackageFilter} disabled={isLoadingPackages}><SelectTrigger className="h-10"><SelectValue placeholder="Package" /></SelectTrigger><SelectContent><SelectItem value="all">All Packages</SelectItem>{packages?.filter(p => !ceremonyIdFilter || p.convocation_id === ceremonyIdFilter).map(p => <SelectItem key={p.package_id} value={p.package_id}>{p.package_name}</SelectItem>)}</SelectContent></Select>
                     </div>
