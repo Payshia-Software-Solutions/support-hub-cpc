@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -478,11 +477,13 @@ export default function ConvocationListPage() {
                                                             return (
                                                                 <div key={`${trimmedId}-${reg.registration_id}-${idIdx}`} className="flex items-center justify-between gap-4 text-[11px] leading-tight font-medium text-foreground">
                                                                     <span>• {courses?.find(c => c.id === trimmedId)?.course_name || `ID: ${trimmedId}`}</span>
-                                                                    {avgGrade && (
+                                                                    {avgGrade ? (
                                                                         <Badge variant="secondary" className="h-4 px-1 text-[9px] font-mono shrink-0 bg-blue-50 text-blue-700 border-blue-200">
                                                                             {parseFloat(avgGrade).toFixed(2)}%
                                                                         </Badge>
-                                                                    )}
+                                                                    ) : isLoadingStudentData ? (
+                                                                        <Skeleton className="h-3 w-8 shrink-0" />
+                                                                    ) : null}
                                                                 </div>
                                                             )
                                                         })}
@@ -546,6 +547,12 @@ export default function ConvocationListPage() {
                      <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages || 1))} disabled={currentPage === totalPages || totalPages === 0}>Next</Button>
                 </CardFooter>
             </Card>
+            {isLoadingStudentData && paginatedRegistrations.length > 0 && (
+                <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-2xl animate-in fade-in-50 slide-in-from-bottom-4 flex items-center gap-2 text-xs font-bold">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Fetching Academic Performance...
+                </div>
+            )}
         </div>
     );
 }
