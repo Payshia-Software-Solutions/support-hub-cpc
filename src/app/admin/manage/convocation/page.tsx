@@ -296,7 +296,9 @@ export default function ConvocationListPage() {
             const headers = [
                 'Ref #',
                 'Student ID',
-                'Name on Certificate',
+                'Student Name (Profile)',
+                'Name on Cert (Booking)',
+                'Name on Cert (Profile)',
                 'Courses',
                 'CPP Avg (%)',
                 'ACPP Avg (%)',
@@ -333,7 +335,9 @@ export default function ConvocationListPage() {
                 return [
                     reg.reference_number,
                     reg.student_number,
-                    reg.name_on_certificate,
+                    studentFullData?.studentInfo.full_name || 'N/A',
+                    reg.name_on_certificate || 'N/A',
+                    studentFullData?.studentInfo.name_on_certificate || 'N/A',
                     courseNames,
                     cppAvg,
                     acppAvg,

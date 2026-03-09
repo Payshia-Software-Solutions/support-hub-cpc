@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -332,6 +333,80 @@ export default function CertificateOrdersListPage() {
         updateCourses({ orderId: orderToUpdate.id, courseCodes: allCourseIds.join(',') });
     };
 
+    const handleExport = async () => {
+        if (!filteredOrders.length) return;
+        setIsExporting(true);
+        try {
+            const headers = [
+                'Order ID',
+                'Student ID',
+                'Name on Cert (Order)',
+                'Name on Cert (Profile)',
+                'Full Name (Profile)',
+                'Course Code(s)',
+                'Order Status',
+                'Print Status',
+                'Order Date',
+                'Mobile',
+                'Address Line 1',
+                'Address Line 2',
+                'City',
+                'District'
+            ];
+
+            // Hydrate data for the entire filtered list before export
+            const studentNumbers = [...new Set(filteredOrders.map(o => o.created_by))];
+            const profileDataMap = new Map<string, FullStudentData>();
+            
+            const CHUNK_SIZE = 10;
+            for (let i = 0; i < studentNumbers.length; i += CHUNK_SIZE) {
+                const chunk = studentNumbers.slice(i, i + CHUNK_SIZE);
+                const results = await Promise.all(chunk.map(sn => getStudentFullInfo(sn).catch(() => null)));
+                results.forEach((res, idx) => { if (res) profileDataMap.set(chunk[idx], res); });
+            }
+
+            const rows = filteredOrders.map(order => {
+                const profile = profileDataMap.get(order.created_by);
+                return [
+                    order.id,
+                    order.created_by,
+                    order.name_on_certificate || 'N/A',
+                    profile?.studentInfo.name_on_certificate || 'N/A',
+                    profile?.studentInfo.full_name || 'N/A',
+                    order.course_code,
+                    order.certificate_status,
+                    order.print_status || 'Pending',
+                    new Date(order.created_at).toLocaleDateString(),
+                    order.mobile,
+                    order.address_line1,
+                    order.address_line2 || '',
+                    order.city_id,
+                    order.district
+                ];
+            });
+
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.map(val => `"${String(val || '').replace(/"/g, '""')}"`).join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Certificate_Orders_${format(new Date(), 'yyyyMMdd')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            toast({ title: "Export Successful", description: "The order list has been downloaded." });
+        } catch (err) {
+            toast({ variant: 'destructive', title: "Export Failed", description: "An error occurred during CSV generation." });
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const handlePageInputChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             const pageNum = parseInt(e.currentTarget.value, 10);
@@ -367,7 +442,16 @@ export default function CertificateOrdersListPage() {
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
-            <header><h1 className="text-3xl font-headline font-semibold">Certificate Orders</h1><p className="text-muted-foreground">View all certificate orders and check student eligibility.</p></header>
+            <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-headline font-semibold">Certificate Orders</h1>
+                    <p className="text-muted-foreground">View all certificate orders and check student eligibility.</p>
+                </div>
+                <Button onClick={handleExport} disabled={isExporting || filteredOrders.length === 0}>
+                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                    {isExporting ? 'Preparing...' : 'Export to CSV'}
+                </Button>
+            </header>
 
             <AlertDialog open={!!orderToDelete} onOpenChange={() => setOrderToDelete(null)}>
                 <AlertDialogContent>
@@ -433,7 +517,6 @@ export default function CertificateOrdersListPage() {
                         <div><CardTitle>All Orders</CardTitle><CardDescription>{filteredOrders.length} orders found.</CardDescription></div>
                         <div className="flex items-center gap-2">
                             <div className="relative w-full sm:w-auto sm:max-w-xs"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search student or name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10"/></div>
-                            <Button onClick={() => {}} disabled={true}><FileDown className="mr-2 h-4 w-4" />Export</Button>
                         </div>
                     </div>
                 </CardHeader>
