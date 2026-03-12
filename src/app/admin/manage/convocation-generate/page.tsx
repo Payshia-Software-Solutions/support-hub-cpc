@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     getConvocationCeremonies, 
     getConvocationRegistrations, 
-    generateCertificate, 
+    generateAllCertificatesForBooking, 
     getUserCertificatePrintStatus 
 } from '@/lib/actions/certificates';
 import { getParentCourses } from '@/lib/actions/courses';
@@ -13,7 +13,6 @@ import type {
     ConvocationCeremony, 
     ConvocationRegistration, 
     ParentCourse, 
-    GenerateCertificatePayload, 
     UserCertificatePrintStatus 
 } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -29,14 +28,8 @@ import {
     Award, 
     Loader2, 
     Search, 
-    CheckCircle, 
     Database, 
-    ArrowLeft, 
-    FileText, 
-    RefreshCw,
-    GraduationCap,
     Printer,
-    ZoomIn
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -50,94 +43,88 @@ import Link from 'next/link';
 
 const ITEMS_PER_PAGE = 25;
 
-// --- Sub-component for individual certificate status ---
-const IndividualCertificateControl = ({ 
-    studentNumber, 
-    courseId, 
-    registrationId,
+// --- Sub-component for single-booking certificate management ---
+const BookingCertificateControl = ({ 
+    registration,
     courseNameMap 
 }: { 
-    studentNumber: string, 
-    courseId: string, 
-    registrationId: string,
+    registration: ConvocationRegistration,
     courseNameMap: Map<string, string>
 }) => {
     const queryClient = useQueryClient();
     const { user } = useAuth();
 
     const { data: certStatus, isLoading, refetch } = useQuery<{ certificateStatus: UserCertificatePrintStatus[] }>({
-        queryKey: ['userCertificateStatus', studentNumber],
-        queryFn: () => getUserCertificatePrintStatus(studentNumber),
+        queryKey: ['userCertificateStatus', registration.student_number],
+        queryFn: () => getUserCertificatePrintStatus(registration.student_number),
         staleTime: 5 * 60 * 1000,
     });
 
-    const generatedCert = useMemo(() => {
-        return certStatus?.certificateStatus?.find(c => c.parent_course_id === courseId && c.type === 'Certificate');
-    }, [certStatus, courseId]);
-
     const generateMutation = useMutation({
-        mutationFn: generateCertificate,
+        mutationFn: () => generateAllCertificatesForBooking(registration.registration_id),
         onSuccess: (data) => {
-            toast({ title: 'Success', description: `Certificate ${data.certificate_id} generated.` });
+            toast({ title: 'Success', description: data.message });
             refetch();
         },
         onError: (err: Error) => toast({ variant: 'destructive', title: 'Generation Failed', description: err.message })
     });
 
-    const handleGenerate = () => {
-        if (!user?.username) return;
-        
-        const payload: GenerateCertificatePayload = {
-            student_number: studentNumber,
-            print_status: "0",
-            print_by: user.username,
-            type: "Certificate",
-            parentCourseCode: parseInt(courseId, 10),
-            referenceId: parseInt(registrationId, 10),
-            course_code: "CONVOCATION", // Specialized source
-            source: "convocation"
-        };
-        generateMutation.mutate(payload);
+    const courseIds = registration.course_id.split(',').map(id => id.trim()).filter(Boolean);
+    
+    const getGeneratedCert = (courseId: string) => {
+        return certStatus?.certificateStatus?.find(c => c.parent_course_id === courseId && c.type === 'Certificate');
     };
 
-    if (isLoading) return <Skeleton className="h-8 w-24" />;
+    const allGenerated = courseIds.every(id => !!getGeneratedCert(id));
 
-    if (generatedCert) {
-        return (
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <div className="flex items-center gap-2">
-                            <Badge variant={generatedCert.print_status === '1' ? 'default' : 'secondary'} className="font-mono">
-                                {generatedCert.certificate_id}
-                            </Badge>
-                            <Button asChild size="icon" variant="ghost" className="h-7 w-7">
-                                <Link href={`/print/certificate/${generatedCert.certificate_id}`} target="_blank">
-                                    <Printer className="h-3.5 w-3.5" />
-                                </Link>
-                            </Button>
-                        </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>{generatedCert.print_status === '1' ? 'Printed' : 'Generated'}</p>
-                        <p className="text-[10px] opacity-70">Course: {courseNameMap.get(courseId) || courseId}</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-        );
-    }
+    if (isLoading) return <div className="space-y-2"><Skeleton className="h-6 w-24" /><Skeleton className="h-6 w-24" /></div>;
 
     return (
-        <Button 
-            size="sm" 
-            variant="outline" 
-            className="h-8 text-[10px] font-bold uppercase" 
-            onClick={handleGenerate}
-            disabled={generateMutation.isPending}
-        >
-            {generateMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Award className="h-3 w-3 mr-1" />}
-            Generate
-        </Button>
+        <div className="flex flex-col gap-2">
+            {courseIds.map(id => {
+                const cert = getGeneratedCert(id);
+                return (
+                    <div key={id} className="flex items-center gap-2 h-6">
+                        {cert ? (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant={cert.print_status === '1' ? 'default' : 'secondary'} className="font-mono text-[9px] h-5">
+                                                {cert.certificate_id}
+                                            </Badge>
+                                            <Button asChild size="icon" variant="ghost" className="h-5 w-5">
+                                                <Link href={`/print/certificate/${cert.certificate_id}`} target="_blank">
+                                                    <Printer className="h-3 w-3" />
+                                                </Link>
+                                            </Button>
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{cert.print_status === '1' ? 'Printed' : 'Generated'}</p>
+                                        <p className="text-[10px] opacity-70">Course: {courseNameMap.get(id) || id}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        ) : (
+                            <Badge variant="outline" className="text-[8px] opacity-50 border-dashed h-4 px-1">PENDING</Badge>
+                        )}
+                    </div>
+                );
+            })}
+            
+            {!allGenerated && (
+                <Button 
+                    size="sm" 
+                    className="w-full mt-1 h-7 text-[9px] font-bold uppercase" 
+                    onClick={() => generateMutation.mutate()}
+                    disabled={generateMutation.isPending}
+                >
+                    {generateMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Award className="h-3 w-3 mr-1" />}
+                    Generate All
+                </Button>
+            )}
+        </div>
     );
 };
 
@@ -288,24 +275,17 @@ export default function ConvocationCertificateGenPage() {
                                             <TableCell>
                                                 <div className="flex flex-col gap-1 max-w-[200px]">
                                                     {reg.course_id.split(',').map(id => id.trim()).filter(Boolean).map(id => (
-                                                        <div key={id} className="text-[10px] truncate" title={courseNameMap.get(id)}>
+                                                        <div key={id} className="text-[10px] truncate leading-6" title={courseNameMap.get(id)}>
                                                             • {courseNameMap.get(id) || `ID: ${id}`}
                                                         </div>
                                                     ))}
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex flex-col gap-2">
-                                                    {reg.course_id.split(',').map(id => id.trim()).filter(Boolean).map(id => (
-                                                        <IndividualCertificateControl 
-                                                            key={id} 
-                                                            studentNumber={reg.student_number} 
-                                                            courseId={id} 
-                                                            registrationId={reg.registration_id}
-                                                            courseNameMap={courseNameMap}
-                                                        />
-                                                    ))}
-                                                </div>
+                                                <BookingCertificateControl 
+                                                    registration={reg}
+                                                    courseNameMap={courseNameMap}
+                                                />
                                             </TableCell>
                                             <TableCell className="text-right pr-6">
                                                 <Dialog>
