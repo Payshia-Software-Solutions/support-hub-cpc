@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     getConvocationCeremonies, 
@@ -30,7 +30,8 @@ import {
     Search, 
     Database, 
     Printer,
-    GraduationCap
+    GraduationCap,
+    PlayCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -39,7 +40,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 
 const ITEMS_PER_PAGE = 25;
@@ -130,10 +132,21 @@ const BookingCertificateControl = ({
 };
 
 export default function ConvocationCertificateGenPage() {
+    const queryClient = useQueryClient();
     const [selectedCeremonyId, setSelectedCeremonyId] = useState('');
     const [selectedSession, setSelectedSession] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Bulk Generation States
+    const [isBulkOpen, setIsBulkOpen] = useState(false);
+    const [bulkProgress, setBulkProgress] = useState(0);
+    const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+    const [bulkCurrentIndex, setBulkCurrentIndex] = useState(0);
+    const [bulkTotalCount, setBulkTotalCount] = useState(0);
+    const [bulkProcessingDetails, setBulkProcessingDetails] = useState('');
+    const [bulkEtah, setBulkEtah] = useState<string | null>(null);
+    const generationStartTimeRef = useRef<number | null>(null);
 
     const { data: ceremonies, isLoading: isLoadingCeremonies } = useQuery<ConvocationCeremony[]>({
         queryKey: ['convocationCeremonies'],
@@ -178,11 +191,116 @@ export default function ConvocationCertificateGenPage() {
 
     const totalPages = Math.ceil(filteredRegs.length / ITEMS_PER_PAGE);
 
+    const handleBulkGenerate = async () => {
+        if (filteredRegs.length === 0) return;
+
+        setIsBulkGenerating(true);
+        setBulkTotalCount(filteredRegs.length);
+        setBulkCurrentIndex(0);
+        setBulkProgress(0);
+        setBulkEtah(null);
+        generationStartTimeRef.current = Date.now();
+
+        for (let i = 0; i < filteredRegs.length; i++) {
+            const reg = filteredRegs[i];
+            setBulkCurrentIndex(i + 1);
+            setBulkProcessingDetails(`${reg.student_number} - ${reg.name_on_certificate || 'Student'}`);
+            
+            try {
+                // Call the API for this booking
+                await generateAllCertificatesForBooking(reg.registration_id);
+                
+                // Update Progress
+                const progress = Math.round(((i + 1) / filteredRegs.length) * 100);
+                setBulkProgress(progress);
+
+                // Calculate ETA
+                const elapsedTime = Date.now() - generationStartTimeRef.current!;
+                const averageTime = elapsedTime / (i + 1);
+                const remaining = filteredRegs.length - (i + 1);
+                const etrSeconds = Math.round((averageTime * remaining) / 1000);
+                
+                if (etrSeconds > 60) {
+                    setBulkEtah(`${Math.floor(etrSeconds / 60)}m ${etrSeconds % 60}s`);
+                } else {
+                    setBulkEtah(`${etrSeconds}s`);
+                }
+
+            } catch (error) {
+                console.error(`Failed to generate for ${reg.student_number}:`, error);
+                // We continue with others even if one fails
+            }
+        }
+
+        setIsBulkGenerating(false);
+        setBulkProcessingDetails('Process Complete!');
+        toast({ title: 'Bulk Generation Finished', description: `Processed ${filteredRegs.length} records.` });
+        queryClient.invalidateQueries({ queryKey: ['convocationRegistrations', selectedCeremonyId] });
+    };
+
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
-            <header>
-                <h1 className="text-3xl font-headline font-semibold">Convocation Certificate Issuance</h1>
-                <p className="text-muted-foreground">Select a ceremony to generate and manage certificates for registered students.</p>
+            <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-headline font-semibold">Convocation Certificate Issuance</h1>
+                    <p className="text-muted-foreground">Select a ceremony to generate and manage certificates for registered students.</p>
+                </div>
+                <div className="flex gap-2">
+                    <Dialog open={isBulkOpen} onOpenChange={(open) => !isBulkGenerating && setIsBulkOpen(open)}>
+                        <DialogTrigger asChild>
+                            <Button variant="default" disabled={!selectedCeremonyId || filteredRegs.length === 0}>
+                                <PlayCircle className="mr-2 h-4 w-4" />
+                                Generate All Filtered ({filteredRegs.length})
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md" hideCloseButton={isBulkGenerating}>
+                            <DialogHeader>
+                                <DialogTitle>Bulk Certificate Generation</DialogTitle>
+                                <DialogDescription>
+                                    This will generate all required certificates for the {filteredRegs.length} students in the current filtered list.
+                                </DialogDescription>
+                            </DialogHeader>
+                            
+                            <div className="py-6 space-y-6">
+                                {isBulkGenerating ? (
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-end">
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Currently Processing</p>
+                                                <p className="text-sm font-semibold truncate max-w-[250px]">{bulkProcessingDetails}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Remaining Time</p>
+                                                <p className="text-sm font-mono font-bold text-primary">{bulkEtah || 'Calculating...'}</p>
+                                            </div>
+                                        </div>
+                                        <Progress value={bulkProgress} className="h-3" />
+                                        <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase">
+                                            <span>Progress: {bulkProgress}%</span>
+                                            <span>{bulkCurrentIndex} of {bulkTotalCount}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center p-4 bg-muted rounded-lg">
+                                        <Award className="h-12 w-12 text-primary mx-auto mb-2 opacity-50" />
+                                        <p className="text-sm font-medium">Ready to process {filteredRegs.length} records.</p>
+                                        <p className="text-xs text-muted-foreground mt-1">Estimated time: ~{Math.ceil(filteredRegs.length * 1.5)} seconds</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsBulkOpen(false)} disabled={isBulkGenerating}>Cancel</Button>
+                                {!isBulkGenerating && (
+                                    <Button onClick={handleBulkGenerate}>Start Generation</Button>
+                                )}
+                                {bulkProgress === 100 && !isBulkGenerating && (
+                                    <Button onClick={() => setIsBulkOpen(false)}>Done</Button>
+                                )}
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </header>
 
             <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
