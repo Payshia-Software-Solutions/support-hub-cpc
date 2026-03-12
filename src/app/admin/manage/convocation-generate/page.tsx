@@ -30,6 +30,7 @@ import {
     Search, 
     Database, 
     Printer,
+    GraduationCap
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
