@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     getConvocationCeremonies, 
     getConvocationRegistrations, 
-    generateCertificate, 
+    generateAllCertificatesForBooking, 
     getUserCertificatePrintStatus 
 } from '@/lib/actions/certificates';
 import { getParentCourses } from '@/lib/actions/courses';
@@ -13,7 +13,6 @@ import type {
     ConvocationCeremony, 
     ConvocationRegistration, 
     ParentCourse, 
-    GenerateCertificatePayload, 
     UserCertificatePrintStatus 
 } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -29,14 +28,10 @@ import {
     Award, 
     Loader2, 
     Search, 
-    CheckCircle, 
     Database, 
-    ArrowLeft, 
-    FileText, 
-    RefreshCw,
-    GraduationCap,
     Printer,
-    ZoomIn
+    GraduationCap,
+    PlayCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -45,107 +40,113 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 
 const ITEMS_PER_PAGE = 25;
 
-// --- Sub-component for individual certificate status ---
-const IndividualCertificateControl = ({ 
-    studentNumber, 
-    courseId, 
-    registrationId,
+// --- Sub-component for single-booking certificate management ---
+const BookingCertificateControl = ({ 
+    registration,
     courseNameMap 
 }: { 
-    studentNumber: string, 
-    courseId: string, 
-    registrationId: string,
+    registration: ConvocationRegistration,
     courseNameMap: Map<string, string>
 }) => {
     const queryClient = useQueryClient();
     const { user } = useAuth();
 
     const { data: certStatus, isLoading, refetch } = useQuery<{ certificateStatus: UserCertificatePrintStatus[] }>({
-        queryKey: ['userCertificateStatus', studentNumber],
-        queryFn: () => getUserCertificatePrintStatus(studentNumber),
+        queryKey: ['userCertificateStatus', registration.student_number],
+        queryFn: () => getUserCertificatePrintStatus(registration.student_number),
         staleTime: 5 * 60 * 1000,
     });
 
-    const generatedCert = useMemo(() => {
-        return certStatus?.certificateStatus?.find(c => c.parent_course_id === courseId && c.type === 'Certificate');
-    }, [certStatus, courseId]);
-
     const generateMutation = useMutation({
-        mutationFn: generateCertificate,
+        mutationFn: () => generateAllCertificatesForBooking(registration.registration_id),
         onSuccess: (data) => {
-            toast({ title: 'Success', description: `Certificate ${data.certificate_id} generated.` });
+            toast({ title: 'Success', description: data.message });
             refetch();
         },
         onError: (err: Error) => toast({ variant: 'destructive', title: 'Generation Failed', description: err.message })
     });
 
-    const handleGenerate = () => {
-        if (!user?.username) return;
-        
-        const payload: GenerateCertificatePayload = {
-            student_number: studentNumber,
-            print_status: "0",
-            print_by: user.username,
-            type: "Certificate",
-            parentCourseCode: parseInt(courseId, 10),
-            referenceId: parseInt(registrationId, 10),
-            course_code: "CONVOCATION", // Specialized source
-            source: "convocation"
-        };
-        generateMutation.mutate(payload);
+    const courseIds = registration.course_id.split(',').map(id => id.trim()).filter(Boolean);
+    
+    const getGeneratedCert = (courseId: string) => {
+        return certStatus?.certificateStatus?.find(c => c.parent_course_id === courseId && c.type === 'Certificate');
     };
 
-    if (isLoading) return <Skeleton className="h-8 w-24" />;
+    const allGenerated = courseIds.every(id => !!getGeneratedCert(id));
 
-    if (generatedCert) {
-        return (
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <div className="flex items-center gap-2">
-                            <Badge variant={generatedCert.print_status === '1' ? 'default' : 'secondary'} className="font-mono">
-                                {generatedCert.certificate_id}
-                            </Badge>
-                            <Button asChild size="icon" variant="ghost" className="h-7 w-7">
-                                <Link href={`/print/certificate/${generatedCert.certificate_id}`} target="_blank">
-                                    <Printer className="h-3.5 w-3.5" />
-                                </Link>
-                            </Button>
-                        </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>{generatedCert.print_status === '1' ? 'Printed' : 'Generated'}</p>
-                        <p className="text-[10px] opacity-70">Course: {courseNameMap.get(courseId) || courseId}</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-        );
-    }
+    if (isLoading) return <div className="space-y-2"><Skeleton className="h-6 w-24" /><Skeleton className="h-6 w-24" /></div>;
 
     return (
-        <Button 
-            size="sm" 
-            variant="outline" 
-            className="h-8 text-[10px] font-bold uppercase" 
-            onClick={handleGenerate}
-            disabled={generateMutation.isPending}
-        >
-            {generateMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Award className="h-3 w-3 mr-1" />}
-            Generate
-        </Button>
+        <div className="flex flex-col gap-2">
+            {courseIds.map(id => {
+                const cert = getGeneratedCert(id);
+                return (
+                    <div key={id} className="flex items-center gap-2 h-6">
+                        {cert ? (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant={cert.print_status === '1' ? 'default' : 'secondary'} className="font-mono text-[9px] h-5">
+                                                {cert.certificate_id}
+                                            </Badge>
+                                            <Button asChild size="icon" variant="ghost" className="h-5 w-5">
+                                                <Link href={`/print/certificate/${cert.certificate_id}`} target="_blank">
+                                                    <Printer className="h-3 w-3" />
+                                                </Link>
+                                            </Button>
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{cert.print_status === '1' ? 'Printed' : 'Generated'}</p>
+                                        <p className="text-[10px] opacity-70">Course: {courseNameMap.get(id) || id}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        ) : (
+                            <Badge variant="outline" className="text-[8px] opacity-50 border-dashed h-4 px-1">PENDING</Badge>
+                        )}
+                    </div>
+                );
+            })}
+            
+            {!allGenerated && (
+                <Button 
+                    size="sm" 
+                    className="w-full mt-1 h-7 text-[9px] font-bold uppercase" 
+                    onClick={() => generateMutation.mutate()}
+                    disabled={generateMutation.isPending}
+                >
+                    {generateMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Award className="h-3 w-3 mr-1" />}
+                    Generate All
+                </Button>
+            )}
+        </div>
     );
 };
 
 export default function ConvocationCertificateGenPage() {
+    const queryClient = useQueryClient();
     const [selectedCeremonyId, setSelectedCeremonyId] = useState('');
     const [selectedSession, setSelectedSession] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Bulk Generation States
+    const [isBulkOpen, setIsBulkOpen] = useState(false);
+    const [bulkProgress, setBulkProgress] = useState(0);
+    const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+    const [bulkCurrentIndex, setBulkCurrentIndex] = useState(0);
+    const [bulkTotalCount, setBulkTotalCount] = useState(0);
+    const [bulkProcessingDetails, setBulkProcessingDetails] = useState('');
+    const [bulkEtah, setBulkEtah] = useState<string | null>(null);
+    const generationStartTimeRef = useRef<number | null>(null);
 
     const { data: ceremonies, isLoading: isLoadingCeremonies } = useQuery<ConvocationCeremony[]>({
         queryKey: ['convocationCeremonies'],
@@ -190,11 +191,116 @@ export default function ConvocationCertificateGenPage() {
 
     const totalPages = Math.ceil(filteredRegs.length / ITEMS_PER_PAGE);
 
+    const handleBulkGenerate = async () => {
+        if (filteredRegs.length === 0) return;
+
+        setIsBulkGenerating(true);
+        setBulkTotalCount(filteredRegs.length);
+        setBulkCurrentIndex(0);
+        setBulkProgress(0);
+        setBulkEtah(null);
+        generationStartTimeRef.current = Date.now();
+
+        for (let i = 0; i < filteredRegs.length; i++) {
+            const reg = filteredRegs[i];
+            setBulkCurrentIndex(i + 1);
+            setBulkProcessingDetails(`${reg.student_number} - ${reg.name_on_certificate || 'Student'}`);
+            
+            try {
+                // Call the API for this booking
+                await generateAllCertificatesForBooking(reg.registration_id);
+                
+                // Update Progress
+                const progress = Math.round(((i + 1) / filteredRegs.length) * 100);
+                setBulkProgress(progress);
+
+                // Calculate ETA
+                const elapsedTime = Date.now() - generationStartTimeRef.current!;
+                const averageTime = elapsedTime / (i + 1);
+                const remaining = filteredRegs.length - (i + 1);
+                const etrSeconds = Math.round((averageTime * remaining) / 1000);
+                
+                if (etrSeconds > 60) {
+                    setBulkEtah(`${Math.floor(etrSeconds / 60)}m ${etrSeconds % 60}s`);
+                } else {
+                    setBulkEtah(`${etrSeconds}s`);
+                }
+
+            } catch (error) {
+                console.error(`Failed to generate for ${reg.student_number}:`, error);
+                // We continue with others even if one fails
+            }
+        }
+
+        setIsBulkGenerating(false);
+        setBulkProcessingDetails('Process Complete!');
+        toast({ title: 'Bulk Generation Finished', description: `Processed ${filteredRegs.length} records.` });
+        queryClient.invalidateQueries({ queryKey: ['convocationRegistrations', selectedCeremonyId] });
+    };
+
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
-            <header>
-                <h1 className="text-3xl font-headline font-semibold">Convocation Certificate Issuance</h1>
-                <p className="text-muted-foreground">Select a ceremony to generate and manage certificates for registered students.</p>
+            <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-headline font-semibold">Convocation Certificate Issuance</h1>
+                    <p className="text-muted-foreground">Select a ceremony to generate and manage certificates for registered students.</p>
+                </div>
+                <div className="flex gap-2">
+                    <Dialog open={isBulkOpen} onOpenChange={(open) => !isBulkGenerating && setIsBulkOpen(open)}>
+                        <DialogTrigger asChild>
+                            <Button variant="default" disabled={!selectedCeremonyId || filteredRegs.length === 0}>
+                                <PlayCircle className="mr-2 h-4 w-4" />
+                                Generate All Filtered ({filteredRegs.length})
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md" hideCloseButton={isBulkGenerating}>
+                            <DialogHeader>
+                                <DialogTitle>Bulk Certificate Generation</DialogTitle>
+                                <DialogDescription>
+                                    This will generate all required certificates for the {filteredRegs.length} students in the current filtered list.
+                                </DialogDescription>
+                            </DialogHeader>
+                            
+                            <div className="py-6 space-y-6">
+                                {isBulkGenerating ? (
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-end">
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Currently Processing</p>
+                                                <p className="text-sm font-semibold truncate max-w-[250px]">{bulkProcessingDetails}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Remaining Time</p>
+                                                <p className="text-sm font-mono font-bold text-primary">{bulkEtah || 'Calculating...'}</p>
+                                            </div>
+                                        </div>
+                                        <Progress value={bulkProgress} className="h-3" />
+                                        <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase">
+                                            <span>Progress: {bulkProgress}%</span>
+                                            <span>{bulkCurrentIndex} of {bulkTotalCount}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center p-4 bg-muted rounded-lg">
+                                        <Award className="h-12 w-12 text-primary mx-auto mb-2 opacity-50" />
+                                        <p className="text-sm font-medium">Ready to process {filteredRegs.length} records.</p>
+                                        <p className="text-xs text-muted-foreground mt-1">Estimated time: ~{Math.ceil(filteredRegs.length * 1.5)} seconds</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsBulkOpen(false)} disabled={isBulkGenerating}>Cancel</Button>
+                                {!isBulkGenerating && (
+                                    <Button onClick={handleBulkGenerate}>Start Generation</Button>
+                                )}
+                                {bulkProgress === 100 && !isBulkGenerating && (
+                                    <Button onClick={() => setIsBulkOpen(false)}>Done</Button>
+                                )}
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </header>
 
             <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -288,24 +394,17 @@ export default function ConvocationCertificateGenPage() {
                                             <TableCell>
                                                 <div className="flex flex-col gap-1 max-w-[200px]">
                                                     {reg.course_id.split(',').map(id => id.trim()).filter(Boolean).map(id => (
-                                                        <div key={id} className="text-[10px] truncate" title={courseNameMap.get(id)}>
+                                                        <div key={id} className="text-[10px] truncate leading-6" title={courseNameMap.get(id)}>
                                                             • {courseNameMap.get(id) || `ID: ${id}`}
                                                         </div>
                                                     ))}
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex flex-col gap-2">
-                                                    {reg.course_id.split(',').map(id => id.trim()).filter(Boolean).map(id => (
-                                                        <IndividualCertificateControl 
-                                                            key={id} 
-                                                            studentNumber={reg.student_number} 
-                                                            courseId={id} 
-                                                            registrationId={reg.registration_id}
-                                                            courseNameMap={courseNameMap}
-                                                        />
-                                                    ))}
-                                                </div>
+                                                <BookingCertificateControl 
+                                                    registration={reg}
+                                                    courseNameMap={courseNameMap}
+                                                />
                                             </TableCell>
                                             <TableCell className="text-right pr-6">
                                                 <Dialog>

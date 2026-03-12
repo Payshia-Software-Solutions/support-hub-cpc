@@ -433,6 +433,22 @@ export const generateCertificate = async (payload: GenerateCertificatePayload): 
     return response.json();
 };
 
+export const generateAllCertificatesForBooking = async (bookingId: string): Promise<any> => {
+    const response = await fetch(`${QA_API_BASE_URL}/booking-updates/generate-certificate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ booking_id: bookingId })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Bulk generation failed' }));
+        throw new Error(errorData.message || 'Bulk generation failed');
+    }
+    return response.json();
+};
+
 export const getTcPayments = async (studentNumber: string): Promise<TcPaymentRecord[]> => {
     const response = await fetch(`${QA_API_BASE_URL}/tc-payments?student_number=${studentNumber}`);
     if (response.status === 404) return [];
