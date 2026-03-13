@@ -86,6 +86,9 @@ const BookingCertificateControl = ({
         <div className="flex flex-col gap-2">
             {courseIds.map(id => {
                 const cert = getGeneratedCert(id);
+                // Construct the print URL as provided by the user
+                const printUrl = `https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/print-all-certificates-course.php?courseCode=${id}&showSession=${registration.session}&tableMode=0&fixedStudentNumber=${registration.student_number}`;
+
                 return (
                     <div key={id} className="flex items-center gap-2 h-6">
                         {cert ? (
@@ -97,9 +100,9 @@ const BookingCertificateControl = ({
                                                 {cert.certificate_id}
                                             </Badge>
                                             <Button asChild size="icon" variant="ghost" className="h-5 w-5">
-                                                <Link href={`/print/certificate/${cert.certificate_id}`} target="_blank">
+                                                <a href={printUrl} target="_blank" rel="noopener noreferrer">
                                                     <Printer className="h-3 w-3" />
-                                                </Link>
+                                                </a>
                                             </Button>
                                         </div>
                                     </TooltipTrigger>
