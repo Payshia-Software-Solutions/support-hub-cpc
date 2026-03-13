@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -88,7 +89,7 @@ const BookingCertificateControl = ({
         <div className="flex flex-col gap-2">
             {courseIds.map(id => {
                 const cert = getGeneratedCert(id);
-                // Construct the print URL as provided by the user
+                // Construct the print URL using numeric course ID (id)
                 const printUrl = `https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/print-all-certificates-course.php?courseCode=${id}&showSession=${registration.session}&tableMode=0&fixedStudentNumber=${registration.student_number}`;
 
                 return (
