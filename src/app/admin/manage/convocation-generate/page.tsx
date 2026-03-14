@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -31,7 +32,9 @@ import {
     Database, 
     Printer,
     GraduationCap,
-    PlayCircle
+    PlayCircle,
+    FileText,
+    List
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -86,6 +89,13 @@ const BookingCertificateControl = ({
         <div className="flex flex-col gap-2">
             {courseIds.map(id => {
                 const cert = getGeneratedCert(id);
+                // Switch base URL based on whether it is the Advanced Course (ID 2)
+                const baseUrl = id === '2' 
+                    ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-advanced-course.php'
+                    : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php';
+                
+                const printUrl = `${baseUrl}?courseCode=${id}&showSession=${registration.session}&tableMode=0&fixedStudentNumber=${registration.student_number}`;
+
                 return (
                     <div key={id} className="flex items-center gap-2 h-6">
                         {cert ? (
@@ -97,9 +107,9 @@ const BookingCertificateControl = ({
                                                 {cert.certificate_id}
                                             </Badge>
                                             <Button asChild size="icon" variant="ghost" className="h-5 w-5">
-                                                <Link href={`/print/certificate/${cert.certificate_id}`} target="_blank">
+                                                <a href={printUrl} target="_blank" rel="noopener noreferrer">
                                                     <Printer className="h-3 w-3" />
-                                                </Link>
+                                                </a>
                                             </Button>
                                         </div>
                                     </TooltipTrigger>
@@ -135,6 +145,7 @@ export default function ConvocationCertificateGenPage() {
     const queryClient = useQueryClient();
     const [selectedCeremonyId, setSelectedCeremonyId] = useState('');
     const [selectedSession, setSelectedSession] = useState('all');
+    const [selectedCourseId, setSelectedCourseId] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -179,11 +190,13 @@ export default function ConvocationCertificateGenPage() {
                 r.reference_number.toLowerCase().includes(lower) ||
                 (r.name_on_certificate || '').toLowerCase().includes(lower);
             const matchesSession = selectedSession === 'all' || r.session === selectedSession;
+            const matchesCourse = selectedCourseId === 'all' || r.course_id.split(',').map(id => id.trim()).includes(selectedCourseId);
+            
             // Only show active/pending bookings for generation
             const isInactive = r.registration_status === 'Rejected' || r.registration_status === 'Canceled';
-            return matchesSearch && matchesSession && !isInactive;
+            return matchesSearch && matchesSession && matchesCourse && !isInactive;
         });
-    }, [registrations, searchTerm, selectedSession]);
+    }, [registrations, searchTerm, selectedSession, selectedCourseId]);
 
     const paginatedRegs = useMemo(() => {
         return filteredRegs.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -236,6 +249,15 @@ export default function ConvocationCertificateGenPage() {
         setBulkProcessingDetails('Process Complete!');
         toast({ title: 'Bulk Generation Finished', description: `Processed ${filteredRegs.length} records.` });
         queryClient.invalidateQueries({ queryKey: ['convocationRegistrations', selectedCeremonyId] });
+    };
+
+    // Bulk print URL logic
+    const getBulkPrintUrl = (mode: number) => {
+        const baseUrl = selectedCourseId === '2'
+            ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-advanced-course.php'
+            : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php';
+        
+        return `${baseUrl}?courseCode=${selectedCourseId}&showSession=${selectedSession}&tableMode=${mode}`;
     };
 
     return (
@@ -303,12 +325,12 @@ export default function ConvocationCertificateGenPage() {
                 </div>
             </header>
 
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="shadow-md">
                     <CardHeader>
                         <CardTitle className="text-lg">Ceremony Selection</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label>Active Ceremony</Label>
                             <Select value={selectedCeremonyId} onValueChange={setSelectedCeremonyId}>
@@ -322,18 +344,34 @@ export default function ConvocationCertificateGenPage() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="space-y-2">
-                            <Label>Session Filter</Label>
-                            <Select value={selectedSession} onValueChange={setSelectedSession}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="All Sessions" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Sessions</SelectItem>
-                                    <SelectItem value="1">Session 1</SelectItem>
-                                    <SelectItem value="2">Session 2</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Session Filter</Label>
+                                <Select value={selectedSession} onValueChange={setSelectedSession}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All Sessions" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Sessions</SelectItem>
+                                        <SelectItem value="1">Session 1</SelectItem>
+                                        <SelectItem value="2">Session 2</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Course Filter</Label>
+                                <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All Courses" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Courses</SelectItem>
+                                        {parentCourses?.map(c => (
+                                            <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -355,6 +393,41 @@ export default function ConvocationCertificateGenPage() {
                                 />
                             </div>
                         </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="shadow-md">
+                    <CardHeader>
+                        <CardTitle className="text-lg">Bulk Printing</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button asChild variant="outline" className="h-auto py-2.5 flex-col gap-1" disabled={selectedCourseId === 'all' || selectedSession === 'all'}>
+                                <a 
+                                    href={getBulkPrintUrl(1)} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                >
+                                    <List className="h-4 w-4 text-primary" />
+                                    <span className="text-[10px] font-bold uppercase">Print Table (List)</span>
+                                </a>
+                            </Button>
+                            <Button asChild variant="outline" className="h-auto py-2.5 flex-col gap-1" disabled={selectedCourseId === 'all' || selectedSession === 'all'}>
+                                <a 
+                                    href={getBulkPrintUrl(0)} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                >
+                                    <Printer className="h-4 w-4 text-primary" />
+                                    <span className="text-[10px] font-bold uppercase">Print Certificates</span>
+                                </a>
+                            </Button>
+                        </div>
+                        { (selectedCourseId === 'all' || selectedSession === 'all') && (
+                            <p className="text-[10px] text-muted-foreground text-center italic">
+                                * Select a specific course and session to enable bulk printing.
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
             </section>
