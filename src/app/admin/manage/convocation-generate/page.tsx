@@ -89,8 +89,12 @@ const BookingCertificateControl = ({
         <div className="flex flex-col gap-2">
             {courseIds.map(id => {
                 const cert = getGeneratedCert(id);
-                // Construct the print URL using numeric course ID (id)
-                const printUrl = `https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/print-all-certificates-course.php?courseCode=${id}&showSession=${registration.session}&tableMode=0&fixedStudentNumber=${registration.student_number}`;
+                // Switch base URL based on whether it is the Advanced Course (ID 2)
+                const baseUrl = id === '2' 
+                    ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-advanced-course.php'
+                    : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php';
+                
+                const printUrl = `${baseUrl}?courseCode=${id}&showSession=${registration.session}&tableMode=0&fixedStudentNumber=${registration.student_number}`;
 
                 return (
                     <div key={id} className="flex items-center gap-2 h-6">
@@ -247,6 +251,15 @@ export default function ConvocationCertificateGenPage() {
         queryClient.invalidateQueries({ queryKey: ['convocationRegistrations', selectedCeremonyId] });
     };
 
+    // Bulk print URL logic
+    const getBulkPrintUrl = (mode: number) => {
+        const baseUrl = selectedCourseId === '2'
+            ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-advanced-course.php'
+            : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php';
+        
+        return `${baseUrl}?courseCode=${selectedCourseId}&showSession=${selectedSession}&tableMode=${mode}`;
+    };
+
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -391,7 +404,7 @@ export default function ConvocationCertificateGenPage() {
                         <div className="grid grid-cols-2 gap-2">
                             <Button asChild variant="outline" className="h-auto py-2.5 flex-col gap-1" disabled={selectedCourseId === 'all' || selectedSession === 'all'}>
                                 <a 
-                                    href={`https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/print-all-certificates-course.php?courseCode=${selectedCourseId}&showSession=${selectedSession}&tableMode=1`} 
+                                    href={getBulkPrintUrl(1)} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                 >
@@ -401,7 +414,7 @@ export default function ConvocationCertificateGenPage() {
                             </Button>
                             <Button asChild variant="outline" className="h-auto py-2.5 flex-col gap-1" disabled={selectedCourseId === 'all' || selectedSession === 'all'}>
                                 <a 
-                                    href={`https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/print-all-certificates-course.php?courseCode=${selectedCourseId}&showSession=${selectedSession}&tableMode=0`} 
+                                    href={getBulkPrintUrl(0)} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                 >
