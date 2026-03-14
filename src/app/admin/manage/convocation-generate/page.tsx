@@ -90,7 +90,8 @@ const BookingCertificateControl = ({
         <div className="flex flex-col gap-4">
             {courseIds.map(id => {
                 const cert = getGeneratedDoc(id, 'Certificate');
-                const transcript = getGeneratedDoc(id, 'Transcript') || getGeneratedDoc(id, 'Academic Transcript');
+                // The transcript is printable if the certificate exists
+                const transcriptRecord = getGeneratedDoc(id, 'Transcript') || getGeneratedDoc(id, 'Academic Transcript');
                 
                 // Certificate URLs
                 const certBaseUrl = id === '2' 
@@ -139,25 +140,25 @@ const BookingCertificateControl = ({
 
                             {/* Transcript Section */}
                             <div className="flex items-center gap-1.5">
-                                {transcript ? (
+                                {cert ? (
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <div className="flex items-center gap-1">
-                                                    <Badge variant={transcript.print_status === '1' ? 'default' : 'secondary'} className="font-mono text-[9px] h-5 px-1.5 bg-blue-50 text-blue-700 border-blue-200">
+                                                    <Badge variant="secondary" className="font-mono text-[9px] h-5 px-1.5 bg-blue-50 text-blue-700 border-blue-200">
                                                         <FileText className="h-2.5 w-2.5 mr-1" />
-                                                        {transcript.certificate_id}
+                                                        {transcriptRecord?.certificate_id || 'READY'}
                                                     </Badge>
                                                     <Button asChild size="icon" variant="ghost" className="h-6 w-6">
                                                         <a href={transPrintUrl} target="_blank" rel="noopener noreferrer">
-                                                            <Printer className="h-3.5 w-3.5" />
+                                                            <Printer className="h-3.5 w-3.5 text-blue-600" />
                                                         </a>
                                                     </Button>
                                                 </div>
                                             </TooltipTrigger>
                                             <TooltipContent>
                                                 <p className="text-xs font-bold">Transcript</p>
-                                                <p className="text-[10px] opacity-70">Status: {transcript.print_status === '1' ? 'Printed' : 'Generated'}</p>
+                                                <p className="text-[10px] opacity-70">Printable via external script</p>
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
