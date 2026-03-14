@@ -34,7 +34,8 @@ import {
     GraduationCap,
     PlayCircle,
     FileText,
-    List
+    List,
+    FileCheck
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -77,51 +78,95 @@ const BookingCertificateControl = ({
 
     const courseIds = registration.course_id.split(',').map(id => id.trim()).filter(Boolean);
     
-    const getGeneratedCert = (courseId: string) => {
-        return certStatus?.certificateStatus?.find(c => c.parent_course_id === courseId && c.type === 'Certificate');
+    const getGeneratedDoc = (courseId: string, type: string) => {
+        return certStatus?.certificateStatus?.find(c => c.parent_course_id === courseId && c.type === type);
     };
 
-    const allGenerated = courseIds.every(id => !!getGeneratedCert(id));
+    const allGenerated = courseIds.every(id => !!getGeneratedDoc(id, 'Certificate'));
 
     if (isLoading) return <div className="space-y-2"><Skeleton className="h-6 w-24" /><Skeleton className="h-6 w-24" /></div>;
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4">
             {courseIds.map(id => {
-                const cert = getGeneratedCert(id);
-                // Switch base URL based on whether it is the Advanced Course (ID 2)
-                const baseUrl = id === '2' 
+                const cert = getGeneratedDoc(id, 'Certificate');
+                // The transcript is printable if the certificate exists
+                const transcriptRecord = getGeneratedDoc(id, 'Transcript') || getGeneratedDoc(id, 'Academic Transcript');
+                
+                // Certificate URLs
+                const certBaseUrl = id === '2' 
                     ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-advanced-course.php'
                     : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php';
-                
-                const printUrl = `${baseUrl}?courseCode=${id}&showSession=${registration.session}&tableMode=0&fixedStudentNumber=${registration.student_number}`;
+                const certPrintUrl = `${certBaseUrl}?courseCode=${id}&showSession=${registration.session}&tableMode=0&fixedStudentNumber=${registration.student_number}`;
+
+                // Transcript URLs
+                const transBaseUrl = id === '2'
+                    ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-transcript-advanced.php'
+                    : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-transcript.php';
+                const transPrintUrl = `${transBaseUrl}?courseCode=${id}&showSession=${registration.session}&tableMode=0&fixedStudentNumber=${registration.student_number}`;
 
                 return (
-                    <div key={id} className="flex items-center gap-2 h-6">
-                        {cert ? (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant={cert.print_status === '1' ? 'default' : 'secondary'} className="font-mono text-[9px] h-5">
-                                                {cert.certificate_id}
-                                            </Badge>
-                                            <Button asChild size="icon" variant="ghost" className="h-5 w-5">
-                                                <a href={printUrl} target="_blank" rel="noopener noreferrer">
-                                                    <Printer className="h-3 w-3" />
-                                                </a>
-                                            </Button>
-                                        </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>{cert.print_status === '1' ? 'Printed' : 'Generated'}</p>
-                                        <p className="text-[10px] opacity-70">Course: {courseNameMap.get(id) || id}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        ) : (
-                            <Badge variant="outline" className="text-[8px] opacity-50 border-dashed h-4 px-1">PENDING</Badge>
-                        )}
+                    <div key={id} className="space-y-1.5 border-l-2 border-muted pl-2 py-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">{courseNameMap.get(id) || `ID: ${id}`}</p>
+                        <div className="flex flex-wrap gap-2">
+                            {/* Certificate Section */}
+                            <div className="flex items-center gap-1.5">
+                                {cert ? (
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="flex items-center gap-1">
+                                                    <Badge variant={cert.print_status === '1' ? 'default' : 'secondary'} className="font-mono text-[9px] h-5 px-1.5">
+                                                        <FileCheck className="h-2.5 w-2.5 mr-1" />
+                                                        {cert.certificate_id}
+                                                    </Badge>
+                                                    <Button asChild size="icon" variant="ghost" className="h-6 w-6">
+                                                        <a href={certPrintUrl} target="_blank" rel="noopener noreferrer">
+                                                            <Printer className="h-3.5 w-3.5" />
+                                                        </a>
+                                                    </Button>
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p className="text-xs font-bold">Certificate</p>
+                                                <p className="text-[10px] opacity-70">Status: {cert.print_status === '1' ? 'Printed' : 'Generated'}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                ) : (
+                                    <Badge variant="outline" className="text-[8px] opacity-50 border-dashed h-5 px-1.5">CERT PENDING</Badge>
+                                )}
+                            </div>
+
+                            {/* Transcript Section */}
+                            <div className="flex items-center gap-1.5">
+                                {cert ? (
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="flex items-center gap-1">
+                                                    <Badge variant="secondary" className="font-mono text-[9px] h-5 px-1.5 bg-blue-50 text-blue-700 border-blue-200">
+                                                        <FileText className="h-2.5 w-2.5 mr-1" />
+                                                        {transcriptRecord?.certificate_id || 'READY'}
+                                                    </Badge>
+                                                    <Button asChild size="icon" variant="ghost" className="h-6 w-6">
+                                                        <a href={transPrintUrl} target="_blank" rel="noopener noreferrer">
+                                                            <Printer className="h-3.5 w-3.5 text-blue-600" />
+                                                        </a>
+                                                    </Button>
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p className="text-xs font-bold">Transcript</p>
+                                                <p className="text-[10px] opacity-70">Printable via external script</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                ) : (
+                                    <Badge variant="outline" className="text-[8px] opacity-50 border-dashed h-5 px-1.5">TRANS PENDING</Badge>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 );
             })}
@@ -129,12 +174,12 @@ const BookingCertificateControl = ({
             {!allGenerated && (
                 <Button 
                     size="sm" 
-                    className="w-full mt-1 h-7 text-[9px] font-bold uppercase" 
+                    className="w-full h-8 text-[10px] font-bold uppercase" 
                     onClick={() => generateMutation.mutate()}
                     disabled={generateMutation.isPending}
                 >
-                    {generateMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Award className="h-3 w-3 mr-1" />}
-                    Generate All
+                    {generateMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Award className="h-3 w-3 mr-1.5" />}
+                    Generate All Docs
                 </Button>
             )}
         </div>
@@ -251,11 +296,20 @@ export default function ConvocationCertificateGenPage() {
         queryClient.invalidateQueries({ queryKey: ['convocationRegistrations', selectedCeremonyId] });
     };
 
-    // Bulk print URL logic
+    // Bulk print URL logic for Certificates
     const getBulkPrintUrl = (mode: number) => {
         const baseUrl = selectedCourseId === '2'
             ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-advanced-course.php'
             : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php';
+        
+        return `${baseUrl}?courseCode=${selectedCourseId}&showSession=${selectedSession}&tableMode=${mode}`;
+    };
+
+    // Bulk print URL logic for Transcripts
+    const getBulkTranscriptPrintUrl = (mode: number) => {
+        const baseUrl = selectedCourseId === '2'
+            ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-transcript-advanced.php'
+            : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-transcript.php';
         
         return `${baseUrl}?courseCode=${selectedCourseId}&showSession=${selectedSession}&tableMode=${mode}`;
     };
@@ -402,30 +456,34 @@ export default function ConvocationCertificateGenPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-2">
-                            <Button asChild variant="outline" className="h-auto py-2.5 flex-col gap-1" disabled={selectedCourseId === 'all' || selectedSession === 'all'}>
-                                <a 
-                                    href={getBulkPrintUrl(1)} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                >
-                                    <List className="h-4 w-4 text-primary" />
-                                    <span className="text-[10px] font-bold uppercase">Print Table (List)</span>
+                            <Button asChild variant="outline" className="h-auto py-2 flex-col gap-1" disabled={selectedCourseId === 'all' || selectedSession === 'all'}>
+                                <a href={getBulkPrintUrl(1)} target="_blank" rel="noopener noreferrer">
+                                    <List className="h-3.5 w-3.5 text-primary" />
+                                    <span className="text-[9px] font-bold uppercase">Cert Table</span>
                                 </a>
                             </Button>
-                            <Button asChild variant="outline" className="h-auto py-2.5 flex-col gap-1" disabled={selectedCourseId === 'all' || selectedSession === 'all'}>
-                                <a 
-                                    href={getBulkPrintUrl(0)} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                >
-                                    <Printer className="h-4 w-4 text-primary" />
-                                    <span className="text-[10px] font-bold uppercase">Print Certificates</span>
+                            <Button asChild variant="outline" className="h-auto py-2 flex-col gap-1" disabled={selectedCourseId === 'all' || selectedSession === 'all'}>
+                                <a href={getBulkPrintUrl(0)} target="_blank" rel="noopener noreferrer">
+                                    <Printer className="h-3.5 w-3.5 text-primary" />
+                                    <span className="text-[9px] font-bold uppercase">Certificates</span>
+                                </a>
+                            </Button>
+                            <Button asChild variant="outline" className="h-auto py-2 flex-col gap-1" disabled={selectedCourseId === 'all' || selectedSession === 'all'}>
+                                <a href={getBulkTranscriptPrintUrl(1)} target="_blank" rel="noopener noreferrer">
+                                    <List className="h-3.5 w-3.5 text-orange-500" />
+                                    <span className="text-[9px] font-bold uppercase">Trans Table</span>
+                                </a>
+                            </Button>
+                            <Button asChild variant="outline" className="h-auto py-2 flex-col gap-1" disabled={selectedCourseId === 'all' || selectedSession === 'all'}>
+                                <a href={getBulkTranscriptPrintUrl(0)} target="_blank" rel="noopener noreferrer">
+                                    <Printer className="h-3.5 w-3.5 text-orange-500" />
+                                    <span className="text-[9px] font-bold uppercase">Transcripts</span>
                                 </a>
                             </Button>
                         </div>
                         { (selectedCourseId === 'all' || selectedSession === 'all') && (
                             <p className="text-[10px] text-muted-foreground text-center italic">
-                                * Select a specific course and session to enable bulk printing.
+                                * Select course and session to enable bulk print.
                             </p>
                         )}
                     </CardContent>
@@ -453,8 +511,7 @@ export default function ConvocationCertificateGenPage() {
                                         <TableHead className="w-[120px]">Student ID</TableHead>
                                         <TableHead>Full Name</TableHead>
                                         <TableHead>Sess.</TableHead>
-                                        <TableHead>Requested Courses</TableHead>
-                                        <TableHead>Certificate Status</TableHead>
+                                        <TableHead>Issuance Status (IDs & Printing)</TableHead>
                                         <TableHead className="text-right pr-6">Data</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -464,16 +521,7 @@ export default function ConvocationCertificateGenPage() {
                                             <TableCell className="font-mono font-bold text-sm">{reg.student_number}</TableCell>
                                             <TableCell className="text-xs font-medium">{reg.name_on_certificate || 'N/A'}</TableCell>
                                             <TableCell><Badge variant="outline">{reg.session}</Badge></TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col gap-1 max-w-[200px]">
-                                                    {reg.course_id.split(',').map(id => id.trim()).filter(Boolean).map(id => (
-                                                        <div key={id} className="text-[10px] truncate leading-6" title={courseNameMap.get(id)}>
-                                                            • {courseNameMap.get(id) || `ID: ${id}`}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
+                                            <TableCell className="py-4">
                                                 <BookingCertificateControl 
                                                     registration={reg}
                                                     courseNameMap={courseNameMap}
@@ -498,7 +546,7 @@ export default function ConvocationCertificateGenPage() {
                                             </TableCell>
                                         </TableRow>
                                     )) : (
-                                        <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground">No matching registrations found.</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={5} className="text-center h-32 text-muted-foreground">No matching registrations found.</TableCell></TableRow>
                                     )}
                                 </TableBody>
                             </Table>
