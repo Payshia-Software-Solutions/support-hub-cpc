@@ -82,24 +82,24 @@ const BookingCertificateControl = ({
         return certStatus?.certificateStatus?.find(c => c.parent_course_id === courseId && c.type === type);
     };
 
-    const allGenerated = courseIds.every(id => !!getGeneratedDoc(id, 'Certificate'));
-
     if (isLoading) return <div className="space-y-2"><Skeleton className="h-6 w-24" /><Skeleton className="h-6 w-24" /></div>;
+
+    const allGenerated = courseIds.every(id => !!getGeneratedDoc(id, 'Certificate'));
 
     return (
         <div className="flex flex-col gap-4">
             {courseIds.map(id => {
                 const cert = getGeneratedDoc(id, 'Certificate');
-                // The transcript is printable if the certificate exists
-                const transcriptRecord = getGeneratedDoc(id, 'Transcript') || getGeneratedDoc(id, 'Academic Transcript');
                 
-                // Certificate URLs
+                // Certificate URLs logic
                 const certBaseUrl = id === '2' 
                     ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-advanced-course.php'
+                    : id === '7'
+                    ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/english-certificate'
                     : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php';
                 const certPrintUrl = `${certBaseUrl}?courseCode=${id}&showSession=${registration.session}&tableMode=0&fixedStudentNumber=${registration.student_number}`;
 
-                // Transcript URLs
+                // Transcript URLs logic (Note: Transcript button appears if Cert is generated)
                 const transBaseUrl = id === '2'
                     ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-transcript-advanced.php'
                     : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-transcript.php';
@@ -127,7 +127,7 @@ const BookingCertificateControl = ({
                                                     </Button>
                                                 </div>
                                             </TooltipTrigger>
-                                            <TooltipContent>
+                                            <TooltipContent side="top">
                                                 <p className="text-xs font-bold">Certificate</p>
                                                 <p className="text-[10px] opacity-70">Status: {cert.print_status === '1' ? 'Printed' : 'Generated'}</p>
                                             </TooltipContent>
@@ -138,16 +138,16 @@ const BookingCertificateControl = ({
                                 )}
                             </div>
 
-                            {/* Transcript Section */}
+                            {/* Transcript Section - Always show print button if Cert exists */}
                             <div className="flex items-center gap-1.5">
                                 {cert ? (
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <div className="flex items-center gap-1">
-                                                    <Badge variant="secondary" className="font-mono text-[9px] h-5 px-1.5 bg-blue-50 text-blue-700 border-blue-200">
+                                                    <Badge variant="secondary" className="font-mono text-[9px] h-5 px-1.5 bg-blue-50 text-blue-700 border-blue-200 uppercase">
                                                         <FileText className="h-2.5 w-2.5 mr-1" />
-                                                        {transcriptRecord?.certificate_id || 'READY'}
+                                                        Ready
                                                     </Badge>
                                                     <Button asChild size="icon" variant="ghost" className="h-6 w-6">
                                                         <a href={transPrintUrl} target="_blank" rel="noopener noreferrer">
@@ -156,9 +156,9 @@ const BookingCertificateControl = ({
                                                     </Button>
                                                 </div>
                                             </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p className="text-xs font-bold">Transcript</p>
-                                                <p className="text-[10px] opacity-70">Printable via external script</p>
+                                            <TooltipContent side="top">
+                                                <p className="text-xs font-bold">Academic Transcript</p>
+                                                <p className="text-[10px] opacity-70">Generated on-the-fly via ID {id}</p>
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
@@ -209,7 +209,7 @@ export default function ConvocationCertificateGenPage() {
         queryFn: getConvocationCeremonies,
     });
 
-    const { data: registrations, isLoading: isLoadingRegs, isFetching } = useQuery<ConvocationRegistration[]>({
+    const { data: registrations, isLoading: isLoadingRegs } = useQuery<ConvocationRegistration[]>({
         queryKey: ['convocationRegistrations', selectedCeremonyId],
         queryFn: () => getConvocationRegistrations(selectedCeremonyId || undefined),
         enabled: !!selectedCeremonyId,
@@ -286,7 +286,6 @@ export default function ConvocationCertificateGenPage() {
 
             } catch (error) {
                 console.error(`Failed to generate for ${reg.student_number}:`, error);
-                // We continue with others even if one fails
             }
         }
 
@@ -300,6 +299,8 @@ export default function ConvocationCertificateGenPage() {
     const getBulkPrintUrl = (mode: number) => {
         const baseUrl = selectedCourseId === '2'
             ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-advanced-course.php'
+            : selectedCourseId === '7'
+            ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/english-certificate'
             : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php';
         
         return `${baseUrl}?courseCode=${selectedCourseId}&showSession=${selectedSession}&tableMode=${mode}`;
@@ -439,9 +440,9 @@ export default function ConvocationCertificateGenPage() {
                             <Label>Search Students</Label>
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input 
+                                <input 
                                     placeholder="ID, Name, or Ref #..." 
-                                    className="pl-10" 
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-10" 
                                     value={searchTerm} 
                                     onChange={(e) => setSearchTerm(e.target.value)} 
                                 />
@@ -495,7 +496,6 @@ export default function ConvocationCertificateGenPage() {
                     <div className="flex justify-between items-center">
                         <CardTitle>Registration List</CardTitle>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-                            {isFetching && <Loader2 className="h-4 w-4 animate-spin" />}
                             <span>{filteredRegs.length} records found</span>
                         </div>
                     </div>
