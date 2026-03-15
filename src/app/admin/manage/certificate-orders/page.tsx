@@ -116,7 +116,7 @@ const CertificateStatusCell = ({
     });
 
     const getGeneratedDoc = (courseId: string) => {
-        return certStatus?.certificateStatus?.find(c => c.parent_course_id === courseId && c.type === 'Certificate');
+        return certStatus?.certificateStatus?.find(c => c.parent_course_id === courseId && (c.type === 'Certificate' || c.type === 'Workshop-Certificate'));
     };
 
     if (isLoadingCerts || !studentData) return <div className="space-y-2"><Skeleton className="h-6 w-24" /><Skeleton className="h-6 w-24" /></div>;
@@ -144,7 +144,7 @@ const CertificateStatusCell = ({
 
                 return (
                     <div key={id} className="space-y-1.5 border-l-2 border-muted pl-2 py-1">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">{courseNameMap.get(id) || `ID: ${id}`}</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1 leading-tight">{courseNameMap.get(id) || `ID: ${id}`}</p>
                         <div className="flex flex-wrap items-center gap-2">
                             {cert ? (
                                 <TooltipProvider>
@@ -218,7 +218,7 @@ const OrderActionsCell = ({ order, onUpdateClick, studentData, balanceData, isLo
 }) => {
     const { isUpdateAvailable } = useMemo(() => {
         if (!studentData) return { isUpdateAvailable: false };
-        const currentCourses = order.course_code.split(',').map(s => s.trim()).filter(Boolean);
+        const currentCourses = order.course_code.split(',').map(id => id.trim()).filter(Boolean);
         const allEligibleEnrollments = Object.values(studentData.studentEnrollments).filter(e => e.certificate_eligibility);
         const newEnrollments = allEligibleEnrollments.filter(e => !currentCourses.includes(e.parent_course_id));
         return { isUpdateAvailable: newEnrollments.length > 0 };
@@ -509,10 +509,12 @@ export default function CertificateOrdersListPage() {
                                     <TableRow key={order.id}>
                                         <TableCell>#{order.id}</TableCell>
                                         <TableCell className="font-medium text-xs"><strong>{order.created_by}</strong><br/>{order.name_on_certificate}</TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-wrap gap-1">
+                                        <TableCell className="min-w-[180px]">
+                                            <div className="flex flex-col gap-1.5">
                                                 {order.course_code.split(',').map(id => (
-                                                    <Badge key={id} variant="outline" className="text-[10px] h-5">{courseNameMap.get(id.trim()) || `ID: ${id}`}</Badge>
+                                                    <Badge key={id} variant="secondary" className="justify-start h-auto py-1 px-2 text-[10px] font-medium border-primary/10">
+                                                        {courseNameMap.get(id.trim()) || `ID: ${id}`}
+                                                    </Badge>
                                                 ))}
                                             </div>
                                         </TableCell>
