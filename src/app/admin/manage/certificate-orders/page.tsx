@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -245,7 +244,7 @@ export default function CertificateOrdersListPage() {
     const [studentDataMap, setStudentDataMap] = useState<Map<string, { studentData?: FullStudentData, balanceData?: StudentBalanceData }>>(new Map());
 
     const { data: orders, isLoading: isLoadingOrders, isError, error } = useQuery<CertificateOrder[]>({
-        queryKey: ['allCertificateOrders'],
+        queryKey: ['certificateOrders'],
         queryFn: getCertificateOrders,
         staleTime: 5 * 60 * 1000,
     });
@@ -508,8 +507,8 @@ export default function CertificateOrdersListPage() {
                             <div className="space-y-2 border-t pt-4">
                                 <Label className="text-xs uppercase text-muted-foreground font-bold">Payment Verification Document</Label>
                                 <div className="relative aspect-[16/9] w-full max-w-sm rounded-lg overflow-hidden border-2 bg-muted mx-auto">
-                                    <Image src={`${CONTENT_PROVIDER_URL}/payment-slips/${selectedOrderDetails.payment_slip}`} alt="Payment Slip" layout="fill" objectFit="contain" data-ai-hint="payment slip" />
-                                    <a href={`${CONTENT_PROVIDER_URL}/payment-slips/${selectedOrderDetails.payment_slip}`} target="_blank" rel="noopener noreferrer" className="absolute bottom-2 right-2"><Button size="sm" variant="secondary"><ExternalLink className="h-3.5 w-3.5 mr-1.5"/>Full Size</Button></a>
+                                    <Image src={`${CONTENT_PROVIDER_URL}/content-provider/uploads/certificate-payment-slips/${selectedOrderDetails.payment_slip}`} alt="Payment Slip" layout="fill" objectFit="contain" data-ai-hint="payment slip" />
+                                    <a href={`${CONTENT_PROVIDER_URL}/content-provider/uploads/certificate-payment-slips/${selectedOrderDetails.payment_slip}`} target="_blank" rel="noopener noreferrer" className="absolute bottom-2 right-2"><Button size="sm" variant="secondary"><ExternalLink className="h-3.5 w-3.5 mr-1.5"/>Full Size</Button></a>
                                 </div>
                             </div>
                         )}
