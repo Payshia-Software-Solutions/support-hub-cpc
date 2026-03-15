@@ -134,14 +134,14 @@ const CertificateStatusCell = ({
                 const cert = getGeneratedDoc(id);
                 const enrollment = Object.values(studentData.studentEnrollments).find(e => e.parent_course_id === id);
                 
-                // Individual Print URL logic
+                // Individual Print URL logic - Corrected specialized routing
                 let certPrintUrl = '';
                 if (id === '1') {
                     certPrintUrl = `https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-certificate?courseCode=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
                 } else if (id === '2') {
-                    certPrintUrl = `https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-advanced-course.php?courseCode=${id}&showSession=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
+                    certPrintUrl = `https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-advanced?courseCode=2&tableMode=0&fixedStudentNumber=${order.created_by}`;
                 } else if (id === '7') {
-                    certPrintUrl = `https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/english-certificate?courseCode=${id}&showSession=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
+                    certPrintUrl = `https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-english?courseCode=7&tableMode=0&fixedStudentNumber=${order.created_by}`;
                 } else {
                     certPrintUrl = `https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php?courseCode=${id}&showSession=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
                 }
@@ -415,6 +415,14 @@ export default function CertificateOrdersListPage() {
             if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) setCurrentPage(pageNum);
         }
     };
+
+    // Bulk print URL helpers
+    const getBulkPrintBaseUrl = (courseId: string) => {
+        if (courseId === '1') return 'https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-certificate';
+        if (courseId === '2') return 'https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-advanced';
+        if (courseId === '7') return 'https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-english';
+        return 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php';
+    };
     
     if (isLoadingOrders) return <div className="p-8"><Skeleton className="h-64 w-full" /></div>;
     if (isError) return <div className="p-8"><Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error.message}</AlertDescription></Alert></div>;
@@ -526,12 +534,12 @@ export default function CertificateOrdersListPage() {
                         </div>
                         <div className="flex gap-2 w-full sm:w-auto">
                             <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-initial bg-background">
-                                <a href={`https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-certificate?courseCode=${courseFilter}&tableMode=1`} target="_blank" rel="noopener noreferrer">
-                                    <ListOrdered className="mr-2 h-4 w-4 text-primary" /> Courier List (Table)
+                                <a href={`${getBulkPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=1`} target="_blank" rel="noopener noreferrer">
+                                    <ListOrdered className="mr-2 h-4 w-4 text-primary" /> Print Table (List)
                                 </a>
                             </Button>
                             <Button asChild size="sm" className="flex-1 sm:flex-initial">
-                                <a href={`https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-certificate?courseCode=${courseFilter}&tableMode=0`} target="_blank" rel="noopener noreferrer">
+                                <a href={`${getBulkPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=0`} target="_blank" rel="noopener noreferrer">
                                     <Award className="mr-2 h-4 w-4" /> Print All Certificates
                                 </a>
                             </Button>
