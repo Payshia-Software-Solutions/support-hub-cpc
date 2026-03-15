@@ -39,6 +39,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -127,14 +134,17 @@ const CertificateStatusCell = ({
                 const cert = getGeneratedDoc(id);
                 const enrollment = Object.values(studentData.studentEnrollments).find(e => e.parent_course_id === id);
                 
-                // Print URL logic consistent with convocation module
-                const certBaseUrl = id === '2' 
-                    ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-advanced-course.php'
-                    : id === '7'
-                    ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/english-certificate'
-                    : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php';
-                
-                const certPrintUrl = `${certBaseUrl}?courseCode=${id}&showSession=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
+                // Individual Print URL logic
+                let certPrintUrl = '';
+                if (id === '1') {
+                    certPrintUrl = `https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-certificate?courseCode=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
+                } else if (id === '2') {
+                    certPrintUrl = `https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-advanced-course.php?courseCode=${id}&showSession=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
+                } else if (id === '7') {
+                    certPrintUrl = `https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/english-certificate?courseCode=${id}&showSession=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
+                } else {
+                    certPrintUrl = `https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php?courseCode=${id}&showSession=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
+                }
 
                 const transBaseUrl = id === '2'
                     ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-transcript-advanced.php'
@@ -255,6 +265,7 @@ const OrderActionsCell = ({ order, onUpdateClick, studentData, balanceData, isLo
 
 export default function CertificateOrdersListPage() {
     const [searchTerm, setSearchTerm] = useState('');
+    const [courseFilter, setCourseFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [isExporting, setIsExporting] = useState(false);
     const [selectedOrderDetails, setSelectedOrderDetails] = useState<CertificateOrder | null>(null);
@@ -317,12 +328,18 @@ export default function CertificateOrdersListPage() {
             );
         }
 
+        if (courseFilter !== 'all') {
+            result = result.filter(order => 
+                order.course_code.split(',').map(s => s.trim()).includes(courseFilter)
+            );
+        }
+
         return [...result].sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
-    }, [orders, searchTerm]);
+    }, [orders, searchTerm, courseFilter]);
 
     const openUpdateDialog = (order: CertificateOrder) => { setOrderToUpdate(order); setIsUpdateDialogOpen(true); };
 
-    useEffect(() => { setCurrentPage(1); }, [searchTerm]);
+    useEffect(() => { setCurrentPage(1); }, [searchTerm, courseFilter]);
 
     const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
     const paginatedOrders = useMemo(() => {
@@ -494,11 +511,56 @@ export default function CertificateOrdersListPage() {
                 </DialogContent>
             </Dialog>
 
+            {/* Bulk Printing Actions */}
+            {courseFilter !== 'all' && (
+                <Card className="border-primary/20 bg-primary/5 shadow-md">
+                    <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-full">
+                                <Printer className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold">Bulk Printing: {courseNameMap.get(courseFilter)}</p>
+                                <p className="text-xs text-muted-foreground">Perform batch actions for the filtered list.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-initial bg-background">
+                                <a href={`https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-certificate?courseCode=${courseFilter}&tableMode=1`} target="_blank" rel="noopener noreferrer">
+                                    <ListOrdered className="mr-2 h-4 w-4 text-primary" /> Courier List (Table)
+                                </a>
+                            </Button>
+                            <Button asChild size="sm" className="flex-1 sm:flex-initial">
+                                <a href={`https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-certificate?courseCode=${courseFilter}&tableMode=0`} target="_blank" rel="noopener noreferrer">
+                                    <Award className="mr-2 h-4 w-4" /> Print All Certificates
+                                </a>
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             <Card className="shadow-lg">
                 <CardHeader>
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                         <div><CardTitle>Certificate Orders</CardTitle><CardDescription>{filteredOrders.length} records found.</CardDescription></div>
-                        <div className="relative w-full sm:w-auto sm:max-w-xs"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search student or name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10"/></div>
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                            <Select value={courseFilter} onValueChange={setCourseFilter}>
+                                <SelectTrigger className="w-full sm:w-[200px]">
+                                    <SelectValue placeholder="Filter by Course" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Courses</SelectItem>
+                                    {Array.from(courseNameMap.entries()).map(([id, name]) => (
+                                        <SelectItem key={id} value={id}>{name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <div className="relative w-full sm:w-auto sm:max-w-xs">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input placeholder="Search student or name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10"/>
+                            </div>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
