@@ -134,7 +134,7 @@ const CertificateStatusCell = ({
                 const cert = getGeneratedDoc(id);
                 const enrollment = Object.values(studentData.studentEnrollments).find(e => e.parent_course_id === id);
                 
-                // Individual Print URL logic - Corrected specialized routing
+                // Individual Certificate Print URL logic
                 let certPrintUrl = '';
                 if (id === '1') {
                     certPrintUrl = `https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-certificate?courseCode=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
@@ -146,11 +146,16 @@ const CertificateStatusCell = ({
                     certPrintUrl = `https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php?courseCode=${id}&showSession=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
                 }
 
-                const transBaseUrl = id === '2'
-                    ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-transcript-advanced.php'
-                    : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-transcript.php';
-                
-                const transPrintUrl = `${transBaseUrl}?courseCode=${id}&showSession=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
+                // Individual Transcript Print URL logic
+                let transPrintUrl = '';
+                if (id === '1') {
+                    transPrintUrl = `https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-print-all-transcript?courseCode=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
+                } else if (id === '2') {
+                    transPrintUrl = `https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-print-all-transcript-advanced?courseCode=2&tableMode=0&fixedStudentNumber=${order.created_by}`;
+                } else {
+                    const transBaseUrl = 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-transcript.php';
+                    transPrintUrl = `${transBaseUrl}?courseCode=${id}&showSession=1&tableMode=0&fixedStudentNumber=${order.created_by}`;
+                }
 
                 return (
                     <div key={id} className="space-y-1.5 border-l-2 border-muted pl-2 py-1">
@@ -167,13 +172,13 @@ const CertificateStatusCell = ({
                                                 </Badge>
                                                 <Button asChild size="icon" variant="ghost" className="h-6 w-6">
                                                     <a href={certPrintUrl} target="_blank" rel="noopener noreferrer">
-                                                        <Printer className="h-3.5 w-3.5" />
+                                                        <Printer className="h-3.5 w-3.5" title="Print Certificate" />
                                                     </a>
                                                 </Button>
                                                 {/* Transcript Button */}
                                                 <Button asChild size="icon" variant="ghost" className="h-6 w-6">
                                                     <a href={transPrintUrl} target="_blank" rel="noopener noreferrer">
-                                                        <Printer className="h-3.5 w-3.5 text-blue-600" />
+                                                        <Printer className="h-3.5 w-3.5 text-blue-600" title="Print Transcript" />
                                                     </a>
                                                 </Button>
                                             </div>
@@ -416,12 +421,19 @@ export default function CertificateOrdersListPage() {
         }
     };
 
-    // Bulk print URL helpers
+    // Bulk print URL helpers for Certificates
     const getBulkPrintBaseUrl = (courseId: string) => {
         if (courseId === '1') return 'https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-certificate';
         if (courseId === '2') return 'https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-advanced';
         if (courseId === '7') return 'https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-list-english';
         return 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php';
+    };
+
+    // Bulk print URL helpers for Transcripts
+    const getBulkTranscriptPrintBaseUrl = (courseId: string) => {
+        if (courseId === '1') return 'https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-print-all-transcript';
+        if (courseId === '2') return 'https://admin.pharmacollege.lk//assets/content/lms-management/certification/print-view/courier-print-all-transcript-advanced';
+        return 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-transcript.php';
     };
     
     if (isLoadingOrders) return <div className="p-8"><Skeleton className="h-64 w-full" /></div>;
@@ -522,25 +534,35 @@ export default function CertificateOrdersListPage() {
             {/* Bulk Printing Actions */}
             {courseFilter !== 'all' && (
                 <Card className="border-primary/20 bg-primary/5 shadow-md">
-                    <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-primary/10 rounded-full">
                                 <Printer className="h-5 w-5 text-primary" />
                             </div>
                             <div>
-                                <p className="text-sm font-bold">Bulk Printing: {courseNameMap.get(courseFilter)}</p>
-                                <p className="text-xs text-muted-foreground">Perform batch actions for the filtered list.</p>
+                                <p className="text-sm font-bold">Bulk Actions: {courseNameMap.get(courseFilter)}</p>
+                                <p className="text-xs text-muted-foreground">Batch document management.</p>
                             </div>
                         </div>
-                        <div className="flex gap-2 w-full sm:w-auto">
-                            <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-initial bg-background">
+                        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                            <Button asChild variant="outline" size="xs" className="flex-1 md:flex-initial bg-background text-[10px]">
                                 <a href={`${getBulkPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=1`} target="_blank" rel="noopener noreferrer">
-                                    <ListOrdered className="mr-2 h-4 w-4 text-primary" /> Print Table (List)
+                                    <ListOrdered className="mr-1.5 h-3 w-3 text-primary" /> List Table
                                 </a>
                             </Button>
-                            <Button asChild size="sm" className="flex-1 sm:flex-initial">
+                            <Button asChild variant="outline" size="xs" className="flex-1 md:flex-initial bg-background text-[10px]">
                                 <a href={`${getBulkPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=0`} target="_blank" rel="noopener noreferrer">
-                                    <Award className="mr-2 h-4 w-4" /> Print All Certificates
+                                    <Award className="mr-1.5 h-3 w-3 text-primary" /> Batch Certs
+                                </a>
+                            </Button>
+                            <Button asChild variant="outline" size="xs" className="flex-1 md:flex-initial bg-background text-[10px]">
+                                <a href={`${getBulkTranscriptPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=1`} target="_blank" rel="noopener noreferrer">
+                                    <ListOrdered className="mr-1.5 h-3 w-3 text-blue-600" /> Trans Table
+                                </a>
+                            </Button>
+                            <Button asChild variant="outline" size="xs" className="flex-1 md:flex-initial bg-background text-[10px]">
+                                <a href={`${getBulkTranscriptPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=0`} target="_blank" rel="noopener noreferrer">
+                                    <FileText className="mr-1.5 h-3 w-3 text-blue-600" /> Batch Trans
                                 </a>
                             </Button>
                         </div>
