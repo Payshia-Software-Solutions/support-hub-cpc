@@ -238,6 +238,11 @@ export interface CertificateOrder {
   name_on_certificate: string;
   telephone_1?: string;
   print_status: string;
+  // New fields
+  garlent?: string;
+  scroll?: string;
+  certificate_file?: string;
+  payment_slip?: string | null;
 }
 
 export interface CreateCertificateOrderPayload {
