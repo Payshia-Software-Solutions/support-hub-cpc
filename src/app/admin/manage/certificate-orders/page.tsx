@@ -5,7 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getCertificateOrders, updateCertificateOrderCourses, deleteCertificateOrder, generateCertificate, getUserCertificatePrintStatus } from '@/lib/actions/certificates';
 import { getStudentFullInfo, getStudentBalance } from '@/lib/actions/users';
-import type { CertificateOrder, FullStudentData, UpdateCertificateOrderCoursesPayload, UserCertificatePrintStatus, GenerateCertificatePayload, StudentBalanceData } from '@/lib/types';
+import { getParentCourses } from '@/lib/actions/courses';
+import type { CertificateOrder, FullStudentData, UpdateCertificateOrderCoursesPayload, UserCertificatePrintStatus, GenerateCertificatePayload, StudentBalanceData, ParentCourse } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -248,6 +249,18 @@ export default function CertificateOrdersListPage() {
         queryFn: getCertificateOrders,
         staleTime: 5 * 60 * 1000,
     });
+
+    const { data: parentCourses } = useQuery<ParentCourse[]>({
+        queryKey: ['parentCourses'],
+        queryFn: getParentCourses,
+        staleTime: Infinity,
+    });
+
+    const courseNameMap = useMemo(() => {
+        const map = new Map<string, string>();
+        parentCourses?.forEach(course => map.set(course.id, course.course_name));
+        return map;
+    }, [parentCourses]);
     
     const queryClient = useQueryClient();
     const { mutate: updateCourses, isPending: isUpdating } = useMutation({
@@ -531,7 +544,19 @@ export default function CertificateOrdersListPage() {
                                     <TableRow key={order.id}>
                                         <TableCell>#{order.id}</TableCell>
                                         <TableCell className="font-medium"><p className="text-xs font-bold">{order.created_by}</p><p className="text-[10px] text-muted-foreground truncate max-w-[150px]">{order.name_on_certificate}</p></TableCell>
-                                        <TableCell><div className="flex flex-wrap gap-1">{order.course_code.split(',').map(code => <Badge key={code.trim()} variant="outline" className="text-[10px] h-5">{code.trim()}</Badge>)}</div></TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-wrap gap-1">
+                                                {order.course_code.split(',').map(id => {
+                                                    const trimmedId = id.trim();
+                                                    const name = courseNameMap.get(trimmedId) || `ID: ${trimmedId}`;
+                                                    return (
+                                                        <Badge key={trimmedId} variant="outline" className="text-[10px] h-5">
+                                                            {name}
+                                                        </Badge>
+                                                    );
+                                                })}
+                                            </div>
+                                        </TableCell>
                                         <TableCell>
                                             <div className="flex gap-1">
                                                 {order.garlent === '1' && <TooltipProvider><Tooltip><TooltipTrigger asChild><Sparkles className="h-4 w-4 text-primary"/></TooltipTrigger><TooltipContent>Garland</TooltipContent></Tooltip></TooltipProvider>}
@@ -557,6 +582,20 @@ export default function CertificateOrdersListPage() {
                             <div key={order.id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
                                 <div className="flex justify-between items-start"><div><p className="font-bold">{order.created_by}</p><p className="text-sm text-muted-foreground">{order.name_on_certificate}</p></div><div className="text-right text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</div></div>
                                 <div className="text-sm space-y-2 pt-2 border-t">
+                                    <div className="flex items-start justify-between">
+                                        <p className="text-muted-foreground font-medium shrink-0 pt-1">Courses</p>
+                                        <div className="flex flex-wrap gap-1 justify-end">
+                                            {order.course_code.split(',').map(id => {
+                                                const trimmedId = id.trim();
+                                                const name = courseNameMap.get(trimmedId) || `ID: ${trimmedId}`;
+                                                return (
+                                                    <Badge key={trimmedId} variant="outline" className="text-[10px] h-5">
+                                                        {name}
+                                                    </Badge>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                     <div className="flex items-center justify-between"><p className="text-muted-foreground font-medium">Verified Payment</p><p className="font-bold text-primary">LKR {parseFloat(order.payment || '0').toLocaleString()}</p></div>
                                     <div className="flex items-center justify-between"><p className="text-muted-foreground font-medium">Extras</p>
                                         <div className="flex gap-2">
