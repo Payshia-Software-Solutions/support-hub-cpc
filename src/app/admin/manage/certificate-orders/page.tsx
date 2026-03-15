@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy, Trash2, Printer } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Loader2, XCircle, Search, Wallet, FileDown, Phone, Home, Mail, User, ListOrdered, Award, Copy, Trash2, Printer, Sparkles, ScrollText, FileText, ExternalLink } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
@@ -41,9 +41,10 @@ import {
 } from "@/components/ui/tooltip";
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-
+import Image from 'next/image';
 
 const ITEMS_PER_PAGE = 25;
+const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
 
 // --- Cell component to check and display convocation status ---
 const fetchConvocationStatus = async (studentNumber: string) => {
@@ -69,7 +70,6 @@ const ConvocationStatusCell = ({ studentNumber }: { studentNumber: string }) => 
         queryKey: ['convocationStatus', studentNumber],
         queryFn: () => fetchConvocationStatus(studentNumber),
         retry: (failureCount, error: any) => {
-            // Don't retry for 404s, which are handled as a success(null)
             if (error?.message?.includes('404')) return false;
             return failureCount < 2;
         },
@@ -98,7 +98,7 @@ const CertificateStatusCell = ({ order, studentDataMap }: { order: CertificateOr
     const { user } = useAuth();
 
     const studentData = studentDataMap.get(order.created_by)?.studentData;
-    const parentCourseId = order.course_code.split(',')[0]; // Assuming one for now for simplicity
+    const parentCourseId = order.course_code.split(',')[0]; 
     
     const relevantEnrollment = useMemo(() => {
         if (!studentData) return null;
@@ -196,12 +196,12 @@ const OrderActionsCell = ({ order, onUpdateClick, studentData, balanceData, isLo
     balanceData?: StudentBalanceData,
     isLoading: boolean,
 }) => {
-    const { newEligibleEnrollments, isUpdateAvailable } = useMemo(() => {
-        if (!studentData) return { newEligibleEnrollments: [], isUpdateAvailable: false };
+    const { isUpdateAvailable } = useMemo(() => {
+        if (!studentData) return { isUpdateAvailable: false };
         const currentCourses = order.course_code.split(',').map(s => s.trim()).filter(Boolean);
         const allEligibleEnrollments = Object.values(studentData.studentEnrollments).filter(e => e.certificate_eligibility);
         const newEnrollments = allEligibleEnrollments.filter(e => !currentCourses.includes(e.parent_course_id));
-        return { newEligibleEnrollments: newEnrollments, isUpdateAvailable: newEnrollments.length > 0 };
+        return { isUpdateAvailable: newEnrollments.length > 0 };
     }, [studentData, order.course_code]);
     
     if (isLoading) {
@@ -285,7 +285,6 @@ export default function CertificateOrdersListPage() {
             );
         }
 
-        // Sort by ID in descending order to show the last order first
         return [...result].sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
     }, [orders, searchTerm]);
 
@@ -340,10 +339,12 @@ export default function CertificateOrdersListPage() {
             const headers = [
                 'Order ID',
                 'Student ID',
-                'Name on Cert (Order)',
-                'Name on Cert (Profile)',
-                'Full Name (Profile)',
+                'Name on Cert',
                 'Course Code(s)',
+                'Payment (Verified)',
+                'Garland',
+                'Scroll',
+                'File',
                 'Order Status',
                 'Print Status',
                 'Order Date',
@@ -354,26 +355,16 @@ export default function CertificateOrdersListPage() {
                 'District'
             ];
 
-            // Hydrate data for the entire filtered list before export
-            const studentNumbers = [...new Set(filteredOrders.map(o => o.created_by))];
-            const profileDataMap = new Map<string, FullStudentData>();
-            
-            const CHUNK_SIZE = 10;
-            for (let i = 0; i < studentNumbers.length; i += CHUNK_SIZE) {
-                const chunk = studentNumbers.slice(i, i + CHUNK_SIZE);
-                const results = await Promise.all(chunk.map(sn => getStudentFullInfo(sn).catch(() => null)));
-                results.forEach((res, idx) => { if (res) profileDataMap.set(chunk[idx], res); });
-            }
-
             const rows = filteredOrders.map(order => {
-                const profile = profileDataMap.get(order.created_by);
                 return [
                     order.id,
                     order.created_by,
                     order.name_on_certificate || 'N/A',
-                    profile?.studentInfo.name_on_certificate || 'N/A',
-                    profile?.studentInfo.full_name || 'N/A',
                     order.course_code,
+                    order.payment || '0.00',
+                    order.garlent === '1' ? 'Yes' : 'No',
+                    order.scroll === '1' ? 'Yes' : 'No',
+                    order.certificate_file === '1' ? 'Yes' : 'No',
                     order.certificate_status,
                     order.print_status || 'Pending',
                     new Date(order.created_at).toLocaleDateString(),
@@ -413,26 +404,13 @@ export default function CertificateOrdersListPage() {
             if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
                 setCurrentPage(pageNum);
             } else {
-                 toast({
-                    variant: 'destructive',
-                    title: 'Invalid Page Number',
-                    description: `Please enter a number between 1 and ${totalPages}.`
-                });
+                 toast({ variant: 'destructive', title: 'Invalid Page Number' });
             }
         }
     };
     
     if (isLoadingOrders) return <div className="p-8"><Skeleton className="h-64 w-full" /></div>;
-    if (isError) {
-        return (
-            <div className="p-8">
-                <Alert variant="destructive">
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error.message}</AlertDescription>
-                </Alert>
-            </div>
-        );
-    }
+    if (isError) return <div className="p-8"><Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error.message}</AlertDescription></Alert></div>;
 
     const getStatusVariant = (status: string) => {
         if (status?.toLowerCase() === 'printed') return 'default';
@@ -445,11 +423,11 @@ export default function CertificateOrdersListPage() {
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-headline font-semibold">Certificate Orders</h1>
-                    <p className="text-muted-foreground">View all certificate orders and check student eligibility.</p>
+                    <p className="text-muted-foreground">Manage certificate requests, verify payments, and process delivery.</p>
                 </div>
                 <Button onClick={handleExport} disabled={isExporting || filteredOrders.length === 0}>
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
-                    {isExporting ? 'Preparing...' : 'Export to CSV'}
+                    Export to CSV
                 </Button>
             </header>
 
@@ -457,15 +435,12 @@ export default function CertificateOrdersListPage() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently delete the order #{orderToDelete?.id}. This action cannot be undone.
-                        </AlertDialogDescription>
+                        <AlertDialogDescription>This will permanently delete the order #{orderToDelete?.id}. This action cannot be undone.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={() => deleteMutation.mutate(orderToDelete!.id)} disabled={deleteMutation.isPending}>
-                            {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                             Delete Order
+                            {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Delete Order
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -478,7 +453,7 @@ export default function CertificateOrdersListPage() {
                         <AlertDialogDescription asChild>
                            {orderToUpdate && studentDataMap.get(orderToUpdate.created_by)?.studentData ? (
                              <div className="text-sm">
-                                <p className="mb-3">This student is eligible for the following additional course(s). Do you want to add them to this certificate order?</p>
+                                <p className="mb-3">This student is eligible for additional courses. Do you want to add them to this order?</p>
                                 <div className="space-y-4 rounded-md border bg-muted/50 p-3 max-h-60 overflow-y-auto">
                                     {Object.values(studentDataMap.get(orderToUpdate!.created_by)?.studentData?.studentEnrollments || {}).filter(e => e.certificate_eligibility && !orderToUpdate?.course_code.includes(e.parent_course_id)).map(enrollment => (
                                         <div key={enrollment.parent_course_id}>
@@ -503,10 +478,41 @@ export default function CertificateOrdersListPage() {
             </AlertDialog>
 
             <Dialog open={!!selectedOrderDetails} onOpenChange={(open) => !open && setSelectedOrderDetails(null)}>
-                <DialogContent><DialogHeader><DialogTitle>Shipping Details for Order #{selectedOrderDetails?.id}</DialogTitle><DialogDescription>Delivery information provided by {selectedOrderDetails?.created_by}.</DialogDescription></DialogHeader>
-                    <div className="py-4 space-y-4 text-sm">
-                        <div className="space-y-1"><Label>Full Address</Label><p className="p-2 bg-muted rounded-md text-muted-foreground">{selectedOrderDetails?.address_line1}, {selectedOrderDetails?.address_line2}, {selectedOrderDetails?.city_id}, {selectedOrderDetails?.district}</p></div>
-                        <div className="space-y-1"><Label>Contact Number</Label><p className="p-2 bg-muted rounded-md text-muted-foreground">{selectedOrderDetails?.mobile}</p></div>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Order Details: #{selectedOrderDetails?.id}</DialogTitle>
+                        <DialogDescription>Overview of student info, items, and verification documents.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-6 text-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <div className="space-y-1"><Label className="text-xs uppercase text-muted-foreground font-bold">Delivery Address</Label><p className="p-3 bg-muted rounded-md text-foreground font-medium leading-relaxed">{selectedOrderDetails?.address_line1}<br/>{selectedOrderDetails?.address_line2 && <>{selectedOrderDetails.address_line2}<br/></>}{selectedOrderDetails?.city_id}, {selectedOrderDetails?.district}</p></div>
+                                <div className="space-y-1"><Label className="text-xs uppercase text-muted-foreground font-bold">Contact Phone</Label><p className="p-2 bg-muted rounded-md font-mono">{selectedOrderDetails?.mobile}</p></div>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="space-y-2"><Label className="text-xs uppercase text-muted-foreground font-bold">Additional Items Ordered</Label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedOrderDetails?.garlent === '1' ? <Badge variant="outline" className="bg-primary/5 gap-1.5"><Sparkles className="h-3.5 w-3.5 text-primary"/> Garland</Badge> : null}
+                                        {selectedOrderDetails?.scroll === '1' ? <Badge variant="outline" className="bg-primary/5 gap-1.5"><ScrollText className="h-3.5 w-3.5 text-primary"/> Scroll</Badge> : null}
+                                        {selectedOrderDetails?.certificate_file === '1' ? <Badge variant="outline" className="bg-primary/5 gap-1.5"><FileText className="h-3.5 w-3.5 text-primary"/> Cert. File</Badge> : null}
+                                        {(!selectedOrderDetails?.garlent || selectedOrderDetails.garlent === '0') && 
+                                         (!selectedOrderDetails?.scroll || selectedOrderDetails.scroll === '0') && 
+                                         (!selectedOrderDetails?.certificate_file || selectedOrderDetails.certificate_file === '0') && 
+                                         <p className="text-muted-foreground italic">No extras requested.</p>}
+                                    </div>
+                                </div>
+                                <div className="space-y-1 pt-2 border-t"><Label className="text-xs uppercase text-muted-foreground font-bold">Verification Amount</Label><p className="text-lg font-bold text-primary">LKR {parseFloat(selectedOrderDetails?.payment || '0').toLocaleString('en-US', { minimumFractionDigits: 2 })}</p></div>
+                            </div>
+                        </div>
+                        {selectedOrderDetails?.payment_slip && (
+                            <div className="space-y-2 border-t pt-4">
+                                <Label className="text-xs uppercase text-muted-foreground font-bold">Payment Verification Document</Label>
+                                <div className="relative aspect-[16/9] w-full max-w-sm rounded-lg overflow-hidden border-2 bg-muted mx-auto">
+                                    <Image src={`${CONTENT_PROVIDER_URL}${selectedOrderDetails.payment_slip}`} alt="Payment Slip" layout="fill" objectFit="contain" data-ai-hint="payment slip" />
+                                    <a href={`${CONTENT_PROVIDER_URL}${selectedOrderDetails.payment_slip}`} target="_blank" rel="noopener noreferrer" className="absolute bottom-2 right-2"><Button size="sm" variant="secondary"><ExternalLink className="h-3.5 w-3.5 mr-1.5"/>Full Size</Button></a>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </DialogContent>
             </Dialog>
@@ -514,29 +520,29 @@ export default function CertificateOrdersListPage() {
             <Card className="shadow-lg">
                 <CardHeader>
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                        <div><CardTitle>All Orders</CardTitle><CardDescription>{filteredOrders.length} orders found.</CardDescription></div>
-                        <div className="flex items-center gap-2">
-                            <div className="relative w-full sm:w-auto sm:max-w-xs"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search student or name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10"/></div>
-                        </div>
+                        <div><CardTitle>All Certificate Orders</CardTitle><CardDescription>{filteredOrders.length} records found.</CardDescription></div>
+                        <div className="relative w-full sm:w-auto sm:max-w-xs"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search student or name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10"/></div>
                     </div>
                 </CardHeader>
                 <CardContent>
                     <div className="relative w-full overflow-auto border rounded-lg hidden md:block">
-                        <Table><TableHeader><TableRow><TableHead>Order ID</TableHead><TableHead>Student</TableHead><TableHead>Course(s)</TableHead><TableHead>Cert Status</TableHead><TableHead>Print Status</TableHead><TableHead>Convocation Status</TableHead><TableHead>Order Date</TableHead><TableHead>Eligibility</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                        <Table><TableHeader><TableRow><TableHead>Order ID</TableHead><TableHead>Student</TableHead><TableHead>Course(s)</TableHead><TableHead>Extras</TableHead><TableHead>Payment</TableHead><TableHead>Order Status</TableHead><TableHead>Convocation</TableHead><TableHead>Eligibility</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {paginatedOrders.map(order => (
                                     <TableRow key={order.id}>
                                         <TableCell>#{order.id}</TableCell>
-                                        <TableCell className="font-medium"><p>{order.created_by}</p><p className="text-xs text-muted-foreground">{order.name_on_certificate}</p></TableCell>
-                                        <TableCell>{order.course_code}</TableCell>
-                                        <TableCell><div className="flex flex-wrap gap-2 items-center">{order.course_code.split(',').map(code => <CertificateStatusCell key={code.trim()} order={order} studentDataMap={studentDataMap} />)}</div></TableCell>
+                                        <TableCell className="font-medium"><p className="text-xs font-bold">{order.created_by}</p><p className="text-[10px] text-muted-foreground truncate max-w-[150px]">{order.name_on_certificate}</p></TableCell>
+                                        <TableCell><div className="flex flex-wrap gap-1">{order.course_code.split(',').map(code => <Badge key={code.trim()} variant="outline" className="text-[10px] h-5">{code.trim()}</Badge>)}</div></TableCell>
                                         <TableCell>
-                                            <Badge variant={getStatusVariant(order.print_status)}>
-                                                {order.print_status || 'N/A'}
-                                            </Badge>
+                                            <div className="flex gap-1">
+                                                {order.garlent === '1' && <TooltipProvider><Tooltip><TooltipTrigger asChild><Sparkles className="h-4 w-4 text-primary"/></TooltipTrigger><TooltipContent>Garland</TooltipContent></Tooltip></TooltipProvider>}
+                                                {order.scroll === '1' && <TooltipProvider><Tooltip><TooltipTrigger asChild><ScrollText className="h-4 w-4 text-primary"/></TooltipTrigger><TooltipContent>Scroll</TooltipContent></Tooltip></TooltipProvider>}
+                                                {order.certificate_file === '1' && <TooltipProvider><Tooltip><TooltipTrigger asChild><FileText className="h-4 w-4 text-primary"/></TooltipTrigger><TooltipContent>Cert. File</TooltipContent></Tooltip></TooltipProvider>}
+                                            </div>
                                         </TableCell>
+                                        <TableCell className="font-mono text-xs">LKR {parseFloat(order.payment || '0').toLocaleString()}</TableCell>
+                                        <TableCell><Badge variant={order.certificate_status === 'Delivered' ? 'default' : 'secondary'} className="text-[10px]">{order.certificate_status}</Badge></TableCell>
                                         <TableCell><ConvocationStatusCell studentNumber={order.created_by} /></TableCell>
-                                        <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell><OrderActionsCell order={order} onUpdateClick={() => openUpdateDialog(order)} studentData={studentDataMap.get(order.created_by)?.studentData} balanceData={studentDataMap.get(order.created_by)?.balanceData} isLoading={isLoadingStudentData && !studentDataMap.has(order.created_by)} /></TableCell>
                                         <TableCell className="text-right space-x-1">
                                             <Button variant="outline" size="sm" onClick={() => setSelectedOrderDetails(order)}>View</Button>
@@ -552,11 +558,16 @@ export default function CertificateOrdersListPage() {
                             <div key={order.id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
                                 <div className="flex justify-between items-start"><div><p className="font-bold">{order.created_by}</p><p className="text-sm text-muted-foreground">{order.name_on_certificate}</p></div><div className="text-right text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</div></div>
                                 <div className="text-sm space-y-2 pt-2 border-t">
-                                    <div className="flex items-center justify-between"><p className="text-muted-foreground font-medium">Order Status</p><Badge variant={order.certificate_status === 'Delivered' ? 'default' : 'secondary'}>{order.certificate_status}</Badge></div>
-                                    <div className="flex items-center justify-between"><p className="text-muted-foreground font-medium">Print Status</p><Badge variant={getStatusVariant(order.print_status)}>{order.print_status || 'N/A'}</Badge></div>
+                                    <div className="flex items-center justify-between"><p className="text-muted-foreground font-medium">Verified Payment</p><p className="font-bold text-primary">LKR {parseFloat(order.payment || '0').toLocaleString()}</p></div>
+                                    <div className="flex items-center justify-between"><p className="text-muted-foreground font-medium">Extras</p>
+                                        <div className="flex gap-2">
+                                            {order.garlent === '1' && <Sparkles className="h-4 w-4 text-primary"/>}
+                                            {order.scroll === '1' && <ScrollText className="h-4 w-4 text-primary"/>}
+                                            {order.certificate_file === '1' && <FileText className="h-4 w-4 text-primary"/>}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between"><p className="text-muted-foreground font-medium">Status</p><Badge variant={order.certificate_status === 'Delivered' ? 'default' : 'secondary'}>{order.certificate_status}</Badge></div>
                                     <div className="flex items-start justify-between"><p className="text-muted-foreground font-medium shrink-0 pr-2">Convocation</p><ConvocationStatusCell studentNumber={order.created_by} /></div>
-                                    <div className="flex flex-col items-start justify-between"><p className="text-muted-foreground font-medium mb-1">Course(s)</p><div className="flex flex-wrap gap-1">{order.course_code.split(',').map(code => <Badge key={code.trim()} variant="outline">{code.trim()}</Badge>)}</div></div>
-                                    <div className="flex items-start justify-between"><p className="text-muted-foreground font-medium shrink-0 pr-2">Certificates</p><div className="text-right flex flex-wrap gap-1 justify-end">{order.course_code.split(',').map(code => <CertificateStatusCell key={code.trim()} order={order} studentDataMap={studentDataMap} />)}</div></div>
                                     <div className="flex items-start justify-between"><p className="text-muted-foreground font-medium shrink-0 pr-2">Eligibility</p><div className="text-right"><OrderActionsCell order={order} onUpdateClick={() => openUpdateDialog(order)} studentData={studentDataMap.get(order.created_by)?.studentData} balanceData={studentDataMap.get(order.created_by)?.balanceData} isLoading={isLoadingStudentData && !studentDataMap.has(order.created_by)} /></div></div>
                                     <div className="flex items-center justify-end pt-2 border-t mt-2 gap-2">
                                         <Button variant="outline" size="sm" onClick={() => setSelectedOrderDetails(order)}>Details</Button>
@@ -566,23 +577,12 @@ export default function CertificateOrdersListPage() {
                             </div>
                         ))}
                     </div>
-                    {(isLoadingStudentData && paginatedOrders.length > 0) && <div className="text-center py-4 text-sm text-muted-foreground flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin"/> Loading student data...</div>}
                     {paginatedOrders.length === 0 && <div className="text-center py-10"><p className="text-muted-foreground">No orders found.</p></div>}
                 </CardContent>
                 {totalPages > 1 && (
                     <CardFooter className="flex items-center justify-center space-x-2 pt-6">
                         <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>Previous</Button>
-                        <div className="flex items-center justify-center text-sm font-medium">
-                            Page
-                            <Input
-                                key={currentPage}
-                                type="number"
-                                defaultValue={currentPage}
-                                onKeyDown={handlePageInputChange}
-                                className="h-8 w-[200px] mx-2 text-center"
-                            />
-                            of {totalPages}
-                        </div>
+                        <div className="flex items-center justify-center text-sm font-medium">Page<Input key={currentPage} type="number" defaultValue={currentPage} onKeyDown={handlePageInputChange} className="h-8 w-16 mx-2 text-center" />of {totalPages}</div>
                         <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>Next</Button>
                     </CardFooter>
                 )}
