@@ -655,15 +655,15 @@ export const updatePrescriptionContent = async (payload: { pres_code: string; co
 // --- MediMind API Functions ---
 
 export async function getMediMindItems(): Promise<MediMindItem[]> {
-    const response = await fetch(`${QA_API_BASE_URL}/medimind-items/`);
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-medicines/`);
     if (!response.ok) {
         throw new Error('Failed to fetch MediMind items');
     }
     return response.json();
 }
 
-export async function createMediMindItem(formData: FormData): Promise<MediMindItem> {
-    const response = await fetch(`${QA_API_BASE_URL}/medimind-items/`, {
+export async function createMediMindItem(formData: FormData): Promise<any> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-medicines/`, {
         method: 'POST',
         body: formData,
     });
@@ -674,8 +674,8 @@ export async function createMediMindItem(formData: FormData): Promise<MediMindIt
     return response.json();
 }
 
-export async function updateMediMindItem(id: string, formData: FormData): Promise<MediMindItem> {
-    const response = await fetch(`${QA_API_BASE_URL}/medimind-items/${id}/`, {
+export async function updateMediMindItem(id: string, formData: FormData): Promise<any> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-medicines/${id}/`, {
         method: 'POST', // Note: API uses POST for updates with FormData
         body: formData,
     });
@@ -687,7 +687,7 @@ export async function updateMediMindItem(id: string, formData: FormData): Promis
 }
 
 export async function deleteMediMindItem(id: string): Promise<void> {
-    const response = await fetch(`${QA_API_BASE_URL}/medimind-items/${id}/`, {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-medicines/${id}/`, {
         method: 'DELETE',
     });
     if (!response.ok) {

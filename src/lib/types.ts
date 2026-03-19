@@ -779,9 +779,8 @@ export interface StudentAnswer {
 // MediMind Game Types
 export interface MediMindItem {
   id: string;
-  name: string;
-  description: string;
-  image_path: string;
+  medicine_name: string;
+  medicine_image: string;
   created_at: string;
   created_by: string;
 }
