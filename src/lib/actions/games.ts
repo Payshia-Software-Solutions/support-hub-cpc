@@ -1,6 +1,6 @@
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem, MediMindLevel } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem, MediMindLevel, MediMindQuestion } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
@@ -746,6 +746,51 @@ export async function deleteMediMindLevel(id: string): Promise<void> {
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to delete level' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+}
+
+// MediMind Questions
+export async function getMediMindQuestions(): Promise<MediMindQuestion[]> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-questions/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch MediMind questions');
+    }
+    return response.json();
+}
+
+export async function createMediMindQuestion(data: { question: string; created_by: string }): Promise<MediMindQuestion> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-questions/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create question' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function updateMediMindQuestion(id: string, data: { question: string }): Promise<MediMindQuestion> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-questions/${id}/`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update question' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function deleteMediMindQuestion(id: string): Promise<void> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-questions/${id}/`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete question' }));
         throw new Error(errorData.message || 'API Error');
     }
 }
