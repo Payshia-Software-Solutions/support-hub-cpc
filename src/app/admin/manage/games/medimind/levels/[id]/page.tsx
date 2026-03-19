@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Trash2, Loader2, Search, Pill, FileQuestion, AlertTriangle, Calendar, UserCheck, Check, Settings2 } from "lucide-react";
+import { ArrowLeft, PlusCircle, Trash2, Loader2, Search, Pill, FileQuestion, AlertTriangle, Calendar, UserCheck, Check, Settings2, X } from "lucide-react";
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -139,7 +139,7 @@ const AddQuestionDialog = ({
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" /> Edit Logic</Button>
+                <Button variant="outline" size="sm"><Settings2 className="mr-2 h-4 w-4" /> Configure Questions</Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
@@ -190,8 +190,10 @@ export default function LevelDetailsPage() {
     const router = useRouter();
     const params = useParams();
     const levelId = params.id as string;
+    const queryClient = useQueryClient();
     
     const [itemToRemove, setItemToRemove] = useState<MediMindItem | null>(null);
+    const [mappingToRemove, setMappingToRemove] = useState<MediMindLevelQuestion | null>(null);
 
     const { data: level, isLoading: isLoadingLevel, isError: isLevelError, error: levelError } = useQuery<MediMindLevel>({
         queryKey: ['mediMindLevel', levelId],
@@ -218,7 +220,7 @@ export default function LevelDetailsPage() {
         return mappings.filter(m => String(m.level_id) === String(levelId));
     }, [mappings, levelId]);
 
-    // Local state for items (this should also ideally move to an API mapping table in the future)
+    // Local state for items
     const [itemIds, setItemIds] = useState<string[]>([]);
 
     const itemsInLevel = useMemo(() => {
@@ -235,6 +237,22 @@ export default function LevelDetailsPage() {
             setItemIds(prev => prev.filter(id => id !== itemToRemove.id));
             toast({ title: 'Item Removed' });
             setItemToRemove(null);
+        }
+    };
+
+    const removeMappingMutation = useMutation({
+        mutationFn: (mappingId: string) => removeMediMindLevelQuestion(mappingId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['mediMindLevelQuestions'] });
+            toast({ title: 'Question removed from level.' });
+            setMappingToRemove(null);
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Action Failed', description: err.message })
+    });
+
+    const handleRemoveMapping = () => {
+        if (mappingToRemove) {
+            removeMappingMutation.mutate(mappingToRemove.id);
         }
     };
 
@@ -257,6 +275,7 @@ export default function LevelDetailsPage() {
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
+            {/* Alert for Removing Items */}
             <AlertDialog open={!!itemToRemove} onOpenChange={() => setItemToRemove(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -266,6 +285,29 @@ export default function LevelDetailsPage() {
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleRemoveItem}>Remove</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Alert for Removing Questions */}
+            <AlertDialog open={!!mappingToRemove} onOpenChange={() => setMappingToRemove(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remove Assessment Question?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to remove "{mappingToRemove?.question}" from this level's assessment pool?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={removeMappingMutation.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={handleRemoveMapping} 
+                            disabled={removeMappingMutation.isPending}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {removeMappingMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                            Confirm Removal
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -341,7 +383,22 @@ export default function LevelDetailsPage() {
                             {currentLevelMappings.length > 0 ? currentLevelMappings.map(mapping => (
                                 <div key={mapping.id} className="flex items-center justify-between p-3 border rounded-md bg-background hover:bg-muted/30 transition-colors group">
                                     <p className="font-medium text-xs flex-1 pr-4">{mapping.question}</p>
-                                    <Badge variant="outline" className="text-[9px] h-4 shrink-0 uppercase">Standard</Badge>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="text-[9px] h-4 shrink-0 uppercase">Standard</Badge>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-7 w-7 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" 
+                                            onClick={() => setMappingToRemove(mapping)}
+                                            disabled={removeMappingMutation.isPending && removeMappingMutation.variables === mapping.id}
+                                        >
+                                            {removeMappingMutation.isPending && removeMappingMutation.variables === mapping.id ? (
+                                                <Loader2 className="h-3 w-3 animate-spin"/>
+                                            ) : (
+                                                <X className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </div>
                                 </div>
                             )) : (
                                 <div className="text-center py-10 border border-dashed rounded-lg bg-muted/10">
