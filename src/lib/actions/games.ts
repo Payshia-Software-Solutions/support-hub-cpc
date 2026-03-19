@@ -158,7 +158,7 @@ export const getPatient = async (studentId: string, courseCode: string, patientI
 export const getPrescriptionDetails = async (prescriptionId: string): Promise<PrescriptionDetail[]> => {
     if (!prescriptionId) return [];
     const response = await fetch(`${QA_API_BASE_URL}/care-content/pres-code/${prescriptionId}/`);
-     if (response.status === 404) {
+    if (response.status === 404) {
         return []; // No details found is a valid state.
     }
     if (!response.ok) {
@@ -698,7 +698,7 @@ export async function deleteMediMindItem(id: string): Promise<void> {
 
 // MediMind Levels
 export async function getMediMindLevels(): Promise<MediMindLevel[]> {
-    const response = await fetch(`${QA_API_BASE_URL}/medimind-levels/`);
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-levels/`);
     if (!response.ok) {
         throw new Error('Failed to fetch levels');
     }
@@ -706,7 +706,7 @@ export async function getMediMindLevels(): Promise<MediMindLevel[]> {
 }
 
 export async function getMediMindLevelById(id: string): Promise<MediMindLevel> {
-    const response = await fetch(`${QA_API_BASE_URL}/medimind-levels/${id}/`);
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-levels/${id}/`);
     if (!response.ok) {
         throw new Error('Failed to fetch level');
     }
@@ -715,7 +715,7 @@ export async function getMediMindLevelById(id: string): Promise<MediMindLevel> {
 }
 
 export async function createMediMindLevel(data: { level_name: string; created_by: string }): Promise<MediMindLevel> {
-    const response = await fetch(`${QA_API_BASE_URL}/medimind-levels/`, {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-levels/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -728,7 +728,7 @@ export async function createMediMindLevel(data: { level_name: string; created_by
 }
 
 export async function updateMediMindLevel(id: string, data: { level_name: string }): Promise<MediMindLevel> {
-    const response = await fetch(`${QA_API_BASE_URL}/medimind-levels/${id}/`, {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-levels/${id}/`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -741,7 +741,7 @@ export async function updateMediMindLevel(id: string, data: { level_name: string
 }
 
 export async function deleteMediMindLevel(id: string): Promise<void> {
-    const response = await fetch(`${QA_API_BASE_URL}/medimind-levels/${id}/`, {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-levels/${id}/`, {
         method: 'DELETE',
     });
     if (!response.ok) {
