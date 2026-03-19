@@ -1,8 +1,9 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -12,58 +13,42 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Layers, ArrowRight } from "lucide-react";
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Layers, ArrowRight, AlertTriangle } from "lucide-react";
 import Link from 'next/link';
-
-// --- Mock Data ---
-interface GameLevel {
-  id: string;
-  name: string;
-  description: string;
-}
-
-const dummyLevels: GameLevel[] = [
-  { id: '1', name: 'Level 1: The Basics', description: 'Introduction to common analgesics and antibiotics.' },
-  { id: '2', name: 'Level 2: Cardiovascular Care', description: 'Focuses on drugs for hypertension and cholesterol.' },
-  { id: '3', name: 'Level 3: Allergy & Asthma', description: 'Covers antihistamines and bronchodilators.' },
-];
+import { getMediMindLevels, createMediMindLevel, updateMediMindLevel, deleteMediMindLevel } from '@/lib/actions/games';
+import type { MediMindLevel } from '@/lib/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // --- Form Schema ---
 const levelFormSchema = z.object({
-  name: z.string().min(5, 'Level name must be at least 5 characters.'),
-  description: z.string().optional(),
+  level_name: z.string().min(3, 'Level name must be at least 3 characters.'),
 });
 
 type LevelFormValues = z.infer<typeof levelFormSchema>;
 
 // --- Form Component ---
-const LevelForm = ({ level, onSave, onClose, isSaving }: { level?: GameLevel | null; onSave: (data: LevelFormValues) => void; onClose: () => void; isSaving: boolean }) => {
+const LevelForm = ({ level, onSave, onClose, isSaving }: { level?: MediMindLevel | null; onSave: (data: LevelFormValues) => void; onClose: () => void; isSaving: boolean }) => {
     const { register, handleSubmit, formState: { errors } } = useForm<LevelFormValues>({
         resolver: zodResolver(levelFormSchema),
         defaultValues: {
-            name: level?.name || '',
-            description: level?.description || '',
+            level_name: level?.level_name || '',
         }
     });
 
     return (
         <form onSubmit={handleSubmit(onSave)} className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="level-name">Level Name</Label>
-                <Input id="level-name" {...register('name')} />
-                {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="level-description">Description</Label>
-                <Textarea id="level-description" {...register('description')} />
+                <Label htmlFor="level_name">Level Name</Label>
+                <Input id="level_name" {...register('level_name')} placeholder="e.g. Intermediate" />
+                {errors.level_name && <p className="text-sm text-destructive">{errors.level_name.message}</p>}
             </div>
             <DialogFooter>
                 <DialogClose asChild><Button type="button" variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
                 <Button type="submit" disabled={isSaving}>
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Level
+                    {level ? 'Save Changes' : 'Create Level'}
                 </Button>
             </DialogFooter>
         </form>
@@ -73,47 +58,67 @@ const LevelForm = ({ level, onSave, onClose, isSaving }: { level?: GameLevel | n
 // --- Main Page Component ---
 export default function ManageLevelsPage() {
     const router = useRouter();
-    const [levels, setLevels] = useState<GameLevel[]>(dummyLevels);
+    const queryClient = useQueryClient();
+    const { user } = useAuth();
+    
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [selectedLevel, setSelectedLevel] = useState<GameLevel | null>(null);
-    const [levelToDelete, setLevelToDelete] = useState<GameLevel | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
+    const [selectedLevel, setSelectedLevel] = useState<MediMindLevel | null>(null);
+    const [levelToDelete, setLevelToDelete] = useState<MediMindLevel | null>(null);
+
+    const { data: levels = [], isLoading, isError, error } = useQuery<MediMindLevel[]>({
+        queryKey: ['mediMindLevels'],
+        queryFn: getMediMindLevels,
+    });
+
+    const createMutation = useMutation({
+        mutationFn: createMediMindLevel,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['mediMindLevels'] });
+            toast({ title: "Level Created", description: "The new level has been added to the game." });
+            setIsFormOpen(false);
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Create Failed', description: err.message }),
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string, data: LevelFormValues }) => updateMediMindLevel(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['mediMindLevels'] });
+            toast({ title: "Level Updated", description: "The level details have been updated." });
+            setIsFormOpen(false);
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message }),
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteMediMindLevel,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['mediMindLevels'] });
+            toast({ title: "Level Deleted" });
+            setLevelToDelete(null);
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Delete Failed', description: err.message }),
+    });
 
     const handleCreate = () => {
         setSelectedLevel(null);
         setIsFormOpen(true);
     };
 
-    const handleEdit = (level: GameLevel) => {
+    const handleEdit = (level: MediMindLevel) => {
         setSelectedLevel(level);
         setIsFormOpen(true);
     };
 
     const handleSave = (data: LevelFormValues) => {
-        setIsSaving(true);
-        setTimeout(() => { // Simulate async operation
-            if (selectedLevel) {
-                setLevels(prev => prev.map(l => l.id === selectedLevel.id ? { ...l, ...data } : l));
-                toast({ title: "Level Updated" });
-            } else {
-                const newLevel: GameLevel = { id: String(Date.now()), ...data };
-                setLevels(prev => [newLevel, ...prev]);
-                toast({ title: "Level Created" });
-            }
-            setIsSaving(false);
-            setIsFormOpen(false);
-        }, 1000);
-    };
-
-    const handleDelete = () => {
-        if (!levelToDelete) return;
-        setIsSaving(true);
-        setTimeout(() => {
-            setLevels(prev => prev.filter(l => l.id !== levelToDelete.id));
-            toast({ title: 'Level Deleted' });
-            setLevelToDelete(null);
-            setIsSaving(false);
-        }, 500);
+        if (selectedLevel) {
+            updateMutation.mutate({ id: selectedLevel.id, data });
+        } else {
+            createMutation.mutate({ 
+                level_name: data.level_name, 
+                created_by: user?.username || 'admin_user' 
+            });
+        }
     };
 
     return (
@@ -122,9 +127,16 @@ export default function ManageLevelsPage() {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{selectedLevel ? 'Edit' : 'Create'} Level</DialogTitle>
-                        <DialogDescription>Fill in the details for the game level.</DialogDescription>
+                        <DialogDescription>
+                            Define a new level for the MediMind game challenge.
+                        </DialogDescription>
                     </DialogHeader>
-                    <LevelForm level={selectedLevel} onClose={() => setIsFormOpen(false)} onSave={handleSave} isSaving={isSaving} />
+                    <LevelForm 
+                        level={selectedLevel} 
+                        onClose={() => setIsFormOpen(false)} 
+                        onSave={handleSave} 
+                        isSaving={createMutation.isPending || updateMutation.isPending} 
+                    />
                 </DialogContent>
             </Dialog>
 
@@ -132,12 +144,16 @@ export default function ManageLevelsPage() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>This will permanently delete "{levelToDelete?.name}".</AlertDialogDescription>
+                        <AlertDialogDescription>This will permanently delete the level "{levelToDelete?.level_name}".</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} disabled={isSaving}>
-                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Delete
+                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={() => deleteMutation.mutate(levelToDelete!.id)} 
+                            disabled={deleteMutation.isPending}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                             {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -159,27 +175,48 @@ export default function ManageLevelsPage() {
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle>Level List</CardTitle>
+                    <CardDescription>{isLoading ? "Loading levels..." : `${levels.length} levels configured.`}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    {levels.length > 0 ? levels.map(level => (
-                         <div key={level.id} className="flex items-center justify-between p-3 border rounded-lg">
-                            <div>
-                                <p className="font-semibold">{level.name}</p>
-                                <p className="text-sm text-muted-foreground">{level.description}</p>
+                    {isLoading ? (
+                        [...Array(3)].map((_, i) => (
+                            <div key={i} className="flex items-center justify-between p-4 border rounded-lg animate-pulse bg-muted/50">
+                                <Skeleton className="h-5 w-48" />
+                                <div className="flex gap-2"><Skeleton className="h-8 w-24" /><Skeleton className="h-8 w-8" /></div>
                             </div>
-                            <div className="flex gap-1">
+                        ))
+                    ) : isError ? (
+                        <div className="p-8 text-center text-destructive flex flex-col items-center">
+                            <AlertTriangle className="h-10 w-10 mb-2" />
+                            <p className="font-semibold">Error Loading Levels</p>
+                            <p className="text-sm">{(error as Error).message}</p>
+                        </div>
+                    ) : levels.length > 0 ? (
+                        levels.map(level => (
+                         <div key={level.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-md bg-primary/10">
+                                    <Layers className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-card-foreground">{level.level_name}</p>
+                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Created By: {level.created_by}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1">
                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(level)}><Edit className="h-4 w-4" /></Button>
                                 <Button variant="outline" size="sm" asChild>
                                     <Link href={`/admin/manage/games/medimind/levels/${level.id}`}>
-                                        Manage Items <ArrowRight className="ml-2 h-4 w-4"/>
+                                        Configure <ArrowRight className="ml-2 h-4 w-4"/>
                                     </Link>
                                 </Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setLevelToDelete(level)}><Trash2 className="h-4 w-4" /></Button>
                             </div>
                         </div>
-                    )) : (
+                    ))
+                    ) : (
                         <div className="text-center py-10 text-muted-foreground">
-                            <Layers className="mx-auto h-12 w-12" />
+                            <Layers className="mx-auto h-12 w-12 opacity-20" />
                             <h3 className="mt-4 text-lg font-semibold">No Levels Found</h3>
                             <p>Click "Add New Level" to create the first one.</p>
                         </div>

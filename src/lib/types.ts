@@ -786,6 +786,13 @@ export interface MediMindItem {
   created_by: string;
 }
 
+export interface MediMindLevel {
+  id: string;
+  level_name: string;
+  created_by: string;
+  created_at: string;
+}
+
 export interface ConvocationCeremony {
     id: string;
     convocation_name: string;

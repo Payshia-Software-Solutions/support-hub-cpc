@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem, MediMindLevel } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
@@ -693,6 +693,61 @@ export async function deleteMediMindItem(id: string): Promise<void> {
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to delete item' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+}
+
+// MediMind Levels
+export async function getMediMindLevels(): Promise<MediMindLevel[]> {
+    const response = await fetch(`${QA_API_BASE_URL}/medimind-levels/`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch levels' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function getMediMindLevelById(id: string): Promise<MediMindLevel> {
+    const response = await fetch(`${QA_API_BASE_URL}/medimind-levels/${id}/`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch level' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function createMediMindLevel(data: { level_name: string; created_by: string }): Promise<MediMindLevel> {
+    const response = await fetch(`${QA_API_BASE_URL}/medimind-levels/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create level' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function updateMediMindLevel(id: string, data: { level_name: string }): Promise<MediMindLevel> {
+    const response = await fetch(`${QA_API_BASE_URL}/medimind-levels/${id}/`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update level' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function deleteMediMindLevel(id: string): Promise<void> {
+    const response = await fetch(`${QA_API_BASE_URL}/medimind-levels/${id}/`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete level' }));
         throw new Error(errorData.message || 'API Error');
     }
 }
