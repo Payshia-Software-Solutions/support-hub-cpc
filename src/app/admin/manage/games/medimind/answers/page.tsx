@@ -1,8 +1,8 @@
-
 "use client";
 
-import { useState, useMemo, Fragment } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,64 +14,35 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, FileQuestion, Search } from "lucide-react";
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, FileQuestion, Search, AlertTriangle } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-
-// --- Mock Data Structure ---
-interface GameQuestion {
-  id: string;
-  text: string;
-}
-
-interface AnswerOption {
-  id: string;
-  questionId: string;
-  text: string;
-}
-
-const dummyQuestions: GameQuestion[] = [
-  { id: 'q1', text: 'What is its primary Drug Class?' },
-  { id: 'q2', text: 'What is its primary Indication (use)?' },
-  { id: 'q3', text: 'What is its Mechanism of Action?' },
-  { id: 'q4', text: 'What is a Common Side Effect?' },
-  { id: 'q5', text: 'What is a common Dosage Form?' },
-];
-
-const dummyAnswers: AnswerOption[] = [
-  { id: 'a1', questionId: 'q1', text: 'Analgesic' },
-  { id: 'a2', questionId: 'q1', text: 'Antibiotic' },
-  { id: 'a3', questionId: 'q1', text: 'Antihypertensive' },
-  { id: 'a4', questionId: 'q2', text: 'Pain and fever' },
-  { id: 'a5', questionId: 'q2', text: 'Bacterial infection' },
-  { id: 'a6', questionId: 'q5', text: 'Tablet' },
-  { id: 'a7', questionId: 'q5', text: 'Capsule' },
-  { id: 'a8', questionId: 'q3', text: 'Inhibits COX enzymes' },
-  { id: 'a9', questionId: 'q3', text: 'Inhibits bacterial cell wall synthesis' },
-  { id: 'a10', questionId: 'q4', text: 'Liver damage (in overdose)' },
-];
+import { getMediMindQuestions, getMediMindAnswers, createMediMindAnswer, updateMediMindAnswer, deleteMediMindAnswer } from '@/lib/actions/games';
+import type { MediMindQuestion, MediMindAnswer } from '@/lib/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // --- Form Schema ---
 const answerFormSchema = z.object({
-  text: z.string().min(1, 'Answer text cannot be empty.'),
+  answer: z.string().min(1, 'Answer text cannot be empty.'),
 });
 
 type AnswerFormValues = z.infer<typeof answerFormSchema>;
 
 // --- Form Component ---
-const AnswerForm = ({ answer, onSave, onClose, isSaving }: { answer?: AnswerOption | null; onSave: (data: AnswerFormValues) => void; onClose: () => void; isSaving: boolean }) => {
+const AnswerForm = ({ answer, onSave, onClose, isSaving }: { answer?: MediMindAnswer | null; onSave: (data: AnswerFormValues) => void; onClose: () => void; isSaving: boolean }) => {
     const { register, handleSubmit, formState: { errors } } = useForm<AnswerFormValues>({
         resolver: zodResolver(answerFormSchema),
         defaultValues: {
-            text: answer?.text || '',
+            answer: answer?.answer || '',
         }
     });
 
     return (
         <form onSubmit={handleSubmit(onSave)} className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="answer-text">Answer Text</Label>
-                <Input id="answer-text" {...register('text')} />
-                {errors.text && <p className="text-sm text-destructive">{errors.text.message}</p>}
+                <Label htmlFor="answer-text">Answer Option Text</Label>
+                <Input id="answer-text" {...register('answer')} placeholder="Type an answer option..." />
+                {errors.answer && <p className="text-sm text-destructive">{errors.answer.message}</p>}
             </div>
             <DialogFooter>
                 <DialogClose asChild><Button type="button" variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
@@ -87,22 +58,62 @@ const AnswerForm = ({ answer, onSave, onClose, isSaving }: { answer?: AnswerOpti
 // --- Main Page Component ---
 export default function ManageAnswersPage() {
     const router = useRouter();
-    const [answers, setAnswers] = useState<AnswerOption[]>(dummyAnswers);
+    const queryClient = useQueryClient();
+    const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [selectedAnswer, setSelectedAnswer] = useState<AnswerOption | null>(null);
+    const [selectedAnswer, setSelectedAnswer] = useState<MediMindAnswer | null>(null);
     const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
-    const [answerToDelete, setAnswerToDelete] = useState<AnswerOption | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
+    const [answerToDelete, setAnswerToDelete] = useState<MediMindAnswer | null>(null);
+
+    const { data: questions = [], isLoading: isLoadingQuestions } = useQuery<MediMindQuestion[]>({
+        queryKey: ['mediMindQuestions'],
+        queryFn: getMediMindQuestions,
+    });
+
+    const { data: answers = [], isLoading: isLoadingAnswers, isError, error } = useQuery<MediMindAnswer[]>({
+        queryKey: ['mediMindAnswers'],
+        queryFn: getMediMindAnswers,
+    });
+
+    const createMutation = useMutation({
+        mutationFn: createMediMindAnswer,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['mediMindAnswers'] });
+            toast({ title: "Answer Created", description: "The answer option has been added to the pool." });
+            setIsFormOpen(false);
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Create Failed', description: err.message }),
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string, data: { question_id: number; answer: string } }) => updateMediMindAnswer(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['mediMindAnswers'] });
+            toast({ title: "Answer Updated" });
+            setIsFormOpen(false);
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Update Failed', description: err.message }),
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteMediMindAnswer,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['mediMindAnswers'] });
+            toast({ title: 'Answer Deleted' });
+            setAnswerToDelete(null);
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Delete Failed', description: err.message }),
+    });
 
     const answersByQuestion = useMemo(() => {
-        return dummyQuestions.map(question => ({
+        return questions.map(question => ({
             ...question,
-            answers: answers.filter(answer => answer.questionId === question.id)
-                            .filter(answer => answer.text.toLowerCase().includes(searchTerm.toLowerCase()))
-                            .sort((a,b) => a.text.localeCompare(b.text))
+            answers: answers.filter(a => String(a.question_id) === String(question.id))
+                            .filter(a => a.answer.toLowerCase().includes(searchTerm.toLowerCase()))
+                            .sort((a,b) => a.answer.localeCompare(b.answer))
         }));
-    }, [answers, searchTerm]);
+    }, [questions, answers, searchTerm]);
 
     const handleCreate = (questionId: string) => {
         setSelectedAnswer(null);
@@ -110,50 +121,47 @@ export default function ManageAnswersPage() {
         setIsFormOpen(true);
     };
 
-    const handleEdit = (answer: AnswerOption) => {
+    const handleEdit = (answer: MediMindAnswer) => {
         setSelectedAnswer(answer);
-        setActiveQuestionId(answer.questionId);
+        setActiveQuestionId(answer.question_id);
         setIsFormOpen(true);
     };
 
     const handleSave = (data: AnswerFormValues) => {
-        setIsSaving(true);
-        setTimeout(() => { // Simulate async operation
-            if (selectedAnswer) {
-                setAnswers(prev => prev.map(a => a.id === selectedAnswer.id ? { ...a, ...data } : a));
-                toast({ title: "Answer Updated" });
-            } else if (activeQuestionId) {
-                const newAnswer: AnswerOption = { id: `a${Date.now()}`, questionId: activeQuestionId, ...data };
-                setAnswers(prev => [newAnswer, ...prev]);
-                toast({ title: "Answer Created" });
-            }
-            setIsSaving(false);
-            setIsFormOpen(false);
-        }, 1000);
+        if (!user?.username || !activeQuestionId) return;
+
+        if (selectedAnswer) {
+            updateMutation.mutate({ 
+                id: selectedAnswer.id, 
+                data: { question_id: parseInt(activeQuestionId, 10), answer: data.answer } 
+            });
+        } else {
+            createMutation.mutate({ 
+                question_id: parseInt(activeQuestionId, 10), 
+                answer: data.answer, 
+                created_by: user.username 
+            });
+        }
     };
 
-    const handleDelete = () => {
-        if (!answerToDelete) return;
-        setIsSaving(true);
-        setTimeout(() => {
-            setAnswers(prev => prev.filter(a => a.id !== answerToDelete.id));
-            toast({ title: 'Answer Deleted' });
-            setAnswerToDelete(null);
-            setIsSaving(false);
-        }, 500);
-    };
+    const isLoading = isLoadingQuestions || isLoadingAnswers;
 
     return (
         <div className="p-4 md:p-8 space-y-6 pb-20">
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{selectedAnswer ? 'Edit' : 'Create'} Answer</DialogTitle>
+                        <DialogTitle>{selectedAnswer ? 'Edit' : 'Create'} Answer Option</DialogTitle>
                         <DialogDescription>
-                            {selectedAnswer ? `Editing an answer for "${dummyQuestions.find(q => q.id === activeQuestionId)?.text}"` : `Adding a new answer for "${dummyQuestions.find(q => q.id === activeQuestionId)?.text}"`}
+                            {selectedAnswer ? `Editing an answer for "${questions.find(q => String(q.id) === String(activeQuestionId))?.question}"` : `Adding a new answer for "${questions.find(q => String(q.id) === String(activeQuestionId))?.question}"`}
                         </DialogDescription>
                     </DialogHeader>
-                    <AnswerForm answer={selectedAnswer} onClose={() => setIsFormOpen(false)} onSave={handleSave} isSaving={isSaving} />
+                    <AnswerForm 
+                        answer={selectedAnswer} 
+                        onClose={() => setIsFormOpen(false)} 
+                        onSave={handleSave} 
+                        isSaving={createMutation.isPending || updateMutation.isPending} 
+                    />
                 </DialogContent>
             </Dialog>
 
@@ -161,12 +169,16 @@ export default function ManageAnswersPage() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>This will permanently delete the answer "{answerToDelete?.text}".</AlertDialogDescription>
+                        <AlertDialogDescription>This will permanently delete the answer "{answerToDelete?.answer}".</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} disabled={isSaving}>
-                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Delete
+                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={() => deleteMutation.mutate(answerToDelete!.id)} 
+                            disabled={deleteMutation.isPending}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                             {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -196,42 +208,57 @@ export default function ManageAnswersPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <Accordion type="multiple" className="w-full space-y-2">
-                        {answersByQuestion.map(questionGroup => (
-                            <AccordionItem key={questionGroup.id} value={questionGroup.id} className="border rounded-lg">
-                                <AccordionTrigger className="p-4 hover:no-underline">
-                                    <div className="flex items-center justify-between w-full">
-                                        <div className="text-left">
-                                            <h3 className="font-semibold">{questionGroup.text}</h3>
-                                            <p className="text-sm text-muted-foreground">{questionGroup.answers.length} answer(s)</p>
-                                        </div>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="p-4 pt-0">
-                                    <div className="space-y-2">
-                                        {questionGroup.answers.map(answer => (
-                                            <div key={answer.id} className="flex items-center justify-between p-2 pl-3 border rounded-md bg-muted/50">
-                                                <p className="text-sm font-medium">{answer.text}</p>
-                                                <div className="flex items-center">
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(answer)}><Edit className="h-4 w-4" /></Button>
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setAnswerToDelete(answer)}><Trash2 className="h-4 w-4" /></Button>
-                                                </div>
+                    {isLoading ? (
+                        <div className="space-y-4">
+                            <Skeleton className="h-16 w-full" />
+                            <Skeleton className="h-16 w-full" />
+                            <Skeleton className="h-16 w-full" />
+                        </div>
+                    ) : isError ? (
+                        <div className="p-8 text-center text-destructive flex flex-col items-center">
+                            <AlertTriangle className="h-10 w-10 mb-2" />
+                            <p className="font-semibold">Error Loading Answers</p>
+                            <p className="text-sm">{(error as Error).message}</p>
+                        </div>
+                    ) : (
+                        <Accordion type="multiple" className="w-full space-y-2">
+                            {answersByQuestion.map(questionGroup => (
+                                <AccordionItem key={questionGroup.id} value={String(questionGroup.id)} className="border rounded-lg">
+                                    <AccordionTrigger className="p-4 hover:no-underline">
+                                        <div className="flex items-center justify-between w-full">
+                                            <div className="text-left pr-4">
+                                                <h3 className="font-semibold text-sm md:text-base">{questionGroup.question}</h3>
+                                                <p className="text-xs text-muted-foreground mt-1">{questionGroup.answers.length} answer(s) available</p>
                                             </div>
-                                        ))}
-                                         {questionGroup.answers.length === 0 && searchTerm && (
-                                            <p className="text-center text-sm text-muted-foreground py-4">No answers match your search in this category.</p>
-                                        )}
-                                    </div>
-                                    <Button size="sm" variant="outline" className="mt-4" onClick={() => handleCreate(questionGroup.id)}>
-                                        <PlusCircle className="mr-2 h-4 w-4" /> Add Answer
-                                    </Button>
-                                </AccordionContent>
-                            </AccordionItem>
-                        ))}
-                    </Accordion>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="p-4 pt-0">
+                                        <div className="space-y-2 mt-2">
+                                            {questionGroup.answers.map(answer => (
+                                                <div key={answer.id} className="flex items-center justify-between p-2 pl-3 border rounded-md bg-muted/50 group">
+                                                    <p className="text-sm font-medium">{answer.answer}</p>
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(answer)}><Edit className="h-4 w-4" /></Button>
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setAnswerToDelete(answer)}><Trash2 className="h-4 w-4" /></Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {questionGroup.answers.length === 0 && (
+                                                <div className="text-center py-6 border border-dashed rounded-md bg-muted/20">
+                                                    <p className="text-sm text-muted-foreground">{searchTerm ? "No matching answers in this category." : "No answers defined for this question yet."}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <Button size="sm" variant="outline" className="mt-4 w-full sm:w-auto" onClick={() => handleCreate(String(questionGroup.id))}>
+                                            <PlusCircle className="mr-2 h-4 w-4" /> Add Answer Option
+                                        </Button>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            ))}
+                        </Accordion>
+                    )}
                 </CardContent>
             </Card>
         </div>
     );
 }
-

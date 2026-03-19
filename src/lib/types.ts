@@ -800,6 +800,15 @@ export interface MediMindQuestion {
   created_by: string;
 }
 
+export interface MediMindAnswer {
+  id: string;
+  question_id: string;
+  answer: string;
+  created_by: string;
+  created_at: string;
+  question?: string;
+}
+
 export interface ConvocationCeremony {
     id: string;
     convocation_name: string;

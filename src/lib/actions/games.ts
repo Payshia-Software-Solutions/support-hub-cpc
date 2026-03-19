@@ -1,6 +1,6 @@
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem, MediMindLevel, MediMindQuestion } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem, MediMindLevel, MediMindQuestion, MediMindAnswer } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
@@ -610,7 +610,7 @@ export const savePrescription = async (prescriptionPayload: PrescriptionSubmissi
               afternoon_qty: drug.afternoonQty,
               evening_qty: drug.eveningQty,
               night_qty: drug.nightQty,
-              meal_type: drug.mealType,
+              meal_type: drug.meal_type,
               using_type: drug.usingFrequency,
               at_a_time: drug.at_a_time,
               hour_qty: drug.hour_qty,
@@ -791,6 +791,51 @@ export async function deleteMediMindQuestion(id: string): Promise<void> {
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to delete question' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+}
+
+// MediMind Answer Options
+export async function getMediMindAnswers(): Promise<MediMindAnswer[]> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-quest-answers`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch answer options');
+    }
+    return response.json();
+}
+
+export async function createMediMindAnswer(data: { question_id: number; answer: string; created_by: string }): Promise<MediMindAnswer> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-quest-answers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create answer option' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function updateMediMindAnswer(id: string, data: { question_id: number; answer: string }): Promise<MediMindAnswer> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-quest-answers/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update answer option' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function deleteMediMindAnswer(id: string): Promise<void> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-quest-answers/${id}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete answer option' }));
         throw new Error(errorData.message || 'API Error');
     }
 }
