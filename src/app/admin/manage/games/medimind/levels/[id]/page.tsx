@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -10,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Trash2, Loader2, Search, Pill, FileQuestion, AlertTriangle } from "lucide-react";
+import { ArrowLeft, PlusCircle, Trash2, Loader2, Search, Pill, FileQuestion, AlertTriangle, Calendar, UserCheck } from "lucide-react";
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,6 +17,8 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { getMediMindLevelById, getMediMindItems } from '@/lib/actions/games';
 import type { MediMindLevel, MediMindItem } from '@/lib/types';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
 
 // Mock Question data for now as the API for this part is still being defined
 interface GameQuestion {
@@ -102,7 +103,6 @@ export default function LevelDetailsPage() {
     const queryClient = useQueryClient();
     
     const [itemToRemove, setItemToRemove] = useState<MediMindItem | null>(null);
-    const [questionToRemove, setQuestionToRemove] = useState<GameQuestion | null>(null);
 
     const { data: level, isLoading: isLoadingLevel, isError: isLevelError, error: levelError } = useQuery<MediMindLevel>({
         queryKey: ['mediMindLevel', levelId],
@@ -122,10 +122,6 @@ export default function LevelDetailsPage() {
     const itemsInLevel = useMemo(() => {
         return allItems.filter(item => itemIds.includes(item.id));
     }, [itemIds, allItems]);
-    
-    const questionsInLevel = useMemo(() => {
-        return allQuestions.filter(q => questionIds.includes(q.id));
-    }, [questionIds]);
     
     const handleAddItems = (newItemIds: string[]) => {
         setItemIds(prev => [...new Set([...prev, ...newItemIds])]);
@@ -171,12 +167,24 @@ export default function LevelDetailsPage() {
             </AlertDialog>
 
             <header>
-                 <div>
-                    <Button variant="ghost" onClick={() => router.push('/admin/manage/games/medimind/levels')} className="-ml-4">
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Levels
-                    </Button>
-                    <h1 className="text-3xl font-headline font-semibold mt-2">{level.level_name}</h1>
-                    <p className="text-muted-foreground">Configure the contents and difficulty for this level.</p>
+                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <Button variant="ghost" onClick={() => router.push('/admin/manage/games/medimind/levels')} className="-ml-4">
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Levels
+                        </Button>
+                        <h1 className="text-3xl font-headline font-semibold mt-2">{level.level_name}</h1>
+                        <div className="flex items-center gap-3 mt-1">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <UserCheck className="h-3.5 w-3.5" />
+                                <span>Created by: {level.created_by}</span>
+                            </div>
+                            <span className="text-muted-foreground opacity-50">•</span>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Calendar className="h-3.5 w-3.5" />
+                                <span>{format(new Date(level.created_at), 'PPP')}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </header>
 

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -14,12 +13,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Layers, ArrowRight, AlertTriangle } from "lucide-react";
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Layers, ArrowRight, AlertTriangle, Calendar } from "lucide-react";
 import Link from 'next/link';
 import { getMediMindLevels, createMediMindLevel, updateMediMindLevel, deleteMediMindLevel } from '@/lib/actions/games';
 import type { MediMindLevel } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
 
 // --- Form Schema ---
 const levelFormSchema = z.object({
@@ -200,7 +200,14 @@ export default function ManageLevelsPage() {
                                 </div>
                                 <div>
                                     <p className="font-semibold text-card-foreground">{level.level_name}</p>
-                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Created By: {level.created_by}</p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Author: {level.created_by}</p>
+                                        <span className="text-[10px] text-muted-foreground">•</span>
+                                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                            <Calendar className="h-2.5 w-2.5" />
+                                            {format(new Date(level.created_at), 'MMM d, yyyy')}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1">

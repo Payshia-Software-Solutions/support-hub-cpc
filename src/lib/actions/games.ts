@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem, MediMindLevel } from '../types';
@@ -701,8 +700,7 @@ export async function deleteMediMindItem(id: string): Promise<void> {
 export async function getMediMindLevels(): Promise<MediMindLevel[]> {
     const response = await fetch(`${QA_API_BASE_URL}/medimind-levels/`);
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch levels' }));
-        throw new Error(errorData.message || 'API Error');
+        throw new Error('Failed to fetch levels');
     }
     return response.json();
 }
@@ -710,10 +708,10 @@ export async function getMediMindLevels(): Promise<MediMindLevel[]> {
 export async function getMediMindLevelById(id: string): Promise<MediMindLevel> {
     const response = await fetch(`${QA_API_BASE_URL}/medimind-levels/${id}/`);
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch level' }));
-        throw new Error(errorData.message || 'API Error');
+        throw new Error('Failed to fetch level');
     }
-    return response.json();
+    const data = await response.json();
+    return Array.isArray(data) ? data[0] : data;
 }
 
 export async function createMediMindLevel(data: { level_name: string; created_by: string }): Promise<MediMindLevel> {
