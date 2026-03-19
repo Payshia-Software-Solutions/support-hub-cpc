@@ -809,6 +809,14 @@ export interface MediMindAnswer {
   question?: string;
 }
 
+export interface MediMindLevelQuestion {
+  id: string;
+  level_id: string;
+  question_id: string;
+  level_name: string;
+  question: string;
+}
+
 export interface ConvocationCeremony {
     id: string;
     convocation_name: string;

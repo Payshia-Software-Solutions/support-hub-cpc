@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -16,10 +15,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { getMediMindLevelById, getMediMindItems, getMediMindQuestions } from '@/lib/actions/games';
-import type { MediMindLevel, MediMindItem, MediMindQuestion } from '@/lib/types';
+import { getMediMindLevelById, getMediMindItems, getMediMindQuestions, getMediMindLevelQuestions, addMediMindLevelQuestion, removeMediMindLevelQuestion } from '@/lib/actions/games';
+import type { MediMindLevel, MediMindItem, MediMindQuestion, MediMindLevelQuestion } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AddItemDialog = ({ onAddItems, currentItemIds, allItems }: { onAddItems: (itemIds: string[]) => void; currentItemIds: string[]; allItems: MediMindItem[] }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -83,16 +83,21 @@ const AddItemDialog = ({ onAddItems, currentItemIds, allItems }: { onAddItems: (
     );
 };
 
-const AddQuestionDialog = ({ onUpdateQuestions, currentQuestionIds, allQuestions }: { onUpdateQuestions: (ids: string[]) => void; currentQuestionIds: string[]; allQuestions: MediMindQuestion[] }) => {
+const AddQuestionDialog = ({ 
+    levelId, 
+    currentMappings, 
+    allQuestions 
+}: { 
+    levelId: string; 
+    currentMappings: MediMindLevelQuestion[]; 
+    allQuestions: MediMindQuestion[] 
+}) => {
+    const queryClient = useQueryClient();
+    const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedIds, setSelectedIds] = useState<string[]>(currentQuestionIds);
     const [searchTerm, setSearchTerm] = useState('');
 
-    useEffect(() => {
-        if (isOpen) {
-            setSelectedIds(currentQuestionIds);
-        }
-    }, [isOpen, currentQuestionIds]);
+    const currentQuestionIds = useMemo(() => currentMappings.map(m => m.question_id), [currentMappings]);
 
     const filteredQuestions = useMemo(() => {
         return allQuestions.filter(q => 
@@ -100,9 +105,35 @@ const AddQuestionDialog = ({ onUpdateQuestions, currentQuestionIds, allQuestions
         );
     }, [searchTerm, allQuestions]);
 
-    const handleConfirm = () => {
-        onUpdateQuestions(selectedIds);
-        setIsOpen(false);
+    const addMutation = useMutation({
+        mutationFn: (questionId: number) => addMediMindLevelQuestion({
+            level_id: parseInt(levelId, 10),
+            question_id: questionId,
+            created_by: user?.username || 'admin_user'
+        }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['mediMindLevelQuestions'] });
+            toast({ title: 'Question added to level.' });
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Action Failed', description: err.message })
+    });
+
+    const removeMutation = useMutation({
+        mutationFn: (mappingId: string) => removeMediMindLevelQuestion(mappingId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['mediMindLevelQuestions'] });
+            toast({ title: 'Question removed from level.' });
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Action Failed', description: err.message })
+    });
+
+    const handleToggle = (questionId: string) => {
+        const existingMapping = currentMappings.find(m => String(m.question_id) === String(questionId));
+        if (existingMapping) {
+            removeMutation.mutate(existingMapping.id);
+        } else {
+            addMutation.mutate(parseInt(questionId, 10));
+        }
     };
     
     return (
@@ -121,27 +152,34 @@ const AddQuestionDialog = ({ onUpdateQuestions, currentQuestionIds, allQuestions
                 </DialogHeader>
                 <ScrollArea className="max-h-[50vh] -mx-6 px-6">
                     <div className="space-y-2 py-2">
-                        {filteredQuestions.map(q => (
-                            <div key={q.id} className="flex items-start space-x-2 p-3 rounded-md hover:bg-muted border">
-                                <Checkbox
-                                    id={`q-logic-${q.id}`}
-                                    checked={selectedIds.includes(String(q.id))}
-                                    onCheckedChange={(checked) => {
-                                        setSelectedIds(prev => checked ? [...prev, String(q.id)] : prev.filter(id => id !== String(q.id)));
-                                    }}
-                                    className="mt-1"
-                                />
-                                <Label htmlFor={`q-logic-${q.id}`} className="font-medium cursor-pointer text-sm leading-tight pt-0.5">
-                                    {q.question}
-                                </Label>
-                            </div>
-                        ))}
+                        {filteredQuestions.map(q => {
+                            const isAssigned = currentQuestionIds.includes(String(q.id));
+                            const isPending = (addMutation.isPending && String(addMutation.variables) === String(q.id)) || 
+                                             (removeMutation.isPending && currentMappings.find(m => String(m.question_id) === String(q.id))?.id === removeMutation.variables);
+
+                            return (
+                                <div key={q.id} className={cn("flex items-start space-x-2 p-3 rounded-md transition-colors border", isAssigned ? "bg-primary/5 border-primary/20" : "hover:bg-muted")}>
+                                    <Checkbox
+                                        id={`q-logic-${q.id}`}
+                                        checked={isAssigned}
+                                        disabled={isPending}
+                                        onCheckedChange={() => handleToggle(String(q.id))}
+                                        className="mt-1"
+                                    />
+                                    <div className="flex-1 flex items-center justify-between gap-4">
+                                        <Label htmlFor={`q-logic-${q.id}`} className="font-medium cursor-pointer text-sm leading-tight pt-0.5 flex-1">
+                                            {q.question}
+                                        </Label>
+                                        {isPending && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground shrink-0"/>}
+                                    </div>
+                                </div>
+                            );
+                        })}
                         {filteredQuestions.length === 0 && <p className="text-center py-8 text-muted-foreground text-sm">No questions found.</p>}
                     </div>
                 </ScrollArea>
                 <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                    <Button onClick={handleConfirm}>Save Logic Configuration</Button>
+                    <DialogClose asChild><Button variant="secondary">Close</Button></DialogClose>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -152,7 +190,6 @@ export default function LevelDetailsPage() {
     const router = useRouter();
     const params = useParams();
     const levelId = params.id as string;
-    const queryClient = useQueryClient();
     
     const [itemToRemove, setItemToRemove] = useState<MediMindItem | null>(null);
 
@@ -172,26 +209,25 @@ export default function LevelDetailsPage() {
         queryFn: getMediMindQuestions,
     });
 
-    // Local state for relationships
+    const { data: mappings = [], isLoading: isLoadingMappings } = useQuery<MediMindLevelQuestion[]>({
+        queryKey: ['mediMindLevelQuestions'],
+        queryFn: getMediMindLevelQuestions,
+    });
+
+    const currentLevelMappings = useMemo(() => {
+        return mappings.filter(m => String(m.level_id) === String(levelId));
+    }, [mappings, levelId]);
+
+    // Local state for items (this should also ideally move to an API mapping table in the future)
     const [itemIds, setItemIds] = useState<string[]>([]);
-    const [questionIds, setQuestionIds] = useState<string[]>([]);
 
     const itemsInLevel = useMemo(() => {
         return allItems.filter(item => itemIds.includes(item.id));
     }, [itemIds, allItems]);
-
-    const questionsInLevel = useMemo(() => {
-        return allQuestions.filter(q => questionIds.includes(String(q.id)));
-    }, [questionIds, allQuestions]);
     
     const handleAddItems = (newItemIds: string[]) => {
         setItemIds(prev => [...new Set([...prev, ...newItemIds])]);
         toast({ title: `${newItemIds.length} item(s) added to level.` });
-    };
-
-    const handleUpdateQuestions = (newIds: string[]) => {
-        setQuestionIds(newIds);
-        toast({ title: 'Assessment logic updated.' });
     };
 
     const handleRemoveItem = () => {
@@ -202,7 +238,9 @@ export default function LevelDetailsPage() {
         }
     };
 
-    if (isLoadingLevel) return <div className="p-8 flex items-center justify-center h-screen"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
+    const isLoading = isLoadingLevel || isLoadingAllItems || isLoadingAllQuestions || isLoadingMappings;
+
+    if (isLoading) return <div className="p-8 flex items-center justify-center h-screen"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
 
     if (isLevelError || !level) {
         return (
@@ -290,19 +328,19 @@ export default function LevelDetailsPage() {
                     <CardHeader className="flex flex-row items-center justify-between pb-2 border-b bg-muted/20">
                         <div>
                             <CardTitle className="text-lg">Assessment Logic</CardTitle>
-                            <CardDescription className="text-[10px] uppercase font-bold text-muted-foreground">Questions asked in this level.</CardDescription>
+                            <CardDescription className="text-[10px] uppercase font-bold text-muted-foreground">{currentLevelMappings.length} questions assigned.</CardDescription>
                         </div>
                         <AddQuestionDialog 
-                            onUpdateQuestions={handleUpdateQuestions} 
-                            currentQuestionIds={questionIds} 
-                            allQuestions={allQuestions} 
+                            levelId={levelId}
+                            currentMappings={currentLevelMappings}
+                            allQuestions={allQuestions}
                         />
                     </CardHeader>
                     <CardContent className="pt-4">
                          <div className="space-y-2">
-                            {questionsInLevel.length > 0 ? questionsInLevel.map(question => (
-                                <div key={question.id} className="flex items-center justify-between p-3 border rounded-md bg-background hover:bg-muted/30 transition-colors group">
-                                    <p className="font-medium text-xs flex-1 pr-4">{question.question}</p>
+                            {currentLevelMappings.length > 0 ? currentLevelMappings.map(mapping => (
+                                <div key={mapping.id} className="flex items-center justify-between p-3 border rounded-md bg-background hover:bg-muted/30 transition-colors group">
+                                    <p className="font-medium text-xs flex-1 pr-4">{mapping.question}</p>
                                     <Badge variant="outline" className="text-[9px] h-4 shrink-0 uppercase">Standard</Badge>
                                 </div>
                             )) : (

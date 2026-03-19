@@ -1,6 +1,6 @@
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem, MediMindLevel, MediMindQuestion, MediMindAnswer } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem, MediMindLevel, MediMindQuestion, MediMindAnswer, MediMindLevelQuestion } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
@@ -836,6 +836,38 @@ export async function deleteMediMindAnswer(id: string): Promise<void> {
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to delete answer option' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+}
+
+// MediMind Level Questions
+export async function getMediMindLevelQuestions(): Promise<MediMindLevelQuestion[]> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-level-questions`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch level questions');
+    }
+    return response.json();
+}
+
+export async function addMediMindLevelQuestion(data: { level_id: number; question_id: number; created_by: string }): Promise<any> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-level-questions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to assign question to level' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function removeMediMindLevelQuestion(id: string): Promise<void> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-level-questions/${id}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to remove question from level' }));
         throw new Error(errorData.message || 'API Error');
     }
 }
