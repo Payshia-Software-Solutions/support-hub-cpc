@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -9,30 +10,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Trash2, Loader2, Search, Pill, FileQuestion, AlertTriangle, Calendar, UserCheck } from "lucide-react";
+import { ArrowLeft, PlusCircle, Trash2, Loader2, Search, Pill, FileQuestion, AlertTriangle, Calendar, UserCheck, Check, Settings2 } from "lucide-react";
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { getMediMindLevelById, getMediMindItems } from '@/lib/actions/games';
-import type { MediMindLevel, MediMindItem } from '@/lib/types';
+import { getMediMindLevelById, getMediMindItems, getMediMindQuestions } from '@/lib/actions/games';
+import type { MediMindLevel, MediMindItem, MediMindQuestion } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-
-// Mock Question data for now as the API for this part is still being defined
-interface GameQuestion {
-  id: string;
-  text: string;
-}
-
-const allQuestions: GameQuestion[] = [
-  { id: 'q1', text: 'What is its primary Drug Class?' },
-  { id: 'q2', text: 'What is its primary Indication (use)?' },
-  { id: 'q3', text: 'What is its Mechanism of Action?' },
-  { id: 'q4', text: 'What is a Common Side Effect?' },
-  { id: 'q5', text: 'What is a common Dosage Form?' },
-];
 
 const AddItemDialog = ({ onAddItems, currentItemIds, allItems }: { onAddItems: (itemIds: string[]) => void; currentItemIds: string[]; allItems: MediMindItem[] }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -70,15 +57,15 @@ const AddItemDialog = ({ onAddItems, currentItemIds, allItems }: { onAddItems: (
                         {availableItems.map(item => (
                             <div key={item.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted">
                                 <Checkbox
-                                    id={`add-${item.id}`}
+                                    id={`add-item-${item.id}`}
                                     checked={selectedIds.includes(item.id)}
                                     onCheckedChange={(checked) => {
                                         setSelectedIds(prev => checked ? [...prev, item.id] : prev.filter(id => id !== item.id));
                                     }}
                                 />
-                                <Label htmlFor={`add-${item.id}`} className="font-normal cursor-pointer flex items-center gap-2">
+                                <Label htmlFor={`add-item-${item.id}`} className="font-normal cursor-pointer flex items-center gap-2">
                                     <div className="w-6 h-6 rounded bg-muted relative overflow-hidden shrink-0">
-                                        {item.image_path && <Image src={`https://content-provider.pharmacollege.lk/medimind/${item.image_path}`} alt={item.name} fill objectFit="cover" />}
+                                        {item.image_path && <Image src={`https://content-provider.pharmacollege.lk/medimind/${item.image_path}`} alt={item.name} fill className="object-cover" />}
                                     </div>
                                     {item.name}
                                 </Label>
@@ -90,6 +77,71 @@ const AddItemDialog = ({ onAddItems, currentItemIds, allItems }: { onAddItems: (
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
                     <Button onClick={handleConfirm} disabled={selectedIds.length === 0}>Add Selected</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+const AddQuestionDialog = ({ onUpdateQuestions, currentQuestionIds, allQuestions }: { onUpdateQuestions: (ids: string[]) => void; currentQuestionIds: string[]; allQuestions: MediMindQuestion[] }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<string[]>(currentQuestionIds);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            setSelectedIds(currentQuestionIds);
+        }
+    }, [isOpen, currentQuestionIds]);
+
+    const filteredQuestions = useMemo(() => {
+        return allQuestions.filter(q => 
+            q.question.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [searchTerm, allQuestions]);
+
+    const handleConfirm = () => {
+        onUpdateQuestions(selectedIds);
+        setIsOpen(false);
+    };
+    
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" /> Edit Logic</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Configure Assessment Logic</DialogTitle>
+                    <DialogDescription>Select which questions should be asked in this level.</DialogDescription>
+                    <div className="relative pt-2">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                       <Input placeholder="Search questions..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    </div>
+                </DialogHeader>
+                <ScrollArea className="max-h-[50vh] -mx-6 px-6">
+                    <div className="space-y-2 py-2">
+                        {filteredQuestions.map(q => (
+                            <div key={q.id} className="flex items-start space-x-2 p-3 rounded-md hover:bg-muted border">
+                                <Checkbox
+                                    id={`q-logic-${q.id}`}
+                                    checked={selectedIds.includes(String(q.id))}
+                                    onCheckedChange={(checked) => {
+                                        setSelectedIds(prev => checked ? [...prev, String(q.id)] : prev.filter(id => id !== String(q.id)));
+                                    }}
+                                    className="mt-1"
+                                />
+                                <Label htmlFor={`q-logic-${q.id}`} className="font-medium cursor-pointer text-sm leading-tight pt-0.5">
+                                    {q.question}
+                                </Label>
+                            </div>
+                        ))}
+                        {filteredQuestions.length === 0 && <p className="text-center py-8 text-muted-foreground text-sm">No questions found.</p>}
+                    </div>
+                </ScrollArea>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                    <Button onClick={handleConfirm}>Save Logic Configuration</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -115,17 +167,31 @@ export default function LevelDetailsPage() {
         queryFn: getMediMindItems,
     });
 
-    // Mock local state for relationships until those endpoints are ready
+    const { data: allQuestions = [], isLoading: isLoadingAllQuestions } = useQuery<MediMindQuestion[]>({
+        queryKey: ['mediMindQuestions'],
+        queryFn: getMediMindQuestions,
+    });
+
+    // Local state for relationships
     const [itemIds, setItemIds] = useState<string[]>([]);
     const [questionIds, setQuestionIds] = useState<string[]>([]);
 
     const itemsInLevel = useMemo(() => {
         return allItems.filter(item => itemIds.includes(item.id));
     }, [itemIds, allItems]);
+
+    const questionsInLevel = useMemo(() => {
+        return allQuestions.filter(q => questionIds.includes(String(q.id)));
+    }, [questionIds, allQuestions]);
     
     const handleAddItems = (newItemIds: string[]) => {
         setItemIds(prev => [...new Set([...prev, ...newItemIds])]);
-        toast({ title: `${newItemIds.length} item(s) added to level configuration.` });
+        toast({ title: `${newItemIds.length} item(s) added to level.` });
+    };
+
+    const handleUpdateQuestions = (newIds: string[]) => {
+        setQuestionIds(newIds);
+        toast({ title: 'Assessment logic updated.' });
     };
 
     const handleRemoveItem = () => {
@@ -136,11 +202,11 @@ export default function LevelDetailsPage() {
         }
     };
 
-    if (isLoadingLevel) return <div className="p-8 flex items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
+    if (isLoadingLevel) return <div className="p-8 flex items-center justify-center h-screen"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
 
     if (isLevelError || !level) {
         return (
-            <div className="p-8 text-center text-destructive flex flex-col items-center">
+            <div className="p-8 text-center text-destructive flex flex-col items-center h-screen justify-center">
                 <AlertTriangle className="h-10 w-10 mb-2" />
                 <p className="font-semibold">Level Not Found</p>
                 <p className="text-sm">{(levelError as Error).message}</p>
@@ -169,10 +235,10 @@ export default function LevelDetailsPage() {
             <header>
                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                        <Button variant="ghost" onClick={() => router.push('/admin/manage/games/medimind/levels')} className="-ml-4">
+                        <Button variant="ghost" onClick={() => router.push('/admin/manage/games/medimind/levels')} className="-ml-4 h-auto p-1 mb-2">
                             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Levels
                         </Button>
-                        <h1 className="text-3xl font-headline font-semibold mt-2">{level.level_name}</h1>
+                        <h1 className="text-3xl font-headline font-semibold">{level.level_name}</h1>
                         <div className="flex items-center gap-3 mt-1">
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <UserCheck className="h-3.5 w-3.5" />
@@ -189,20 +255,20 @@ export default function LevelDetailsPage() {
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                <Card className="shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <Card className="shadow-lg border-primary/10">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2 border-b bg-muted/20">
                         <div>
                             <CardTitle className="text-lg">Level Items</CardTitle>
-                            <CardDescription>{itemsInLevel.length} medicines assigned.</CardDescription>
+                            <CardDescription className="text-[10px] uppercase font-bold text-muted-foreground">{itemsInLevel.length} medicines assigned.</CardDescription>
                         </div>
                         <AddItemDialog onAddItems={handleAddItems} currentItemIds={itemIds} allItems={allItems} />
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-4">
                         <div className="space-y-2">
                             {itemsInLevel.map(item => (
-                                <div key={item.id} className="relative group flex items-center gap-4 p-2 border rounded-md bg-muted/50">
-                                    <div className="w-10 h-10 bg-white rounded flex-shrink-0 relative overflow-hidden">
-                                        {item.image_path && <Image src={`https://content-provider.pharmacollege.lk/medimind/${item.image_path}`} alt={item.name} layout="fill" objectFit="contain" className="p-1" />}
+                                <div key={item.id} className="relative group flex items-center gap-4 p-2 border rounded-md bg-background hover:bg-muted/30 transition-colors">
+                                    <div className="w-10 h-10 bg-muted rounded flex-shrink-0 relative overflow-hidden">
+                                        {item.image_path && <Image src={`https://content-provider.pharmacollege.lk/medimind/${item.image_path}`} alt={item.name} fill className="object-contain p-1" />}
                                     </div>
                                     <p className="font-semibold text-sm">{item.name}</p>
                                     <Button variant="ghost" size="icon" className="ml-auto h-7 w-7 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setItemToRemove(item)}>
@@ -211,31 +277,40 @@ export default function LevelDetailsPage() {
                                 </div>
                             ))}
                              {itemsInLevel.length === 0 && (
-                                <div className="text-center py-10 border border-dashed rounded-lg">
+                                <div className="text-center py-10 border border-dashed rounded-lg bg-muted/10">
                                     <Pill className="mx-auto h-10 w-10 text-muted-foreground opacity-20 mb-2" />
-                                    <p className="text-sm text-muted-foreground">No medicines assigned yet.</p>
+                                    <p className="text-sm text-muted-foreground italic">No medicines assigned yet.</p>
                                 </div>
                              )}
                         </div>
                     </CardContent>
                 </Card>
 
-                 <Card className="shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                 <Card className="shadow-lg border-primary/10">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2 border-b bg-muted/20">
                         <div>
                             <CardTitle className="text-lg">Assessment Logic</CardTitle>
-                            <CardDescription>Questions asked in this level.</CardDescription>
+                            <CardDescription className="text-[10px] uppercase font-bold text-muted-foreground">Questions asked in this level.</CardDescription>
                         </div>
-                        <Button variant="outline" size="sm" disabled><PlusCircle className="mr-2 h-4 w-4" /> Edit Logic</Button>
+                        <AddQuestionDialog 
+                            onUpdateQuestions={handleUpdateQuestions} 
+                            currentQuestionIds={questionIds} 
+                            allQuestions={allQuestions} 
+                        />
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-4">
                          <div className="space-y-2">
-                            {allQuestions.map(question => (
-                                <div key={question.id} className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
-                                    <p className="font-medium text-xs">{question.text}</p>
-                                    <Badge variant="outline" className="text-[9px] h-4">Standard</Badge>
+                            {questionsInLevel.length > 0 ? questionsInLevel.map(question => (
+                                <div key={question.id} className="flex items-center justify-between p-3 border rounded-md bg-background hover:bg-muted/30 transition-colors group">
+                                    <p className="font-medium text-xs flex-1 pr-4">{question.question}</p>
+                                    <Badge variant="outline" className="text-[9px] h-4 shrink-0 uppercase">Standard</Badge>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="text-center py-10 border border-dashed rounded-lg bg-muted/10">
+                                    <FileQuestion className="mx-auto h-10 w-10 text-muted-foreground opacity-20 mb-2" />
+                                    <p className="text-sm text-muted-foreground italic">No assessment questions assigned.</p>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
