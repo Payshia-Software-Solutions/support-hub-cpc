@@ -145,7 +145,7 @@ export default function MediMindModulesPage() {
 
                 <div className="bg-background px-6 py-3 rounded-2xl border-2 border-yellow-500/20 shadow-sm flex items-center gap-4">
                     <div className="text-right">
-                       <p className="text-[10px] font-black text-primary/60 uppercase tracking-widest leading-none mb-1">Total Balance</p>
+                       <p className="text-[10px] font-bold text-primary/60 leading-none mb-1">Total Balance</p>
                        <p className="text-2xl font-black text-foreground leading-none flex items-center gap-2">
                             <Coins className="h-6 w-6 text-yellow-500" />
                             {totalCoins}
