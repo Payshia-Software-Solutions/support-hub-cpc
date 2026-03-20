@@ -780,7 +780,7 @@ export interface StudentAnswer {
 export interface MediMindItem {
   id: string;
   medicine_name: string;
-  medicine_image: string;
+  medicine_image_url: string;
   created_at: string;
   created_by: string;
 }
@@ -814,6 +814,47 @@ export interface MediMindLevelQuestion {
   question_id: string;
   level_name: string;
   question: string;
+}
+
+export interface MediMindMedicineAnswer {
+  id: string;
+  medicine_id: string;
+  question_id: string;
+  answer_id: string;
+  created_at: string;
+  created_by: string;
+  medicine_name?: string | null;
+  question?: string;
+  answer?: string;
+}
+
+export interface MediMindLevelMedicine {
+  id: string;
+  level_id: string;
+  medicine_id: string;
+  created_at: string;
+  created_by: string;
+  level_name?: string;
+  medicine_name?: string;
+}
+
+export interface MediMindStudentAnswer {
+  id: string;
+  medicine_id: string;
+  question_id: string;
+  answer_id: string;
+  correct_status: 'Correct' | 'Wrong';
+  created_by: string;
+  created_at: string;
+  medicine_name?: string | null;
+  question?: string;
+  answer?: string;
+}
+
+export interface MediMindStudentStats {
+  correct_count: number;
+  wrong_count: number;
+  total_count: number;
 }
 
 export interface ConvocationCeremony {

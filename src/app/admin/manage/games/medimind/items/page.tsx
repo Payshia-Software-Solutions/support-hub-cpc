@@ -22,7 +22,7 @@ import type { MediMindItem } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const CONTENT_PROVIDER_BASE_URL = 'https://content-provider.pharmacollege.lk/medimind/';
+const CONTENT_PROVIDER_BASE_URL = 'https://content-provider.pharmacollege.lk';
 
 const itemFormSchema = z.object({
   name: z.string().min(3, 'Item name must be at least 3 characters.'),
@@ -55,10 +55,10 @@ const ItemForm = ({ item, onSave, onClose, isSaving }: { item?: MediMindItem | n
             <div className="space-y-2">
                 <Label htmlFor="image">Medicine Image</Label>
                 <Input id="image" type="file" {...form.register('image')} accept="image/*" />
-                {item?.medicine_image && (
+                {item?.medicine_image_url && (
                     <div className="mt-2 text-xs text-muted-foreground">
                         Current image:
-                        <a href={`${CONTENT_PROVIDER_BASE_URL}${item.medicine_image}`} target="_blank" rel="noopener noreferrer" className="ml-1 text-primary hover:underline">{item.medicine_image}</a>
+                        <a href={`${CONTENT_PROVIDER_BASE_URL}${item.medicine_image_url}`} target="_blank" rel="noopener noreferrer" className="ml-1 text-primary hover:underline">{item.medicine_image_url}</a>
                         <p>Uploading a new file will replace the current one.</p>
                     </div>
                 )}
@@ -225,9 +225,9 @@ export default function ManageItemsPage() {
                             {filteredItems.length > 0 ? filteredItems.map(item => (
                                 <Card key={item.id} className="flex flex-col overflow-hidden">
                                     <div className="relative w-full h-40 bg-muted">
-                                        {item.medicine_image ? (
+                                        {item.medicine_image_url ? (
                                             <Image 
-                                                src={`${CONTENT_PROVIDER_BASE_URL}${item.medicine_image}`} 
+                                                src={`${CONTENT_PROVIDER_BASE_URL}${item.medicine_image_url}`} 
                                                 alt={item.medicine_name} 
                                                 layout="fill" 
                                                 objectFit="contain" 

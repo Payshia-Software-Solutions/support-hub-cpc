@@ -1,6 +1,6 @@
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem, MediMindLevel, MediMindQuestion, MediMindAnswer, MediMindLevelQuestion } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem, MediMindLevel, MediMindQuestion, MediMindAnswer, MediMindLevelQuestion, MediMindMedicineAnswer, MediMindLevelMedicine, MediMindStudentAnswer, MediMindStudentStats } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
@@ -662,6 +662,14 @@ export async function getMediMindItems(): Promise<MediMindItem[]> {
     return response.json();
 }
 
+export async function getMediMindItemById(id: string | number): Promise<MediMindItem> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-medicines/${id}/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch medicine details');
+    }
+    return response.json();
+}
+
 export async function createMediMindItem(formData: FormData): Promise<any> {
     const response = await fetch(`${QA_API_BASE_URL}/medi-mind-medicines/`, {
         method: 'POST',
@@ -844,7 +852,15 @@ export async function deleteMediMindAnswer(id: string): Promise<void> {
 export async function getMediMindLevelQuestions(): Promise<MediMindLevelQuestion[]> {
     const response = await fetch(`${QA_API_BASE_URL}/medi-mind-level-questions`);
     if (!response.ok) {
-        throw new Error('Failed to fetch level questions');
+        throw new Error('Failed to fetch level-question mappings');
+    }
+    return response.json();
+}
+
+export async function getMediMindLevelQuestionsByLevel(levelId: string | number): Promise<MediMindLevelQuestion[]> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-level-questions/level/${levelId}/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch level-specific question mappings');
     }
     return response.json();
 }
@@ -870,4 +886,124 @@ export async function removeMediMindLevelQuestion(id: string): Promise<void> {
         const errorData = await response.json().catch(() => ({ message: 'Failed to remove question from level' }));
         throw new Error(errorData.message || 'API Error');
     }
+}
+
+// MediMind Medicine-Specific Answers
+export async function getMediMindMedicineAnswers(): Promise<MediMindMedicineAnswer[]> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-answers/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch medicine-specific answers');
+    }
+    return response.json();
+}
+
+export async function saveMediMindMedicineAnswer(data: { medicine_id: number; question_id: number; answer_id: number; created_by: string }): Promise<any> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-answers/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to save medicine answer' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function deleteMediMindMedicineAnswer(id: string): Promise<void> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-answers/${id}/`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to remove medicine answer' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+}
+
+// MediMind Level-Medicine Mappings
+export async function getMediMindLevelMedicines(): Promise<MediMindLevelMedicine[]> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-level-medicines/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch level-medicine mappings');
+    }
+    return response.json();
+}
+
+export async function getMediMindLevelMedicinesByLevel(levelId: string | number): Promise<MediMindLevelMedicine[]> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-level-medicines/level/${levelId}/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch level-specific medicine mappings');
+    }
+    return response.json();
+}
+
+export async function addMediMindLevelMedicine(data: { level_id: number; medicine_id: number; created_by: string }): Promise<any> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-level-medicines/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to add medicine to level' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function removeMediMindLevelMedicine(id: string): Promise<void> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-level-medicines/${id}/`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to remove medicine from level' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+}
+
+// MediMind Student Side
+export async function submitMediMindStudentAnswer(data: { medicine_id: number; question_id: number; answer_id: number; correct_status: string; created_by: string | number }): Promise<any> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-student-answers/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to submit answer' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function getMediMindStudentAnswers(): Promise<MediMindStudentAnswer[]> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-student-answers/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch student answers');
+    }
+    return response.json();
+}
+
+export async function getMediMindStudentAnswersByStudent(studentId: string | number): Promise<MediMindStudentAnswer[]> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-student-answers/student/${studentId}/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch student answer history');
+    }
+    return response.json();
+}
+
+export async function deleteMediMindStudentAnswer(id: string | number): Promise<void> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-student-answers/${id}/`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete student answer' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+}
+
+export async function getMediMindStudentStats(studentId: string | number): Promise<MediMindStudentStats> {
+    const response = await fetch(`${QA_API_BASE_URL}/medi-mind-student-answers/stats/${studentId}/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch student statistics');
+    }
+    return response.json();
 }

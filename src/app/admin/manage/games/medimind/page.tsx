@@ -36,6 +36,18 @@ export default function MediMindSetupPage() {
             href: "/admin/manage/games/medimind/answers",
             icon: HelpCircle,
         },
+        {
+            title: "Configure Medicine Answers",
+            description: "Map correctly answered options to each medicine for every available question.",
+            href: "/admin/manage/games/medimind/medicine-answers",
+            icon: BrainCircuit,
+        },
+        {
+            title: "Student Submissions",
+            description: "Monitor and manage student performance data and game attempts.",
+            href: "/admin/manage/games/medimind/submissions",
+            icon: BookCopy,
+        },
     ];
 
     return (

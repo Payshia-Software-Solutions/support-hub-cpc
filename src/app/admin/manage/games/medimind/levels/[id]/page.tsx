@@ -15,8 +15,19 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { getMediMindLevelById, getMediMindItems, getMediMindQuestions, getMediMindLevelQuestions, addMediMindLevelQuestion, removeMediMindLevelQuestion } from '@/lib/actions/games';
-import type { MediMindLevel, MediMindItem, MediMindQuestion, MediMindLevelQuestion } from '@/lib/types';
+import { 
+    getMediMindLevelById, 
+    getMediMindItems, 
+    getMediMindQuestions, 
+    getMediMindLevelQuestions, 
+    addMediMindLevelQuestion, 
+    removeMediMindLevelQuestion,
+    getMediMindLevelMedicines,
+    getMediMindLevelMedicinesByLevel,
+    addMediMindLevelMedicine,
+    removeMediMindLevelMedicine
+} from '@/lib/actions/games';
+import type { MediMindLevel, MediMindItem, MediMindQuestion, MediMindLevelQuestion, MediMindLevelMedicine } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,7 +40,7 @@ const AddItemDialog = ({ onAddItems, currentItemIds, allItems }: { onAddItems: (
     const availableItems = useMemo(() => {
         return allItems.filter(item => 
             !currentItemIds.includes(item.id) &&
-            item.name.toLowerCase().includes(searchTerm.toLowerCase())
+            item.medicine_name.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [currentItemIds, searchTerm, allItems]);
 
@@ -65,9 +76,9 @@ const AddItemDialog = ({ onAddItems, currentItemIds, allItems }: { onAddItems: (
                                 />
                                 <Label htmlFor={`add-item-${item.id}`} className="font-normal cursor-pointer flex items-center gap-2">
                                     <div className="w-6 h-6 rounded bg-muted relative overflow-hidden shrink-0">
-                                        {item.image_path && <Image src={`https://content-provider.pharmacollege.lk/medimind/${item.image_path}`} alt={item.name} fill className="object-cover" />}
+                                        {item.medicine_image_url && <Image src={`https://content-provider.pharmacollege.lk${item.medicine_image_url}`} alt={item.medicine_name} fill className="object-cover" />}
                                     </div>
-                                    {item.name}
+                                    {item.medicine_name}
                                 </Label>
                             </div>
                         ))}
@@ -191,6 +202,7 @@ export default function LevelDetailsPage() {
     const params = useParams();
     const levelId = params.id as string;
     const queryClient = useQueryClient();
+    const { user } = useAuth();
     
     const [itemToRemove, setItemToRemove] = useState<MediMindItem | null>(null);
     const [mappingToRemove, setMappingToRemove] = useState<MediMindLevelQuestion | null>(null);
@@ -212,31 +224,67 @@ export default function LevelDetailsPage() {
     });
 
     const { data: mappings = [], isLoading: isLoadingMappings } = useQuery<MediMindLevelQuestion[]>({
-        queryKey: ['mediMindLevelQuestions'],
-        queryFn: getMediMindLevelQuestions,
+        queryKey: ['mediMindLevelQuestions', levelId],
+        queryFn: () => getMediMindLevelQuestions(), // Assuming this already filters or we stick to it?
+        // Actually the user didn't provide a level-specific one for level-questions yet.
+        // But for level-medicines they DID.
+    });
+
+    const { data: levelMedicines = [], isLoading: isLoadingLevelMedicines } = useQuery<MediMindLevelMedicine[]>({
+        queryKey: ['mediMindLevelMedicines', levelId],
+        queryFn: () => getMediMindLevelMedicinesByLevel(levelId),
+        enabled: !!levelId,
     });
 
     const currentLevelMappings = useMemo(() => {
         return mappings.filter(m => String(m.level_id) === String(levelId));
     }, [mappings, levelId]);
 
-    // Local state for items
-    const [itemIds, setItemIds] = useState<string[]>([]);
+    const currentLevelMedicines = levelMedicines;
 
     const itemsInLevel = useMemo(() => {
-        return allItems.filter(item => itemIds.includes(item.id));
-    }, [itemIds, allItems]);
+        return allItems.filter(item => currentLevelMedicines.some(m => String(m.medicine_id) === String(item.id)));
+    }, [currentLevelMedicines, allItems]);
     
-    const handleAddItems = (newItemIds: string[]) => {
-        setItemIds(prev => [...new Set([...prev, ...newItemIds])]);
-        toast({ title: `${newItemIds.length} item(s) added to level.` });
+    const addMedicineMutation = useMutation({
+        mutationFn: (medicineId: string) => addMediMindLevelMedicine({
+            level_id: parseInt(levelId, 10),
+            medicine_id: parseInt(medicineId, 10),
+            created_by: user?.username || 'admin_user'
+        }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['mediMindLevelMedicines'] });
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Action Failed', description: err.message })
+    });
+
+    const handleAddItems = async (newItemIds: string[]) => {
+        try {
+            await Promise.all(newItemIds.map(id => addMedicineMutation.mutateAsync(id)));
+            toast({ title: `${newItemIds.length} item(s) added to level.` });
+        } catch (error) {
+            // Error handled by mutation
+        }
     };
+
+    const removeMedicineMutation = useMutation({
+        mutationFn: (mappingId: string) => removeMediMindLevelMedicine(mappingId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['mediMindLevelMedicines'] });
+            toast({ title: 'Item Removed' });
+            setItemToRemove(null);
+        },
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Action Failed', description: err.message })
+    });
 
     const handleRemoveItem = () => {
         if (itemToRemove) {
-            setItemIds(prev => prev.filter(id => id !== itemToRemove.id));
-            toast({ title: 'Item Removed' });
-            setItemToRemove(null);
+            const mapping = currentLevelMedicines.find(m => String(m.medicine_id) === String(itemToRemove.id));
+            if (mapping) {
+                removeMedicineMutation.mutate(mapping.id);
+            } else {
+                setItemToRemove(null);
+            }
         }
     };
 
@@ -256,7 +304,7 @@ export default function LevelDetailsPage() {
         }
     };
 
-    const isLoading = isLoadingLevel || isLoadingAllItems || isLoadingAllQuestions || isLoadingMappings;
+    const isLoading = isLoadingLevel || isLoadingAllItems || isLoadingAllQuestions || isLoadingMappings || isLoadingLevelMedicines;
 
     if (isLoading) return <div className="p-8 flex items-center justify-center h-screen"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
 
@@ -280,11 +328,18 @@ export default function LevelDetailsPage() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>This will remove "{itemToRemove?.name}" from the level configuration.</AlertDialogDescription>
+                        <AlertDialogDescription>This will remove "{itemToRemove?.medicine_name}" from the level configuration.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleRemoveItem}>Remove</AlertDialogAction>
+                        <AlertDialogCancel disabled={removeMedicineMutation.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={handleRemoveItem}
+                            disabled={removeMedicineMutation.isPending}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {removeMedicineMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Remove
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -341,16 +396,16 @@ export default function LevelDetailsPage() {
                             <CardTitle className="text-lg">Level Items</CardTitle>
                             <CardDescription className="text-[10px] uppercase font-bold text-muted-foreground">{itemsInLevel.length} medicines assigned.</CardDescription>
                         </div>
-                        <AddItemDialog onAddItems={handleAddItems} currentItemIds={itemIds} allItems={allItems} />
+                        <AddItemDialog onAddItems={handleAddItems} currentItemIds={currentLevelMedicines.map(m => String(m.medicine_id))} allItems={allItems} />
                     </CardHeader>
                     <CardContent className="pt-4">
                         <div className="space-y-2">
                             {itemsInLevel.map(item => (
                                 <div key={item.id} className="relative group flex items-center gap-4 p-2 border rounded-md bg-background hover:bg-muted/30 transition-colors">
                                     <div className="w-10 h-10 bg-muted rounded flex-shrink-0 relative overflow-hidden">
-                                        {item.image_path && <Image src={`https://content-provider.pharmacollege.lk/medimind/${item.image_path}`} alt={item.name} fill className="object-contain p-1" />}
+                                        {item.medicine_image_url && <Image src={`https://content-provider.pharmacollege.lk${item.medicine_image_url}`} alt={item.medicine_name} fill className="object-contain p-1" />}
                                     </div>
-                                    <p className="font-semibold text-sm">{item.name}</p>
+                                    <p className="font-semibold text-sm">{item.medicine_name}</p>
                                     <Button variant="ghost" size="icon" className="ml-auto h-7 w-7 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setItemToRemove(item)}>
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
