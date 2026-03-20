@@ -71,7 +71,7 @@ export default function MediMindHistoryPage() {
     }
 
     return (
-        <div className="p-4 md:p-8 space-y-8 pb-20 max-w-6xl mx-auto">
+        <div className="p-4 md:p-8 space-y-8 pb-20">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
                     <button onClick={() => router.back()} className="h-12 w-12 rounded-2xl bg-background flex items-center justify-center border shadow-sm hover:border-primary/50 transition-all">
@@ -171,18 +171,39 @@ export default function MediMindHistoryPage() {
                                         item.correct_status === 'Correct' ? "bg-green-500" : "bg-red-500"
                                     )} />
                                     <div className="flex-1 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                        <div className="flex items-center gap-6">
-                                            <div className={cn(
-                                                "h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 border-2",
-                                                item.correct_status === 'Correct' ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"
-                                            )}>
-                                                {item.correct_status === 'Correct' ? (
-                                                    <CheckCircle2 className="h-8 w-8 text-green-600" />
-                                                ) : (
-                                                    <XCircle className="h-8 w-8 text-red-600" />
-                                                )}
+                                        <div className="flex items-center gap-6 flex-1 min-w-0">
+                                            <div className="relative shrink-0">
+                                                <div className={cn(
+                                                    "h-16 w-16 rounded-2xl overflow-hidden border-2 bg-white flex items-center justify-center p-2",
+                                                    item.correct_status === 'Correct' ? "border-green-200" : "border-red-200"
+                                                )}>
+                                                    <img 
+                                                        src={`https://content-provider.pharmacollege.lk/uploads/medimind/${item.medicine_id}.jpg`}
+                                                        alt={item.medicine_name || ''}
+                                                        className="h-full w-full object-contain"
+                                                        onError={(e) => {
+                                                            // Fallback to Icon if image fails
+                                                            (e.target as any).style.display = 'none';
+                                                            (e.target as any).parentElement.innerHTML = `
+                                                                <div class="h-full w-full flex items-center justify-center">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground opacity-20"><path d="M10.5 21l-7.5-7.5 3.5-3.5 7.5 7.5-3.5 3.5z"/><path d="M14.5 9l3.5-3.5 3 3-3.5 3.5-3-3z"/><path d="M21 21l-4.5-4.5"/></svg>
+                                                                </div>
+                                                            `;
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className={cn(
+                                                    "absolute -top-2 -right-2 h-6 w-6 rounded-full flex items-center justify-center border shadow-sm",
+                                                    item.correct_status === 'Correct' ? "bg-green-500 border-green-600 text-white" : "bg-red-500 border-red-600 text-white"
+                                                )}>
+                                                    {item.correct_status === 'Correct' ? (
+                                                        <CheckCircle2 className="h-3 w-3" />
+                                                    ) : (
+                                                        <XCircle className="h-3 w-3" />
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="min-w-0">
+                                            <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <Badge variant="outline" className="text-[10px] uppercase font-black py-0 px-2 rounded-md">
                                                         {item.medicine_name}
@@ -218,10 +239,10 @@ export default function MediMindHistoryPage() {
                                                     "h-4 w-4",
                                                     item.correct_status === 'Correct' ? "text-yellow-600" : "text-red-400"
                                                 )} />
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
                             </CardContent>
                         </Card>
                     ))

@@ -49,7 +49,7 @@ export default function MediMindLevelsPage() {
     }
 
     return (
-        <div className="p-4 md:p-8 space-y-6 pb-20 max-w-7xl mx-auto">
+        <div className="p-4 md:p-8 space-y-6 pb-20">
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div className="flex-1">
                     <Button onClick={() => router.push('/dashboard')} variant="ghost" className="-ml-4 hover:bg-primary/10 transition-colors">

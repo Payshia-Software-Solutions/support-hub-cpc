@@ -120,7 +120,7 @@ export default function MediMindModulesPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-8 pb-20 max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 space-y-8 pb-20">
       <header className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-muted/30 p-6 rounded-3xl border shadow-inner">
             <div className="flex items-center gap-4">
@@ -194,11 +194,11 @@ export default function MediMindModulesPage() {
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-4">
                         {module.medicine_image_url ? (
-                            <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-primary/10 shadow-sm bg-white shrink-0 group-hover:border-primary/30 transition-colors">
+                            <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-primary/10 shadow-sm bg-white shrink-0 group-hover:border-primary/30 transition-colors p-2">
                                 <img 
                                     src={`https://content-provider.pharmacollege.lk${module.medicine_image_url}`} 
                                     alt={module.medicine_name}
-                                    className="h-full w-full object-cover"
+                                    className="h-full w-full object-contain"
                                 />
                             </div>
                         ) : (

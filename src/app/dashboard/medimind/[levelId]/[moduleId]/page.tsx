@@ -268,7 +268,7 @@ export default function MediMindGamePage() {
     const progress = (correctlyAnsweredIds.size / levelQuestions.length) * 100;
 
     return (
-        <div className="p-4 md:p-8 space-y-6 max-w-6xl mx-auto pb-24">
+        <div className="p-4 md:p-8 space-y-6 pb-24">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-muted/30 p-6 rounded-3xl border shadow-inner">
                 <div className="flex items-center gap-4">
                     <button onClick={() => router.push(`/dashboard/medimind/${levelId}`)} className="h-12 w-12 rounded-2xl bg-background flex items-center justify-center border shadow-sm hover:bg-muted transition-colors">
@@ -288,7 +288,7 @@ export default function MediMindGamePage() {
 
                 <div className="flex items-center gap-6 pr-4">
                     <div className="text-center group">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 group-hover:text-primary transition-colors">Coins</p>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 group-hover:text-primary transition-colors">Total Balance</p>
                         <div className="flex items-center gap-2 bg-background px-4 py-2 rounded-2xl border-2 border-yellow-500/20 shadow-sm relative overflow-hidden">
                              <div className="absolute inset-0 bg-yellow-500/5 group-hover:scale-150 transition-transform duration-1000" />
                              <Coins className="h-5 w-5 text-yellow-500 relative z-10" />
@@ -301,7 +301,7 @@ export default function MediMindGamePage() {
             {/* Full Width Medicine Image */}
             {medicine.medicine_image_url && (
                 <div 
-                    className="w-full aspect-[21/9] rounded-[2.5rem] overflow-hidden border-4 border-primary/10 shadow-2xl bg-white group/hero cursor-zoom-in relative"
+                    className="w-full aspect-square md:aspect-[21/9] rounded-[2.5rem] overflow-hidden border-4 border-primary/10 shadow-2xl bg-white group/hero cursor-zoom-in relative"
                     onClick={() => window.open(`https://content-provider.pharmacollege.lk${medicine.medicine_image_url}`, '_blank')}
                 >
                     <img 
