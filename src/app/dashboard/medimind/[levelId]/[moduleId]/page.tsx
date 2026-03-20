@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,9 @@ import {
     Brain,
     Loader2,
     RotateCcw,
-    Search
+    Search,
+    ShieldCheck,
+    Timer
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -149,12 +151,31 @@ export default function MediMindGamePage() {
 
         // Pick 3 random distractor answers from the pool (that are not the correct one)
         const distractors = allAnswersPool
-            .filter(a => String(a.id) !== String(correctAns.id))
+            .filter(a => String(a.id) !== String(correctAns.id) && String(a.question_id) === String(currentQuestion.question_id))
             .sort(() => 0.5 - Math.random())
             .slice(0, 3);
 
         return [correctAns, ...distractors].sort(() => 0.5 - Math.random());
     }, [currentQuestion, medicineCorrectAnswers, allAnswersPool]);
+
+    const [autoNextTimer, setAutoNextTimer] = useState<number | null>(null);
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (showResult && isCorrect) {
+            setAutoNextTimer(5);
+            interval = setInterval(() => {
+                setAutoNextTimer((prev) => {
+                    if (prev !== null && prev > 1) return prev - 1;
+                    handleNext();
+                    return null;
+                });
+            }, 1000);
+        } else {
+            setAutoNextTimer(null);
+        }
+        return () => clearInterval(interval);
+    }, [showResult, isCorrect]);
 
     // --- Handlers ---
     const handleCheckAnswer = () => {
@@ -276,11 +297,11 @@ export default function MediMindGamePage() {
                     </button>
                     <div>
                         <div className="flex items-center gap-2">
-                             <Badge variant="secondary" className="px-2 py-0 h-5 text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border-primary/20">
+                             <Badge variant="secondary" className="px-2 py-0 h-5 text-[10px] font-bold bg-primary/10 text-primary border-primary/20">
                                 {level.level_name}
                              </Badge>
                         </div>
-                        <h1 className="text-3xl font-black text-primary uppercase tracking-tighter italic leading-none mt-1">
+                        <h1 className="text-3xl font-bold text-primary leading-none mt-1">
                             {medicine.medicine_name}
                         </h1>
                     </div>
@@ -288,7 +309,7 @@ export default function MediMindGamePage() {
 
                 <div className="flex items-center gap-6 pr-4">
                     <div className="text-center group">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 group-hover:text-primary transition-colors">Total Balance</p>
+                        <p className="text-[10px] font-bold text-muted-foreground mb-1 group-hover:text-primary transition-colors">Total Balance</p>
                         <div className="flex items-center gap-2 bg-background px-4 py-2 rounded-2xl border-2 border-yellow-500/20 shadow-sm relative overflow-hidden">
                              <div className="absolute inset-0 bg-yellow-500/5 group-hover:scale-150 transition-transform duration-1000" />
                              <Coins className="h-5 w-5 text-yellow-500 relative z-10" />
@@ -348,20 +369,43 @@ export default function MediMindGamePage() {
                             <Button
                                 onClick={handleCheckAnswer}
                                 disabled={!selectedAnswerId || submitMutation.isPending}
-                                className="w-full h-14 text-lg font-black uppercase italic tracking-tighter shadow-lg rounded-2xl"
+                                className="w-full h-14 text-lg font-bold shadow-lg rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white border-none gap-2 group"
                             >
-                                {submitMutation.isPending ? <Loader2 className="h-6 w-6 animate-spin" /> : "Verify Data"}
+                                {submitMutation.isPending ? (
+                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                ) : (
+                                    <>
+                                        <ShieldCheck className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                                        Verify Data
+                                    </>
+                                )}
                             </Button>
                         ) : (
                             <Button
                                 onClick={handleNext}
                                 variant={isCorrect ? "default" : "outline"}
                                 className={cn(
-                                    "w-full h-14 text-lg font-black uppercase italic tracking-tighter shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-500 rounded-2xl",
+                                    "w-full h-14 text-lg font-bold shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-500 rounded-2xl gap-2 relative overflow-hidden",
                                     isCorrect ? "bg-green-600 hover:bg-green-700" : "border-red-500 text-red-600 hover:bg-red-50"
                                 )}
                             >
-                                {isCorrect ? "Next Step" : "Try Again"} <ChevronRight className="ml-2 h-5 w-5" />
+                                {isCorrect && autoNextTimer !== null && (
+                                    <div 
+                                        className="absolute bottom-0 left-0 h-1 bg-white/40 transition-all duration-1000 ease-linear"
+                                        style={{ width: `${(autoNextTimer / 5) * 100}%` }}
+                                    />
+                                )}
+                                {isCorrect ? (
+                                    <>
+                                        <Timer className="h-5 w-5 animate-pulse" />
+                                        Next Step {autoNextTimer !== null && `(${autoNextTimer}s)`}
+                                        <ChevronRight className="h-5 w-5" />
+                                    </>
+                                ) : (
+                                    <>
+                                        Try Again <ChevronRight className="h-5 w-5" />
+                                    </>
+                                )}
                             </Button>
                         )}
                     </div>
