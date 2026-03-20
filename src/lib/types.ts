@@ -779,11 +779,82 @@ export interface StudentAnswer {
 // MediMind Game Types
 export interface MediMindItem {
   id: string;
-  name: string;
-  description: string;
-  image_path: string;
+  medicine_name: string;
+  medicine_image_url: string;
   created_at: string;
   created_by: string;
+}
+
+export interface MediMindLevel {
+  id: string;
+  level_name: string;
+  created_at: string;
+  created_by: string;
+}
+
+export interface MediMindQuestion {
+  id: string;
+  question: string;
+  created_at: string;
+  created_by: string;
+}
+
+export interface MediMindAnswer {
+  id: string;
+  question_id: string;
+  answer: string;
+  created_by: string;
+  created_at: string;
+  question?: string;
+}
+
+export interface MediMindLevelQuestion {
+  id: string;
+  level_id: string;
+  question_id: string;
+  level_name: string;
+  question: string;
+}
+
+export interface MediMindMedicineAnswer {
+  id: string;
+  medicine_id: string;
+  question_id: string;
+  answer_id: string;
+  created_at: string;
+  created_by: string;
+  medicine_name?: string | null;
+  question?: string;
+  answer?: string;
+}
+
+export interface MediMindLevelMedicine {
+  id: string;
+  level_id: string;
+  medicine_id: string;
+  created_at: string;
+  created_by: string;
+  level_name?: string;
+  medicine_name?: string;
+}
+
+export interface MediMindStudentAnswer {
+  id: string;
+  medicine_id: string;
+  question_id: string;
+  answer_id: string;
+  correct_status: 'Correct' | 'Wrong';
+  created_by: string;
+  created_at: string;
+  medicine_name?: string | null;
+  question?: string;
+  answer?: string;
+}
+
+export interface MediMindStudentStats {
+  correct_count: number;
+  wrong_count: number;
+  total_count: number;
 }
 
 export interface ConvocationCeremony {
