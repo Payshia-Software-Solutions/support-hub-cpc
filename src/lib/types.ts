@@ -1128,3 +1128,32 @@ export interface GeneratedCertificateBatchInfo {
     certificate_id: string;
     enrollment_key: string;
 }
+
+// WinPharma Game Types
+export interface WinPharmaLevel {
+  id: string;
+  level_id?: string;
+  course_code: string;
+  level_name: string;
+  is_active: number;
+  created_at: string;
+  created_by: string;
+}
+
+
+
+export interface WinPharmaTask {
+  id?: string; // Keep for compatibility if needed elsewhere
+  resource_id: string;
+  level_id: string;
+  resource_title: string;
+  resource_data: string; // Can be HTML string
+  task_cover: string;
+  is_active: string | number;
+  created_at?: string;
+  created_by: string;
+  level_name?: string;
+}
+
+
+

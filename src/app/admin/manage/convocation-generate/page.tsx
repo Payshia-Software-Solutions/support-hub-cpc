@@ -96,6 +96,8 @@ const BookingCertificateControl = ({
                     ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-advanced-course.php'
                     : id === '7'
                     ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/english-certificate'
+                    : id === '3'
+                    ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/workshop-certificate.php'
                     : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php';
                 const certPrintUrl = `${certBaseUrl}?courseCode=${id}&showSession=${registration.session}&tableMode=0&fixedStudentNumber=${registration.student_number}`;
 
@@ -301,6 +303,8 @@ export default function ConvocationCertificateGenPage() {
             ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-advanced-course.php'
             : selectedCourseId === '7'
             ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/english-certificate'
+            : selectedCourseId === '3'
+            ? 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/workshop-certificate.php'
             : 'https://admin.pharmacollege.lk/assets/content/lms-management/certification/print-view/print-all-certificates-course.php';
         
         return `${baseUrl}?courseCode=${selectedCourseId}&showSession=${selectedSession}&tableMode=${mode}`;

@@ -1,6 +1,6 @@
 "use client";
 
-import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem, MediMindLevel, MediMindQuestion, MediMindAnswer, MediMindLevelQuestion, MediMindMedicineAnswer, MediMindLevelMedicine, MediMindStudentAnswer, MediMindStudentStats } from '../types';
+import type { GamePatient, PrescriptionDetail, DispensingAnswer, FormSelectionData, TreatmentStartRecord, ValidateAnswerPayload, ValidateAnswerResponse, Instruction, SaveCounselingAnswerPayload, DispensingSubmissionStatus, MasterProduct, POSCorrectAnswer, POSSubmissionPayload, POSSubmissionStatus, RecoveryRecord, PrescriptionSubmissionPayload, MediMindItem, MediMindLevel, MediMindQuestion, MediMindAnswer, MediMindLevelQuestion, MediMindMedicineAnswer, MediMindLevelMedicine, MediMindStudentAnswer, MediMindStudentStats, WinPharmaLevel, WinPharmaTask } from '../types';
 
 const QA_API_BASE_URL = process.env.NEXT_PUBLIC_LMS_SERVER_URL || 'https://qa-api.pharmacollege.lk';
 const POS_IMAGE_BASE_URL = 'https://pos.payshia.com/uploads/product_images/';
@@ -1007,3 +1007,134 @@ export async function getMediMindStudentStats(studentId: string | number): Promi
     }
     return response.json();
 }
+
+// --- WinPharma API Functions ---
+
+export async function getWinPharmaLevelsByCourse(courseCode: string): Promise<WinPharmaLevel[]> {
+    const response = await fetch(`${QA_API_BASE_URL}/win_pharma_level/course/${courseCode}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch WinPharma levels');
+    }
+    return response.json();
+}
+
+export async function getWinPharmaLevels(): Promise<WinPharmaLevel[]> {
+    const response = await fetch(`${QA_API_BASE_URL}/win_pharma_level/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch WinPharma levels');
+    }
+    return response.json();
+}
+
+
+export async function getWinPharmaLevelById(id: string): Promise<WinPharmaLevel> {
+    const response = await fetch(`${QA_API_BASE_URL}/win_pharma_level/${id}/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch level');
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data[0] : data;
+}
+
+export async function createWinPharmaLevel(data: { 
+    course_code: string; 
+    level_name: string; 
+    is_active: number; 
+    created_at: string; 
+    created_by: string; 
+}): Promise<WinPharmaLevel> {
+
+    const response = await fetch(`${QA_API_BASE_URL}/win_pharma_level/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create level' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function updateWinPharmaLevel(id: string, data: { 
+    level_name: string; 
+    is_active?: number; 
+    course_code?: string;
+    created_at?: string;
+    created_by?: string;
+}): Promise<WinPharmaLevel> {
+    const response = await fetch(`${QA_API_BASE_URL}/win_pharma_level/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+
+
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update level' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function deleteWinPharmaLevel(id: string): Promise<void> {
+    const response = await fetch(`${QA_API_BASE_URL}/win_pharma_level/${id}/`, {
+        method: 'DELETE',
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete level' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+}
+
+// WinPharma Resources (Tasks)
+export async function getWinPharmaTasks(levelId?: string): Promise<WinPharmaTask[]> {
+    const url = levelId ? `${QA_API_BASE_URL}/win_pharma_level_resources/level/${levelId}/` : `${QA_API_BASE_URL}/win_pharma_level_resources/`;
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error('Failed to fetch WinPharma resources');
+    }
+    return response.json();
+}
+
+export async function createWinPharmaTask(formData: FormData): Promise<any> {
+    const response = await fetch(`${QA_API_BASE_URL}/win_pharma_level_resources/`, {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create task' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function updateWinPharmaTask(id: string, formData: FormData): Promise<any> {
+    const response = await fetch(`${QA_API_BASE_URL}/win_pharma_level_resources/${id}/`, {
+        method: 'PUT', 
+        body: formData,
+    });
+
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update task' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+    return response.json();
+}
+
+export async function deleteWinPharmaTask(id: string): Promise<void> {
+    const response = await fetch(`${QA_API_BASE_URL}/win_pharma_level_resources/${id}/`, {
+        method: 'DELETE',
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete task' }));
+        throw new Error(errorData.message || 'API Error');
+    }
+}
+
