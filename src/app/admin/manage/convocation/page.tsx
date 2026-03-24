@@ -295,6 +295,7 @@ export default function ConvocationListPage() {
 
             const headers = [
                 'Ref #',
+                'Ceremony #',
                 'Student ID',
                 'Student Name (Profile)',
                 'Name on Cert (Booking)',
@@ -334,6 +335,7 @@ export default function ConvocationListPage() {
 
                 return [
                     reg.reference_number,
+                    reg.ceremony_number || 'N/A',
                     reg.student_number,
                     studentFullData?.studentInfo.full_name || 'N/A',
                     reg.name_on_certificate || 'N/A',
