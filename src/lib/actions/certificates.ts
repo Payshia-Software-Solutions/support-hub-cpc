@@ -487,3 +487,30 @@ export const getGeneratedCertificatesByBatch = async (courseCode: string): Promi
     }
     return response.json();
 };
+export const uploadConvocationStudentCsv = async (convocationId: string, file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append('convocation_id', convocationId);
+    formData.append('file', file);
+
+    const response = await fetch(`${QA_API_BASE_URL}/convocation-student-info/upload-csv/`, {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to upload CSV' }));
+        throw new Error(errorData.message || 'Failed to upload CSV');
+    }
+    return response.json();
+};
+
+export const getConvocationStudentCeremonyNumber = async (studentNumber: string, convocationId: string): Promise<string | null> => {
+    try {
+        const response = await fetch(`${QA_API_BASE_URL}/convocation-student-info/student/${studentNumber}/convocation/${convocationId}`);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data.ceremony_number || null;
+    } catch {
+        return null;
+    }
+};
