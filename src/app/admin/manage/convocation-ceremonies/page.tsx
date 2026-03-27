@@ -18,11 +18,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { PlusCircle, Edit, Trash2, Loader2, AlertTriangle, GraduationCap, Package, Users, Award } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, AlertTriangle, GraduationCap, Package, Users, Award, FileUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { CsvUploadDialog } from '@/components/admin/convocation/CsvUploadDialog';
 
 
 const ceremonyFormSchema = z.object({
@@ -143,6 +144,8 @@ export default function ManageConvocationCeremoniesPage() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedCeremony, setSelectedCeremony] = useState<ConvocationCeremony | null>(null);
     const [ceremonyToDelete, setCeremonyToDelete] = useState<ConvocationCeremony | null>(null);
+    const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+    const [ceremonyForUpload, setCeremonyForUpload] = useState<ConvocationCeremony | null>(null);
 
     const { data: ceremonies, isLoading, isError, error } = useQuery<ConvocationCeremony[]>({
         queryKey: ['convocationCeremonies'],
@@ -180,6 +183,13 @@ export default function ManageConvocationCeremoniesPage() {
                     <CeremonyForm ceremony={selectedCeremony} onClose={() => setIsFormOpen(false)} />
                 </DialogContent>
             </Dialog>
+
+            <CsvUploadDialog 
+                open={isUploadDialogOpen}
+                onOpenChange={setIsUploadDialogOpen}
+                convocationId={ceremonyForUpload?.id || ''}
+                convocationName={ceremonyForUpload?.convocation_name || ''}
+            />
 
             <AlertDialog open={!!ceremonyToDelete} onOpenChange={() => setCeremonyToDelete(null)}>
                 <AlertDialogContent>
@@ -257,6 +267,12 @@ export default function ManageConvocationCeremoniesPage() {
                                                         <Link href={`/admin/manage/convocation-ceremonies/${c.id}`}>
                                                             <Package className="mr-2 h-4 w-4" /> Packages
                                                         </Link>
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" onClick={() => {
+                                                        setCeremonyForUpload(c);
+                                                        setIsUploadDialogOpen(true);
+                                                    }}>
+                                                        <FileUp className="mr-2 h-4 w-4" /> CSV Upload
                                                     </Button>
                                                     <Button variant="ghost" size="icon" onClick={() => handleEdit(c)}><Edit className="h-4 w-4"/></Button>
                                                     <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setCeremonyToDelete(c)}><Trash2 className="h-4 w-4"/></Button>

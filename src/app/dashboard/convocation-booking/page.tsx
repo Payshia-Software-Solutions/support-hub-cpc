@@ -3,7 +3,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { getConvocationRegistrationsByStudent, getPackagesByCeremony, submitSecondPayment } from '@/lib/actions/certificates';
+import { getConvocationRegistrationsByStudent, getPackagesByCeremony, submitSecondPayment, getConvocationStudentCeremonyNumber } from '@/lib/actions/certificates';
 import { getParentCourses } from '@/lib/actions/courses';
 import { getPaymentRequestsByReference } from '@/lib/api';
 import type { ConvocationRegistration, ParentCourse, ConvocationPackage, PaymentRequest } from '@/lib/types';
@@ -75,6 +75,131 @@ const ViewSlipDialog = ({ slipPath, title, trigger }: { slipPath: string | null;
                 </div>
             </DialogContent>
         </Dialog>
+    );
+};
+
+const ConvocationPass = ({ booking, courseNameMap, allPackages }: { booking: ConvocationRegistration, courseNameMap: Map<string, string>, allPackages: ConvocationPackage[] }) => {
+    const { user } = useAuth();
+    const { data: ceremonyNumber, isLoading } = useQuery({
+        queryKey: ['ceremonyNumber', booking.student_number, booking.convocation_id],
+        queryFn: () => getConvocationStudentCeremonyNumber(booking.student_number, booking.convocation_id),
+        enabled: !!(booking.student_number && booking.convocation_id),
+    });
+
+    // Only show pass if there is a ceremony number from the API
+    if (isLoading || !ceremonyNumber || ceremonyNumber === '0') {
+        return null;
+    }
+
+    const courseList = booking.course_id
+        .split(',')
+        .map(id => id.trim())
+        .filter(Boolean)
+        .map(id => courseNameMap.get(id) || `Course (ID: ${id})`);
+        
+    const pkg = allPackages.find(p => p.package_id === booking.package_id);
+
+    return (
+        <div className="w-full relative overflow-hidden rounded-2xl shadow-xl border border-primary/20 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground mb-6 transition-all hover:shadow-2xl hover:scale-[1.01] duration-300 animate-in fade-in slide-in-from-bottom-4">
+            {/* Background design elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-40 h-40 bg-black/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+            
+            <div className="flex flex-col sm:flex-row relative z-10 w-full min-h-[220px]">
+                {/* Visual Strip */}
+                <div className="sm:w-3 bg-yellow-400 h-2 sm:h-auto" />
+                
+                {/* Main Pass Content */}
+                <div className="p-6 sm:p-8 flex-grow flex flex-col justify-between">
+                    <div className="flex justify-between items-start gap-4">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-6 opacity-90">
+                                <Award className="h-6 w-6 text-yellow-300" />
+                                <h3 className="font-headline font-bold text-xl tracking-widest uppercase text-yellow-300">Convocation Pass</h3>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-primary-foreground/70 text-xs font-bold uppercase tracking-wider mb-1">Student</p>
+                                    <p className="text-2xl font-bold leading-none">{booking.name_on_certificate || user?.name || booking.student_number || 'N/A'}</p>
+                                    <p className="text-sm font-mono text-primary-foreground/80 mt-1">{booking.student_number}</p>
+                                </div>
+                                
+                                <div>
+                                    <p className="text-primary-foreground/70 text-[10px] font-bold uppercase tracking-wider mb-1 mt-4">Programme(s)</p>
+                                    <div className="space-y-1">
+                                        {courseList.map((name, idx) => (
+                                            <p key={idx} className="text-[15px] font-medium leading-tight">{name}</p>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Desktop QR Code -> Top Right */}
+                        <div className="shrink-0 bg-white p-2.5 rounded-xl shadow-inner hidden sm:block mt-8">
+                            <img 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(booking.reference_number)}`} 
+                                alt="Booking QR Code" 
+                                className="w-24 h-24 object-contain"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="mt-8 pt-6 border-t border-primary-foreground/20 flex flex-wrap gap-x-10 gap-y-6 items-center">
+                        <div className="pr-4 border-r border-primary-foreground/20">
+                            <p className="text-primary-foreground/80 text-xs uppercase font-bold tracking-[0.2em] mb-1">Session</p>
+                            <p className="font-black text-4xl text-yellow-300 drop-shadow-sm">{booking.session || 'TBA'}</p>
+                        </div>
+                        <div className="flex-1 min-w-[200px]">
+                            <p className="text-primary-foreground/70 text-[10px] uppercase font-bold tracking-wider mb-1">Package</p>
+                            <p className="font-semibold text-md leading-tight">{pkg?.package_name || 'Standard'}</p>
+                        </div>
+                        {parseInt(booking.additional_seats || '0', 10) > 0 && (
+                            <div>
+                                <p className="text-primary-foreground/70 text-[10px] uppercase font-bold tracking-wider mb-1">Guest Seats</p>
+                                <p className="font-semibold text-lg">{booking.additional_seats}</p>
+                            </div>
+                        )}
+                        <div>
+                            <p className="text-primary-foreground/70 text-[10px] uppercase font-bold tracking-wider mb-1">Date</p>
+                            <p className="font-semibold text-md">{format(new Date(booking.registered_at), 'MMM d, yyyy')}</p>
+                        </div>
+
+                        {/* Mobile QR Code -> Bottom Center */}
+                        <div className="w-full sm:hidden flex justify-center mt-2">
+                            <div className="bg-white p-2.5 rounded-xl shadow-inner">
+                                <img 
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(booking.reference_number)}`} 
+                                    alt="Booking QR Code" 
+                                    className="w-20 h-20 object-contain"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+                {/* Right side Ceremony Number */}
+                <div className="sm:w-64 bg-black/20 p-6 sm:p-8 flex flex-col items-center justify-center border-t sm:border-t-0 sm:border-l border-primary-foreground/10 relative overflow-hidden backdrop-blur-sm">
+                    {/* Tick cutouts for pass look */}
+                    <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-background rounded-full hidden sm:block" />
+                    
+                    <p className="text-primary-foreground/80 text-xs uppercase font-bold tracking-[0.2em] mb-3 text-center">Ceremony No.</p>
+                    
+                    <div className="bg-white/10 rounded-2xl p-6 border border-white/20 shadow-inner w-full flex items-center justify-center min-h-[120px]">
+                        <span className="font-mono text-7xl font-black text-yellow-300 tracking-tighter drop-shadow-md">
+                            {ceremonyNumber}
+                        </span>
+                    </div>
+                    
+                    <div className="mt-6 text-center">
+                        <p className="text-[10px] text-primary-foreground/50 uppercase tracking-widest font-mono">Reference Number</p>
+                        <p className="text-sm font-mono font-medium text-primary-foreground/70 tracking-widest mt-1">{booking.reference_number}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -378,14 +503,6 @@ export default function ConvocationBookingHistoryPage() {
                 </Button>
             </header>
 
-            <Alert variant="default" className="bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/30 dark:border-amber-700/50 dark:text-amber-300">
-                <AlertCircle className="h-4 w-4 !text-amber-800 dark:!text-amber-300" />
-                <AlertTitle className="font-bold">වැදගත් දැනුම්දීමයි (Important Notice)</AlertTitle>
-                <AlertDescription className="text-sm font-medium leading-relaxed">
-                    මේ අවස්ථාවේ අප විසින් ගෙවීම් යාවත්කාලීන කරන බැවින් දුරකතන ඇමතුම් හා Message එවීමෙන් වලකින මෙන් කාරුණාකව ඉල්ලා සිටින අතර ඔබගේ ගෙවීම් යාවත්කාලීන වූ විට ඔබට එය කෙටි පණිඩිඩයක් මගින් දනුම් දේ. එතෙක් රැඳී සිටින්න.
-                </AlertDescription>
-            </Alert>
-
             <div className="space-y-6">
                 <Alert className="bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/30 dark:border-amber-700/50 dark:text-amber-300">
                     <AlertCircle className="h-4 w-4 !text-amber-800 dark:!text-amber-300" />
@@ -397,7 +514,7 @@ export default function ConvocationBookingHistoryPage() {
 
                 {isLoading && (
                     <div className="space-y-4">
-                        <Skeleton className="h-48 w-full" />
+                        <Skeleton className="h-[220px] w-full rounded-2xl" />
                         <Skeleton className="h-48 w-full" />
                     </div>
                 )}
@@ -409,15 +526,27 @@ export default function ConvocationBookingHistoryPage() {
                     </Alert>
                 )}
                 {!isLoading && !isError && previousBookings && previousBookings.length > 0 && (
-                    <div className="space-y-6">
-                        {previousBookings.map(booking => (
-                            <BookingDetailCard 
-                                key={booking.registration_id} 
-                                booking={booking} 
-                                courseNameMap={courseNameMap} 
-                                allPackages={allPackages || []} 
-                            />
-                        ))}
+                    <div className="space-y-8">
+                        <div className="space-y-6">
+                            {previousBookings.map(booking => (
+                                <ConvocationPass 
+                                    key={`pass-${booking.registration_id}`} 
+                                    booking={booking} 
+                                    courseNameMap={courseNameMap} 
+                                    allPackages={allPackages || []} 
+                                />
+                            ))}
+                        </div>
+                        <div className="space-y-6">
+                            {previousBookings.map(booking => (
+                                <BookingDetailCard 
+                                    key={`detail-${booking.registration_id}`} 
+                                    booking={booking} 
+                                    courseNameMap={courseNameMap} 
+                                    allPackages={allPackages || []} 
+                                />
+                            ))}
+                        </div>
                     </div>
                 )}
                  {!isLoading && !isError && (!previousBookings || previousBookings.length === 0) && (
