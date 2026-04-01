@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { getCertificateOrders, updateCertificateOrderCourses, deleteCertificateOrder, generateCertificate, getUserCertificatePrintStatus } from '@/lib/actions/certificates';
 import { getStudentFullInfo, getStudentBalance } from '@/lib/actions/users';
 import { getParentCourses } from '@/lib/actions/courses';
@@ -49,6 +50,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { format } from 'date-fns';
 
 const ITEMS_PER_PAGE = 25;
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
@@ -277,6 +279,8 @@ export default function CertificateOrdersListPage() {
     const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
     const [orderToUpdate, setOrderToUpdate] = useState<CertificateOrder | null>(null);
     const [orderToDelete, setOrderToDelete] = useState<CertificateOrder | null>(null);
+    const [rangeFrom, setRangeFrom] = useState('');
+    const [rangeTo, setRangeTo] = useState('');
 
     const [studentDataMap, setStudentDataMap] = useState<Map<string, { studentData?: FullStudentData, balanceData?: StudentBalanceData }>>(new Map());
 
@@ -532,43 +536,78 @@ export default function CertificateOrdersListPage() {
             </Dialog>
 
             {/* Bulk Printing Actions */}
-            {courseFilter !== 'all' && (
-                <Card className="border-primary/20 bg-primary/5 shadow-md">
-                    <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Bulk Printing Actions */}
+            <Card className={cn("border-primary/20 bg-primary/5 shadow-md transition-all", courseFilter === 'all' && "opacity-60")}>
+                <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex flex-col md:flex-row items-center gap-4">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-primary/10 rounded-full">
                                 <Printer className="h-5 w-5 text-primary" />
                             </div>
                             <div>
-                                <p className="text-sm font-bold">Bulk Actions: {courseNameMap.get(courseFilter)}</p>
-                                <p className="text-xs text-muted-foreground">Batch document management.</p>
+                                <p className="text-sm font-bold">Bulk Actions{courseFilter !== 'all' ? `: ${courseNameMap.get(courseFilter)}` : ''}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    {courseFilter === 'all' ? 'Select a course filter to enable batch printing.' : 'Batch document management.'}
+                                </p>
                             </div>
                         </div>
-                        <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                            <Button asChild variant="outline" size="xs" className="flex-1 md:flex-initial bg-background text-[10px]">
-                                <a href={`${getBulkPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=1`} target="_blank" rel="noopener noreferrer">
-                                    <ListOrdered className="mr-1.5 h-3 w-3 text-primary" /> List Table
-                                </a>
-                            </Button>
-                            <Button asChild variant="outline" size="xs" className="flex-1 md:flex-initial bg-background text-[10px]">
-                                <a href={`${getBulkPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=0`} target="_blank" rel="noopener noreferrer">
-                                    <Award className="mr-1.5 h-3 w-3 text-primary" /> Batch Certs
-                                </a>
-                            </Button>
-                            <Button asChild variant="outline" size="xs" className="flex-1 md:flex-initial bg-background text-[10px]">
-                                <a href={`${getBulkTranscriptPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=1`} target="_blank" rel="noopener noreferrer">
-                                    <ListOrdered className="mr-1.5 h-3 w-3 text-blue-600" /> Trans Table
-                                </a>
-                            </Button>
-                            <Button asChild variant="outline" size="xs" className="flex-1 md:flex-initial bg-background text-[10px]">
-                                <a href={`${getBulkTranscriptPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=0`} target="_blank" rel="noopener noreferrer">
-                                    <FileText className="mr-1.5 h-3 w-3 text-blue-600" /> Batch Trans
-                                </a>
-                            </Button>
+
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
+                                <Label htmlFor="rangeFrom" className="text-[10px] font-bold uppercase text-muted-foreground">From</Label>
+                                <Input 
+                                    id="rangeFrom"
+                                    type="number" 
+                                    placeholder="Start ID" 
+                                    className="h-8 w-20 text-xs px-2" 
+                                    value={rangeFrom} 
+                                    onChange={(e) => setRangeFrom(e.target.value)}
+                                    disabled={courseFilter === 'all'}
+                                />
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <Label htmlFor="rangeTo" className="text-[10px] font-bold uppercase text-muted-foreground">To</Label>
+                                <Input 
+                                    id="rangeTo"
+                                    type="number" 
+                                    placeholder="End ID" 
+                                    className="h-8 w-20 text-xs px-2" 
+                                    value={rangeTo} 
+                                    onChange={(e) => setRangeTo(e.target.value)}
+                                    disabled={courseFilter === 'all'}
+                                />
+                            </div>
                         </div>
-                    </CardContent>
-                </Card>
-            )}
+                    </div>
+                    <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                        <Button asChild variant="outline" size="xs" className="flex-1 md:flex-initial bg-background text-[10px]" disabled={courseFilter === 'all'}>
+                            <a href={courseFilter !== 'all' ? `${getBulkPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=1${rangeFrom ? `&rangeFrom=${rangeFrom}` : ''}${rangeTo ? `&rangeTo=${rangeTo}` : ''}` : '#'} target="_blank" rel="noopener noreferrer">
+                                <ListOrdered className="mr-1.5 h-3 w-3 text-primary" /> List Table
+                            </a>
+                        </Button>
+                        <Button asChild variant="outline" size="xs" className="flex-1 md:flex-initial bg-background text-[10px]" disabled={courseFilter === 'all'}>
+                            <a href={courseFilter !== 'all' ? `${getBulkPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=0${rangeFrom ? `&rangeFrom=${rangeFrom}` : ''}${rangeTo ? `&rangeTo=${rangeTo}` : ''}` : '#'} target="_blank" rel="noopener noreferrer">
+                                <Award className="mr-1.5 h-3 w-3 text-primary" /> Batch Certs
+                            </a>
+                        </Button>
+                        <Button asChild variant="outline" size="xs" className="flex-1 md:flex-initial bg-background text-[10px]" disabled={courseFilter === 'all'}>
+                            <a href={courseFilter !== 'all' ? `${getBulkTranscriptPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=1${rangeFrom ? `&rangeFrom=${rangeFrom}` : ''}${rangeTo ? `&rangeTo=${rangeTo}` : ''}` : '#'} target="_blank" rel="noopener noreferrer">
+                                <ListOrdered className="mr-1.5 h-3 w-3 text-blue-600" /> Trans Table
+                            </a>
+                        </Button>
+                        <Button asChild variant="outline" size="xs" className="flex-1 md:flex-initial bg-background text-[10px]" disabled={courseFilter === 'all'}>
+                            <a href={courseFilter !== 'all' ? `${getBulkTranscriptPrintBaseUrl(courseFilter)}?courseCode=${courseFilter}&tableMode=0${rangeFrom ? `&rangeFrom=${rangeFrom}` : ''}${rangeTo ? `&rangeTo=${rangeTo}` : ''}` : '#'} target="_blank" rel="noopener noreferrer">
+                                <FileText className="mr-1.5 h-3 w-3 text-blue-600" /> Batch Trans
+                            </a>
+                        </Button>
+                        <Button asChild variant="default" size="xs" className="flex-1 md:flex-initial text-[10px]" disabled={courseFilter === 'all'}>
+                            <Link href={courseFilter !== 'all' ? `/print/certificate-address-list?courseCode=${courseFilter}${rangeFrom ? `&rangeFrom=${rangeFrom}` : ''}${rangeTo ? `&rangeTo=${rangeTo}` : ''}` : '#'} target="_blank">
+                                <Home className="mr-1.5 h-3 w-3" /> Address List
+                            </Link>
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
 
             <Card className="shadow-lg">
                 <CardHeader>
@@ -628,6 +667,11 @@ export default function CertificateOrdersListPage() {
                                         </TableCell>
                                         <TableCell><OrderActionsCell order={order} onUpdateClick={() => openUpdateDialog(order)} studentData={studentDataMap.get(order.created_by)?.studentData} balanceData={studentDataMap.get(order.created_by)?.balanceData} isLoading={isLoadingStudentData && !studentDataMap.has(order.created_by)} /></TableCell>
                                         <TableCell className="text-right space-x-1">
+                                            <Button variant="outline" size="sm" asChild>
+                                                <a href={`/print/certificate-address-list?courseCode=${order.course_code.split(',')[0].trim()}&rangeFrom=${order.id}&rangeTo=${order.id}`} target="_blank" rel="noopener noreferrer">
+                                                    <Printer className="h-3.5 w-3.5 mr-1" /> Label
+                                                </a>
+                                            </Button>
                                             <Button variant="outline" size="sm" onClick={() => setSelectedOrderDetails(order)}>View</Button>
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setOrderToDelete(order)}><Trash2 className="h-4 w-4"/></Button>
                                         </TableCell>
