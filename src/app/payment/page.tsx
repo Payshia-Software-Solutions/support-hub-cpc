@@ -24,6 +24,7 @@ import type { PaymentRequest } from '@/lib/types';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog';
+import { BankInfoDialog } from '@/components/BankInfoDialog';
 
 const CONTENT_PROVIDER_URL = process.env.NEXT_PUBLIC_CONTENT_PROVIDER_URL || 'https://content-provider.pharmacollege.lk';
 
@@ -388,6 +389,9 @@ export default function PaymentPage() {
                             <Label htmlFor="branch">Branch (Optional)</Label>
                             <Input id="branch" value={branch} onChange={e => setBranch(e.target.value)} placeholder="e.g. Colombo 07"/>
                         </div>
+                        <div className="pt-2">
+                            <BankInfoDialog />
+                        </div>
                         <div className="space-y-2 pt-4 border-t">
                             <Label htmlFor="payment-slip">Upload Payment Slip</Label>
                             <Input id="payment-slip" type="file" onChange={handleFileChange} accept="image/*,application/pdf"/>
@@ -498,7 +502,9 @@ export default function PaymentPage() {
                     )}
                 </CardFooter>
             </Card>
+            <BankInfoDialog variant="floating" />
         </div>
         </>
+
     );
 }
