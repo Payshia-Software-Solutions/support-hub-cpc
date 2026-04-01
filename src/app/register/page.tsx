@@ -24,7 +24,7 @@ import { parseNIC } from '@/lib/nic-parser';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
+import { BankInfoDialog } from '@/components/BankInfoDialog';
 
 const STEPS = [
   { id: 1, title: 'Personal Info', icon: User },
@@ -542,19 +542,36 @@ export default function RegisterPage() {
                             </Link>
                         </p>
                     </div>
+                    <div className="w-full pt-2 flex flex-col gap-2">
+                         <BankInfoDialog />
+                         <Button asChild variant="outline" className="w-full">
+                            <Link href="/payment">
+                                Go to payment
+                            </Link>
+                        </Button>
+                    </div>
                 </>
             ) : (
+                <>
                  <div className="w-full flex flex-col sm:flex-row gap-2">
                     <Button onClick={() => router.push(`/payment?registrationId=${registrationId}`)} className="flex-1">
                         Proceed to Payment
                     </Button>
+                    <div className="hidden sm:block">
+                        <BankInfoDialog />
+                    </div>
                     <Button asChild variant="outline" className="flex-1">
                         <Link href="/login">Go to Login</Link>
                     </Button>
                 </div>
+                 <div className="w-full sm:hidden pt-2">
+                     <BankInfoDialog />
+                 </div>
+                </>
             )}
         </CardFooter>
       </Card>
+      <BankInfoDialog variant="floating" />
     </div>
   );
 }
