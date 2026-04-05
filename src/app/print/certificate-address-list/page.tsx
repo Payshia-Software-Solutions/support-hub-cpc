@@ -222,7 +222,7 @@ export default function CertificateAddressListPage() {
                     {filteredOrders.length > 0 ? filteredOrders.map(order => (
                         <div key={order.id} className="label-card relative overflow-hidden bg-white">
                             {/* NEW SENDER SECTION */}
-                            <div className="border-b-2 border-dashed border-black pb-2 flex justify-between items-start">
+                            <div className="border-b-2 border-dashed border-black pb-1 flex justify-between items-start">
                                 <div>
                                     <h4 className="text-[8px] font-black uppercase tracking-widest text-gray-400">Sender</h4>
                                     <p className="text-sm font-black text-blue-900 leading-none mb-0.5 uppercase">CEYLON PHARMA COLLEGE</p>
@@ -238,29 +238,29 @@ export default function CertificateAddressListPage() {
                             </div>
 
                             {/* MAIN RECIPIENT SECTION */}
-                            <div className="flex-1 py-2 flex flex-col justify-center">
-                                <div className="space-y-2">
-                                    <p className="text-[9px] font-black uppercase bg-black text-white px-2 py-0.5 inline-block mb-1 tracking-widest leading-none">Deliver To:</p>
-                                    <h2 className="text-lg font-black leading-none uppercase mb-2 tracking-tight border-b-2 border-gray-100 pb-1">{order.name_on_certificate}</h2>
+                            <div className="flex-1 py-1 flex flex-col justify-center">
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-black uppercase bg-black text-white px-2 py-0.5 inline-block mb-0.5 tracking-widest leading-none">Deliver To:</p>
+                                    <h2 className="text-lg font-black leading-none uppercase mb-1 tracking-tight border-b-2 border-gray-100 pb-1">{order.name_on_certificate}</h2>
                                     
-                                    <div className="text-xs font-bold leading-[1.1] space-y-0.5 text-black">
+                                    <div className="text-xs font-bold leading-[1.1] space-y-0 text-black">
                                         <p>{order.address_line1}</p>
                                         {order.address_line2 && order.address_line2.trim().toLowerCase() !== order.address_line1.trim().toLowerCase() && (
                                             <p>{order.address_line2}</p>
                                         )}
-                                        <div className="pt-2 flex items-center gap-2">
+                                        <div className="pt-1 flex items-center gap-2">
                                             <p className="text-base font-black uppercase tracking-tighter bg-gray-100 px-2 py-0.5 border border-black leading-none">{cityMap.get(order.city_id) || order.city_id}</p>
                                             <p className="text-[9px] uppercase text-gray-500 font-black flex-1 border-l border-gray-300 pl-2 leading-none">{order.district} District</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="mt-4 pt-4 border-t-2 border-double border-black grid grid-cols-5 gap-4 items-center">
+                                <div className="mt-2 pt-2 border-t-2 border-double border-black grid grid-cols-5 gap-2 items-center">
                                     <div className="col-span-3">
-                                        <p className="text-[9px] font-black uppercase text-gray-400 flex items-center gap-1 mb-1 leading-none">
+                                        <p className="text-[9px] font-black uppercase text-gray-400 flex items-center gap-1 mb-0.5 leading-none">
                                             <Phone className="h-2.5 w-2.5" /> RECIPIENT CONTACTS
                                         </p>
-                                        <div className="space-y-0.5">
+                                        <div className="space-y-0">
                                             <p className="text-xl font-black font-mono tracking-tighter leading-none">{order.mobile}</p>
                                             {order.telephone_1 && order.telephone_1 !== order.mobile && (
                                                 <p className="text-sm font-black font-mono tracking-tighter opacity-80 leading-none">{order.telephone_1}</p>
@@ -268,24 +268,24 @@ export default function CertificateAddressListPage() {
                                         </div>
                                     </div>
                                     <div className="col-span-2 text-right">
-                                        <p className="text-[9px] font-black uppercase text-gray-400 mb-1 leading-none">STUDENT ID</p>
+                                        <p className="text-[9px] font-black uppercase text-gray-400 mb-0.5 leading-none">STUDENT ID</p>
                                         <p className="text-sm font-black font-mono bg-gray-50 px-1 border leading-none inline-block">{order.created_by}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* BARCODE & ORDER SUMMARY FOOTER */}
-                            <div className="border-t-2 border-black pt-4 mt-auto flex flex-col gap-4 overflow-hidden">
-                                <div className="flex justify-between items-end gap-6">
+                            <div className="border-t-2 border-black pt-2 mt-auto mb-[20mm] flex flex-col gap-2 overflow-hidden">
+                                <div className="flex justify-between items-end gap-3">
                                     <div className="flex-1">
-                                        <p className="text-[9px] font-black uppercase text-gray-400 mb-1.5 underline decoration-black/10 leading-none">Parcel Contents</p>
-                                        <div className="space-y-1.5">
+                                        <p className="text-[9px] font-black uppercase text-gray-400 mb-1 underline decoration-black/10 leading-none">Parcel Contents</p>
+                                        <div className="space-y-1">
                                             <div className="text-[10px] font-black leading-tight text-black uppercase tracking-tighter flex flex-col gap-0.5">
                                                  {order.course_code.split(',').map((id, idx) => (
                                                      <p key={idx}>- {courseNameMap.get(id.trim()) || id}</p>
                                                  ))}
                                             </div>
-                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[9px] font-bold text-gray-600 uppercase leading-none mt-1">
+                                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] font-bold text-gray-600 uppercase leading-none mt-1">
                                                  <span>GARLAND: <span className={order.garlent === '1' ? "text-green-700 font-black" : "opacity-30"}>{order.garlent === '1' ? 'YES' : 'NO'}</span></span>
                                                  <span>SCROLL: <span className={order.scroll === '1' ? "text-green-700 font-black" : "opacity-30"}>{order.scroll === '1' ? 'YES' : 'NO'}</span></span>
                                                  <span>FILE: <span className={order.certificate_file === '1' ? "text-green-700 font-black" : "opacity-30"}>{order.certificate_file === '1' ? 'YES' : 'NO'}</span></span>
@@ -293,7 +293,7 @@ export default function CertificateAddressListPage() {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                         <div className="bg-white p-2.5 border-2 border-black border-double inline-block shadow-sm">
+                                         <div className="bg-white p-2 border-2 border-black border-double inline-block shadow-sm">
                                              <p className="text-[9px] font-black uppercase leading-none opacity-40 mb-1">Ref</p>
                                              <p className="text-base font-black leading-none font-mono tracking-tight pointer-events-none">PA-{order.id}</p>
                                          </div>
